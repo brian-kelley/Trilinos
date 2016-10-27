@@ -408,7 +408,6 @@ namespace MueLu {
     typedef CGAL::Delaunay_triangulation_2<K,Tds> Triangulation_2;
     typedef CGAL::Alpha_shape_2<Triangulation_2> Alpha_shape_2;
     typedef Alpha_shape_2::Alpha_shape_edges_iterator Alpha_shape_edges_iterator;
-#if 0 // taw: does not compile with CGAL 4.8
     for(int i = 0; i < numAggs_; i++)
     {
       //Populate a list of Point_2 for this aggregate
@@ -449,14 +448,12 @@ namespace MueLu {
         geomSizes.push_back(2); //all cells are line segments
       }
     }
-#endif // if 0
   }
 
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doAlphaHulls3D_(std::vector<int>& vertices, std::vector<int>& geomSizes) const
   {
     typedef CGAL::Exact_predicates_inexact_constructions_kernel Gt;
-#if 0 // does not compile with CGAL 4-8
     typedef CGAL::Alpha_shape_cell_base_3<Gt> Fb;
     typedef CGAL::Triangulation_data_structure_3<Vb,Fb> Tds;
     typedef CGAL::Delaunay_triangulation_3<Gt,Tds> Triangulation_3;
@@ -543,7 +540,6 @@ namespace MueLu {
 
       }
     }
-#endif // if 0
   }
 #endif
 

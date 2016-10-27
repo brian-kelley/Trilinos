@@ -52,55 +52,54 @@
 
 #include "MueLu_ConfigDefs.hpp"
 #include "MueLu_VisualizationHelpers_fwd.hpp"
+#include "MueLu_TwoLevelFactoryBase.hpp"
 #include "MueLu_GraphBase.hpp"
 
 #include <list>
 
 namespace MueLu {
-
-  class Level;
+namespace VizHelpers {
   //Utility classes used in convex hull algorithm
 
-  class myTriangle
+  struct Triangle
   {
-    public:
-      myTriangle() : v1(0), v2(0), v3(0) {}
-      myTriangle(int v1in, int v2in, int v3in) : v1(v1in), v2(v2in), v3(v3in) {}
-      ~myTriangle() {}
-      bool operator==(const myTriangle& l)
-      {
-        if(l.v1 == v1 && l.v2 == v2 && l.v3 == v3)
-          return true;
-        return false;
-      }
-      int v1;
-      int v2;
-      int v3;
+    Triangle() : v1(0), v2(0), v3(0) {}
+    Triangle(int v1in, int v2in, int v3in) : v1(v1in), v2(v2in), v3(v3in) {}
+    ~Triangle() {}
+    bool operator==(const Triangle& l)
+    {
+      if(l.v1 == v1 && l.v2 == v2 && l.v3 == v3)
+        return true;
+      return false;
+    }
+    int v1;
+    int v2;
+    int v3;
   };
 
-  class myVec3
+  class Vec3
   {
     public:
-      myVec3() : x(0), y(0), z(0) {}
-      myVec3(double xin, double yin, double zin) : x(xin), y(yin), z(zin) {}
-      ~myVec3() {}
+      Vec3() : x(0), y(0), z(0) {}
+      Vec3(double xin, double yin, double zin) : x(xin), y(yin), z(zin) {}
+      ~Vec3() {}
       double x;
       double y;
       double z;
   };
 
-  class myVec2
+  class Vec2
   {
     public:
-      myVec2() : x(0), y(0) {}
-      myVec2(double xin, double yin) : x(xin), y(yin) {}
-      ~myVec2() {}
+      Vec2() : x(0), y(0) {}
+      Vec2(double xin, double yin) : x(xin), y(yin) {}
+      ~Vec2() {}
       double x;
       double y;
   };
 
   /*!
-    @class VisualizationHelpers class.
+    @class GeometryBuilder class.
     @brief Base class providing routines to visualize aggregates and coarsening information.
 
     This class is the base class for the CoarseningVisualizationFactory as well as the AggregationExporterFactory to
@@ -109,7 +108,7 @@ namespace MueLu {
   */
 
   template <class Scalar = double, class LocalOrdinal = int, class GlobalOrdinal = LocalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
-  class VisualizationHelpers {
+  class GeometryBuilder : public TwoLevelFactoryBase {
 #undef MUELU_VISUALIZATIONHELPERS_SHORT
 #include "MueLu_UseShortNames.hpp"
 
@@ -118,10 +117,10 @@ namespace MueLu {
     //@{
 
     //! Constructor.
-    VisualizationHelpers() { }
+    GeometryBuilder() { }
 
     //! Destructor.
-    virtual ~VisualizationHelpers() { }
+    virtual ~GeometryBuilder() { }
     //@}
 
     RCP<ParameterList> GetValidParameterList() const;
@@ -155,24 +154,36 @@ namespace MueLu {
     static void doGraphEdges(std::vector<int>& vertices, std::vector<int>& geomSizes, Teuchos::RCP<GraphBase>& G, Teuchos::ArrayRCP<const double> & fx, Teuchos::ArrayRCP<const double> & fy, Teuchos::ArrayRCP<const double> & fz);
 
     static myVec3 crossProduct(myVec3 v1, myVec3 v2);
-    static double dotProduct(myVec2 v1, myVec2 v2);
+    static double dotProduct(Vec2 v1, Vec2 v2);
     static double dotProduct(myVec3 v1, myVec3 v2);
     static bool isInFront(myVec3 point, myVec3 inPlane, myVec3 n);
-    static double mymagnitude(myVec2 vec);
+    static double mymagnitude(Vec2 vec);
     static double mymagnitude(myVec3 vec);
-    static double distance(myVec2 p1, myVec2 p2);
+    static double distance(Vec2 p1, Vec2 p2);
     static double distance(myVec3 p1, myVec3 p2);
-    static myVec2 vecSubtract(myVec2 v1, myVec2 v2);
+    static Vec2 vecSubtract(Vec2 v1, Vec2 v2);
     static myVec3 vecSubtract(myVec3 v1, myVec3 v2);
-    static myVec2 getNorm(myVec2 v);
+    static Vec2 getNorm(Vec2 v);
     static myVec3 getNorm(myVec3 v1, myVec3 v2, myVec3 v3);
     static double pointDistFromTri(myVec3 point, myVec3 v1, myVec3 v2, myVec3 v3);
-    static std::vector<myTriangle> processTriangle(std::list<myTriangle>& tris, myTriangle tri, std::list<int>& pointsInFront, myVec3& barycenter, const Teuchos::ArrayRCP<const double>& xCoords, const Teuchos::ArrayRCP<const double>& yCoords, const Teuchos::ArrayRCP<const double>& zCoords);
-    static std::vector<int> giftWrap(std::vector<myVec2>& points, std::vector<int>& nodes, const Teuchos::ArrayRCP<const double> & xCoords, const Teuchos::ArrayRCP<const double> & yCoords);
+    static std::vector<Triangle> processTriangle(std::list<Triangle>& tris, Triangle tri, std::list<int>& pointsInFront, myVec3& barycenter, const Teuchos::ArrayRCP<const double>& xCoords, const Teuchos::ArrayRCP<const double>& yCoords, const Teuchos::ArrayRCP<const double>& zCoords);
+    static std::vector<int> giftWrap(std::vector<Vec2>& points, std::vector<int>& nodes, const Teuchos::ArrayRCP<const double> & xCoords, const Teuchos::ArrayRCP<const double> & yCoords);
 
     std::string replaceAll(std::string result, const std::string& replaceWhat, const std::string& replaceWithWhat) const;
     std::vector<int> makeUnique(std::vector<int>& vertices) const; //!< replaces node indices in vertices with compressed unique indices, and returns list of unique points
+
+    std::vector<int> vertices;
+    std::vector<int> geomSizes;
+    LO numLocalAggs;
+    LO numFineNodes;
+
+    //! Special node index value representing 
+    static const int contrast1_ = -1;
+    static const int contrast2_ = -2;
+    static const int contrast3_ = -3;
+
   }; // class VisualizationHelpers
+} // namespace VizHelpers
 } // namespace MueLu
 
 #define MUELU_VISUALIZATIONHELPERS_SHORT

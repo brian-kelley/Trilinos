@@ -52,7 +52,6 @@
 #include <Xpetra_ImportFactory.hpp>
 #include <Xpetra_MultiVectorFactory.hpp>
 #include "MueLu_VisualizationHelpers_decl.hpp"
-#include "MueLu_Level.hpp"
 #include "MueLu_Graph.hpp"
 #include "MueLu_Monitor.hpp"
 #include <vector>

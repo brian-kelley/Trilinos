@@ -105,7 +105,7 @@ namespace MueLu {
     The * in the @c requested column states that the data is requested as input with all dependencies (see AggregationExportFactory::DeclareInput).
   */
   template <class Scalar = double, class LocalOrdinal = int, class GlobalOrdinal = LocalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
-  class AggregationExportFactory : public TwoLevelFactoryBase, public VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+  class AggregationExportFactory : public VizHelpers::GeometryBuilder<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
 #undef MUELU_AGGREGATIONEXPORTFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
