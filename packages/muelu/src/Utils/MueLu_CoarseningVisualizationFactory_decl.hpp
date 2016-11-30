@@ -87,7 +87,7 @@ namespace MueLu {
   */
 
   template <class Scalar = double, class LocalOrdinal = int, class GlobalOrdinal = LocalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
-  class CoarseningVisualizationFactory : public TwoLevelFactoryBase, public VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+  class CoarseningVisualizationFactory : public TwoLevelFactoryBase, public VizHelpers::GeometryBuilder<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
 #undef MUELU_COARSENINGVISUALIZATIONFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 

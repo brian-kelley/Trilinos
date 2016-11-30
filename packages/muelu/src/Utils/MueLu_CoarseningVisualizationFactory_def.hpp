@@ -76,37 +76,38 @@ namespace MueLu {
     this->Input(fineLevel, "Coordinates");
 
     const ParameterList & pL = this->GetParameterList();
+    /*
     TEUCHOS_TEST_FOR_EXCEPTION(pL.isParameter("P") && GetFactory("P") != Teuchos::null &&
                                pL.isParameter("Ptent") && GetFactory("Ptent") != Teuchos::null, Exceptions::RuntimeError,
                 "You must not declare both P and Ptent. Use only once for visualization.");
     TEUCHOS_TEST_FOR_EXCEPTION(GetFactory("P") == Teuchos::null && GetFactory("Ptent") == Teuchos::null, Exceptions::RuntimeError,
                 "You have to either declare P or Ptent for visualization, but not both.");
+    */
 
-    if (GetFactory("P") != Teuchos::null && GetFactory("Ptent") == Teuchos::null)
+    if (GetFactory("P") != Teuchos::null)
       this->Input(coarseLevel, "P");
-    else if (GetFactory("Ptent") != Teuchos::null && GetFactory("P") == Teuchos::null)
+    if (GetFactory("Ptent") != Teuchos::null)
       this->Input(coarseLevel, "Ptent");
 
     if(pL.get<bool>("visualization: fine graph edges"))
       Input(fineLevel, "Graph");
-#if 0
-    if(pL.get<bool>("visualization: coarse graph edges")) {
-      Input(coarseLevel, "Coordinates");
-      Input(coarseLevel, "Graph");
-    }
-#endif
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
 
+    typedef VizHelpers::AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeometry;
+    typedef VizHelpers::EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> EdgeGeometry;
+    typedef VizHelpers::VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node> VTKEmitter;
+
     RCP<GraphBase> fineGraph = Teuchos::null;
     RCP<Matrix>    P         = Teuchos::null;
+    RCP<Matrix>    Ptent     = Teuchos::null;
     const ParameterList & pL = this->GetParameterList();
-    if (this->GetFactory("P") != Teuchos::null && this->GetFactory("Ptent") == Teuchos::null)
+    if (this->GetFactory("P") != Teuchos::null)
       P = Get< RCP<Matrix> >(coarseLevel, "P");
-    if (GetFactory("Ptent") != Teuchos::null && GetFactory("P") == Teuchos::null)
-      P = Get< RCP<Matrix> >(coarseLevel, "Ptent");
+    if (this->GetFactory("P") == Teuchos::null)
+      Ptent = Get< RCP<Matrix> >(coarseLevel, "Ptent");
 
     RCP<const Teuchos::Comm<int> > comm = P->getRowMap()->getComm();
 
@@ -129,6 +130,7 @@ namespace MueLu {
 
     LocalOrdinal columnsPerNode = dofsPerNode;
     LocalOrdinal stridedColumnOffset = 0;
+    //note: strDomainMap is a non-overlapping map of nodes
     RCP<const StridedMap> strDomainMap = Teuchos::null;
     if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null) {
       strDomainMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getColMap("stridedMaps"));
@@ -146,8 +148,8 @@ namespace MueLu {
     }
 
     // TODO add support for overlapping aggregates
-    TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap->getNodeNumElements() != P->getColMap()->getNodeNumElements(), Exceptions::RuntimeError,
-                                               "CoarseningVisualization only supports non-overlapping transfers");
+    //TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap->getNodeNumElements() != P->getColMap()->getNodeNumElements(), Exceptions::RuntimeError,
+    //                                           "CoarseningVisualization only supports non-overlapping transfers");
 
     // number of local "aggregates"
     LocalOrdinal numLocalAggs = strDomainMap->getNodeNumElements() / columnsPerNode;
@@ -159,7 +161,7 @@ namespace MueLu {
       ArrayView<const SC> vals;
       P->getLocalRowView(row, indices, vals);
 
-      for(typename ArrayView<const LO>::iterator c = indices.begin(); c != indices.end(); ++c) {
+      for(auto c = indices.begin(); c != indices.end(); ++c) {
         localAggs[(*c)/columnsPerNode].insert(row/dofsPerNode);
       }
     }
@@ -175,25 +177,15 @@ namespace MueLu {
       myAggOffset += numLocalAggsPerProc[i];
     }
 
-    /*for (LocalOrdinal i = 0; i < numLocalAggs; ++i) {
-
-      std::cout << "PROC: " << comm->getRank() << " Local aggregate: " << i + myAggOffset << " with nodes: ";
-      for( typename std::set<LocalOrdinal>::iterator it = localAggs[i].begin(); it != localAggs[i].end(); ++it) {
-        std::cout << *it << ", ";
-      }
-      std::cout << std::endl;
-    }*/
-
     // get fine level coordinate information
     Teuchos::RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > coords = Get<RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > >(fineLevel, "Coordinates");
 
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::as<LO>(P->getRowMap()->getNodeNumElements()) / dofsPerNode != Teuchos::as<LocalOrdinal>(coords->getLocalLength()), Exceptions::RuntimeError,
                                            "Number of fine level nodes in coordinates is inconsistent with dof based information");
 
-    // communicate fine level coordinates if necessary
     if (pL.get<bool>("visualization: fine graph edges")) {
       fineGraph = Get<RCP<GraphBase> >(fineLevel, "Graph");
-
+      // communicate fine level coordinates
       RCP<Import> coordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coords->getMap(), fineGraph->GetImportMap());
       RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > ghostedCoords = Xpetra::MultiVectorFactory<double, LocalOrdinal, GlobalOrdinal, Node>::Build(fineGraph->GetImportMap(), coords->getNumVectors());
       ghostedCoords->doImport(*coords, *coordImporter, Xpetra::INSERT);
@@ -221,79 +213,41 @@ namespace MueLu {
       }
     }
 
-    // we have no information which node is root and which is not
-    // we could either look at the entries in P again or build some new root nodes
-    // assuming that root nodes are usually at the center of the aggregate
-    std::vector<bool> isRoot(numFineNodes, false);
-    for (LocalOrdinal i = 0; i < numLocalAggs; ++i) {
+    int levelID = fineLevel.GetLevelID();
 
-      double xCenter = 0.0;
-      double yCenter = 0.0;
-      double zCenter = 0.0;
+    VTKEmitter vtk(pL, comm->getSize(), levelID, comm->getRank(), nodeMap, Teuchos::null);
 
-      // loop over all nodes in aggregate i and determine center coordinates of aggregate
-      for( typename std::set<LocalOrdinal>::iterator it = localAggs[i].begin(); it != localAggs[i].end(); ++it) {
-        xCenter += xCoords[*it];
-        yCenter += yCoords[*it];
-        if(coords->getNumVectors() == 3) zCenter += zCoords[*it];
-      }
-      xCenter /= Teuchos::as<LocalOrdinal>(localAggs[i].size());
-      yCenter /= Teuchos::as<LocalOrdinal>(localAggs[i].size());
-      zCenter /= Teuchos::as<LocalOrdinal>(localAggs[i].size());
-
-      // loop over all nodes in aggregate i and find node which is closest to aggregate center
-      LocalOrdinal rootCandidate = -1;
-      double minDistance = Teuchos::ScalarTraits<double>::one() / Teuchos::ScalarTraits<double>::sfmin();
-      for( typename std::set<LocalOrdinal>::iterator it = localAggs[i].begin(); it != localAggs[i].end(); ++it) {
-        double tempx = xCenter - xCoords[*it];
-        double tempy = yCenter - yCoords[*it];
-        double tempz = 0.0;
-        if(coords->getNumVectors() == 3) tempz = zCenter - zCoords[*it];
-        double mydistance = 0.0;
-        mydistance += tempx*tempx;
-        mydistance += tempy*tempy;
-        mydistance += tempz*tempz;
-        mydistance = sqrt(mydistance);
-        if (mydistance <= minDistance) {
-          minDistance = mydistance;
-          rootCandidate = *it;
-        }
-      }
-
-      isRoot[rootCandidate] = true;
-    }
-
-    std::vector<LocalOrdinal> vertices;
-    std::vector<LocalOrdinal> geomSize;
     int vizLevel = pL.get<int>("visualization: start level");
-    if(vizLevel <= fineLevel.GetLevelID()) {
-
-      std::string aggStyle = pL.get<std::string>("visualization: style");
-      if(aggStyle == "Point Cloud")
-        this->doPointCloud(vertices, geomSize, numLocalAggs, numFineNodes);
-      else if(aggStyle == "Jacks")
-        this->doJacks(vertices, geomSize, numLocalAggs, numFineNodes, isRoot, vertex2AggId);
-      else if(aggStyle == "Convex Hulls") {
-        // TODO do a smarter distinction and check the number of z levels...
-        // loop over all coordinates and collect coordinate components in sets...
-        if(coords->getNumVectors() == 3)
-          this->doConvexHulls3D(vertices, geomSize, numLocalAggs, numFineNodes, isRoot, vertex2AggId, xCoords, yCoords, zCoords);
-        else if(coords->getNumVectors() == 2)
-          this->doConvexHulls2D(vertices, geomSize, numLocalAggs, numFineNodes, isRoot, vertex2AggId, xCoords, yCoords);
-      }
-      else if(aggStyle == "CGAL Convex Hulls") {
-#ifdef HAVE_MUELU_CGAL
-        if(coords->getNumVectors() == 3)
-          this->doCGALConvexHulls3D(vertices, geomSize, numLocalAggs, numFineNodes, isRoot, vertex2AggId, xCoords, yCoords, zCoords);
-        else if(coords->getNumVectors() == 2)
-          this->doCGALConvexHulls2D(vertices, geomSize, numLocalAggs, numFineNodes, isRoot, vertex2AggId, xCoords, yCoords);
-#endif
-      }
-      else
+    if(vizLevel <= levelID)
+    {
+      //do non-overlapping aggregates first
       {
-        GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls.\nDefaulting to Point Cloud." << std::endl;
-        aggStyle = "Point Cloud";
-        this->doPointCloud(vertices, geomSize, numLocalAggs, numFineNodes);
+        AggGeometry aggGeom(aggVerts, aggOffsets, nodeMap, comm->getRank(), xCoords, yCoords, zCoords);
+        std::string aggStyle = pL.get<std::string>("visualization: style");
+        if(!aggGeom.build(aggStyle))
+        {
+#ifdef HAVE_MUELU_CGAL
+          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls, Alpha Hulls.\nDefaulted to Point Cloud." << std::endl;
+#else
+          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls.\nDefaulted to Point Cloud." << std::endl;
+#endif
+        }
+        vtk.writeAggGeom(aggGeom);
+      }
+      //do overlapping aggregates if available
+      if(overlapping)
+      {
+        AggGeometry aggGeom(aggVertsOL, aggOffsetsOL, nodeMap, comm->getRank(), xCoords, yCoords, zCoords, true);
+        std::string aggStyle = pL.get<std::string>("visualization: style");
+        if(!aggGeom.build(aggStyle))
+        {
+#ifdef HAVE_MUELU_CGAL
+          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls, Alpha Hulls.\nDefaulted to Point Cloud." << std::endl;
+#else
+          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls.\nDefaulted to Point Cloud." << std::endl;
+#endif
+        }
+        vtk.writeAggGeom(aggGeom);
       }
     }
 
@@ -302,92 +256,18 @@ namespace MueLu {
       TEUCHOS_TEST_FOR_EXCEPTION(fineGraph == Teuchos::null, Exceptions::RuntimeError,
          "Could not get information about fine graph.");
 
-      std::vector<LocalOrdinal> fine_edges_vertices;
-      std::vector<LocalOrdinal> fine_edges_geomSize;
-      this->doGraphEdges(fine_edges_vertices, fine_edges_geomSize, fineGraph, xCoords, yCoords, zCoords);
-
-      std::string fEdgeFineFile = this->getFileName(comm->getSize(), comm->getRank(), fineLevel.GetLevelID(), pL);
-      std::string fEdgeFile = fEdgeFineFile.insert(fEdgeFineFile.rfind(".vtu"), "-finegraph");
-      std::ofstream edgeStream(fEdgeFile.c_str());
-
-      std::vector<int> uniqueFineEdges = this->makeUnique(fine_edges_vertices);
-      this->writeFileVTKOpening(edgeStream, uniqueFineEdges, fine_edges_geomSize);
-      this->writeFileVTKNodes(edgeStream, uniqueFineEdges, nodeMap);
-      this->writeFileVTKData(edgeStream, uniqueFineEdges, myAggOffset, vertex2AggId, comm->getRank());
-      this->writeFileVTKCoordinates(edgeStream, uniqueFineEdges, xCoords, yCoords, zCoords, coords->getNumVectors());
-      this->writeFileVTKCells(edgeStream, uniqueFineEdges, fine_edges_vertices, fine_edges_geomSize);
-      this->writeFileVTKClosing(edgeStream);
-      edgeStream.close();
+      EdgeGeometry egeom(fineGraph, Teuchos::null, dofsPerNode);
+      egeom.build();
+      vtk.writeEdgeGeom(egeom, true);
     }
-
-    // communicate fine level coordinates if necessary
-#if 0 // we don't have access to the coarse graph
-    if (pL.get<bool>("visualization: coarse graph edges")) {
-      RCP<GraphBase> coarseGraph = Get<RCP<GraphBase> >(coarseLevel, "Graph");
-
-      Teuchos::RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > coarsecoords = Get<RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > >(coarseLevel, "Coordinates");
-
-      RCP<Import> coarsecoordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coarsecoords->getMap(), coarseGraph->GetImportMap());
-      RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > coarseghostedCoords = Xpetra::MultiVectorFactory<double, LocalOrdinal, GlobalOrdinal, Node>::Build(coarseGraph->GetImportMap(), coarsecoords->getNumVectors());
-      coarseghostedCoords->doImport(*coarsecoords, *coarsecoordImporter, Xpetra::INSERT);
-      coarsecoords = coarseghostedCoords;
-
-      Teuchos::ArrayRCP<const double> cx = Teuchos::arcp_reinterpret_cast<const double>(coarsecoords->getData(0));
-      Teuchos::ArrayRCP<const double> cy = Teuchos::arcp_reinterpret_cast<const double>(coarsecoords->getData(1));
-      Teuchos::ArrayRCP<const double> cz = Teuchos::null;
-      if(coarsecoords->getNumVectors() == 3) {
-        cz = Teuchos::arcp_reinterpret_cast<const double>(coarsecoords->getData(2));
-      }
-
-      Teuchos::RCP<const Map> coarsenodeMap = coarsecoords->getMap();
-
-      std::vector<LocalOrdinal> coarse_edges_vertices;
-      std::vector<LocalOrdinal> coarse_edges_geomSize;
-      this->doGraphEdges(coarse_edges_vertices, coarse_edges_geomSize, coarseGraph, cx, cy, cz);
-
-      std::string cEdgeFineFile = this->getFileName(comm->getSize(), comm->getRank(), coarseLevel.GetLevelID(), pL);
-      std::string cEdgeFile = cEdgeFineFile.insert(cEdgeFineFile.rfind(".vtu"), "-coarsegraph");
-      std::ofstream cedgeStream(cEdgeFile.c_str());
-
-      std::vector<int> uniqueCoarseEdges = this->makeUnique(coarse_edges_vertices);
-      this->writeFileVTKOpening(cedgeStream, uniqueCoarseEdges, coarse_edges_geomSize);
-      this->writeFileVTKNodes(cedgeStream, uniqueCoarseEdges, coarsenodeMap);
-      //this->writeFileVTKData(edgeStream, uniqueCoarseEdges, myAggOffset, vertex2AggId, comm->getRank());
-      this->writeFileVTKCoordinates(cedgeStream, uniqueCoarseEdges, cx, cy, cz, coarsecoords->getNumVectors());
-      this->writeFileVTKCells(cedgeStream, uniqueCoarseEdges, coarse_edges_vertices, coarse_edges_geomSize);
-      this->writeFileVTKClosing(cedgeStream);
-      cedgeStream.close();
-    }
-#endif
-
-    if(pL.get<int>("visualization: start level") <= fineLevel.GetLevelID()) {
-      // write out coarsening information
-      std::string filenameToWrite = this->getFileName(comm->getSize(), comm->getRank(), fineLevel.GetLevelID(), pL);
-      std::ofstream fout (filenameToWrite.c_str());
-
-      std::vector<int> uniqueFine = this->makeUnique(vertices);
-      this->writeFileVTKOpening(fout, uniqueFine, geomSize);
-      this->writeFileVTKNodes(fout, uniqueFine, nodeMap);
-      this->writeFileVTKData(fout, uniqueFine, myAggOffset, vertex2AggId, comm->getRank());
-      this->writeFileVTKCoordinates(fout, uniqueFine, xCoords, yCoords, zCoords, coords->getNumVectors());
-      this->writeFileVTKCells(fout, uniqueFine, vertices, geomSize);
-      this->writeFileVTKClosing(fout);
-      fout.close();
-
-      // create pvtu file
-      if(comm->getRank() == 0) {
-        std::string pvtuFilename = this->getPVTUFileName(comm->getSize(), comm->getRank(), fineLevel.GetLevelID(), pL);
-        std::string baseFname = this->getBaseFileName(comm->getSize(), fineLevel.GetLevelID(), pL);
-        std::ofstream pvtu(pvtuFilename.c_str());
-        this->writePVTU(pvtu, baseFname, comm->getSize(), pL.get<bool>("visualization: fine graph edges"));
-        pvtu.close();
-      }
-    }
+    
+    vtk.writePVTU();
 
     if(comm->getRank() == 0 && pL.get<bool>("visualization: build colormap")) {
-      this->buildColormap();
+      vtk.buildColormap();
     }
   }
 } // namespace MueLu
 
 #endif /* MUELU_AGGREGATIONEXPORTFACTORY_DEF_HPP_ */
+

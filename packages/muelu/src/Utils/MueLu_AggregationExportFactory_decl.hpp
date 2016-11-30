@@ -105,7 +105,7 @@ namespace MueLu {
     The * in the @c requested column states that the data is requested as input with all dependencies (see AggregationExportFactory::DeclareInput).
   */
   template <class Scalar = double, class LocalOrdinal = int, class GlobalOrdinal = LocalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
-  class AggregationExportFactory : public VizHelpers::GeometryBuilder<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+  class AggregationExportFactory : public TwoLevelFactoryBase, public VizHelpers::GeometryBuilder<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
 #undef MUELU_AGGREGATIONEXPORTFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
@@ -114,15 +114,7 @@ namespace MueLu {
     //@{
 
     //! Constructor.
-    AggregationExportFactory() :
-      doFineGraphEdges_(false),
-      doCoarseGraphEdges_(false),
-      numNodes_(0),
-      numAggs_(0),
-      dims_(0),
-      myRank_(-1),
-      aggsOffset_(0)
-    { }
+    AggregationExportFactory();
 
     //! Destructor.
     virtual ~AggregationExportFactory() { }
@@ -144,46 +136,6 @@ namespace MueLu {
     void Build(Level &fineLevel, Level &coarseLevel) const;
 
     //@}
-
-  private:
-    //Break different viz styles into separate functions for organization:
-    void doJacksPlus_(std::vector<int>& vertices, std::vector<int>& geomSizes) const;
-    void doConvexHulls(std::vector<int>& vertices, std::vector<int>& geomSizes) const;
-    #ifdef HAVE_MUELU_CGAL
-    void doAlphaHulls_(std::vector<int>& vertices, std::vector<int>& geomSizes) const;
-    void doAlphaHulls2D_(std::vector<int>& vertices, std::vector<int>& geomSizes) const;
-    void doAlphaHulls3D_(std::vector<int>& vertices, std::vector<int>& geomSizes) const;
-    #endif
-    void doGraphEdges_(std::ofstream& fout, Teuchos::RCP<Matrix>& A, Teuchos::RCP<GraphBase>& G, bool fine, int dofs) const; //add geometry to display node connections from a matrix. Connections in graph but not matrix have different color.
-
-    // write VTK data
-    void writeFile_(std::ofstream& fout, std::string styleName, std::vector<int>& vertices, std::vector<int>& geomSizes) const;
-    void buildColormap_() const;
-    void writePVTU_(std::ofstream& pvtu, std::string baseFname, int numProcs) const;
-
-    static const int CONTRAST_1_ = -1;
-    static const int CONTRAST_2_ = -2;
-    static const int CONTRAST_3_ = -3;
-
-    //Data that the different styles need to have available when building geometry
-    mutable Teuchos::ArrayRCP<const double> xCoords_; //fine local coordinates
-    mutable Teuchos::ArrayRCP<const double> yCoords_;
-    mutable Teuchos::ArrayRCP<const double> zCoords_;
-    mutable Teuchos::ArrayRCP<const double> cx_; //coarse local coordinates
-    mutable Teuchos::ArrayRCP<const double> cy_;
-    mutable Teuchos::ArrayRCP<const double> cz_;
-    mutable Teuchos::ArrayRCP<LocalOrdinal> vertex2AggId_;
-    mutable Teuchos::ArrayRCP<LocalOrdinal> aggSizes_;
-    mutable std::vector<bool> isRoot_;
-    mutable bool doFineGraphEdges_;
-    mutable bool doCoarseGraphEdges_;
-    mutable int numNodes_;
-    mutable int numAggs_;
-    mutable int dims_;
-    mutable int myRank_;
-    mutable Teuchos::RCP<const Map> nodeMap_; //map used in A and Coordinates to map local ordinals to global ordinals. Need the whole map especially if it's not contiguous.
-    mutable Teuchos::RCP<const Map> nodeMapCoarse_; //Map for Ac
-    mutable int aggsOffset_;            //in a global list of aggregates, the offset of local aggregate indices
   }; // class AggregationExportFactory
 } // namespace MueLu
 
