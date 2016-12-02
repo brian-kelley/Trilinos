@@ -260,6 +260,7 @@ namespace VizHelpers {
   AggGeometry(const Teuchos::RCP<Aggregates>& aggs, const std::vector<bool>& isRoot, const Teuchos::RCP<const Teuchos::Comm>& comm,
       const Teuchos::RCP<MultiVector>& coords)
   {
+    bubbles_ = false;
     dims = coords->getNumVectors();
     this->x_ = coords->getData(0);
     this->y_ = coords->getData(1);
@@ -314,8 +315,9 @@ namespace VizHelpers {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   AggGeometry(const Teuchos::RCP<Matrix>& P, const Teuchos::RCP<Map>& map, const Teuchos::RCP<Teuchos::Comm>& comm,
-      const Teuchos::RCP<MultiVector>& coords)
+      const Teuchos::RCP<MultiVector>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent)
   {
+    bubbles_ = !ptent;
     //use P (possibly including non-local entries)
     //to populate aggVerts_, aggOffsets_, vertex2Agg_, firstAgg_
     dims = coords->getNumVectors();
@@ -327,6 +329,7 @@ namespace VizHelpers {
     }
     this->rank_ = comm->getRank();
     this->nprocs_ = comm->getSize();
+
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>

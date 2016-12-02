@@ -117,6 +117,13 @@ namespace MueLu {
     //! Build an object with this factory.
     void Build(Level &fineLevel, Level &coarseLevel) const;
 
+  private:
+    //! Get dofs per node from P/Ptent
+    static LocalOrdinal getDofsPerNode(const Teuchos::RCP<Matrix>& P);
+
+    //! Get cols per node from P/Ptent
+    static LocalOrdinal getColsPerNode(const Teuchos::RCP<Matrix>& P);
+
     //@}
 
    }; // class CoarseningVisualizationFactory

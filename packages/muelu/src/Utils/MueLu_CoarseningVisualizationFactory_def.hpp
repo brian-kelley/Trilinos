@@ -106,46 +106,20 @@ namespace MueLu {
     const ParameterList & pL = this->GetParameterList();
     if (this->GetFactory("P") != Teuchos::null)
       P = Get< RCP<Matrix> >(coarseLevel, "P");
-    if (this->GetFactory("P") == Teuchos::null)
+    if (this->GetFactory("Ptent") != Teuchos::null)
       Ptent = Get< RCP<Matrix> >(coarseLevel, "Ptent");
+
+    bool doGraphEdges = pL.get<bool>("visualization: fine graph edges", false);
 
     RCP<const Teuchos::Comm<int> > comm = P->getRowMap()->getComm();
 
-    LocalOrdinal dofsPerNode = 1;
-    LocalOrdinal stridedRowOffset = 0;
-    RCP<const StridedMap> strRowMap    = Teuchos::null;
-    if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null) {
-      strRowMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps"));
-      LocalOrdinal blockid       = strRowMap->getStridedBlockId();
-      if (blockid > -1) {
-        std::vector<size_t> stridingInfo = strRowMap->getStridingData();
-        for (size_t j = 0; j < Teuchos::as<size_t>(blockid); j++)
-          stridedRowOffset += stridingInfo[j];
-        dofsPerNode = Teuchos::as<LocalOrdinal>(stridingInfo[blockid]);
-      } else {
-        dofsPerNode = strRowMap->getFixedBlockSize();
-      }
-      GetOStream(Runtime1) << "CoarseningVisualizationFactory::Build():" << " #dofs per node = " << dofsPerNode << std::endl;
-    }
-
-    LocalOrdinal columnsPerNode = dofsPerNode;
-    LocalOrdinal stridedColumnOffset = 0;
-    //note: strDomainMap is a non-overlapping map of nodes
     RCP<const StridedMap> strDomainMap = Teuchos::null;
     if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null) {
       strDomainMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getColMap("stridedMaps"));
-      LocalOrdinal blockid = strDomainMap->getStridedBlockId();
-
-      if (blockid > -1) {
-        std::vector<size_t> stridingInfo = strDomainMap->getStridingData();
-        for (size_t j = 0; j < Teuchos::as<size_t>(blockid); j++)
-          stridedColumnOffset += stridingInfo[j];
-        columnsPerNode = Teuchos::as<LocalOrdinal>(stridingInfo[blockid]);
-      } else {
-        columnsPerNode = strDomainMap->getFixedBlockSize();
-      }
-      GetOStream(Runtime1) << "CoarseningVisualizationFactory::Build():" << " #columns per node = " << columnsPerNode << std::endl;
     }
+
+    TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap.is_null(), Exceptions::RuntimeError,
+        "CoarseningVisualizationFactory requires P/Ptent to have strided domain map but it did not.");
 
     // TODO add support for overlapping aggregates
     //TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap->getNodeNumElements() != P->getColMap()->getNodeNumElements(), Exceptions::RuntimeError,
@@ -183,7 +157,7 @@ namespace MueLu {
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::as<LO>(P->getRowMap()->getNodeNumElements()) / dofsPerNode != Teuchos::as<LocalOrdinal>(coords->getLocalLength()), Exceptions::RuntimeError,
                                            "Number of fine level nodes in coordinates is inconsistent with dof based information");
 
-    if (pL.get<bool>("visualization: fine graph edges")) {
+    if (doGraphEdges)
       fineGraph = Get<RCP<GraphBase> >(fineLevel, "Graph");
       // communicate fine level coordinates
       RCP<Import> coordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coords->getMap(), fineGraph->GetImportMap());
@@ -193,13 +167,6 @@ namespace MueLu {
     }
 
     Teuchos::RCP<const Map> nodeMap = coords->getMap();
-
-    Teuchos::ArrayRCP<const double> xCoords = Teuchos::arcp_reinterpret_cast<const double>(coords->getData(0));
-    Teuchos::ArrayRCP<const double> yCoords = Teuchos::arcp_reinterpret_cast<const double>(coords->getData(1));
-    Teuchos::ArrayRCP<const double> zCoords = Teuchos::null;
-    if(coords->getNumVectors() == 3) {
-      zCoords = Teuchos::arcp_reinterpret_cast<const double>(coords->getData(2));
-    }
 
     // determine number of nodes on fine level
     LocalOrdinal numFineNodes = Teuchos::as<LocalOrdinal>(coords->getLocalLength());
@@ -220,6 +187,42 @@ namespace MueLu {
     int vizLevel = pL.get<int>("visualization: start level");
     if(vizLevel <= levelID)
     {
+      if(!P.is_null())
+      {
+        LocalOrdinal dofsPerNode = getDofsPerNode(P);
+        LocalOrdinal colsPerNode = getColsPerNode(P);
+        AggGeometry aggGeom(P, nodeMap, comm, coords, dofsPerNode, colsPerNode, false);
+        if(!aggGeom.build(aggStyle))
+        {
+#ifdef HAVE_MUELU_CGAL
+          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls, Alpha Hulls.\nDefaulted to Point Cloud." << std::endl;
+#else
+          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls.\nDefaulted to Point Cloud." << std::endl;
+#endif
+        }
+        vtk.writeAggGeom(aggGeom);
+      }
+      if(!Ptent.is_null())
+      {
+        LocalOrdinal dofsPerNode = getDofsPerNode(Ptent);
+        LocalOrdinal colsPerNode = getColsPerNode(Ptent);
+        AggGeometry aggGeom(Ptent, nodeMap, comm, coords, dofsPerNode, colsPerNode, true);
+        if(!aggGeom.build(aggStyle))
+        {
+#ifdef HAVE_MUELU_CGAL
+          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls, Alpha Hulls.\nDefaulted to Point Cloud." << std::endl;
+#else
+          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls.\nDefaulted to Point Cloud." << std::endl;
+#endif
+        }
+        vtk.writeAggGeom(aggGeom);
+      }
+      if(doGraphEdges)
+      {
+
+      }
+    }
+    /*
       //do non-overlapping aggregates first
       {
         AggGeometry aggGeom(aggVerts, aggOffsets, nodeMap, comm->getRank(), xCoords, yCoords, zCoords);
@@ -234,22 +237,8 @@ namespace MueLu {
         }
         vtk.writeAggGeom(aggGeom);
       }
-      //do overlapping aggregates if available
-      if(overlapping)
-      {
-        AggGeometry aggGeom(aggVertsOL, aggOffsetsOL, nodeMap, comm->getRank(), xCoords, yCoords, zCoords, true);
-        std::string aggStyle = pL.get<std::string>("visualization: style");
-        if(!aggGeom.build(aggStyle))
-        {
-#ifdef HAVE_MUELU_CGAL
-          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls, Alpha Hulls.\nDefaulted to Point Cloud." << std::endl;
-#else
-          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls.\nDefaulted to Point Cloud." << std::endl;
-#endif
-        }
-        vtk.writeAggGeom(aggGeom);
-      }
     }
+    */
 
     // write out fine edge information
     if(pL.get<bool>("visualization: fine graph edges")) {
@@ -267,6 +256,58 @@ namespace MueLu {
       vtk.buildColormap();
     }
   }
+
+  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+  LocalOrdinal CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+  getDofsPerNode(const Teuchos::RCP<Matrix>& P)
+  {
+    LocalOrdinal dofsPerNode = 1;
+    //LocalOrdinal stridedRowOffset = 0;
+    RCP<const StridedMap> strRowMap    = Teuchos::null;
+    if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null) {
+      strRowMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps"));
+      LocalOrdinal blockid       = strRowMap->getStridedBlockId();
+      if (blockid > -1) {
+        std::vector<size_t> stridingInfo = strRowMap->getStridingData();
+        //for (size_t j = 0; j < Teuchos::as<size_t>(blockid); j++)
+        //  stridedRowOffset += stridingInfo[j];
+        dofsPerNode = Teuchos::as<LocalOrdinal>(stridingInfo[blockid]);
+      } else {
+        dofsPerNode = strRowMap->getFixedBlockSize();
+      }
+      GetOStream(Runtime1) << "CoarseningVisualizationFactory::Build():" << " #dofs per node = " << dofsPerNode << std::endl;
+    }
+    else
+    {
+    }
+    return dofsPerNode;
+  }
+
+  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+  LocalOrdinal CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+  getColsPerNode(const Teuchos::RCP<Matrix>& P)
+  {
+    LocalOrdinal columnsPerNode = dofsPerNode;
+    LocalOrdinal stridedColumnOffset = 0;
+    //note: strDomainMap is a non-overlapping map of nodes
+    RCP<const StridedMap> strDomainMap = Teuchos::null;
+    if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null) {
+      strDomainMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getColMap("stridedMaps"));
+      LocalOrdinal blockid = strDomainMap->getStridedBlockId();
+
+      if (blockid > -1) {
+        std::vector<size_t> stridingInfo = strDomainMap->getStridingData();
+        for (size_t j = 0; j < Teuchos::as<size_t>(blockid); j++)
+          stridedColumnOffset += stridingInfo[j];
+        columnsPerNode = Teuchos::as<LocalOrdinal>(stridingInfo[blockid]);
+      } else {
+        columnsPerNode = strDomainMap->getFixedBlockSize();
+      }
+      GetOStream(Runtime1) << "CoarseningVisualizationFactory::Build():" << " #columns per node = " << columnsPerNode << std::endl;
+    }
+    return columnsPerNode;
+  }
+
 } // namespace MueLu
 
 #endif /* MUELU_AGGREGATIONEXPORTFACTORY_DEF_HPP_ */

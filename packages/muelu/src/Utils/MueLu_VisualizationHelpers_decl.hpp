@@ -175,7 +175,7 @@ namespace VizHelpers {
       //! Aggregates can be overlapping, in the case of smoothed P
       //! Number of dimensions inferred from whether z is null
       AggGeometry(const Teuchos::RCP<Matrix>& P, const Teuchos::RCP<Map>& map, const Teuchos::RCP<Teuchos::Comm>& comm,
-          const Teuchos::RCP<MultiVector>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode);
+          const Teuchos::RCP<MultiVector>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent);
 
       //! Generate the geometry. style is the "visualization: agg style" parameter value, and doesn't need to be valid.
       //! If style not valid, default to Point Cloud and return false.
