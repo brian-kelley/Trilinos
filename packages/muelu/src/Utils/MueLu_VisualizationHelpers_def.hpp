@@ -261,6 +261,8 @@ namespace VizHelpers {
       const Teuchos::RCP<MultiVector>& coords)
   {
     bubbles_ = false;
+    numNodes_ = coords->getLocalLength();
+    numLocalAggs_ = aggs->GetNumAggregates();
     dims = coords->getNumVectors();
     this->x_ = coords->getData(0);
     this->y_ = coords->getData(1);
@@ -321,15 +323,209 @@ namespace VizHelpers {
     //use P (possibly including non-local entries)
     //to populate aggVerts_, aggOffsets_, vertex2Agg_, firstAgg_
     dims = coords->getNumVectors();
-    this->x_ = coords->getData(0);
-    this->y_ = coords->getData(1);
-    if(dims == 3)
+    auto xVals = coords->getData(0);
+    auto yVals = coords->getData(1);
+    auto zVals = coords->getData(2);
+    //lambdas for getting x,y,z for a local row (just for use within this function)
+    auto xCoord = [&] (LocalOrdinal row) -> double {return xVals[row];};
+    auto yCoord = [&] (LocalOrdinal row) -> double {return yVals[row];};
+    auto zCoord =
+      [&] (LocalOrdinal row) -> double
     {
-      this->z_ = coords->getData(2);
-    }
+      if(zVals.is_null())
+        return 0;
+      else
+        return zVals[row];
+    };
     this->rank_ = comm->getRank();
     this->nprocs_ = comm->getSize();
 
+    RCP<const StridedMap> strDomainMap = Teuchos::null;
+    if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null)
+    {
+      strDomainMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getColMap("stridedMaps"));
+    }
+    TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap.is_null(), Exceptions::RuntimeException, "Aggregate geometry requires the strided domain map from P/Ptent, but it was null.");
+    numLocalAggs_ = strDomainMap->getNodeNumElements() / columnsPerNode;
+    numNodes_ = coords->getLocalLength();
+    auto rowMap = P->getRowMap();
+    auto colMap = P->getColMap();
+    if(ptent)
+    {
+      //know that aggs are not overlapping, so save time by using only local row views
+      std::vector< std::set<LocalOrdinal> > localAggs(numLocalAggs_);
+      // do loop over all local rows of prolongator and extract column information
+      for (LocalOrdinal row = 0; row < Teuchos::as<LocalOrdinal>(P->getRowMap()->getNodeNumElements()); ++row)
+      {
+        ArrayView<const LocalOrdinal> indices;
+        ArrayView<const Scalar> vals;
+        P->getLocalRowView(row, indices, vals);
+        for(auto c = indices.begin(); c != indices.end(); ++c)
+        {
+          localAggs[(*c)/columnsPerNode].insert(row/dofsPerNode);
+        }
+      }
+      //fill aggOffsets
+      aggOffsets_.resize(numLocalAggs + 1);
+      LocalOrdinal accum = 0;
+      for(LocalOrdinal i = 0; i < numLocalAggs; i++)
+      {
+        aggOffsets_[i] = accum;
+        accum += localAggs[i].size();
+      }
+      aggOffsets_[numLocalAggs] = accum;
+      //fill aggVerts
+      aggVerts_.resize(accum);
+      //number of vertices inserted into each aggregate so far
+      std::vector<int> numInserted(accum, 0);
+      for(auto& agg : localAggs)
+      {
+        for(auto v : agg)
+        {
+          aggVerts_[aggOffsets_[i] + numInserted[i]++] = rowMap->getGlobalElement(v);
+        }
+      }
+      //populate vertex positions
+      for(LocalOrdinal i = 0; i < numNodes_; i++)
+      {
+        verts_[map->getGlobalElement(i)] = Vec3(xCoord(i), yCoord(i), zCoord(i));
+      }
+    }
+    else  //smoothed P
+    {
+      //aggs can overlap and locally owned vertices can be included in off-process aggregates
+      //such vert-agg pairs must be communicated to the process owning the aggregate
+      //use the VertexData struct to communicate each vertex <-> agg pair
+      struct VertexData
+      {
+        VertexData() {}
+        VertexData(GlobalOrdinal agg, GlobalOrdinal vertex, double x, double y, double z = 0)
+        {
+          this->agg = agg;
+          this->vertex = vertex;
+          this->x = x;
+          this->y = y;
+          this->z = z;
+        }
+        GlobalOrdinal agg;
+        GlobalOrdinal vertex;
+        double x;
+        double y;
+        double z;
+      };
+      int rank = comm->getRank();
+      int nprocs = comm->getSize();
+      //Temporary but easy to work with representation of all local aggregates and the global rows they contain
+      std::vector<std::set<GlobalOrdinal>> aggMembers;
+      //First, get all local vert-agg pairs as VertexData
+      vector<VertexData> localVerts;
+      {
+        //Do this by getting local row views of every local row and adding LocalOrdinals to a std::set representing agg
+        std::vector< std::set<LocalOrdinal> > localAggs(numLocalAggs_);
+        // do loop over all local rows of prolongator and extract column information
+        for (LocalOrdinal row = 0; row < Teuchos::as<LocalOrdinal>(P->getRowMap()->getNodeNumElements()); ++row)
+        {
+          ArrayView<const LocalOrdinal> indices;
+          ArrayView<const Scalar> valsUnused;
+          P->getLocalRowView(row, indices, valsUnused);
+          for(auto c = indices.begin(); c != indices.end(); ++c)
+          {
+            aggMembers[(*c) / columnsPerNode].insert(row / dofsPerNode);
+          }
+        }
+      }
+      //next, get VertexData for owned rows in non-owned aggregates
+      vector<VertexData> ghost;
+      for(int i = 0; i < nprocs; i++)
+      {
+        //find all local nonzeros that are in aggregates owned by proc i
+        vector<VertexData> toSend;
+        if(i != rank)
+        {
+          //all VertexData to send from proc rank to proc i
+          for(size_t row = 0; row < rowMap->getGlobalNumElements(); row++)
+          { 
+            Teuchos::ArrayView<const GlobalOrdinal> indices;
+            Teuchos::ArrayView<const Scalar> values;
+            P->getGlobalRowView(row, indices, values);
+            //for each entry, ask the col map whether the column is owned
+            for(size_t entry = 0; entry < indices.size(); entry++)
+            {
+              if(colMap->isNodeGlobalElement(indices[entry]))
+              {
+                //record this vertex-aggregate pair
+                GlobalOrdinal thisAgg = entry / columnsPerNode;
+                GlobalOrdinal thisVert = rowMap->getGlobalElement(row / dofsPerNode);
+                toSend.emplace_back(thisAgg, thisVert, xCoord(thisVert), yCoord(thisVert), zCoord(thisVert));
+              }
+            }
+          }
+        }
+        //now, gather all toSend arrays to proc i from all other procs
+        {
+          vector<int> sendCounts(nprocs);
+          vector<int> localSendCounts(nprocs, 0);
+          localSendCounts[rank] = toSend.size();
+          Teuchos::reduceAll<int, int>(*comm, Teuchos::REDUCE_MAX, nprocs, &localSendCounts[0], &sendCounts[0]);
+          //locally get recvDispls as prefix sum from sendCounts
+          vector<int> recvDispls(nprocs, 0);
+          int runningTotal = 0;
+          for(int j = 0; j < nprocs; j++)
+          {
+            recvDispls[j] = runningTotal;
+            runningTotal += sendCounts[j];
+          }
+          //note: in the next few lines, ghost should only be modified on process i
+          //running total is now the total number of VertexData to receive on proc i
+          if(i == rank)
+            ghost.resize(runningTotal);
+          Teuchos::gatherv<int, VertexData>(&toSend[0], toSend.size(), &ghost[0], &sendCounts[0], &recvDispls[0], i, *comm);
+          if(i == rank)
+          {
+            //add ghosts' positions and agg info
+            for(VertexData& it : ghost)
+            {
+              verts_[it.vertex] = Vec3(it.x, it.y, it.z);
+              aggMembers[it.agg].insert(it.vertex);
+            }
+          }
+        }
+      }
+      //now that aggMembers is fully populated with both local and nonlocal entries, populate aggVerts_ and aggOffsets_
+      GlobalOrdinal totalAggVerts = 0;
+      aggOffsets_.resize(numLocalAggs_ + 1);
+      for(LocalOrdinal i = 0; i < numLocalAggs_; i++)
+      {
+        aggOffsets_[i] = totalAggVerts;
+        totalAggVerts += aggMembers[i].size();
+      }
+      aggOffsets_[numLocalAggs_] = totalAggVerts;
+      aggVerts_.resize(totalAggVerts);
+      for(LocalOrdinal i = 0; i < numLocalAggs_; i++)
+      {
+        //sort the global rows belonging to this agg
+        std::vector<GlobalOrdinal> thisAggVerts;
+        thisAggVerts.reserve(aggMemebers[i].size());
+        std::copy(aggMembers[i].begin(), aggMembers[i].end(), std::back_inserter(thisAggVerts));
+        std::sort(thisAggVerts.begin(), thisAggVerts.end());
+        //copy this agg's verts into correct slice of aggVerts_
+        for(size_t j = 0; j < thisAggVerts.size(); j++)
+        {
+          aggVerts_[aggOffsets_[i] + j] = thisAggVerts[j];
+        }
+      }
+    }
+    // determine number of aggs per proc and calculate local agg offset (aka minimum global agg index)
+    {
+      std::vector<GlobalOrdinal> myLocalAggsPerProc(comm->getSize(), 0);
+      std::vector<GlobalOrdinal> numLocalAggsPerProc(comm->getSize(), 0);
+      myLocalAggsPerProc[comm->getRank()] = numLocalAggs;
+      Teuchos::reduceAll<int, GlobalOrdinal>(*comm, Teuchos::REDUCE_MAX, comm->getSize(), &myLocalAggsPerProc[0], &numLocalAggsPerProc[0]);
+      firstAgg_ = 0;
+      for(int i = 0; i < comm->getRank(); ++i) {
+        firstAgg_ += numLocalAggsPerProc[i];
+      }
+    }
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -380,10 +576,16 @@ namespace VizHelpers {
   pointCloud() {
     geomVerts_.reserve(numFineNodes);
     geomSizes_.reserve(numFineNodes);
-    for(LocalOrdinal i = 0; i < numNodes_; i++)
+    for(LocalOrdinal i = 0; i < numLocalAggs_; i++)
     {
-      geomVerts_.push_back(i);
-      geomSizes_.push_back(1);
+      GlobalOrdinal numVerts = aggOffsets_[i + 1] - aggOffsets_[i];
+      for(GlobalOrdinal j = 0; j < numVerts; j++)
+      {
+        GlobalOrdinal go = aggVerts_[aggOffsets_[i] + j];
+        geomVerts_.push_back(go);
+        geomAggs_.push_back(i);
+        geomSizes_.push_back(1);
+      }
     }
   }
 
@@ -395,44 +597,32 @@ namespace VizHelpers {
     if(!aggs_.is_null())
     {
       //can ask Aggregates whether each node is root
-      isRoot_.reserve(numNodes_);
       for(LocalOrdinal i = 0; i < numNodes_; i++)
       {
-        isRoot_.push_back(aggregates->IsRoot(i));
+        isRoot_(map->getGlobalElement(i)) = aggregates->IsRoot(i);
       }
     }
     else
     {
-      isRoot_.resize(numNodes_, false);
       //must fake the roots, assume root of each agg is probably
       //the vertex closest to average position of vertices in agg
       for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
       {
-        double avgX = 0;
-        double avgY = 0;
-        double avgZ = 0;
+        Vec3 avgPos(0, 0, 0);
         int aggSize = aggOffsets_[agg + 1] - aggOffsets_[agg];
         for(LocalOrdinal i = aggOffsets_[agg]; i < aggOffsets_[agg + 1]; i++)
         {
-          LocalOrdinal vert = aggVerts_[i];
-          avgX += x_[vert];
-          avgY += y_[vert];
-          if(dims == 3)
-            avgZ += z_[vert];
+          LocalOrdinal vert = verts_[aggVerts_[i]];
         }
-        avgX /= aggSize;
-        avgY /= aggSize;
-        avgZ /= aggSize;
-        LocalOrdinal centerVert;
+        avgPos *= (1.0 / aggSize);
+        GlobalOrdinal centerVert;
         //distance squared between centerVert and avg
         double distSquared = 1e30;
-        for(LocalOrdinal i = aggOffsets_[agg]; i < aggOffsets_[agg + 1]; i++)
+        for(GlobalOrdinal i = aggOffsets_[agg]; i < aggOffsets_[agg + 1]; i++)
         {
-          LocalOrdinal vert = aggVerts_[i];
+          GlobalOrdinal vert = aggVerts_[i];
           //check distance between v and avg
-          double ds = (x_[vert] - avgX) * (x_[vert] - avgX) + (y_[vert] - avgY) * (y_[vert] - avgY);
-          if(dims == 3)
-            ds += (z_[vert] - avgZ) * (z_[vert] - avgZ);
+          double ds = mag(verts_[vert] - avgPos);
           if(ds < distSquared)
           {
             distSquared = ds;
@@ -451,15 +641,15 @@ namespace VizHelpers {
     {
       computeIsRoot();
     }
-    for(LocalOrdinal agg = 0; agg < numLocalAggs_; i++)
+    for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
     {
       //iterate through aggregate's vertices to find root
-      LocalOrdinal root = -1;
-      LocalOrdinal aggStart = aggOffsets_[agg];
-      LocalOrdinal aggEnd = aggOffsets_[agg + 1];
-      for(LocalOrdinal i = aggStart; i < aggEnd; i++)
+      GlobalOrdinal root = -1;
+      GlobalOrdinal aggStart = aggOffsets_[agg];
+      GlobalOrdinal aggEnd = aggOffsets_[agg + 1];
+      for(GlobalOrdinal i = aggStart; i < aggEnd; i++)
       {
-        int vert = aggVerts_[i];
+        GlobalOrdinal vert = aggVerts_[i];
         if(isRoot_[vert])
         {
           root = vert;
@@ -470,13 +660,15 @@ namespace VizHelpers {
           std::string("MueLu: \"Jacks\" aggregate visualization requires a root vertex "
             "per aggregate, but aggregate ") + to_string(agg) + " on proc " + to_string(rank) + " does not have a root.");
       //for each vert in agg (except root), make a line segment between the vert and root
-      for(LocalOrdinal i = aggStart; i < aggEnd; i++)
+      for(GlobalOrdinal i = aggStart; i < aggEnd; i++)
       {
         int vert = aggVerts_[i];
         if(vert == root)
           continue;
         geomVerts_.push_back(vert);
+        geomAggs_.push(back(agg));
         geomVerts_.push_back(root);
+        geomAggs_.push(back(agg));
         geomSizes_.push_back(2);
       }
     }
@@ -485,27 +677,32 @@ namespace VizHelpers {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   convexHulls2D() {
-    for(int agg = 0; agg < numLocalAggs; agg++) {
-      int aggStart = aggOffsets_[agg];
-      int aggEnd = aggOffsets_[agg + 1];
-      int aggSize = aggEnd - aggStart;
+    for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++) {
+      GlobalOrdinal aggStart = aggOffsets_[agg];
+      GlobalOrdial aggEnd = aggOffsets_[agg + 1];
+      GlobalOrdinal aggSize = aggEnd - aggStart;
       if(aggSize == 1) {
+        //aggregate is a point
         geomVerts_.push_back(aggVerts_[aggStart]);
+        geomAggs_.push_back(agg);
         geomSizes_.push_back(1);
         continue;
       }
       if(aggNodes.size() == 2) {
+        //aggregate is a line
         geomVerts_.push_back(aggVerts_[aggStart]);
+        geomAggs_.push_back(agg);
         geomVerts_.push_back(aggVerts_[aggStart + 1]);
+        geomAggs_.push_back(agg);
         geomSizes_.push_back(2);
         continue;
       }
       //check if all points are collinear, need to explicitly draw a line in that case.
       {
         //find first pair (v1, v2) of vertices that are not the same, in case multiple nodes share 
-        int iter = 2;
-        int v1 = aggVerts_[aggStart];
-        int v2 = aggVerts_[aggStart + 1];
+        GlobalOrdinal iter = 2;
+        GlobalOrdinal v1 = aggVerts_[aggStart];
+        GlobalOrdinal v2 = aggVerts_[aggStart + 1];
         while(x_[v1] == x_[v2] && y_[v1] == y_[v2] && (iter < aggSize))
         {
           v2 = aggVerts_[aggStart + iter++];
@@ -514,6 +711,7 @@ namespace VizHelpers {
         {
           //all vertices in agg have same position
           geomVerts_.push_back(aggVerts_[aggStart]);
+          geomAggs_.push_back(agg);
           geomSizes_.push_back(1);
           continue;
         }
@@ -532,11 +730,11 @@ namespace VizHelpers {
         {
           //all vertices collinear
           //find min and max coordinates in agg and make line segment between them
-          int minVert = aggVerts_[aggStart];
-          int maxVert = minVert;
-          for(int i = 1; i < aggSize; i++)
+          GlobalOrdinal minVert = aggVerts_[aggStart];
+          GlobalOrdinal maxVert = minVert;
+          for(GlobalOrdinal i = 1; i < aggSize; i++)
           {
-            int v = aggVerts_[aggStart + i];
+            GlobalOrdinal v = aggVerts_[aggStart + i];
             //compare X first and then use Y as a tiebreak (will always find 2 most distant points on the line)
             if(x_[v] < x_[minVert] || (x_[v] == x_[minVert] && y_[v] < y_[minVert]))
             {
@@ -548,12 +746,78 @@ namespace VizHelpers {
             }
           }
           geomVerts_.push_back(minVert);
+          geomAggs_.push_back(agg);
           geomVerts_.push_back(maxVert);
+          geomAggs_.push_back(agg);
           geomSizes_.push_back(2);
           continue;
         }
       }
-      //use "gift wrap" algorithm to find convex hull
+      {
+        //use "gift wrap" algorithm to find the convex hull
+        //first, find vert with minimum x (and use min y as a tiebreak)
+        GlobalOrdinal minVert = aggVerts_[aggStart];
+        Vec3 minPos = verts_[minVert];
+        for(GlobalOrdinal i = 1; i < aggSize; i++)
+        {
+          GlobalOrdinal test = aggVerts_[aggStart + i];
+          Vec3 testPos = verts_[test];
+          if(testPos.x < minPos.x || (testPos.x == minPos.x && testPos.y < minPos.y))
+          {
+            minVert = test;
+            minPos = testPos;
+          }
+        }
+        std::vector<GlobalOrdinal> loop;
+        GlobalOrdinal loopIter = minVert;
+        //loop until a closed loop (with > 1 vertices) has been found
+        while(true)
+        {
+          //find another vertex "ray" in the aggregate 
+          GlobalOrdinal ray = aggVerts_[aggStart];
+          {
+            GlobalOrdinal i = 0;
+            while(ray == loopIter)
+            {
+              i++;
+              ray = aggVerts_[aggStart + i];
+            }
+          }
+          //sweep through all vertices, and if one is on the left side of loopIter->ray, change ray to it
+          //"is point left of ray?" is answered by segmentNormal and dot prod
+          Vec2 norm = segmentNormal(verts_[ray] - verts_[loopIter]);
+          bool foundNext = false;
+          while(!foundNext)
+          {
+            for(GlobalOrdinal i = aggStart; i < aggEnd; i++)
+            {
+              if(aggVerts_[i] == loopIter || aggVerts_[i] == ray)
+                continue;
+              if(dotProduct(norm, verts_[aggVerts_[i]] - verts_[loopIter]) > 0)
+              {
+                foundNext = true;
+                loop.push_back(loopIter);
+                loopIter = aggVerts_[i];
+                break;
+              }
+            }
+            foundNext = true;
+          }
+          if(loop.back() == loop.front() && loop.size() > 1)
+          {
+            //have a closed loop
+            loop.pop_back();
+            break;
+          }
+        }
+        //loop now contains the vertex loop representing convex hull (with none repeated)
+        for(auto vert : loop)
+        {
+          geomVerts_.push_back(vert);
+          geomAggs_.push_back(agg);
+        }
+        geomSizes_.push_back(loop.size());
+      }
     }
   }
 
@@ -564,41 +828,43 @@ namespace VizHelpers {
     typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
     typedef K::Point_2 Point_2;
 
-    for(int agg = 0; agg < numLocalAggs; agg++) {
-      std::vector<int> aggNodes;
+    for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++) {
+      std::vector<GlobalOrdinal> aggNodes;
       std::vector<Point_2> aggPoints;
-      for(int i = 0; i < numFineNodes; i++) {
-        if(vertex2AggId[i] == agg) {
-          Point_2 p(xCoords[i], yCoords[i]);
-          aggPoints.push_back(p);
-          aggNodes.push_back(i);
-        }
+      for(GlobalOrdinal i = aggOffsets_[agg]; i < aggOffsets_[agg + 1]; i++)
+      {
+        auto point = verts_[i];
+        aggPoints.push_back(Point_2(point.x, point.y));
+        aggNodes.push_back(i);
       }
       //have a list of nodes in the aggregate
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
                "CoarseningVisualization::doCGALConvexHulls2D: aggregate contains zero nodes!");
       if(aggNodes.size() == 1) {
         geomVerts_.push_back(aggNodes.front());
+        geomAggs_.push_back(agg);
         geomSizes_.push_back(1);
         continue;
       }
       if(aggNodes.size() == 2) {
         geomVerts_.push_back(aggNodes.front());
+        geomAggs_.push_back(agg);
         geomVerts_.push_back(aggNodes.back());
+        geomAggs_.push_back(agg);
         geomSizes_.push_back(2);
         continue;
       }
       //check if all points are collinear, need to explicitly draw a line in that case.
       bool collinear = true; //assume true at first, if a segment not parallel to others then clear
       {
-        std::vector<int>::iterator it = aggNodes.begin();
-        Vec3 firstPoint(xCoords[*it], yCoords[*it], 0);
+        auto it = aggNodes.begin();
+        Vec2 firstPoint = verts_[*it].toVec2();
         it++;
-        Vec3 secondPoint(xCoords[*it], yCoords[*it], 0);
+        Vec2 secondPoint = verts_[*it].toVec2();
         it++;  //it now points to third node in the aggregate
-        Vec3 norm1(-(secondPoint.y - firstPoint.y), secondPoint.x - firstPoint.x, 0);
+        Vec2 norm1 = segmentNormal(secondPoint - firstPoint);
         do {
-          Vec3 thisNorm(yCoords[*it] - firstPoint.y, firstPoint.x - xCoords[*it], 0);
+          Vec2 thisNorm = segmentNormal(verts_[*it].toVec2() - firstPoint);
           //rotate one of the vectors by 90 degrees so that dot product is 0 if the two are parallel
           double temp = thisNorm.x;
           thisNorm.x = thisNorm.y;
@@ -615,45 +881,47 @@ namespace VizHelpers {
       if(collinear)
       {
         //find the most distant two points in the plane and use as endpoints of line representing agg
-        std::vector<int>::iterator min = aggNodes.begin();    //min X then min Y where x is a tie
-        std::vector<int>::iterator max = aggNodes.begin(); //max X then max Y where x is a tie
-        for(std::vector<int>::iterator it = ++aggNodes.begin(); it != aggNodes.end(); it++) {
-          if(xCoords[*it] < xCoords[*min])
-            min = it;
-          else if(xCoords[*it] == xCoords[*min]) {
-            if(yCoords[*it] < yCoords[*min])
-              min = it;
+        GlobalOrdinal minNode = aggNodes[0];    //min X then min Y where x is equal
+        GlobalOrdinal maxNode = aggNodes[0];    //max X then max Y where x is equal
+        for(auto& it : aggNodes) {
+          auto itPoint = verts_[it].toVec2();
+          auto minPoint = verts_[minNode].toVec2();
+          auto maxPoint = verts_[maxNode].toVec2();
+          if(it.x < minPoint.x || (it.x == minPoint.x && it.y < minPoint.y))
+          {
+            minPoint = it;
           }
-          if(xCoords[*it] > xCoords[*max])
-            max = it;
-          else if(xCoords[*it] == xCoords[*max]) {
-            if(yCoords[*it] > yCoords[*max])
-              max = it;
+          if(it.x > maxPoint.x || (it.x == maxPoint.x && it.y > maxPoint.y))
+          {
+            maxPoint = it;
           }
         }
         //Just set up a line between nodes *min and *max
-        geomVerts_.push_back(*min);
-        geomVerts_.push_back(*max);
+        geomVerts_.push_back(minNode);
+        geomAggs_.push_back(agg);
+        geomVerts_.push_back(maxNode);
+        geomAggs_.push_back(agg);
         geomSizes_.push_back(2);
-        continue; //jump to next aggregate in loop
+        continue; //jump to next aggregate (in outermost loop)
       }
-      // aggregate has more than 2 points and is not collinear
+      // aggregate has > 2 points and isn't collinear; must run the CGAL convex hull algo
       {
         std::vector<Point_2> result;
-        CGAL::convex_hull_2( aggPoints.begin(), aggPoints.end(), std::back_inserter(result) );
+        CGAL::convex_hull_2(aggPoints.begin(), aggPoints.end(), std::back_inserter(result));
+        const double eps = 1e-8;
         // loop over all result points and find the corresponding node id
         for (size_t r = 0; r < result.size(); r++) {
           // loop over all aggregate nodes and find corresponding node id
-          for(size_t l = 0; l < aggNodes.size(); l++)
+          for(size_t l = 0; l < aggPoints.size(); l++)
           {
-            if(fabs(result[r].x() - xCoords[aggNodes[l]]) < 1e-12 &&
-               fabs(result[r].y() - yCoords[aggNodes[l]]) < 1e-12)
+            if(fabs(result[r].x() - aggPoints[l].x) < eps &&
+               fabs(result[r].y() - aggPoints[l].y) < eps)
             {
               geomVerts_.push_back(aggNodes[l]);
+              geomAggs_.push_back(agg);
               break;
             }
           }
-
         }
         geomSizes_.push_back(result.size());
       }
@@ -1607,6 +1875,14 @@ namespace VizHelpers {
   /*-----------------------------*/
   /* EdgeGeometry implementation */
   /*-----------------------------*/
+
+  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+  void EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+  EdgeGeometry(Teuchos::RCP<GraphBase> G, int dofs, Teuchos::RCP<Matrix> A = Teuchos::null)
+  {
+    G_ = G;
+    A_ = A;
+  }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::

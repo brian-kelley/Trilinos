@@ -76,13 +76,6 @@ namespace MueLu {
     this->Input(fineLevel, "Coordinates");
 
     const ParameterList & pL = this->GetParameterList();
-    /*
-    TEUCHOS_TEST_FOR_EXCEPTION(pL.isParameter("P") && GetFactory("P") != Teuchos::null &&
-                               pL.isParameter("Ptent") && GetFactory("Ptent") != Teuchos::null, Exceptions::RuntimeError,
-                "You must not declare both P and Ptent. Use only once for visualization.");
-    TEUCHOS_TEST_FOR_EXCEPTION(GetFactory("P") == Teuchos::null && GetFactory("Ptent") == Teuchos::null, Exceptions::RuntimeError,
-                "You have to either declare P or Ptent for visualization, but not both.");
-    */
 
     if (GetFactory("P") != Teuchos::null)
       this->Input(coarseLevel, "P");
@@ -126,30 +119,7 @@ namespace MueLu {
     //                                           "CoarseningVisualization only supports non-overlapping transfers");
 
     // number of local "aggregates"
-    LocalOrdinal numLocalAggs = strDomainMap->getNodeNumElements() / columnsPerNode;
-    std::vector< std::set<LocalOrdinal> > localAggs(numLocalAggs);
 
-    // do loop over all local rows of prolongator and extract column information
-    for (LO row = 0; row < Teuchos::as<LO>(P->getRowMap()->getNodeNumElements()); ++row) {
-      ArrayView<const LO> indices;
-      ArrayView<const SC> vals;
-      P->getLocalRowView(row, indices, vals);
-
-      for(auto c = indices.begin(); c != indices.end(); ++c) {
-        localAggs[(*c)/columnsPerNode].insert(row/dofsPerNode);
-      }
-    }
-
-    // determine number of "aggs" per proc and calculate local "agg" offset...
-    std::vector<int> myLocalAggsPerProc(comm->getSize(),0);
-    std::vector<int> numLocalAggsPerProc(comm->getSize(),0);
-    myLocalAggsPerProc[comm->getRank()] = numLocalAggs;
-    Teuchos::reduceAll(*comm,Teuchos::REDUCE_MAX,comm->getSize(),&myLocalAggsPerProc[0],&numLocalAggsPerProc[0]);
-
-    LocalOrdinal myAggOffset = 0;
-    for(int i = 0; i < comm->getRank(); ++i) {
-      myAggOffset += numLocalAggsPerProc[i];
-    }
 
     // get fine level coordinate information
     Teuchos::RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > coords = Get<RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > >(fineLevel, "Coordinates");
@@ -171,26 +141,28 @@ namespace MueLu {
     // determine number of nodes on fine level
     LocalOrdinal numFineNodes = Teuchos::as<LocalOrdinal>(coords->getLocalLength());
 
-    // create vertex2AggId array
-    ArrayRCP<LocalOrdinal> vertex2AggId(numFineNodes, -1);
-    for (LocalOrdinal i = 0; i < numLocalAggs; ++i) {
-      // TODO: check if entry = -1
-      for( typename std::set<LocalOrdinal>::iterator it = localAggs[i].begin(); it != localAggs[i].end(); ++it) {
-        vertex2AggId[*it] = i;
-      }
-    }
-
     int levelID = fineLevel.GetLevelID();
 
     VTKEmitter vtk(pL, comm->getSize(), levelID, comm->getRank(), nodeMap, Teuchos::null);
+
+    LocalOrdinal dofsPerNode = 0;
+    LocalOrdinal colsPerNode = 0;
+    if(!P.is_null())
+    {
+      dofsPerNode = getDofsPerNode(P);
+      colsPerNode = getColsPerNode(P);
+    }
+    else
+    {
+      dofsPerNode = getDofsPerNode(Ptent);
+      colsPerNode = getColsPerNode(Ptent);
+    }
 
     int vizLevel = pL.get<int>("visualization: start level");
     if(vizLevel <= levelID)
     {
       if(!P.is_null())
       {
-        LocalOrdinal dofsPerNode = getDofsPerNode(P);
-        LocalOrdinal colsPerNode = getColsPerNode(P);
         AggGeometry aggGeom(P, nodeMap, comm, coords, dofsPerNode, colsPerNode, false);
         if(!aggGeom.build(aggStyle))
         {
@@ -204,8 +176,6 @@ namespace MueLu {
       }
       if(!Ptent.is_null())
       {
-        LocalOrdinal dofsPerNode = getDofsPerNode(Ptent);
-        LocalOrdinal colsPerNode = getColsPerNode(Ptent);
         AggGeometry aggGeom(Ptent, nodeMap, comm, coords, dofsPerNode, colsPerNode, true);
         if(!aggGeom.build(aggStyle))
         {
@@ -219,37 +189,14 @@ namespace MueLu {
       }
       if(doGraphEdges)
       {
-
+        TEUCHOS_TEST_FOR_EXCEPTION(fineGraph == Teuchos::null, Exceptions::RuntimeError,
+            "Could not get information about fine graph.");
+        EdgeGeom edgeGeom(fineGraph, dofsPerNode);
+        egeom.build();
+        vtk.writeEdgeGeom(egeom, true);
       }
     }
-    /*
-      //do non-overlapping aggregates first
-      {
-        AggGeometry aggGeom(aggVerts, aggOffsets, nodeMap, comm->getRank(), xCoords, yCoords, zCoords);
-        std::string aggStyle = pL.get<std::string>("visualization: style");
-        if(!aggGeom.build(aggStyle))
-        {
-#ifdef HAVE_MUELU_CGAL
-          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls, Alpha Hulls.\nDefaulted to Point Cloud." << std::endl;
-#else
-          GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls.\nDefaulted to Point Cloud." << std::endl;
-#endif
-        }
-        vtk.writeAggGeom(aggGeom);
-      }
-    }
-    */
 
-    // write out fine edge information
-    if(pL.get<bool>("visualization: fine graph edges")) {
-      TEUCHOS_TEST_FOR_EXCEPTION(fineGraph == Teuchos::null, Exceptions::RuntimeError,
-         "Could not get information about fine graph.");
-
-      EdgeGeometry egeom(fineGraph, Teuchos::null, dofsPerNode);
-      egeom.build();
-      vtk.writeEdgeGeom(egeom, true);
-    }
-    
     vtk.writePVTU();
 
     if(comm->getRank() == 0 && pL.get<bool>("visualization: build colormap")) {
@@ -276,9 +223,6 @@ namespace MueLu {
         dofsPerNode = strRowMap->getFixedBlockSize();
       }
       GetOStream(Runtime1) << "CoarseningVisualizationFactory::Build():" << " #dofs per node = " << dofsPerNode << std::endl;
-    }
-    else
-    {
     }
     return dofsPerNode;
   }

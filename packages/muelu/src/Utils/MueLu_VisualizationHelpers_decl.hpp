@@ -64,7 +64,10 @@
 
 namespace MueLu {
 namespace VizHelpers {
-  //Utility classes used in convex hull algorithm
+  //Geometry utility classes (used in convex hull algorithm)
+  struct Triangle;
+  struct Vec2;
+  struct Vec3;
 
   struct Triangle
   {
@@ -82,33 +85,49 @@ namespace VizHelpers {
     int v3;
   };
 
-  class Vec3
+  struct Vec3
   {
-    public:
-      Vec3() : x(0), y(0), z(0) {}
-      Vec3(double xin, double yin, double zin) : x(xin), y(yin), z(zin) {}
-      ~Vec3() {}
-      double x;
-      double y;
-      double z;
+    Vec3() : x(0), y(0), z(0) {}
+    Vec3(double xin, double yin, double zin) : x(xin), y(yin), z(zin) {}
+    ~Vec3() {}
+    double x;
+    double y;
+    double z;
+    Vec2 toVec2() {return Vec2(x, y);}
   };
 
-  Vec3 operator-(const Vec3 lhs, const vec3 rhs)
+  inline Vec3 operator+(const Vec3 lhs, const Vec3 rhs)
+  {
+    return Vec3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
+  }
+
+  inline Vec3 operator-(const Vec3 lhs, const Vec3 rhs)
   {
     return Vec3(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
   }
 
-  class Vec2
+  inline Vec3 operator*(const Vec3 vec, double scale)
   {
-    public:
-      Vec2() : x(0), y(0) {}
-      Vec2(double xin, double yin) : x(xin), y(yin) {}
-      ~Vec2() {}
-      double x;
-      double y;
+    vec.x *= scale;
+    vec.y *= scale;
+    vec.z *= scale;
+  }
+
+  struct Vec2
+  {
+    Vec2() : x(0), y(0) {}
+    Vec2(double xin, double yin) : x(xin), y(yin) {}
+    ~Vec2() {}
+    double x;
+    double y;
   };
 
-  Vec2 operator-(const Vec2 lhs, const vec2 rhs)
+  inline Vec2 operator+(const Vec3 lhs, const Vec3 rhs)
+  {
+    return Vec2(lhs.x + rhs.x, lhs.y + rhs.y);
+  }
+
+  inline Vec2 operator-(const Vec2 lhs, const Vec2 rhs)
   {
     return Vec2(lhs.x - rhs.x, lhs.y - rhs.y);
   }
@@ -183,28 +202,29 @@ namespace VizHelpers {
 
       //@}
     private:
-      std::vector<int> geomVerts_;
+      std::vector<GlobalOrdinal> geomVerts_;
+      std::vector<GlobalOrdinal> geomAggs_;
       std::vector<int> geomSizes_;
       Teuchos::RCP<Aggregates> aggs_;
+      //The row map of A
       Teuchos::RCP<Map> map_;
-      Teuchos::ArrayRCP<const LocalOrdinal> vertex2Agg_;
-      Teuchos::ArrayRCP<LocalOrdinal> aggVerts_;
-      Teuchos::ArrayRCP<LocalOrdinal> aggOffsets_;
-      //! For each local vertex, whether it is the root of its aggregate
+      Teuchos::Array<GlobalOrdinal> aggVerts_;
+      Teuchos::Array<GlobalOrdinal> aggOffsets_;
+      //Locally used set of global rows is not contiguous, so use a map to look up positions
+      std::map<GlobalOrdinal, Vec3> verts_;
+      //! For each locally used vertex, whether it is the root of its aggregate
       //! Only used by jacks(), so will only be populated if jacks() is called.
-      std::vector<bool> isRoot_;
+      //! If roots not available from aggregates, use vertex nearest to centroid of aggregate
+      std::map<GlobalOrdinal, bool> isRoot_;
       LocalOrdinal numLocalAggs_;
-      LocalOrdinal numNodes_;
-      //! Global id of local aggregate 0
+      GlobalOrdinal numNodes_;
+      //! Global id of local aggregate 0 (note: aggregate indices are always contiguous)
       GlobalOrdinal firstAgg_;
-      Teuchos::ArrayRCP<const double> x_;
-      Teuchos::ArrayRCP<const double> y_;
-      Teuchos::ArrayRCP<const double> z_;    //null if 2D
       int dims_;
       int rank_;
       int nprocs_;
       //! false if doing geometry based on aggregates (AggExport) or Ptent (CoarseningViz)
-      //! true if doing geometry based on smoothed P nonzero entries (CoarseningViz)
+      //! true if doing geometry based on smoothed P (CoarseningViz)
       bool bubbles_;
 
       // algorithm implementations
@@ -236,7 +256,7 @@ namespace VizHelpers {
 #include "MueLu_UseShortNames.hpp"
     friend class VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
     public:
-      EdgeGeometry(Teuchos::RCP<GraphBase> G, Teuchos::RCP<Matrix> A = Teuchos::null, int dofs);
+      EdgeGeometry(Teuchos::RCP<GraphBase> G, int dofs, Teuchos::RCP<Matrix> A = Teuchos::null);
       //! Compute graph edge geometry. If the matrix A was available and passed to constructor, filtered edges will be given a different color than non-filtered edges.
       void build();
     private:
@@ -246,7 +266,6 @@ namespace VizHelpers {
       std::vector<int> vertsNonFilt_;
       //! Vertices for filtered edges 
       std::vector<int> vertsFilt_;
-      int aggsOffset_;            
       //! Special node index value representing non-filtered edges (in both graph and matrix)
       static const int contrast1_ = -1;
       //! Special node index value representing filtered edges (in graph but not filtered matrix)

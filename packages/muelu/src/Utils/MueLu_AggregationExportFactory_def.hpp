@@ -328,7 +328,7 @@ namespace MueLu {
         coarseMap = Ac->getMap();
       }
       VTKEmitter vtk(pL, numProcs, fineLevel.getLevelID(), myRank, fineMap, coarseMap);
-      AggGeometry aggGeom(aggregates, fineMap, myRank, fx, fy, fz);
+      AggGeometry aggGeom(aggregates, fineMap, comm, coords);
       if(!aggGeom.build(aggStyle))
       {
 #ifdef HAVE_MUELU_CGAL
