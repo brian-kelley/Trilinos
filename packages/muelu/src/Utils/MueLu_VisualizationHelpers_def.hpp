@@ -74,8 +74,8 @@ namespace VizHelpers {
   inline std::string replaceAll(std::string original, std::string replaceWhat, std::string replaceWithWhat)
   {
     while(1) {
-      const int pos = result.find(replaceWhat);
-      if (pos == -1)
+      const int pos = original.find(replaceWhat);
+      if (pos == std::string::npos)
         break;
       original.replace(pos, replaceWhat.size(), replaceWithWhat);
     }
@@ -109,7 +109,7 @@ namespace VizHelpers {
     Vec3 diff2(v3.x - v2.x, v3.y - v2.y, 0);
     //diff1 and diff2 share v2, so if they are parallel then all 3 points collinear
     //cross product of parallel vectors is 0
-    return mag(cross(diff1, diff2)) <= 1e-8;
+    return mag(crossProduct(diff1, diff2)) <= 1e-8;
   }
 
   inline double mag(Vec2 vec)
@@ -129,7 +129,7 @@ namespace VizHelpers {
   
   inline double distance(Vec3 p1, Vec3 p2)
   {
-    return mag(vecSubtract(p1, p2));
+    return mag(p1 - p2);
   }
 
   inline Vec2 segmentNormal(Vec2 v) //"normal" to a 2D vector - just rotate 90 degrees to left
@@ -139,16 +139,17 @@ namespace VizHelpers {
 
   inline Vec3 triNormal(Vec3 v1, Vec3 v2, Vec3 v3) //normal to face of triangle (will be outward rel. to polyhedron) (v1, v2, v3 are in CCW order when normal is toward viewpoint)
   {
-    return crossProduct(vecSubtract(v2, v1), vecSubtract(v3, v1));
+    return crossProduct(v2 - v1, v3 - v1).normalize();
   }
 
   //get minimum distance from 'point' to plane containing v1, v2, v3 (or the triangle with v1, v2, v3 as vertices)
   inline double pointDistFromTri(Vec3 point, Vec3 v1, Vec3 v2, Vec3 v3)
   {
     using namespace std;
-    Vec3 norm = getNorm(v1, v2, v3);
+    //get (oriented) unit normal for triangle (v1,v2,v3)
+    Vec3 norm = triNormal(v1, v2, v3);
     //must normalize the normal vector
-    double normScl = mymagnitude(norm);
+    double normScl = mag(norm);
     double rv = 0.0;
     if (normScl > 1e-8) {
       norm.x /= normScl;
@@ -157,22 +158,22 @@ namespace VizHelpers {
       rv = fabs(dotProduct(norm, vecSubtract(point, v1)));
     } else {
       // triangle is degenerated
-      Vec3 test1 = vecSubtract(v3, v1);
-      Vec3 test2 = vecSubtract(v2, v1);
-      bool useTest1 = mymagnitude(test1) > 0.0 ? true : false;
-      bool useTest2 = mymagnitude(test2) > 0.0 ? true : false;
+      Vec3 test1 = v3 - v1;
+      Vec3 test2 = v2 - v1;
+      bool useTest1 = mag(test1) > 0.0 ? true : false;
+      bool useTest2 = mag(test2) > 0.0 ? true : false;
       if(useTest1 == true) {
-        double normScl1 = mymagnitude(test1);
+        double normScl1 = mag(test1);
         test1.x /= normScl1;
         test1.y /= normScl1;
         test1.z /= normScl1;
-        rv = fabs(dotProduct(test1, vecSubtract(point, v1)));
+        rv = fabs(dotProduct(test1, point - v1));
       } else if (useTest2 == true) {
-        double normScl2 = mymagnitude(test2);
+        double normScl2 = mag(test2);
         test2.x /= normScl2;
         test2.y /= normScl2;
         test2.z /= normScl2;
-        rv = fabs(dotProduct(test2, vecSubtract(point, v1)));
+        rv = fabs(dotProduct(test2, point - v1));
       } else {
         TEUCHOS_TEST_FOR_EXCEPTION(true, Exceptions::RuntimeError,
                  "VisualizationHelpers::pointDistFromTri: Could not determine the distance of a point to a triangle.");
@@ -248,6 +249,16 @@ namespace VizHelpers {
       geomVerts_[i] = mid;
     }
     return uniqueNodes;
+  }
+
+  Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList()
+  {
+    auto pl = Teuchos::rcp(new Teuchos::ParameterList);
+    pl->set<std::string>("visualization: output filename", "viz%LEVELID", "Output filename for VTK-formatted aggregate visualization");
+    pl->set<int>("visualization: style", "Convex Hulls", "Style of aggregate visualization. Can be 'Point Cloud', 'Jacks', 'Convex Hulls', or 'Alpha Hulls'");
+    pl->set<bool>("visualization: build colormap", false, "Whether to output a randomized colormap for use in ParaView.");
+    pl->set<bool>("visualization: fine graph edges", false, "Whether to draw all fine node connections along with the aggregates.");
+    return pl;
   }
 
   /*----------------------------*/
@@ -677,147 +688,22 @@ namespace VizHelpers {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   convexHulls2D() {
-    for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++) {
-      GlobalOrdinal aggStart = aggOffsets_[agg];
-      GlobalOrdial aggEnd = aggOffsets_[agg + 1];
-      GlobalOrdinal aggSize = aggEnd - aggStart;
-      if(aggSize == 1) {
-        //aggregate is a point
-        geomVerts_.push_back(aggVerts_[aggStart]);
-        geomAggs_.push_back(agg);
-        geomSizes_.push_back(1);
-        continue;
-      }
-      if(aggNodes.size() == 2) {
-        //aggregate is a line
-        geomVerts_.push_back(aggVerts_[aggStart]);
-        geomAggs_.push_back(agg);
-        geomVerts_.push_back(aggVerts_[aggStart + 1]);
-        geomAggs_.push_back(agg);
-        geomSizes_.push_back(2);
-        continue;
-      }
-      //check if all points are collinear, need to explicitly draw a line in that case.
+    //giftWrap() can handle any 2D collection of points (including point/line/collinear)
+    for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
+    {
+      std::vector<GlobalOrdinal> aggPoints;
+      aggPoints.reserve(aggOffsets[agg + 1] - aggOffsets[agg]);
+      for(GlobalOrdinal i = aggOffsets_[agg]; i < aggOffsets[agg + 1]; i++)
       {
-        //find first pair (v1, v2) of vertices that are not the same, in case multiple nodes share 
-        GlobalOrdinal iter = 2;
-        GlobalOrdinal v1 = aggVerts_[aggStart];
-        GlobalOrdinal v2 = aggVerts_[aggStart + 1];
-        while(x_[v1] == x_[v2] && y_[v1] == y_[v2] && (iter < aggSize))
-        {
-          v2 = aggVerts_[aggStart + iter++];
-        }
-        if(x_[v1] == x_[v2] && y_[v1] == y_[v2])
-        {
-          //all vertices in agg have same position
-          geomVerts_.push_back(aggVerts_[aggStart]);
-          geomAggs_.push_back(agg);
-          geomSizes_.push_back(1);
-          continue;
-        }
-        //check if the rest of the vertices are collinear with v1, v2
-        Vec2 vec1(x_[v1], y_[v1]);
-        Vec2 vec2(x_[v2], y_[v2]);
-        for(int i = iter; i < aggSize; i++)
-        {
-          Vec2 vec3(x_[aggVerts_[aggStart + iter]], y_[aggVerts_[aggStart + iter]]);
-          if(!collinear(vec1, vec2, vec3))
-          {
-            break;
-          }
-        }
-        if(iter == aggSize)
-        {
-          //all vertices collinear
-          //find min and max coordinates in agg and make line segment between them
-          GlobalOrdinal minVert = aggVerts_[aggStart];
-          GlobalOrdinal maxVert = minVert;
-          for(GlobalOrdinal i = 1; i < aggSize; i++)
-          {
-            GlobalOrdinal v = aggVerts_[aggStart + i];
-            //compare X first and then use Y as a tiebreak (will always find 2 most distant points on the line)
-            if(x_[v] < x_[minVert] || (x_[v] == x_[minVert] && y_[v] < y_[minVert]))
-            {
-              minVert = v;
-            }
-            if(x_[v] > x_[maxVert] || (x_[v] == x_[maxVert] && y_[v] > y_[maxVert]))
-            {
-              maxVert = v;
-            }
-          }
-          geomVerts_.push_back(minVert);
-          geomAggs_.push_back(agg);
-          geomVerts_.push_back(maxVert);
-          geomAggs_.push_back(agg);
-          geomSizes_.push_back(2);
-          continue;
-        }
+        aggPoints.push_back(aggVerts_[i]);
       }
+      std::vector geom = giftWrap(aggPoints);
+      for(size_t i = 0; i < geom.size(); i++)
       {
-        //use "gift wrap" algorithm to find the convex hull
-        //first, find vert with minimum x (and use min y as a tiebreak)
-        GlobalOrdinal minVert = aggVerts_[aggStart];
-        Vec3 minPos = verts_[minVert];
-        for(GlobalOrdinal i = 1; i < aggSize; i++)
-        {
-          GlobalOrdinal test = aggVerts_[aggStart + i];
-          Vec3 testPos = verts_[test];
-          if(testPos.x < minPos.x || (testPos.x == minPos.x && testPos.y < minPos.y))
-          {
-            minVert = test;
-            minPos = testPos;
-          }
-        }
-        std::vector<GlobalOrdinal> loop;
-        GlobalOrdinal loopIter = minVert;
-        //loop until a closed loop (with > 1 vertices) has been found
-        while(true)
-        {
-          //find another vertex "ray" in the aggregate 
-          GlobalOrdinal ray = aggVerts_[aggStart];
-          {
-            GlobalOrdinal i = 0;
-            while(ray == loopIter)
-            {
-              i++;
-              ray = aggVerts_[aggStart + i];
-            }
-          }
-          //sweep through all vertices, and if one is on the left side of loopIter->ray, change ray to it
-          //"is point left of ray?" is answered by segmentNormal and dot prod
-          Vec2 norm = segmentNormal(verts_[ray] - verts_[loopIter]);
-          bool foundNext = false;
-          while(!foundNext)
-          {
-            for(GlobalOrdinal i = aggStart; i < aggEnd; i++)
-            {
-              if(aggVerts_[i] == loopIter || aggVerts_[i] == ray)
-                continue;
-              if(dotProduct(norm, verts_[aggVerts_[i]] - verts_[loopIter]) > 0)
-              {
-                foundNext = true;
-                loop.push_back(loopIter);
-                loopIter = aggVerts_[i];
-                break;
-              }
-            }
-            foundNext = true;
-          }
-          if(loop.back() == loop.front() && loop.size() > 1)
-          {
-            //have a closed loop
-            loop.pop_back();
-            break;
-          }
-        }
-        //loop now contains the vertex loop representing convex hull (with none repeated)
-        for(auto vert : loop)
-        {
-          geomVerts_.push_back(vert);
-          geomAggs_.push_back(agg);
-        }
-        geomSizes_.push_back(loop.size());
+        geomVerts_.push_back(geom[i]);
+        geomAggs_.push_back(agg);
       }
+      geomSizes_.push_back(geom.size());
     }
   }
 
@@ -933,176 +819,87 @@ namespace VizHelpers {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   convexHulls3D() {
+    using std::vector;
+    using std::stack;
+    using std::set;
     //Use 3D quickhull algo.
     //Vector of node indices representing triangle vertices
     //Note: Calculate the hulls first since will only include point data for points in the hulls
     //Effectively the size() of vertIndices after each hull is added to it
-    typedef std::list<int>::iterator Iter;
-    for(int agg = 0; agg < numLocalAggs; agg++) {
-      std::list<int> aggNodes; //At first, list of all nodes in the aggregate. As nodes are enclosed or included by/in hull, remove them
-      for(int i = 0; i < numFineNodes; i++) {
-        if(vertex2AggId[i] == agg)
-          aggNodes.push_back(i);
+    for(LocalOrdinal agg = 0; agg < numLocalAggs; agg++) {
+      vector<GlobalOrdinal> aggNodes; //At first, list of all nodes in the aggregate. As nodes are enclosed or included by/in hull, remove them
+      aggNodes.reserve(aggOffsets_[agg + 1] - aggOffsets_[agg]);
+      for(GlobalOrdinal i = aggOffsets_[agg]; i < aggOffsets_[agg + 1]; i++)
+      {
+        aggNodes.push_back(aggVerts_[i]);
       }
       //First, check anomalous cases
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
                "CoarseningVisualization::doConvexHulls3D: aggregate contains zero nodes!");
-      if(aggNodes.size() == 1) {
-        geomVerts_.push_back(aggNodes.front());
-        geomSizes_.push_back(1);
-        continue;
-      } else if(aggNodes.size() == 2) {
-        geomVerts_.push_back(aggNodes.front());
-        geomVerts_.push_back(aggNodes.back());
-        geomSizes_.push_back(2);
+      if(handleDegenerate3D(aggNodes, agg))
+      {
         continue;
       }
-      //check for collinearity
-      bool areCollinear = true;
-      {
-        Iter it = aggNodes.begin();
-        Vec3 firstVec(xCoords[*it], yCoords[*it], zCoords[*it]);
-        Vec3 comp;
-        {
-          it++;
-          Vec3 secondVec(xCoords[*it], yCoords[*it], zCoords[*it]); //cross this with other vectors to compare
-          comp = vecSubtract(secondVec, firstVec);
-          it++;
-        }
-        for(; it != aggNodes.end(); it++) {
-          Vec3 thisVec(xCoords[*it], yCoords[*it], zCoords[*it]);
-          Vec3 cross = crossProduct(vecSubtract(thisVec, firstVec), comp);
-          if(mymagnitude(cross) > 1e-10) {
-            areCollinear = false;
-            break;
-          }
-        }
-      }
-      if(areCollinear)
-      {
-        //find the endpoints of segment describing all the points
-        //compare x, if tie compare y, if tie compare z
-        Iter min = aggNodes.begin();
-        Iter max = aggNodes.begin();
-        Iter it = ++aggNodes.begin();
-        for(; it != aggNodes.end(); it++) {
-          if(xCoords[*it] < xCoords[*min]) min = it;
-          else if(xCoords[*it] == xCoords[*min]) {
-            if(yCoords[*it] < yCoords[*min]) min = it;
-            else if(yCoords[*it] == yCoords[*min]) {
-              if(zCoords[*it] < zCoords[*min]) min = it;
-            }
-          }
-          if(xCoords[*it] > xCoords[*max]) max = it;
-          else if(xCoords[*it] == xCoords[*max]) {
-            if(yCoords[*it] > yCoords[*max]) max = it;
-            else if(yCoords[*it] == yCoords[*max]) {
-              if(zCoords[*it] > zCoords[*max])
-                max = it;
-            }
-          }
-        }
-        geomVerts_.push_back(*min);
-        geomVerts_.push_back(*max);
-        geomSizes_.push_back(2);
-        continue;
-      }
-      bool areCoplanar = true;
-      {
-        //number of points is known to be >= 3
-        Iter vert = aggNodes.begin();
-        Vec3 v1(xCoords[*vert], yCoords[*vert], zCoords[*vert]);
-        vert++;
-        Vec3 v2(xCoords[*vert], yCoords[*vert], zCoords[*vert]);
-        vert++;
-        Vec3 v3(xCoords[*vert], yCoords[*vert], zCoords[*vert]);
-        vert++;
-        //Make sure the first three points aren't also collinear (need a non-degenerate triangle to get a normal)
-        while(mymagnitude(crossProduct(vecSubtract(v1, v2), vecSubtract(v1, v3))) < 1e-10) {
-          //Replace the third point with the next point
-          v3 = Vec3(xCoords[*vert], yCoords[*vert], zCoords[*vert]);
-          vert++;
-        }
-        for(; vert != aggNodes.end(); vert++) {
-          Vec3 pt(xCoords[*vert], yCoords[*vert], zCoords[*vert]);
-          if(fabs(pointDistFromTri(pt, v1, v2, v3)) > 1e-12) {
-            areCoplanar = false;
-            break;
-          }
-        }
-        if(areCoplanar) {
-          //do 2D convex hull
-          Vec3 planeNorm = getNorm(v1, v2, v3);
-          planeNorm.x = fabs(planeNorm.x);
-          planeNorm.y = fabs(planeNorm.y);
-          planeNorm.z = fabs(planeNorm.z);
-          std::vector<Vec2> points;
-          std::vector<int> nodes;
-          if(planeNorm.x >= planeNorm.y && planeNorm.x >= planeNorm.z) {
-            //project points to yz plane to make hull
-            for(Iter it = aggNodes.begin(); it != aggNodes.end(); it++) {
-              nodes.push_back(*it);
-              points.push_back(Vec2(yCoords[*it], zCoords[*it]));
-            }
-          }
-          if(planeNorm.y >= planeNorm.x && planeNorm.y >= planeNorm.z) {
-            //use xz
-            for(Iter it = aggNodes.begin(); it != aggNodes.end(); it++) {
-              nodes.push_back(*it);
-              points.push_back(Vec2(xCoords[*it], zCoords[*it]));
-            }
-          }
-          if(planeNorm.z >= planeNorm.x && planeNorm.z >= planeNorm.y) {
-            for(Iter it = aggNodes.begin(); it != aggNodes.end(); it++) {
-              nodes.push_back(*it);
-              points.push_back(Vec2(xCoords[*it], yCoords[*it]));
-            }
-          }
-          std::vector<int> convhull2d = giftWrap(points, nodes, xCoords, yCoords);
-          geomSizes_.push_back(convhull2d.size());
-          geomVerts_.reserve(geomVerts_.size() + convhull2d.size());
-          for(size_t i = 0; i < convhull2d.size(); i++)
-            geomVerts_.push_back(convhull2d[i]);
-          continue;
-        }
-      }
-      Iter exIt = aggNodes.begin(); //iterator to be used for searching for min/max x/y/z
-      int extremeSix[] = {*exIt, *exIt, *exIt, *exIt, *exIt, *exIt}; //nodes with minimumX, maxX, minY ...
-      exIt++;
-      for(; exIt != aggNodes.end(); exIt++) {
-        Iter it = exIt;
-        if(xCoords[*it] < xCoords[extremeSix[0]] ||
-          (xCoords[*it] == xCoords[extremeSix[0]] && yCoords[*it] < yCoords[extremeSix[0]]) ||
-          (xCoords[*it] == xCoords[extremeSix[0]] && yCoords[*it] == yCoords[extremeSix[0]] && zCoords[*it] < zCoords[extremeSix[0]]))
-            extremeSix[0] = *it;
-        if(xCoords[*it] > xCoords[extremeSix[1]] ||
-          (xCoords[*it] == xCoords[extremeSix[1]] && yCoords[*it] > yCoords[extremeSix[1]]) ||
-          (xCoords[*it] == xCoords[extremeSix[1]] && yCoords[*it] == yCoords[extremeSix[1]] && zCoords[*it] > zCoords[extremeSix[1]]))
-            extremeSix[1] = *it;
-        if(yCoords[*it] < yCoords[extremeSix[2]] ||
-          (yCoords[*it] == yCoords[extremeSix[2]] && zCoords[*it] < zCoords[extremeSix[2]]) ||
-          (yCoords[*it] == yCoords[extremeSix[2]] && zCoords[*it] == zCoords[extremeSix[2]] && xCoords[*it] < xCoords[extremeSix[2]]))
-            extremeSix[2] = *it;
-        if(yCoords[*it] > yCoords[extremeSix[3]] ||
-          (yCoords[*it] == yCoords[extremeSix[3]] && zCoords[*it] > zCoords[extremeSix[3]]) ||
-          (yCoords[*it] == yCoords[extremeSix[3]] && zCoords[*it] == zCoords[extremeSix[3]] && xCoords[*it] > xCoords[extremeSix[3]]))
-            extremeSix[3] = *it;
-        if(zCoords[*it] < zCoords[extremeSix[4]] ||
-          (zCoords[*it] == zCoords[extremeSix[4]] && xCoords[*it] < xCoords[extremeSix[4]]) ||
-          (zCoords[*it] == zCoords[extremeSix[4]] && xCoords[*it] == xCoords[extremeSix[4]] && yCoords[*it] < yCoords[extremeSix[4]]))
-            extremeSix[4] = *it;
-        if(zCoords[*it] > zCoords[extremeSix[5]] ||
-          (zCoords[*it] == zCoords[extremeSix[5]] && xCoords[*it] > xCoords[extremeSix[5]]) ||
-          (zCoords[*it] == zCoords[extremeSix[5]] && xCoords[*it] == xCoords[extremeSix[5]] && yCoords[*it] > zCoords[extremeSix[5]]))
-            extremeSix[5] = *it;
-      }
+      GlobalOrdinal extremeSix[6];  //verts with minx, maxx, miny, maxy, minz, maxz
       Vec3 extremeVectors[6];
+      for(int i = 0; i < 6; i++)
+      {
+        extremeSix[i] = aggPoints[i];
+        extremeVectors[i] = verts_[extremeSix[i]];
+      }
+      auto lessX = [&] (Vec3 v1, Vec3 v2) -> bool {
+        return v1.x < v2.x || (v1.x == v2.x && v1.y < v2.y) || (v1.x == v2.x && v1.y == v2.y && v1.z < v2.z);
+      }
+      auto greaterX = [&] (Vec3 v1, Vec3 v2) -> bool {
+        return v1.x > v2.x || (v1.x == v2.x && v1.y > v2.y) || (v1.x == v2.x && v1.y == v2.y && v1.z > v2.z);
+      }
+      auto lessY = [&] (Vec3 v1, Vec3 v2) -> bool {
+        return v1.y < v2.y || (v1.y == v2.y && v1.z < v2.z) || (v1.y == v2.y && v1.z == v2.z && v1.x < v2.x);
+      }
+      auto greaterY = [&] (Vec3 v1, Vec3 v2) -> bool {
+        return v1.y > v2.y || (v1.y == v2.y && v1.z > v2.z) || (v1.y == v2.y && v1.z == v2.z && v1.x > v2.x);
+      }
+      auto lessZ = [&] (Vec3 v1, Vec3 v2) -> bool {
+        return v1.z < v2.z || (v1.z == v2.z && v1.x < v2.x) || (v1.z == v2.z && v1.x == v2.x && v1.y < v2.y);
+      }
+      auto greaterZ = [&] (Vec3 v1, Vec3 v2) -> bool {
+        return v1.x < v2.x || (v1.z == v2.z && v1.x > v2.x) || (v1.z == v2.z && v1.x == v2.x && v1.y > v2.y);
+      }
+      for(size_t i = 1; i < aggPoints.size(); i++) {
+        GlobalOrdinal test = points[i];
+        Vec3 testVert = verts_[test];
+        if(lessX(testVert, extremeVectors[0])) {
+          extremeSix[0] = test;
+          extremeVectors[0] = testVert;
+        }
+        if(greaterX(testVert, extremeVectors[1])) {
+          extremeSix[1] = test;
+          extremeVectors[1] = testVert;
+        }
+        if(lessY(testVert, extremeVectors[2])) {
+          extremeSix[2] = test;
+          extremeVectors[2] = testVert;
+        }
+        if(greaterY(testVert, extremeVectors[3])) {
+          extremeSix[3] = test;
+          extremeVectors[3] = testVert;
+        }
+        if(lessZ(testVert, extremeVectors[4])) {
+          extremeSix[4] = test;
+          extremeVectors[4] = testVert;
+        }
+        if(greaterZ(testVert, extremeVectors[5])) {
+          extremeSix[5] = test;
+          extremeVectors[5] = testVert;
+        }
+      }
       for(int i = 0; i < 6; i++) {
         Vec3 thisExtremeVec(xCoords[extremeSix[i]], yCoords[extremeSix[i]], zCoords[extremeSix[i]]);
         extremeVectors[i] = thisExtremeVec;
       }
       double maxDist = 0;
-      int base1 = 0; //ints from 0-5: which pair out of the 6 extreme points are the most distant? (indices in extremeSix and extremeVectors)
+      //ints from 0-5: which pair out of the 6 extreme points are the most distant? (indices in extremeSix and extremeVectors)
+      int base1 = 0; 
       int base2 = 0;
       for(int i = 0; i < 5; i++) {
         for(int j = i + 1; j < 6; j++) {
@@ -1114,10 +911,10 @@ namespace VizHelpers {
           }
         }
       }
-      std::list<Triangle> hullBuilding;    //each Triangle is a triplet of nodes (int IDs) that form a triangle
+      vector<Triangle> hull;    //each Triangle is a triplet of nodes (int IDs) that form a triangle
       //remove base1 and base2 iters from aggNodes, they are known to be in the hull
-      aggNodes.remove(extremeSix[base1]);
-      aggNodes.remove(extremeSix[base2]);
+      aggNodes.erase(find(aggNodes.begin(), aggNodes.end(), extremeSix[base1]));
+      aggNodes.erase(find(aggNodes.begin(), aggNodes.end(), extremeSix[base2]));
       //extremeSix[base1] and [base2] still have the Vec3 representation
       Triangle tri;
       tri.v1 = extremeSix[base1];
@@ -1127,61 +924,62 @@ namespace VizHelpers {
       //need the vectors to do "quadruple product" formula
       Vec3 b1 = extremeVectors[base1];
       Vec3 b2 = extremeVectors[base2];
-      Iter thirdNode;
-      for(Iter node = aggNodes.begin(); node != aggNodes.end(); node++) {
-        Vec3 nodePos(xCoords[*node], yCoords[*node], zCoords[*node]);
-        double dist = mymagnitude(crossProduct(vecSubtract(nodePos, b1), vecSubtract(nodePos, b2))) / mymagnitude(vecSubtract(b2, b1));
+      GlobalOrdinal thirdNode;
+      for(size_t i = 0; i < aggNodes.size(); i++)
+        Vec3 nodePos = verts_[aggNodes[i]];
+        double dist = mag(crossProduct(nodePos - b1, nodePos - b2)) / mag(b2 - b1);
         if(dist > maxDist) {
           maxDist = dist;
-          thirdNode = node;
+          thirdNode = aggNodes[i];
         }
       }
       //Now know the last node in the first triangle
-      tri.v3 = *thirdNode;
-      hullBuilding.push_back(tri);
-      Vec3 b3(xCoords[*thirdNode], yCoords[*thirdNode], zCoords[*thirdNode]);
-      aggNodes.erase(thirdNode);
+      tri.v3 = thirdNode;
+      hull.push_back(tri);
+      Vec3 b3 = verts_[thirdNode];
+      aggNodes.remove(find(aggNodes.begin(), aggNodes.end(), thirdNode));
       //Find the fourth node (most distant from triangle) to form tetrahedron
       maxDist = 0;
-      int fourthVertex = -1;
-      for(Iter node = aggNodes.begin(); node != aggNodes.end(); node++) {
-        Vec3 thisNode(xCoords[*node], yCoords[*node], zCoords[*node]);
+      GlobalOrdinal fourthVertex = -1;
+      for(size_t i = 0; i < aggNode.ssize(); i++)
+        Vec3 thisNode = verts_[aggNodes[i]];
         double nodeDist = pointDistFromTri(thisNode, b1, b2, b3);
         if(nodeDist > maxDist) {
           maxDist = nodeDist;
-          fourthVertex = *node;
+          fourthVertex = aggNodes[i];
         }
       }
-      aggNodes.remove(fourthVertex);
-      Vec3 b4(xCoords[fourthVertex], yCoords[fourthVertex], zCoords[fourthVertex]);
-      //Add three new triangles to hullBuilding to form the first tetrahedron
+      aggNodes.remove(find(aggNodes.begin(), aggNodes.end(), fourthVertex));
+      Vec3 b4 = verts_[fourthVertex];
+      //Add three new triangles to hull to form the first tetrahedron
       //use tri to hold the triangle info temporarily before being added to list
-      tri = hullBuilding.front();
+      tri = hull.front();
       tri.v1 = fourthVertex;
-      hullBuilding.push_back(tri);
-      tri = hullBuilding.front();
+      hull.push_back(tri);
+      tri = hull.front();
       tri.v2 = fourthVertex;
-      hullBuilding.push_back(tri);
-      tri = hullBuilding.front();
+      hull.push_back(tri);
+      tri = hull.front();
       tri.v3 = fourthVertex;
-      hullBuilding.push_back(tri);
+      hull.push_back(tri);
       //now orient all four triangles so that the vertices are oriented clockwise (so getNorm_ points outward for each)
       Vec3 barycenter((b1.x + b2.x + b3.x + b4.x) / 4.0, (b1.y + b2.y + b3.y + b4.y) / 4.0, (b1.z + b2.z + b3.z + b4.z) / 4.0);
-      for(std::list<Triangle>::iterator tetTri = hullBuilding.begin(); tetTri != hullBuilding.end(); tetTri++) {
-        Vec3 triVert1(xCoords[tetTri->v1], yCoords[tetTri->v1], zCoords[tetTri->v1]);
-        Vec3 triVert2(xCoords[tetTri->v2], yCoords[tetTri->v2], zCoords[tetTri->v2]);
-        Vec3 triVert3(xCoords[tetTri->v3], yCoords[tetTri->v3], zCoords[tetTri->v3]);
-        Vec3 trinorm = getNorm(triVert1, triVert2, triVert3);
-        Vec3 ptInPlane = tetTri == hullBuilding.begin() ? b1 : b4; //first triangle definitely has b1 in it, other three definitely have b4
+      for(auto& tri : hull)
+      {
+        Vec3 triVert1 = verts_[tri.v1];
+        Vec3 triVert2 = verts_[tri.v2];
+        Vec3 triVert3 = verts_[tri.v3];
+        Vec3 trinorm = triNormal(triVert1, triVert2, triVert3);
+        Vec3 ptInPlane = (tetTri == hull.begin()) ? b1 : b4; //first triangle definitely has b1 in it, other three definitely have b4
         if(isInFront(barycenter, ptInPlane, trinorm)) {
           //don't want the faces of the tetrahedron to face inwards (towards barycenter) so reverse orientation
           //by swapping two vertices
-          int temp = tetTri->v1;
-          tetTri->v1 = tetTri->v2;
-          tetTri->v2 = temp;
+          auto temp = tri.v1;
+          tri.v1 = tri.v2;
+          tri.v2 = temp;
         }
       }
-      //now, have starting polyhedron in hullBuilding (all faces are facing outwards according to getNorm_) and remaining nodes to process are in aggNodes
+      //now, have starting polyhedron in hull (all faces are facing outwards according to getNorm_) and remaining nodes to process are in aggNodes
       //recursively, for each triangle, make a list of the points that are 'in front' of the triangle. Find the point with the maximum distance from the triangle.
       //Add three new triangles, each sharing one edge with the original triangle but now with the most distant point as a vertex. Remove the most distant point from
       //the list of all points that need to be processed. Also from that list remove all points that are in front of the original triangle but not in front of all three
@@ -1189,343 +987,310 @@ namespace VizHelpers {
       //Construct point lists for each face of the tetrahedron individually.
       Vec3 trinorms[4]; //normals to the four tetrahedron faces, now oriented outwards
       int index = 0;
-      for(std::list<Triangle>::iterator tetTri = hullBuilding.begin(); tetTri != hullBuilding.end(); tetTri++) {
-        Vec3 triVert1(xCoords[tetTri->v1], yCoords[tetTri->v1], zCoords[tetTri->v1]);
-        Vec3 triVert2(xCoords[tetTri->v2], yCoords[tetTri->v2], zCoords[tetTri->v2]);
-        Vec3 triVert3(xCoords[tetTri->v3], yCoords[tetTri->v3], zCoords[tetTri->v3]);
+      for(auto& tri : hull)
+      {
+        Vec3 triVert1 = verts_[tri.v1];
+        Vec3 triVert2 = verts_[tri.v2];
+        Vec3 triVert3 = verts_[tri.v3];
         trinorms[index] = getNorm(triVert1, triVert2, triVert3);
         index++;
       }
-      std::list<int> startPoints1;
-      std::list<int> startPoints2;
-      std::list<int> startPoints3;
-      std::list<int> startPoints4;
+      vector<GlobalOrdinal> startPoints[4];
       //scope this so that 'point' is not in function scope
+      for(auto& pt : aggNodes)
       {
-        Iter point = aggNodes.begin();
-        while(!aggNodes.empty())  //this removes points one at a time as they are put in startPointsN or are already done
+        Vec3 ptPos = verts_[pt];
+        if(isInFront(ptPos, b1, trinorms[0]))
+          startPoints[0].push_back(ptPos);
+        else if(isInFront(ptPos, b4, trinorms[1]))
+          startPoints[1].push_back(ptPos);
+        else if(isInFront(ptPos, b4, trinorms[2]))
+          startPoints[2].push_back(ptPos);
+        else if(isInFront(ptPos, b4, trinorms[3]))
+          startPoints[3].push_back(ptPos);
+        //else: point already inside starting tetrahedron, so ignore
+      }
+      aggNodes.clear();
+      aggNodes.shrink_to_fit();
+      stack<int> trisToProcess;   //list of triangles still to process - done when empty
+      stack<int> freelist;        //list of free indices in hull (triangles that have been deleted)
+      //set up the neighbors of the first four triangles --
+      //  in a tetrahedron, every triangle is a neighbor of every other triangle
+      for(int i = 0; i < 4; i++)
+      {
+        hull[i].valid = true;
+        int numNeighbors = 0;
+        for(int j = 0; j < 4; j++)
         {
-          Vec3 pointVec(xCoords[*point], yCoords[*point], zCoords[*point]);
-          //Note: Because of the way the tetrahedron faces are constructed above,
-          //face 1 definitely contains b1 and faces 2-4 definitely contain b4.
-          if(isInFront(pointVec, b1, trinorms[0])) {
-            startPoints1.push_back(*point);
-            point = aggNodes.erase(point);
-          } else if(isInFront(pointVec, b4, trinorms[1])) {
-            startPoints2.push_back(*point);
-            point = aggNodes.erase(point);
-          } else if(isInFront(pointVec, b4, trinorms[2])) {
-            startPoints3.push_back(*point);
-            point = aggNodes.erase(point);
-          } else if(isInFront(pointVec, b4, trinorms[3])) {
-            startPoints4.push_back(*point);
-            point = aggNodes.erase(point);
-          } else {
-            point = aggNodes.erase(point); //points here are already inside tetrahedron.
+          if(i == j)
+            continue;
+          hull[i].neighbor[numNeighbors++] = j;
+        }
+        if(startPoints[i].size())
+        {
+          trisToProcess.push(i);
+          hull[i].setPointList[startPoints[i]];
+          startPoints[i].clear();
+          startPoints[i].shrink_to_fit();
+        }
+        else
+        {
+          hull[i].frontPoints = NULL;
+          hull[i].numPoints = 0;
+        }
+      }
+      while(!trisToProcess.empty())
+      {
+        int tri = trisToProcess.top();
+        trisToProcess.pop();
+        //note: since faces was in queue, it is guaranteed to have front points 
+        //therefore, it is also guaranteed to be replaced
+        Triangle t = hull[tri];
+        //mark space as free
+        freelist.push(tri);
+        hull[tri].valid = false;
+        //note: t is a shallow copy that keeps the front point list
+        //out of the point list, get the most distant point
+        double furthest = 0;
+        int bestInd = -1;
+        for(int i = 0; i < t.numPoints; i++)
+        {
+          double thisDist = pointDistFromTri(verts_[t.frontPoints[i]], verts_[t.v1], verts_[t.v2], verts_[t.v3]);
+          if(thisDist > furthest)
+          {
+            bestInd = i;
+            furthest = thisDist;
           }
         }
-        //Call processTriangle for each triangle in the initial tetrahedron, one at a time.
-      }
-      typedef std::list<Triangle>::iterator TriIter;
-      TriIter firstTri = hullBuilding.begin();
-      Triangle start1 = *firstTri;
-      firstTri++;
-      Triangle start2 = *firstTri;
-      firstTri++;
-      Triangle start3 = *firstTri;
-      firstTri++;
-      Triangle start4 = *firstTri;
-      //kick off depth-first recursive filling of hullBuilding list with all triangles in the convex hull
-      if(!startPoints1.empty())
-        processTriangle(hullBuilding, start1, startPoints1, barycenter, xCoords, yCoords, zCoords);
-      if(!startPoints2.empty())
-        processTriangle(hullBuilding, start2, startPoints2, barycenter, xCoords, yCoords, zCoords);
-      if(!startPoints3.empty())
-        processTriangle(hullBuilding, start3, startPoints3, barycenter, xCoords, yCoords, zCoords);
-      if(!startPoints4.empty())
-        processTriangle(hullBuilding, start4, startPoints4, barycenter, xCoords, yCoords, zCoords);
-      //hullBuilding now has all triangles that make up this hull.
-      //Dump hullBuilding info into the list of all triangles for the scene.
-      geomVerts_.reserve(geomVerts_.size() + 3 * hullBuilding.size());
-      for(TriIter hullTri = hullBuilding.begin(); hullTri != hullBuilding.end(); hullTri++) {
-        geomVerts_.push_back(hullTri->v1);
-        geomVerts_.push_back(hullTri->v2);
-        geomVerts_.push_back(hullTri->v3);
-        geomSizes_.push_back(3);
-      }
-    }
-  }
-
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  std::vector<Triangle> AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  processTriangle(std::list<Triangle>& tris, Triangle tri, std::list<int>& pointsInFront, Vec3& barycenter) {
-    //*tri is in the tris list, and is the triangle to process here. tris is a complete list of all triangles in the hull so far. pointsInFront is only a list of the nodes in front of tri. Need coords also.
-    //precondition: each triangle is already oriented so that getNorm_(v1, v2, v3) points outward (away from interior of hull)
-    //First find the point furthest from triangle.
-    using namespace std;
-    typedef std::list<int>::iterator Iter;
-    typedef std::list<Triangle>::iterator TriIter;
-    typedef list<pair<int, int> >::iterator EdgeIter;
-    double maxDist = 0;
-    //Need vector representations of triangle's vertices
-    Vec3 v1(xCoords[tri.v1], yCoords[tri.v1], zCoords[tri.v1]);
-    Vec3 v2(xCoords[tri.v2], yCoords[tri.v2], zCoords[tri.v2]);
-    Vec3 v3(xCoords[tri.v3], yCoords[tri.v3], zCoords[tri.v3]);
-    Vec3 farPointVec; //useful to have both the point's coordinates and it's position in the list
-    Iter farPoint = pointsInFront.begin();
-    for(Iter point = pointsInFront.begin(); point != pointsInFront.end(); point++)
-    {
-      Vec3 pointVec(xCoords[*point], yCoords[*point], zCoords[*point]);
-      double dist = pointDistFromTri(pointVec, v1, v2, v3);
-      if(dist > maxDist)
-      {
-        dist = maxDist;
-        farPointVec = pointVec;
-        farPoint = point;
-      }
-    }
-    //Find all the triangles that the point is in front of (can be more than 1)
-    //At the same time, remove them from tris, as every one will be replaced later
-    vector<Triangle> visible; //use a list of iterators so that the underlying object is still in tris
-    for(TriIter it = tris.begin(); it != tris.end();)
-    {
-      Vec3 vec1(xCoords[it->v1], yCoords[it->v1], zCoords[it->v1]);
-      Vec3 vec2(xCoords[it->v2], yCoords[it->v2], zCoords[it->v2]);
-      Vec3 vec3(xCoords[it->v3], yCoords[it->v3], zCoords[it->v3]);
-      Vec3 norm = getNorm(vec1, vec2, vec3);
-      if(isInFront(farPointVec, vec1, norm))
-      {
-        visible.push_back(*it);
-        it = tris.erase(it);
-      }
-      else
-        it++;
-    }
-    //Figure out what triangles need to be destroyed/created
-    //First create a list of edges (as std::pair<int, int>, where the two ints are the node endpoints)
-    list<pair<int, int> > horizon;
-    //For each triangle, add edges to the list iff the edge only appears once in the set of all
-    //Have members of horizon have the lower node # first, and the higher one second
-    for(vector<Triangle>::iterator it = visible.begin(); it != visible.end(); it++)
-    {
-      pair<int, int> e1(it->v1, it->v2);
-      pair<int, int> e2(it->v2, it->v3);
-      pair<int, int> e3(it->v1, it->v3);
-      //"sort" the pair values
-      if(e1.first > e1.second)
-      {
-        int temp = e1.first;
-        e1.first = e1.second;
-        e1.second = temp;
-      }
-      if(e2.first > e2.second)
-      {
-        int temp = e2.first;
-        e2.first = e2.second;
-        e2.second = temp;
-      }
-      if(e3.first > e3.second)
-      {
-        int temp = e3.first;
-        e3.first = e3.second;
-        e3.second = temp;
-      }
-      horizon.push_back(e1);
-      horizon.push_back(e2);
-      horizon.push_back(e3);
-    }
-    //sort based on lower node first, then higher node (lexicographical ordering built in to pair)
-    horizon.sort();
-    //Remove all edges from horizon, except those that appear exactly once
-    {
-      EdgeIter it = horizon.begin();
-      while(it != horizon.end())
-      {
-        int occur = count(horizon.begin(), horizon.end(), *it);
-        if(occur > 1)
+        //get the set of triangles adjacent to t which are visible from the furthest point
+        auto farPoint = t.frontPoints[bestInd];
+        vector<Triangle> visible;
+        visible.push_back(t);
+        for(int i = 0; i < 3; i++)
         {
-          pair<int, int> removeVal = *it;
-          while(removeVal == *it && !(it == horizon.end()))
-            it = horizon.erase(it);
+          auto& nei = hull[t.neighbor[i]];
+          if(pointInFront(nei, farPoint))
+          {
+            visible.push_back(nei);
+            freeList.push(t.neighbor[i]);
+            hull[t.neighbor[i]].valid = false;
+          }
         }
-        else
-          it++;
-      }
-    }
-    //Now make a list of new triangles being created, each of which take 2 vertices from an edge and one from farPoint
-    list<Triangle> newTris;
-    for(EdgeIter it = horizon.begin(); it != horizon.end(); it++)
-    {
-      Triangle t(it->first, it->second, *farPoint);
-      newTris.push_back(t);
-    }
-    //Ensure every new triangle is oriented outwards, using the barycenter of the initial tetrahedron
-    vector<Triangle> trisToProcess;
-    vector<list<int> > newFrontPoints;
-    for(TriIter it = newTris.begin(); it != newTris.end(); it++)
-    {
-      Vec3 t1(xCoords[it->v1], yCoords[it->v1], zCoords[it->v1]);
-      Vec3 t2(xCoords[it->v2], yCoords[it->v2], zCoords[it->v2]);
-      Vec3 t3(xCoords[it->v3], yCoords[it->v3], zCoords[it->v3]);
-      if(isInFront(barycenter, t1, getNorm(t1, t2, t3)))
-      {
-        //need to swap two vertices to flip orientation of triangle
-        int temp = it->v1;
-        Vec3 tempVec = t1;
-        it->v1 = it->v2;
-        t1 = t2;
-        it->v2 = temp;
-        t2 = tempVec;
-      }
-      Vec3 outwardNorm = getNorm(t1, t2, t3); //now definitely points outwards
-      //Add the triangle to tris
-      tris.push_back(*it);
-      trisToProcess.push_back(tris.back());
-      //Make a list of the points that are in front of nextToProcess, to be passed in for processing
-      list<int> newInFront;
-      for(Iter point = pointsInFront.begin(); point != pointsInFront.end();)
-      {
-        Vec3 pointVec(xCoords[*point], yCoords[*point], zCoords[*point]);
-        if(isInFront(pointVec, t1, outwardNorm))
+        struct Edge
         {
-          newInFront.push_back(*point);
-          point = pointsInFront.erase(point);
+          Edge() {}
+          Edge(GlobalOrdinal v1i, GlobalOrdinal v2i)
+          {
+            if(v1i < v2i)
+            {
+              v1 = v1i;
+              v2 = v2i;
+            }
+            else
+            {
+              v1 = v2i;
+              v2 = v1i;
+            }
+          }
+          bool operator==(const Edge& rhs)
+          {
+            return v1 == rhs.v1 && v2 == rhs.v2;
+          }
+          GlobalOrdinal v1;
+          GlobalOrdinal v2;
+        };
+        //get a list of all edges contained in all the deleted triangles (keeping duplicates)
+        vector<Edge> allEdges;
+        for(auto& nei : visible)
+        {
+          allEdges.emplace_back(nei.v1, nei.v2);
+          allEdges.emplace_back(nei.v2, nei.v3);
+          allEdges.emplace_back(nei.v1, nei.v3);
         }
-        else
-          point++;
-      }
-      newFrontPoints.push_back(newInFront);
-    }
-    vector<Triangle> allRemoved; //list of all invalid iterators that were erased by calls to processTriangle below
-    for(int i = 0; i < int(trisToProcess.size()); i++)
-    {
-      if(!newFrontPoints[i].empty())
-      {
-        //Comparing the 'triangle to process' to the one for this call prevents infinite recursion/stack overflow.
-        //TODO: Why was it doing that? Rounding error? Make more robust fix. But this does work for the time being.
-        if(find(allRemoved.begin(), allRemoved.end(), trisToProcess[i]) == allRemoved.end() && !(trisToProcess[i] == tri))
+        //sort it - already have the two vertices in each edge sorted (v1 < v2)
+        std::sort(allEdges.begin(), allEdges.end(),
+            [] (const Edge& e1, const Edge& e2) -> bool
+            {return e1.v1 < e2.v1 || (e1.v1 == e2.v1 && e1.v2 < e2.v2);});
+        //make a new list of edges that only appear in this list once (the boundary of the hole in the mesh)
+        //note: edges can appear at most twice
+        vector<Edge> boundary;
+        for(size_t i = 0; i < allEdges.size(); i++)
         {
-          vector<Triangle> removedList = processTriangle(tris, trisToProcess[i], newFrontPoints[i], barycenter, xCoords, yCoords, zCoords);
-          for(int j = 0; j < int(removedList.size()); j++)
-            allRemoved.push_back(removedList[j]);
+          if(i < allEdges.size() - 1 && allEdges[i] == allEdges[i + 1])
+          {
+            i++;
+            continue;
+          }
+          boundary.push_back(allEdges[i]);
+        }
+        //for each boundary edge, form a new triangle with the farPoint - can't assign neighbors yet
+        vector<int> newTris;
+        for(auto& e : boundary)
+        {
+          int ind;
+          if(!freelist.empty())
+          {
+            ind = freelist.top();
+            freelist.pop();
+          }
+          else
+          {
+            hull.emplace_back();
+            ind = hull.size() - 1;
+          }
+          Triangle& newTri = hull[ind];
+          newTri.valid = true;
+          newTri.v1 = e.v1;
+          newTri.v2 = e.v2;
+          newTri.v3 = farPoint;
+          newTris.push_back(ind);
+        }
+        //now set up neighbors for new triangles
+        //first, build set of all triangels to search: all still-valid neighbors of visible and also all new triangles
+        set<int> edgeSearch;
+        for(auto& newTri : newTris)
+        {
+          edgeSearch.insert(newTri);
+        }
+        for(auto& visibleTri : visible)
+        {
+          if(hull[visibleTri.v1].valid)
+            edgeSearch.insert(visibleTri.v1);
+          if(hull[visibleTri.v2].valid)
+            edgeSearch.insert(visibleTri.v2);
+          if(hull[visibleTri.v3].valid)
+            edgeSearch.insert(visibleTri.v3);
+        }
+        for(auto newTri : newTris)
+        {
+          Triangle& nt = hull[newTri];
+          for(auto& searchTri : edgeSearch)
+          {
+            if(nt.adjacent(hull[searchTri]))
+            {
+              if(!nt.hasNeighbor(searchTri))
+              {
+                nt.addNeighbor(searchTri);
+              }
+            }
+          }
+        }
+        //now, collect all the front points from visible triangles into one vector, and free the originals
+        int totalFrontPoints = 0;
+        for(auto& v : visible)
+        {
+          totalFrontPoints += v.numPoints;
+        }
+        vector<GlobalOrdinal> frontPoints;
+        frontPoints.reserve(totalFrontPoints);
+        for(auto& v : visible)
+        {
+          for(int i = 0; i < v.numPoints; i++)
+          {
+            frontPoints.push_back(v.frontPoints[i]);
+          }
+          v.freePointList();
+        }
+        //now, redistribute the points among all new triangles
+        vector<vector<GlobalOrdinal>> triFrontPoints(newTris.size());
+        for(auto frontPoint : frontPoints)
+        {
+          //find a new triangle such that frontPoint is in front of it
+          for(size_t i = 0; i < newTris.size(); i++)
+          {
+            int nt = newTris[i];
+            if(pointInFront(hull[nt], frontPoint))
+            {
+              triFrontPoints[i].push_back(frontPoint);
+              break;
+            }
+          }
+        }
+        //for each triangle that has some front points, allocate its points array and add it to stack
+        for(size_t i = 0; i < newTris.size(); i++)
+        {
+          int newTri = newTris[i];
+          Triangle& nt = hull[nt];
+          if(triFrontPoints[i].size())
+          {
+            nt.setPointList(triFrontPoints[i]);
+            trisToProcess.push(newTri);
+          }
+        }
+      }
+      //hull now has all triangles that make up this hull.
+      //Dump hull info into the list of all triangles for the scene.
+      geomVerts_.reserve(geomVerts_.size() + 3 * hull.size());
+      geomAggs_.reserve(geomAggs_.size() + 3 * hull.size());
+      for(auto& tri : hull)
+      {
+        if(tri.valid)
+        {
+          geomVerts_.push_back(tri.v1);
+          geomVerts_.push_back(tri.v2);
+          geomVerts_.push_back(tri.v3);
+          geomAggs_.push_back(agg);
+          geomAggs_.push_back(agg);
+          geomAggs_.push_back(agg);
+          geomSizes_.push_back(3);
         }
       }
     }
-    return visible;
   }
 
 #ifdef HAVE_MUELU_CGAL
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  cgalConvexHulls3D() {
-
+  cgalConvexHulls3D()
+{
     typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
     typedef K::Point_3 Point_3;
     typedef CGAL::Polyhedron_3<K> Polyhedron_3;
     typedef std::vector<int>::iterator Iter;
     for(int agg = 0; agg < numLocalAggs; agg++) {
-      std::vector<int> aggNodes;
+      std::vector<GlobalOrdinal> aggNodes;
       std::vector<Point_3> aggPoints;
-      for(int i = 0; i < numFineNodes; i++) {
-        if(vertex2AggId[i] == agg) {
-          Point_3 p(xCoords[i], yCoords[i], zCoords[i]);
-          aggPoints.push_back(p);
-          aggNodes.push_back(i);
-        }
+      for(GlobalOrdinal i = aggOffsets_[agg]; i < aggOffsets_[agg + 1]; i++)
+      {
+        auto vert = aggVerts_[i];
+        aggNodes.push_back(vert);
+        auto vertPos = verts_[vert];
+        aggPoints.emplace_back(vertPos.x, vertPos.y, vertPos.z);
       }
       //First, check anomalous cases
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
                "CoarseningVisualization::doCGALConvexHulls3D: aggregate contains zero nodes!");
-      if(aggNodes.size() == 1) {
-        geomVerts_.push_back(aggNodes.front());
-        geomSizes_.push_back(1);
-        continue;
-      } else if(aggNodes.size() == 2) {
-        geomVerts_.push_back(aggNodes.front());
-        geomVerts_.push_back(aggNodes.back());
-        geomSizes_.push_back(2);
+      if(handleDegenerate3D(aggNodes, agg))
+      {
         continue;
       }
-      //check for collinearity
-      bool areCollinear = true;
-      {
-        Iter it = aggNodes.begin();
-        Vec3 firstVec(xCoords[*it], yCoords[*it], zCoords[*it]);
-        Vec3 comp;
-        {
-          it++;
-          Vec3 secondVec(xCoords[*it], yCoords[*it], zCoords[*it]); //cross this with other vectors to compare
-          comp = vecSubtract(secondVec, firstVec);
-          it++;
-        }
-        for(; it != aggNodes.end(); it++) {
-          Vec3 thisVec(xCoords[*it], yCoords[*it], zCoords[*it]);
-          Vec3 cross = crossProduct(vecSubtract(thisVec, firstVec), comp);
-          if(mymagnitude(cross) > 1e-8) {
-            areCollinear = false;
-            break;
-          }
-        }
-      }
-      if(areCollinear)
-      {
-        //find the endpoints of segment describing all the points
-        //compare x, if tie compare y, if tie compare z
-        Iter min = aggNodes.begin();
-        Iter max = aggNodes.begin();
-        Iter it = ++aggNodes.begin();
-        for(; it != aggNodes.end(); it++) {
-          if(xCoords[*it] < xCoords[*min]) min = it;
-          else if(xCoords[*it] == xCoords[*min]) {
-            if(yCoords[*it] < yCoords[*min]) min = it;
-            else if(yCoords[*it] == yCoords[*min]) {
-              if(zCoords[*it] < zCoords[*min]) min = it;
-            }
-          }
-          if(xCoords[*it] > xCoords[*max]) max = it;
-          else if(xCoords[*it] == xCoords[*max]) {
-            if(yCoords[*it] > yCoords[*max]) max = it;
-            else if(yCoords[*it] == yCoords[*max]) {
-              if(zCoords[*it] > zCoords[*max])
-                max = it;
-            }
-          }
-        }
-        geomVerts_.push_back(*min);
-        geomVerts_.push_back(*max);
-        geomSizes_.push_back(2);
-        continue;
-      }
-      // do not handle coplanar or general case here. Just let's use CGAL
-      {
-        Polyhedron_3 result;
-        CGAL::convex_hull_3( aggPoints.begin(), aggPoints.end(), result);
-
-        // loop over all facets
-        Polyhedron_3::Facet_iterator fi;
-        for (fi = result.facets_begin(); fi != result.facets_end(); fi++) {
-          int cntVertInAgg = 0;
-          Polyhedron_3::Halfedge_around_facet_const_circulator hit = fi->facet_begin();
-          do {
-            const Point_3 & pp = hit->vertex()->point();
-            // loop over all aggregate nodes and find corresponding node id
-            for(size_t l = 0; l < aggNodes.size(); l++)
+      Polyhedron_3 result;
+      CGAL::convex_hull_3( aggPoints.begin(), aggPoints.end(), result);
+      // loop over all facets
+      Polyhedron_3::Facet_iterator fi;
+      for (fi = result.facets_begin(); fi != result.facets_end(); fi++) {
+        int cntVertInAgg = 0;
+        Polyhedron_3::Halfedge_around_facet_const_circulator hit = fi->facet_begin();
+        do {
+          const Point_3 & pp = hit->vertex()->point();
+          // loop over all aggregate nodes and find corresponding node id
+          for(size_t l = 0; l < aggNodes.size(); l++)
+          {
+            auto aggVert = verts_[aggNodes[l]];
+            if(fabs(pp.x() - aggVert.x) < 1e-12 &&
+               fabs(pp.y() - aggVert.y) < 1e-12 &&
+               fabs(pp.z() - aggVert.z) < 1e-12)
             {
-              if(fabs(pp.x() - xCoords[aggNodes[l]]) < 1e-12 &&
-                 fabs(pp.y() - yCoords[aggNodes[l]]) < 1e-12 &&
-                 fabs(pp.z() - zCoords[aggNodes[l]]) < 1e-12)
-              {
-                geomVerts_.push_back(aggNodes[l]);
-                cntVertInAgg++;
-                break;
-              }
+              geomVerts_.push_back(aggNodes[l]);
+              geomAggs_.push_back(agg);
+              cntVertInAgg++;
+              break;
             }
-          } while (++hit != fi->facet_begin());
-          geomSizes_.push_back(cntVertInAgg);
-        }
+          }
+        } while (++hit != fi->facet_begin());
+        geomSizes_.push_back(cntVertInAgg);
       }
     }
-
   }
 
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -1549,30 +1314,23 @@ namespace VizHelpers {
     for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
     {
       //Populate a list of Point_2 for this aggregate
-      vector<Point> aggPoints;
-      LocalOrdinal aggStart = aggOffsets_[agg];
-      LocalOrdinal aggEnd = aggOffsets_[agg + 1];
-      LocalOrdinal aggSize = aggEnd - aggStart;
+      GlobalOrdinal aggStart = aggOffsets_[agg];
+      GlobalOrdinal aggEnd = aggOffsets_[agg + 1];
+      GlobalOrdinal aggSize = aggEnd - aggStart;
       //Handle point and line segment case
       //because make assumption later that alpha shape is a polygon
-      if(aggSize == 1)
+      vector<Point> aggPoints;
+      vector<GlobalOrdinal> aggNodes;
+      for(GlobalOrdinal vi = aggStart; vi < aggEnd; vi++)
       {
-        geomVerts_.push_back(aggVerts_[aggStart]);
-        geomSizes_.push_back(1);
-        continue;
+        GlobalOrdinal v = aggVerts_[vi];
+        aggNodes.push_back(v);
+        auto vpos = verts_[v];
+        aggPoints.push_back(Point(vpos.x, vpos.y));
       }
-      else if(aggSize == 2)
+      if(handleDegenerate(aggNodes, agg, false))
       {
-        geomVerts_.push_back(aggVerts_[aggStart]);
-        geomVerts_.push_back(aggVerts_[aggStart + 1]);
-        geomSizes_.push_back(2);
         continue;
-      }
-      aggPoints.reserve(aggSize);
-      for(LocalOrdinal vi = aggStart; vi < aggEnd; vi++)
-      {
-        LocalOrdinal v = aggVerts_[vi];
-        aggPoints.push_back(Point(x_[v], y_[v]));
       }
       Alpha_shape_2 hull(aggPoints.begin(), aggPoints.end());
       //Find smallest alpha value where alpha shape is one contiguous polygon
@@ -1581,16 +1339,17 @@ namespace VizHelpers {
       vector<Segment> cgalSegments;
       CGAL::alpha_edges(hull, back_inserter(segments));
       //map points back to vertices
-      vector<pair<LocalOrdinal, LocalOrdinal>> segments;
+      vector<pair<GlobalOrdinal, GlobalOrdinal>> segments;
       segments.reserve(cgalSegments.size());
       for(size_t j = 0; j < cgalSegments.size(); j++)
       {
         bool foundFirst = false;
-        pair<LocalOrdinal, LocalOrdinal> seg(-1, -1);
-        for(LocalOrdinal k = aggStart; k < aggEnd; k++)
+        pair<GlobalOrdinal, GlobalOrdinal> seg(-1, -1);
+        for(GlobalOrdinal k = aggStart; k < aggEnd; k++)
         {
-          LocalOrdinal v = aggVerts_[k];
-          if(cgalSegments[j][0].x == x_[v] && cgalSegments[j][0].y == y_[v])
+          GlobalOrdinal v = aggVerts_[k];
+          auto vpos = verts_[v];
+          if(cgalSegments[j][0].x == vpos.x && cgalSegments[j][0].y == vpos.y)
           {
             if(!foundFirst)
             {
@@ -1636,6 +1395,7 @@ namespace VizHelpers {
       for(size_t i = 0; i < polyVerts.size(); i++)
       {
         geomVerts_.push_back(polyVerts[i]);
+        geomAggs_.push_back(agg);
       }
       geomSizes_.push_back(polyVerts.size());
     }
@@ -1661,26 +1421,16 @@ namespace VizHelpers {
     for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
     {
       vector<Point> aggPoints;
-      LocalOrdinal aggStart = aggOffsets_[agg];
-      LocalOrdinal aggEnd = aggOffsets_[agg + 1];
-      LocalOrdinal aggSize = aggEnd - aggStart;
-      if(aggSize == 1)
+      vector<GlobalOrdinal> aggNodes;
+      GlobalOrdinal aggStart = aggOffsets_[agg];
+      GlobalOrdinal aggEnd = aggOffsets_[agg + 1];
+      GlobalOrdinal aggSize = aggEnd - aggStart;
+      for(GlobalOrdinal i = aggStart; i < aggEnd; i++)
       {
-        geomVerts_.push_back(aggVerts_[aggStart]);
-        geomSizes_.push_back(1);
-        continue;
-      }
-      else if(aggSize == 2)
-      {
-        geomVerts_.push_back(aggVerts_[aggStart]);
-        geomVerts_.push_back(aggVerts_[aggStart + 1]);
-        geomSizes_.push_back(2);
-        continue;
-      }
-      for(LocalOrdinal i = aggStart; i < aggEnd; i++)
-      {
-        LocalOrdinal v = aggVerts_[i];
-        aggPoints.push_back(Point(x_[v], y_[v], z_[v]));
+        GlobalOrdinal v = aggVerts_[i];
+        aggNodes.push_back(v);
+        auto vpos = verts_[v];
+        aggPoints.emplace_back(vpos.x, vpos.y);
       }
       Fixed_alpha_shape_3 hull(aggPoints.begin(), aggPoints.end());
       vector<Cell_handle> cells;
@@ -1708,7 +1458,10 @@ namespace VizHelpers {
           for(int j = 0; j < 3; j++)
           {
             if(facetPts[j] == aggPoints[ap])
+            {
               geomVerts_.push_back(aggVerts_[aggStart + ap]);
+              geomAggs_.push_back(agg);
+            }
           }
         }
         geomSizes_.push_back(3);
@@ -1717,159 +1470,282 @@ namespace VizHelpers {
   }
 
 #endif
-
+  
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  std::vector<int> AggGeometry<LocalOrdinal>::
-  giftWrap(int aggStart, int aggEnd) {
-
-    TEUCHOS_TEST_FOR_EXCEPTION(points.size() < 3, Exceptions::RuntimeError,
-             "CoarseningVisualization::giftWrap: Gift wrap algorithm input has to have at least 3 points!");
-
-    std::vector<int> hull;
-    int aggSize = aggEnd - aggStart;
-    //Find "minimum" point definitely in the convex hull
-    int minPt = aggVerts_[aggStart];
-    for(int i = 1; i < aggSize; i++)
-    {
-      int v = aggVerts_[aggStart + i];
-      if(x_[v] < x_[minPt] || (x_[v] == x_[minPt] && y_[v] < y_[minPt]))
-      {
-        minPt = v;
-      }
+  std::vector<GlobalOrdinal> AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+  giftWrap(std::vector<GlobalOrdinal>& points)
+  {
+    if(points.size() < 3) {
+      //aggregate is a point or line segment, so just use all its points as the geometry
+      return points;
     }
-    hull.push_back(minPt);
-    std::vector<bool> inHull(aggSize, false);
-    //walk around the boundary of the convex hull
-    int current = minPt;
-    do
+    //first, get the normal to the plane containing the points
+    Vec3 normal;
     {
-      //vertex that might be in the hull
-      int cand;
-      //pick any vertex not already in the hull
-      for(int i = 0; i < aggSize; i++)
+      Vec3 v1 = verts_[points[0]];
+      Vec3 v2 = verts_[points[1]];
+      Vec3 v3 = verts_[points[2]];
+      size_t i = 3;
+      //make sure triangle is not degenerate when getting its normal
+      while(i < points.size() && mag(cross(v1 - v2, v1 - v3)) < 1e-8)
       {
-        if(!inHull[i])
+        v3 = verts_[points[i]];
+        i++;
+      }
+      normal = cross(v1 - v2, v1 - v3).normalize();
+    }
+    //Will project all 3D points down to a 2D coordinate plane (either xy, yz or xz)
+    //ignoreDim is which dimension (0 = x, etc.) to ignore
+    //ignoreDim is given by whichever component of the normal is largest
+    int ignoreDim;
+    if(fabs(normal.x) >= fabs(normal.y) && fabs(normal.x) >= fabs(normal.z))
+      ignoreDim = 0;
+    else if(fabs(normal.y) >= fabs(normal.x) && fabs(normal.y) >= fabs(normal.z))
+      ignoreDim = 1;
+    else
+      ignoreDim = 2;
+    auto proj = [&] (Vec3 v) -> Vec2
+    {
+      switch(ignoreDim)
+      {
+        case 0:
+          return Vec2(v.y, v.z);
+        case 1:
+          return Vec2(v.x, v.z);
+        case 2:
+          return Vec2(v.x, v.y);
+      }
+      return Vec2;
+    }
+    //check if all points are collinear, need to explicitly draw a line in that case.
+    {
+      //find first pair (v1, v2) of vertices that are not the same, in case multiple nodes share positions
+      GlobalOrdinal v1 = points[0];
+      GlobalOrdinal v2 = points[1];
+      GlobalOrdinal iter;
+      for(iter = 2; iter < points.size(); iter++)
+      {
+        if(proj(verts_[v1]) != proj(verts_[v2]))
+          break;
+        v2 = points[i];
+      }
+      if(proj(verts_[v1]) == proj(verts_[v2]))
+      {
+        //all vertices in agg have same position (would be very strange corner case)
+        return std::vector<GlobalOrdinal>(1, points[0]);
+      }
+      //check if the rest of the vertices are collinear with v1, v2
+      Vec2 vec1 = proj(verts_[v1]);
+      Vec2 vec2 = proj(verts_[v2]);
+      bool allCollinear = true;
+      for(; iter < aggSize; iter++)
+      {
+        Vec2 vec3 = proj(verts_[points[iter]]);
+        if(!collinear(vec1, vec2, vec3))
         {
-          cand = aggVerts_[aggStart + i];
+          allCollinear = false;
           break;
         }
       }
-      //draw a line from current to cand,
-      //and switch cand to any vertex not in hull that is "left" of that line
-      //note: "left" defined by segmentNormal, which rotates a 2D vector 90 degrees to left
-      Vec2 curVec(x_[current], y_[current]);
-      for(int i = 0; i < aggSize; i++)
+      if(allCollinear)
       {
-        Vec2 candVec(x_[cand], y_[cand]);
-        int iter = aggVerts_[aggStart + i];
-        if(inHull[i] || iter == cand)
-          continue;
-        Vec2 iterVec(x_[iter], y_[iter]);
-        Vec2 lineLeft = segmentNormal(candVec - curVec);
-        //check if v is left of the line from current to cand
-        double dotProd = dot(lineLeft, iterVec - curVec);
-        if(dotProd > 1e-8)
+        //all vertices collinear
+        //find min and max coordinates in agg and make line segment between them
+        GlobalOrdinal minVert = points[0];
+        GlobalOrdinal maxVert = points[0];
+        Vec2 minPos = proj(verts_[minVert]);
+        Vec2 maxPos = proj(verts_[maxVert]);
+        for(size_t i = 1; i < points.size(); i++)
         {
-          //iter is definitely left of the line
-          cand = iter;
-        }
-        else if(dotProd > -1e-8)
-        {
-          //iter is on the line, use it if it is further from current than cand
-          if(dist(iterVec, curVec) > dist(candVec, curVec))
+          GlobalOrdinal v = points[i];
+          //compare X first and then use Y as a tiebreak (will always find 2 most distant points on the line)
+          Vec2 vPos = proj(verts_[v]);
+          if(vPos.x < minPos.x || (vPos.x == minPos.x && vPos.y < minPos.y)) 
           {
-            cand = iter;
+            minVert = v;
+            minPos = vPos;
+          }
+          if(vPos.x > minPos.x || (vPos.x == minPos.x && vPos.y > minPos.y)) 
+          {
+            maxVert = v;
+            maxPos = vPos;
           }
         }
+        std::vector<GlobalOrdinal> lineSeg(2);
+        lineSeg[0] = minVert;
+        lineSeg[1] = maxVert;
+        return lineSeg;
       }
-      //cand is the next vertex, add it to hull
-      hull.push_back(cand);
     }
-    while(current != minPt);
-    //add hull to geometry list as one polygon
-    for(size_t i = 0; i < hull.size(); i++)
+    //use "gift wrap" algorithm to find the convex hull
+    //first, find vert with minimum x (and use min y as a tiebreak)
+    GlobalOrdinal minVert = points[0];
+    Vec2 minPos = proj(verts_[minVert]);
+    for(GlobalOrdinal i = 1; i < aggSize; i++)
     {
-      geomVerts_.push_back(hull[i]);
-    }
-    geomSizes_.push_back(hull.size());
-
-    /*
-    double min_x =points[0].x;
-    double min_y =points[0].y;
-    for(std::vector<int>::iterator it = nodes.begin(); it != nodes.end(); it++) {
-      int i = it - nodes.begin();
-      if(points[i].x < min_x) min_x = points[i].x;
-      if(points[i].y < min_y) min_y = points[i].y;
-    }
-    // create dummy min coordinates
-    min_x -= 1.0;
-    min_y -= 1.0;
-    Vec2 dummy_min(min_x, min_y);
-
-    // loop over all nodes and determine nodes with minimal distance to (min_x, min_y)
-    std::vector<int> hull;
-    Vec2 min = points[0];
-    double mindist = distance(min,dummy_min);
-    std::vector<int>::iterator minNode = nodes.begin();
-    for(std::vector<int>::iterator it = nodes.begin(); it != nodes.end(); it++) {
-      int i = it - nodes.begin();
-      if(distance(points[i],dummy_min) < mindist) {
-        mindist = distance(points[i],dummy_min);
-        min = points[i];
-        minNode = it;
+      GlobalOrdinal test = points[i];
+      Vec2 testPos = proj(verts_[test]);
+      if(testPos.x < minPos.x || (testPos.x == minPos.x && testPos.y < minPos.y))
+      {
+        minVert = test;
+        minPos = testPos;
       }
     }
-    hull.push_back(*minNode);
-    bool includeMin = false;
-    //int debug_it = 0;
-    while(1)
+    std::vector<GlobalOrdinal> loop;
+    GlobalOrdinal loopIter = minVert;
+    //loop until a closed loop (with > 1 vertices) has been formed
+    while(true)
     {
-      std::vector<int>::iterator leftMost = nodes.begin();
-      if(!includeMin && leftMost == minNode)
+      //find another vertex "ray" in the aggregate 
+      GlobalOrdinal ray = points[0];
       {
-        leftMost++;
-      }
-      std::vector<int>::iterator it = leftMost;
-      it++;
-      for(; it != nodes.end(); it++)
-      {
-        if(it == minNode && !includeMin) //don't compare to min on very first sweep
-          continue;
-        if(*it == hull.back())
-          continue;
-        //see if it is in front of line containing nodes thisHull.back() and leftMost
-        //first get the left normal of leftMost - thisHull.back() (<dy, -dx>)
-        Vec2 leftMostVec = points[leftMost - nodes.begin()];
-        Vec2 lastVec(xCoords[hull.back()], yCoords[hull.back()]);
-        Vec2 testNorm = getNorm(vecSubtract(leftMostVec, lastVec));
-        //now dot testNorm with *it - leftMost. If dot is positive, leftMost becomes it. If dot is zero, take one further from thisHull.back().
-        Vec2 itVec(xCoords[*it], yCoords[*it]);
-        double dotProd = dotProduct(testNorm, vecSubtract(itVec, lastVec));
-        if(-1e-8 < dotProd && dotProd < 1e-8)
+        GlobalOrdinal i = 0;
+        if(ray == loopIter)
         {
-          //thisHull.back(), it and leftMost are collinear.
-          //Just sum the differences in x and differences in y for each and compare to get further one, don't need distance formula
-          Vec2 itDist = vecSubtract(itVec, lastVec);
-          Vec2 leftMostDist = vecSubtract(leftMostVec, lastVec);
-          if(fabs(itDist.x) + fabs(itDist.y) > fabs(leftMostDist.x) + fabs(leftMostDist.y)) {
-            leftMost = it;
-          }
-        }
-        else if(dotProd > 0) {
-          leftMost = it;
-
+          i++;
+          ray = points[i];
         }
       }
-      //if leftMost is min, then the loop is complete.
-      if(*leftMost == *minNode)
+      //sweep through all vertices, and if one is on the left side of loopIter->ray, change ray to it
+      //"is point left of ray?" is answered by segmentNormal and dot prod
+      Vec2 norm = segmentNormal(proj(verts_[ray]) - proj(verts_[loopIter]));
+      bool foundNext = false;
+      while(!foundNext)
+      {
+        for(size_t i = 0; i < points.size(); i++)
+        {
+          if(points[i] == loopIter || points[i] == ray)
+            continue;
+          if(dotProduct(norm, proj(verts_[points[i]]) - proj(verts_[loopIter])) > 0)
+          {
+            foundNext = true;
+            loop.push_back(loopIter);
+            loopIter = points[i];
+            break;
+          }
+        }
+        foundNext = true;
+      }
+      if(loop.back() == loop.front() && loop.size() > 1)
+      {
+        //have a closed loop
+        loop.pop_back();
         break;
-      hull.push_back(*leftMost);
-      includeMin = true; //have found second point (the one after min) so now include min in the searches
-      //debug_it ++;
-      //if(debug_it > 100) exit(0); //break;
+      }
     }
-    return hull;
-    */
+    //loop now contains the vertex loop representing convex hull (with none repeated)
+    return loop;
+  }
+
+  bool handleDegenerate(std::vector<GlobalOrdinal>& aggNodes, int agg, bool is3D)
+  {
+    if(aggNodes.size() == 1)
+    {
+      geomVerts_.push_back(aggNodes[0]);
+      geomAggs_.push_back(agg);
+      geomSizes_.push_back(1);
+      return true;
+    }
+    else if(aggNodes.size() == 2)
+    {
+      geomVerts_.push_back(aggNodes[0]);
+      geomAggs_.push_back(agg);
+      geomVerts_.push_back(aggNodes[1]);
+      geomAggs_.push_back(agg);
+      geomSizes_.push_back(2);
+      return true;
+    }
+    //check for collinearity
+    bool areCollinear = true;
+    {
+      Vec3 firstVec = verts_[aggNodes[0]];
+      Vec3 comp;
+      {
+        Vec3 secondVec = verts_[aggNodes[1]]; //cross this with other vectors to compare
+        comp = secondVec - firstVec;
+      }
+      for(size_t i = 2; i < aggNodes.size(); i++)
+      {
+        Vec3 cross = crossProduct(verts_[aggNodes[i]] - firstVec, comp);
+        if(mag(cross) > 1e-8) {
+          areCollinear = false;
+          break;
+        }
+      }
+    }
+    if(areCollinear)
+    {
+      //find the endpoints of segment describing all the points
+      //compare x, if tie compare y, if still tie compare z
+      GlobalOrdinal minVert = aggNodes[0];
+      Vec3 minPos = verts_[minVert];
+      GlobalOrdinal maxVert = aggNodes[0];
+      Vec3 maxPos = verts_[maxVert];
+      for(size_t i = 1; i < aggNodes.size(); i++)
+      {
+        Vec3 thisVert = verts_[aggNodes[i]];
+        if(thisVert.x < minPos.x ||
+            (thisVert.x == minPos.x && thisVert.y < minPos.y) ||
+            (thisVert.x == minPos.x && thisVert.y == minPos.y && thisVert.z < minPos.z))
+        {
+          minVert = aggNodes[i];
+          minPos = thisVert;
+        }
+        if(thisVert.x > minPos.x ||
+            (thisVert.x == minPos.x && thisVert.y > minPos.y) ||
+            (thisVert.x == minPos.x && thisVert.y == minPos.y && thisVert.z > minPos.z))
+        {
+          maxVert = aggNodes[i];
+          maxPos = thisVert;
+        }
+      }
+      geomVerts_.push_back(minVert);
+      geomAggs_.push_back(agg);
+      geomVerts_.push_back(maxVert);
+      geomAggs_.push_back(agg);
+      geomSizes_.push_back(2);
+      return true;
+    }
+    if(!is3D)
+    {
+      //all 2D aggregates are coplanar
+      return false;
+    }
+    bool areCoplanar = true;
+    {
+      //number of points is known to be >= 3 (not a point or line segment)
+      Vec3 v1 = verts_[aggNodes[0]];
+      Vec3 v2 = verts_[aggNodes[1]];
+      Vec3 v3 = verts_[aggNodes[2]];
+      //Make sure the first three points aren't also collinear (need a non-degenerate triangle to get a normal)
+      for(size_t i = 3; i < aggNodes.size(); i++)
+      {
+        if(mag(crossProduct(v1 - v2, v1 - v3)) >= 1e-8)
+          break;
+        v3 = verts_[aggNodes[i]];
+      }
+      for(size_t i = 3; i < aggNodes.size(); i++)
+      {
+        Vec3 pt = verts_[aggNodes[i]];
+        if(fabs(pointDistFromTri(pt, v1, v2, v3)) > 1e-8) {
+          areCoplanar = false;
+          break;
+        }
+      }
+      if(areCoplanar) {
+        //do 2D convex hull
+        auto convhull2d = giftWrap(aggPoints);
+        for(size_t i = 0; i < convhull2d.size(); i++)
+        {
+          geomVerts_.push_back(convhull2d[i]);
+          geomAggs_.push_back(agg);
+        }
+        geomSizes_.push_back(convhull2d.size());
+        return true;
+      }
+    }
+    //not a point, line segment, collinear or coplanar
+    return false;
   }
 
   /*-----------------------------*/
@@ -2075,7 +1951,7 @@ namespace VizHelpers {
   {
     //note: makeUnique modifies ag.geomVerts_ in place, but OK because it won't be used again
     std::vector<int> uniqueVerts = makeUnique(ag.geomVerts_);
-    std::ofstream fout(getAggFilename());
+    std::ofstream fout(getAggFilename(rank_));
     writeOpening(fout, uniqueVerts.size(), ag.geomSizes_.size());
     writeNodes(fout, uniqueVerts, fineMap_);
     writeAggData(fout, uniqueVerts, ag.vertex2Agg_);

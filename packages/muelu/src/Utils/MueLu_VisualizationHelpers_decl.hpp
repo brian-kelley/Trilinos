@@ -65,25 +65,12 @@
 namespace MueLu {
 namespace VizHelpers {
   //Geometry utility classes (used in convex hull algorithm)
-  struct Triangle;
+
   struct Vec2;
   struct Vec3;
 
-  struct Triangle
-  {
-    Triangle() : v1(0), v2(0), v3(0) {}
-    Triangle(int v1in, int v2in, int v3in) : v1(v1in), v2(v2in), v3(v3in) {}
-    ~Triangle() {}
-    bool operator==(const Triangle& l)
-    {
-      if(l.v1 == v1 && l.v2 == v2 && l.v3 == v3)
-        return true;
-      return false;
-    }
-    int v1;
-    int v2;
-    int v3;
-  };
+  double mag(Vec2 vec);
+  double mag(Vec3 vec);
 
   struct Vec3
   {
@@ -93,7 +80,20 @@ namespace VizHelpers {
     double x;
     double y;
     double z;
-    Vec2 toVec2() {return Vec2(x, y);}
+    inline Vec2 toVec2();
+    //Get a unit vector in direction of *this
+    Vec3 normalize()
+    {
+      if(x != 0 || y != 0 || z != 0)
+      {
+        double magnitude = mag(*this);
+        return Vec3(x / magnitude, y / magnitude, z / magnitude);
+      }
+      else
+      {
+        return *this;
+      }
+    }
   };
 
   inline Vec3 operator+(const Vec3 lhs, const Vec3 rhs)
@@ -108,9 +108,7 @@ namespace VizHelpers {
 
   inline Vec3 operator*(const Vec3 vec, double scale)
   {
-    vec.x *= scale;
-    vec.y *= scale;
-    vec.z *= scale;
+    return Vec3(vec.x * scale, vec.y * scale, vec.z * scale);
   }
 
   struct Vec2
@@ -120,9 +118,27 @@ namespace VizHelpers {
     ~Vec2() {}
     double x;
     double y;
+    //Get a unit vector in direction of *this
+    Vec2 normalize()
+    {
+      if(x != 0 || y != 0)
+      {
+        double magnitude = mag(*this);
+        return Vec2(x / magnitude, y / magnitude);
+      }
+      else
+      {
+        return *this;
+      }
+    }
   };
 
-  inline Vec2 operator+(const Vec3 lhs, const Vec3 rhs)
+  inline Vec2 Vec3::toVec2()
+  {
+    return Vec2(x, y);
+  }
+
+  inline Vec2 operator+(const Vec2 lhs, const Vec2 rhs)
   {
     return Vec2(lhs.x + rhs.x, lhs.y + rhs.y);
   }
@@ -132,20 +148,19 @@ namespace VizHelpers {
     return Vec2(lhs.x - rhs.x, lhs.y - rhs.y);
   }
 
+  Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList();
+
   Vec3 crossProduct(Vec3 v1, Vec3 v2);
   double dotProduct(Vec2 v1, Vec2 v2);
   double dotProduct(Vec3 v1, Vec3 v2);
   bool isInFront(Vec3 point, Vec3 inPlane, Vec3 n);
   bool collinear(Vec2 v1, Vec2 v2, Vec2 v3);
-  double mag(Vec2 vec);
-  double mag(Vec3 vec);
   double dist(Vec2 p1, Vec2 p2);
   double dist(Vec3 p1, Vec3 p2);
   //! Get "normal" to given 2D vector - rotate left 90 degrees
   Vec2 segmentNormal(Vec2 v);
   //! Get normal to triangle (oriented outward)
   Vec3 triNormal(Vec3 v1, Vec3 v2, Vec3 v3);
-  double pointDistFromTri(Vec3 point, Vec3 v1, Vec3 v2, Vec3 v3);
 
   std::string replaceAll(std::string original, std::string replaceWhat, std::string replaceWithWhat);
 
@@ -177,7 +192,6 @@ namespace VizHelpers {
   class AggGeometry {
 #undef MUELU_VISUALIZATIONHELPERS_SHORT
 #include "MueLu_UseShortNames.hpp"
-    friend class VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
     public:
       //! @name Constructors/Destructors.
       //@{
@@ -185,7 +199,7 @@ namespace VizHelpers {
       //! Constructor used by AggregationExportFactory
       //! Map is Coordinates non-overlapping map that describes vertex-processor association
       //! Number of dimensions inferred from whether z is null
-      AggGeometry(const Teuchos::RCP<Aggregates>& aggs, const Teuchos::RCP<Map>& map, const Teuchos::RCP<Teuchos::Comm>& comm,
+      AggGeometry(const Teuchos::RCP<Aggregates>& aggs, const Teuchos::RCP<Map>& map, const Teuchos::RCP<Teuchos::Comm<int>>& comm,
           const Teuchos::RCP<MultiVector>& coords);
 
       //! Constructor used by CoarseningVisualizationFactory 
@@ -193,7 +207,7 @@ namespace VizHelpers {
       //! Map is Coordinates non-overlapping map that describes vertex-processor association
       //! Aggregates can be overlapping, in the case of smoothed P
       //! Number of dimensions inferred from whether z is null
-      AggGeometry(const Teuchos::RCP<Matrix>& P, const Teuchos::RCP<Map>& map, const Teuchos::RCP<Teuchos::Comm>& comm,
+      AggGeometry(const Teuchos::RCP<Matrix>& P, const Teuchos::RCP<Map>& map, const Teuchos::RCP<Teuchos::Comm<int>>& comm,
           const Teuchos::RCP<MultiVector>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent);
 
       //! Generate the geometry. style is the "visualization: agg style" parameter value, and doesn't need to be valid.
@@ -201,7 +215,7 @@ namespace VizHelpers {
       bool build(std::string& style);
 
       //@}
-    private:
+
       std::vector<GlobalOrdinal> geomVerts_;
       std::vector<GlobalOrdinal> geomAggs_;
       std::vector<int> geomSizes_;
@@ -230,12 +244,17 @@ namespace VizHelpers {
       // algorithm implementations
       void pointCloud();
       void jacks();
-      //call cgalConvexHulls if available
+      //call cgalConvexHulls if available, otherwise use custom gift wrapping implementation
       void convexHulls2D();
+      //quickhull algorithm, as described at thomasdiewald.com/blog/?p=1888
       void convexHulls3D();
 
-      //used by convexHulls2D
-      std::vector<int> giftWrap(int aggStart, int aggEnd);
+      //used by convexHulls2D and convexHulls3D (in case of agg with all-coplanar points)
+      //precondition: all points are coplanar (but the plane is allowed to have any 3D orientation)
+      std::vector<GlobalOrdinal> giftWrap(std::vector<GlobalOrdinal>& points);
+
+      //used by all 3D convex hull and alpha shape functions to deal with collinear/coplanar nodes
+      bool handleDegenerate(std::vector<GlobalOrdinal>& points, int agg, bool is3D = true);
 
       //used by jacks
       void computeIsRoot();
@@ -247,19 +266,94 @@ namespace VizHelpers {
       void cgalAlphaHulls3D();
 #endif
       //Internal geometry utilities
-      std::vector<Triangle> processTriangle(std::list<Triangle>& tris, Triangle tri, std::list<int>& pointsInFront, Vec3& barycenter);
+      static double pointDistFromTri(Vec3 point, Vec3 v1, Vec3 v2, Vec3 v3);
+      struct Triangle
+      {
+        Triangle() : v1(0), v2(0), v3(0), valid(false)
+        {
+          neighbor[0] = -1;
+          neighbor[1] = -1;
+          neighbor[2] = -1;
+        }
+        Triangle(GlobalOrdinal v1in, GlobalOrdinal v2in, GlobalOrdinal v3in, int nei1, int nei2, int nei3) :
+          v1(v1in), v2(v2in), v3(v3in)
+        {
+          neighbor[0] = nei1;
+          neighbor[1] = nei2;
+          neighbor[2] = nei3;
+        }
+        ~Triangle() {}
+        bool operator==(const Triangle& l)
+        {
+          if(l.v1 == v1 && l.v2 == v2 && l.v3 == v3)
+            return true;
+          return false;
+        }
+        void setPointList(std::vector<GlobalOrdinal>& pts)
+        {
+          frontPoints = new GlobalOrdinal[pts.length()];
+          memcpy(frontPoints, &pts[0], pts.length() * sizeof(GlobalOrdinal));
+        }
+        void freePointList()
+        {
+          delete[] frontPoints;
+        }
+        bool hasNeighbor(int tri)
+        {
+          if(neighbor[0] == tri)
+            return true;
+          if(neighbor[1] == tri)
+            return true;
+          if(neighbor[2] == tri)
+            return true;
+          return false;
+        }
+        void addNeighbor(int tri)
+        {
+          if(neighbor[0] < 0)
+            neighbor[0] = tri;
+          else if(neighbor[1] < 0)
+            neighbor[1] = tri;
+          else if(neighbor[2] < 0)
+            neighbor[2] = tri;
+          throw std::runtime_error("Convex hull mesh face already has 3 neighbors.");
+        }
+        bool adjacent(Triangle& tri)
+        {
+          int shared = 0;
+          GlobalOrdinal thisVerts[3] = {v1, v2, v3};
+          GlobalOrdinal otherVerts[3] = {tri.v1, tri.v2, tri.v3};
+          for(int i = 0; i < 3; i++)
+          {
+            for(int j = i; j < 3; j++)
+            {
+              shared++;
+            }
+          }
+          return shared == 2;
+        }
+        GlobalOrdinal v1;
+        GlobalOrdinal v2;
+        GlobalOrdinal v3;
+        int neighbor[3];      //note: order of neighbors wrt vertices and normal is not specified
+        GlobalOrdinal* frontPoints;   //array of points that are in front of this face - or null
+        int numPoints;
+        bool valid;
+      };
+      bool pointInFront(Triangle& t, GlobalOrdinal p)
+      {
+        return pointDistFromTri(verts_[p], verts_[t.v1], verts_[t.v2], verts_[t.v3]) > 0;
+      }
   };
 
   template <class Scalar = double, class LocalOrdinal = int, class GlobalOrdinal = LocalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class EdgeGeometry {
 #undef MUELU_VISUALIZATIONHELPERS_SHORT
 #include "MueLu_UseShortNames.hpp"
-    friend class VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
     public:
       EdgeGeometry(Teuchos::RCP<GraphBase> G, int dofs, Teuchos::RCP<Matrix> A = Teuchos::null);
       //! Compute graph edge geometry. If the matrix A was available and passed to constructor, filtered edges will be given a different color than non-filtered edges.
       void build();
-    private:
       const Teuchos::RCP<GraphBase> G_;
       const Teuchos::RCP<Matrix> A_;
       //! Vertices for non-filtered edges
@@ -277,11 +371,10 @@ namespace VizHelpers {
   class VTKEmitter {
 #undef MUELU_VISUALIZATIONHELPERS_SHORT
 #include "MueLu_UseShortNames.hpp"
-    private:
+    public:
       typedef AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeometry;
       typedef EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> EdgeGeometry;
-    public:
-      VTKEmitter(const Teuchos::ParameterList>& pL, int numProcs, int level, int rank, const Teuchos::RCP<Map>& fineMap = Teuchos::null, const Teuchos::RCP<Map>& coarseMap = Teuchos::null);
+      VTKEmitter(const Teuchos::ParameterList& pL, int numProcs, int level, int rank, const Teuchos::RCP<Map>& fineMap = Teuchos::null, const Teuchos::RCP<Map>& coarseMap = Teuchos::null);
       //! Write one VTK file per process with ag's geometry data (also does bubbles)
       //! Note: filename automatically generated with proc id, level id
       void writeAggGeom(AggGeometry& ag);
@@ -299,13 +392,13 @@ namespace VizHelpers {
       void writeCells(std::ofstream& fout, const std::vector<int>& geomVerts, const std::vector<int>& geomSizes);
       void writeClosing(std::ofstream& fout);
       //! Generate filename to use for main aggregate geometry file.
-      std::string getAggFilename(int proc = rank_);
+      std::string getAggFilename(int proc);
       //! Generate filename to use for bubble (secondary aggregate) geometry file.
-      std::string getBubbleFilename(int proc = rank_);
+      std::string getBubbleFilename(int proc);
       //! Generate filename to use for fine edge geometry file.
-      std::string getFineEdgeFilename(int proc = rank_);
+      std::string getFineEdgeFilename(int proc);
       //! Generate filename to use for coarse edge geometry file.
-      std::string getCoarseEdgeFilename(int proc = rank_);
+      std::string getCoarseEdgeFilename(int proc);
       //! Generate filename for main PVTU file.
       std::string getPVTUFilename();
       //! Base filename (no file extension) used for all VTU output files

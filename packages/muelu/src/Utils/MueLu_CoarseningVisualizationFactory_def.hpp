@@ -59,7 +59,7 @@ namespace MueLu {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
 
-    RCP<ParameterList> validParamList = VisualizationHelpers::GetValidParameterList();
+    RCP<ParameterList> validParamList = VizHelpers::GetVizParameterList();
 
     validParamList->set< int >                   ("visualization: start level",             0,                     "visualize only levels with level ids greater or equal than start level");// Remove me?
 
@@ -96,54 +96,11 @@ namespace MueLu {
     RCP<GraphBase> fineGraph = Teuchos::null;
     RCP<Matrix>    P         = Teuchos::null;
     RCP<Matrix>    Ptent     = Teuchos::null;
-    const ParameterList & pL = this->GetParameterList();
+    ParameterList pL = this->GetParameterList();
     if (this->GetFactory("P") != Teuchos::null)
       P = Get< RCP<Matrix> >(coarseLevel, "P");
     if (this->GetFactory("Ptent") != Teuchos::null)
       Ptent = Get< RCP<Matrix> >(coarseLevel, "Ptent");
-
-    bool doGraphEdges = pL.get<bool>("visualization: fine graph edges", false);
-
-    RCP<const Teuchos::Comm<int> > comm = P->getRowMap()->getComm();
-
-    RCP<const StridedMap> strDomainMap = Teuchos::null;
-    if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null) {
-      strDomainMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getColMap("stridedMaps"));
-    }
-
-    TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap.is_null(), Exceptions::RuntimeError,
-        "CoarseningVisualizationFactory requires P/Ptent to have strided domain map but it did not.");
-
-    // TODO add support for overlapping aggregates
-    //TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap->getNodeNumElements() != P->getColMap()->getNodeNumElements(), Exceptions::RuntimeError,
-    //                                           "CoarseningVisualization only supports non-overlapping transfers");
-
-    // number of local "aggregates"
-
-
-    // get fine level coordinate information
-    Teuchos::RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > coords = Get<RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > >(fineLevel, "Coordinates");
-
-    TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::as<LO>(P->getRowMap()->getNodeNumElements()) / dofsPerNode != Teuchos::as<LocalOrdinal>(coords->getLocalLength()), Exceptions::RuntimeError,
-                                           "Number of fine level nodes in coordinates is inconsistent with dof based information");
-
-    if (doGraphEdges)
-      fineGraph = Get<RCP<GraphBase> >(fineLevel, "Graph");
-      // communicate fine level coordinates
-      RCP<Import> coordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coords->getMap(), fineGraph->GetImportMap());
-      RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > ghostedCoords = Xpetra::MultiVectorFactory<double, LocalOrdinal, GlobalOrdinal, Node>::Build(fineGraph->GetImportMap(), coords->getNumVectors());
-      ghostedCoords->doImport(*coords, *coordImporter, Xpetra::INSERT);
-      coords = ghostedCoords;
-    }
-
-    Teuchos::RCP<const Map> nodeMap = coords->getMap();
-
-    // determine number of nodes on fine level
-    LocalOrdinal numFineNodes = Teuchos::as<LocalOrdinal>(coords->getLocalLength());
-
-    int levelID = fineLevel.GetLevelID();
-
-    VTKEmitter vtk(pL, comm->getSize(), levelID, comm->getRank(), nodeMap, Teuchos::null);
 
     LocalOrdinal dofsPerNode = 0;
     LocalOrdinal colsPerNode = 0;
@@ -158,9 +115,50 @@ namespace MueLu {
       colsPerNode = getColsPerNode(Ptent);
     }
 
+    bool doGraphEdges = pL.get<bool>("visualization: fine graph edges", false);
+
+    RCP<const Teuchos::Comm<int> > comm = P->getRowMap()->getComm();
+
+    RCP<const StridedMap> strDomainMap = Teuchos::null;
+    if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null)
+    {
+      strDomainMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getColMap("stridedMaps"));
+    }
+
+    TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap.is_null(), Exceptions::RuntimeError,
+        "CoarseningVisualizationFactory requires P/Ptent to have strided domain map but it did not.");
+
+    // TODO add support for overlapping aggregates
+    //TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap->getNodeNumElements() != P->getColMap()->getNodeNumElements(), Exceptions::RuntimeError,
+    //                                           "CoarseningVisualization only supports non-overlapping transfers");
+
+
+    // get fine level coordinate information
+    Teuchos::RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > coords = Get<RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > >(fineLevel, "Coordinates");
+
+    TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::as<LO>(P->getRowMap()->getNodeNumElements()) / dofsPerNode != Teuchos::as<LocalOrdinal>(coords->getLocalLength()), Exceptions::RuntimeError,
+                                           "Number of fine level nodes in coordinates is inconsistent with dof based information");
+
+    if (doGraphEdges)
+    {
+      fineGraph = Get<RCP<GraphBase> >(fineLevel, "Graph");
+      // communicate fine level coordinates
+      RCP<Import> coordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coords->getMap(), fineGraph->GetImportMap());
+      RCP<Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> > ghostedCoords = Xpetra::MultiVectorFactory<double, LocalOrdinal, GlobalOrdinal, Node>::Build(fineGraph->GetImportMap(), coords->getNumVectors());
+      ghostedCoords->doImport(*coords, *coordImporter, Xpetra::INSERT);
+      coords = ghostedCoords;
+    }
+
+    auto nodeMap = coords->getMap();
+
+    int levelID = fineLevel.GetLevelID();
+
+    VTKEmitter vtk(pL, comm->getSize(), levelID, comm->getRank(), nodeMap, Teuchos::null);
+
     int vizLevel = pL.get<int>("visualization: start level");
     if(vizLevel <= levelID)
     {
+      auto aggStyle = pL.get<std::string>("visualization: style");
       if(!P.is_null())
       {
         AggGeometry aggGeom(P, nodeMap, comm, coords, dofsPerNode, colsPerNode, false);
@@ -191,9 +189,9 @@ namespace MueLu {
       {
         TEUCHOS_TEST_FOR_EXCEPTION(fineGraph == Teuchos::null, Exceptions::RuntimeError,
             "Could not get information about fine graph.");
-        EdgeGeom edgeGeom(fineGraph, dofsPerNode);
-        egeom.build();
-        vtk.writeEdgeGeom(egeom, true);
+        EdgeGeometry edgeGeom(fineGraph, dofsPerNode);
+        edgeGeom.build();
+        vtk.writeEdgeGeom(edgeGeom, true);
       }
     }
 
@@ -206,7 +204,7 @@ namespace MueLu {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   LocalOrdinal CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  getDofsPerNode(const Teuchos::RCP<Matrix>& P)
+  getDofsPerNode(const Teuchos::RCP<Matrix>& P) const
   {
     LocalOrdinal dofsPerNode = 1;
     //LocalOrdinal stridedRowOffset = 0;
@@ -229,13 +227,13 @@ namespace MueLu {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   LocalOrdinal CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  getColsPerNode(const Teuchos::RCP<Matrix>& P)
+  getColsPerNode(const Teuchos::RCP<Matrix>& P) const
   {
-    LocalOrdinal columnsPerNode = dofsPerNode;
     LocalOrdinal stridedColumnOffset = 0;
     //note: strDomainMap is a non-overlapping map of nodes
     RCP<const StridedMap> strDomainMap = Teuchos::null;
     if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null) {
+      LocalOrdinal columnsPerNode;
       strDomainMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getColMap("stridedMaps"));
       LocalOrdinal blockid = strDomainMap->getStridedBlockId();
 
@@ -248,8 +246,9 @@ namespace MueLu {
         columnsPerNode = strDomainMap->getFixedBlockSize();
       }
       GetOStream(Runtime1) << "CoarseningVisualizationFactory::Build():" << " #columns per node = " << columnsPerNode << std::endl;
+      return columnsPerNode;
     }
-    return columnsPerNode;
+    return getDofsPerNode(P);
   }
 
 } // namespace MueLu
