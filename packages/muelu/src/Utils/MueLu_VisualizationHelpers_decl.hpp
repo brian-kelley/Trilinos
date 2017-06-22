@@ -361,7 +361,9 @@ namespace VizHelpers {
 #undef MUELU_VISUALIZATIONHELPERS_SHORT
 #include "MueLu_UseShortNames.hpp"
     public:
-      EdgeGeometry(Teuchos::RCP<GraphBase> G, int dofs, Teuchos::RCP<Matrix> A = Teuchos::null);
+      //EdgeGeometry has the same coordinates format as AggGeometry
+      typedef typename AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CoordArray CoordArray;
+      EdgeGeometry(Teuchos::RCP<CoordArray> coords, Teuchos::RCP<GraphBase> G, int dofs, Teuchos::RCP<Matrix> A = Teuchos::null);
       //! Compute graph edge geometry. If the matrix A was available and passed to constructor, filtered edges will be given a different color than non-filtered edges.
       void build();
       const Teuchos::RCP<GraphBase> G_;
@@ -375,6 +377,7 @@ namespace VizHelpers {
       static const int contrast1_ = -1;
       //! Special node index value representing filtered edges (in graph but not filtered matrix)
       static const int contrast2_ = -2;
+      Teuchos::RCP<CoordArray> verts_;
   };
 
   //! Class for writing geometry into VTK files.
@@ -400,12 +403,19 @@ namespace VizHelpers {
       //the minimal set is returned and will become the set of points written to VTK
       std::vector<GeomPoint> getUniqueAggGeom(std::vector<GeomPoint>& geomPoints);
       std::vector<GlobalOrdinal> getUniqueEdgeGeom(std::vector<GlobalOrdinal>& edges);  //0,1 form edge, 2,3 form edge, etc.
-      void writeOpening(std::ofstream& fout, int numVerts, int numCells);
-      void writePointsAndData(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, Teuchos::RCP<Map>& map);
-      void writeAggData(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, Teuchos::ArrayRCP<LocalOrdinal>& vertex2AggId);
-      void writeEdgeData(std::ofstream& fout, std::vector<GlobalOrdinal>& uniqueVerts);
-      void writeCoordinates(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, std::vector<Vec3>& positions);
-      void writeCells(std::ofstream& fout, std::vector<GeomPoint>& geomVerts, std::vector<int>& geomSizes);
+      void writeOpening(std::ofstream& fout, size_t numVerts, size_t numCells);
+      //! Write out GIDs for agg geometry
+      void writeNodes(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts);
+      //! Write out GIDs for edge geometry
+      void writeNodes(std::ofstream& fout, std::vector<GlobalOrdinal>& uniqueVertsNonFilt, std::vector<GlobalOrdinal>& uniqueVertsFilt);
+      void writeAggData(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts);
+      void writeEdgeData(std::ofstream& fout, size_t vertsNonFilt, size_t vertsFilt);
+      void writeCoordinates(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, std::map<GlobalOrdinal, Vec3>& positions);
+      void writeCoordinates(std::ofstream& fout,
+          std::vector<GlobalOrdinal>& uniqueVertsNonFilt, std::vector<GlobalOrdinal>& uniqueVertsFilt,
+          std::map<GlobalOrdinal, Vec3>& positions);
+      void writeAggCells(std::ofstream& fout, std::vector<GeomPoint>& geomVerts, std::vector<int>& geomSizes);
+      void writeEdgeCells(std::ofstream& fout, std::vector<GlobalOrdinal>& vertsNonFilt, std::vector<GlobalOrdinal>& vertsFilt, size_t numUniqueNonFilt);
       void writeClosing(std::ofstream& fout);
       //! Generate filename to use for main aggregate geometry file.
       std::string getAggFilename(int proc);

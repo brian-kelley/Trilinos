@@ -189,7 +189,7 @@ namespace MueLu {
       {
         TEUCHOS_TEST_FOR_EXCEPTION(fineGraph == Teuchos::null, Exceptions::RuntimeError,
             "Could not get information about fine graph.");
-        EdgeGeometry edgeGeom(fineGraph, dofsPerNode);
+        EdgeGeometry edgeGeom(coords, fineGraph, dofsPerNode);
         edgeGeom.build();
         vtk.writeEdgeGeom(edgeGeom, true);
       }

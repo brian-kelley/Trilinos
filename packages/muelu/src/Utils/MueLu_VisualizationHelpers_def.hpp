@@ -182,79 +182,6 @@ namespace VizHelpers {
     return rv;
   }
 
-  std::vector<GlobalOrdinal> makeUnique(std::vector<GlobalOrdinal>& verts)
-  {
-    using std::vector;
-    using std::sort;
-    using std::unique;
-    vector<GlobalOrdinal> uniqueVerts = verts;
-    sort(uniqueVerts.begin(), uniqueVerts.end());
-    auto newUniqueEnd = unique(uniqueVerts.begin(), uniqueVerts.end());
-    uniqueVerts.erase(newUniqueEnd, uniqueVerts.end());
-    //uniqueNodes is now a sorted list of the nodes whose info actually goes in file
-    //Now replace values in vertices with locations of the old values in uniqueFine
-    for(size_t i = 0; i < verts.size(); i++)
-    {
-      int lo = 0;
-      int hi = uniqueVerts.size() - 1;
-      int mid = 0;
-      auto search = verts[i];
-      while(lo <= hi)
-      {
-        mid = lo + (hi - lo) / 2;
-        if(uniqueVerts[mid] == search)
-          break;
-        else if(uniqueVerts[mid] > search)
-          hi = mid - 1;
-        else
-          lo = mid + 1;
-      }
-      if(uniqueVerts[mid] != search)
-        throw std::runtime_error("Issue in makeUnique_() - a point that should be in uniqueVerts isn't.");
-      verts[i] = mid;
-    }
-    return uniqueVerts;
-  }
-
-  template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
-  std::vector<GlobalOrdinal> AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  mergeAndMakeUnique(std::vector<GlobalOrdinal>& verts1, std::vector<GlobalOrdinal>& verts2)
-  {
-    using namespace std;
-    vector<GlobalOrdinal> uniqueNodes;
-    uniqueNodes.reserve(verts1.size() + verts2.size());
-    uniqueNodes.insert(uniqueNodes.end(), verts1.begin(), verts1.end());
-    uniqueNodes.insert(uniqueNodes.end(), verts2.begin(), verts2.end());
-    sort(uniqueNodes.begin(), uniqueNodes.end());
-    {
-      auto newUniqueFineEnd = unique(uniqueNodes.begin(), uniqueNodes.end());
-      uniqueNodes.erase(newUniqueFineEnd, uniqueNodes.end());
-    }
-    //uniqueNodes is now a sorted list of the nodes whose info actually goes in file
-    //Now replace values in vertices with locations of the old values in uniqueFine
-    for(size_t i = 0; i < geomVerts_.size(); i++)
-    {
-      int lo = 0;
-      int hi = uniqueNodes.size() - 1;
-      int mid = 0;
-      auto search = geomVerts_[i];
-      while(lo <= hi)
-      {
-        mid = lo + (hi - lo) / 2;
-        if(uniqueNodes[mid] == search)
-          break;
-        else if(uniqueNodes[mid] > search)
-          hi = mid - 1;
-        else
-          lo = mid + 1;
-      }
-      if(uniqueNodes[mid] != search)
-        throw std::runtime_error("Issue in makeUnique_() - a point that should be in uniqueNodes isn't.");
-      geomVerts_[i] = mid;
-    }
-    return uniqueNodes;
-  }
-
   Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList()
   {
     auto pl = Teuchos::rcp(new Teuchos::ParameterList);
@@ -287,13 +214,18 @@ namespace VizHelpers {
     }
     this->rank_ = comm->getRank();
     this->nprocs_ = comm->getSize();
-    this->vertex2Agg_ = aggs->GetVertex2AggId()->getData(0);
+    auto vertex2Agg_ = aggs->GetVertex2AggId()->getData(0);
     if(nprocs_ != 1)
     {
+      //serial, so local agg ID == global agg ID
+      firstAgg_ = 0;
+    }
+    else
+    {
       //prepare for calculating global aggregate ids
-      std::vector<GlobalOrdinal> numAggsGlobal (nprocs_, 0);
+      std::vector<GlobalOrdinal> numAggsGlobal (nprocs_);
       std::vector<GlobalOrdinal> numAggsLocal  (nprocs_, 0);
-      std::vector<GlobalOrdinal> minGlobalAggId(nprocs_, 0);
+      std::vector<GlobalOrdinal> minGlobalAggId(nprocs_);
       numAggsLocal[rank_] = aggs->GetNumAggregates();
       Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, nprocs_, &numAggsLocal[0], &numAggsGlobal[0]);
       for(size_t i = 1; i < numAggsGlobal.size(); ++i)
@@ -303,19 +235,16 @@ namespace VizHelpers {
       }
       firstAgg_ = minGlobalAggId[rank_];
     }
-    else
-    {
-      firstAgg_ = 0;
-    }
     //can already compute aggOffsets_, since sizes of all aggregates known
     aggOffsets_.reserve(numLocalAggs_ + 1);
     GlobalOrdinal accum = 0;
-    for(size_t i = 0; i < aggSizes.size(); i++)
+    auto aggSizes = aggs->ComputeAggregateSizes();
+    for(size_t i = 0; i < numLocalAggs_; i++)
     {
       aggOffsets_[i] = accum;
       accum += aggSizes[i];
     }
-    aggOffsets_[numLocalAggs] = accum;
+    aggOffsets_[numLocalAggs_] = accum;
     aggVerts_.resize(accum);
     //temporary array for counting vertices inserted into aggVerts_
     std::vector<int> vertCount(aggSizes.size(), 0);
@@ -361,7 +290,7 @@ namespace VizHelpers {
       strDomainMap = Teuchos::rcp_dynamic_cast<const StridedMap>(P->getColMap("stridedMaps"));
     }
     TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap.is_null(), Exceptions::RuntimeException, "Aggregate geometry requires the strided domain map from P/Ptent, but it was null.");
-    numLocalAggs_ = strDomainMap->getNodeNumElements() / columnsPerNode;
+    numLocalAggs_ = strDomainMap->getNodeNumElements() / colsPerNode;
     numNodes_ = coords->getLocalLength();
     auto rowMap = P->getRowMap();
     auto colMap = P->getColMap();
@@ -377,7 +306,7 @@ namespace VizHelpers {
         P->getLocalRowView(row, indices, vals);
         for(auto c = indices.begin(); c != indices.end(); ++c)
         {
-          localAggs[(*c)/columnsPerNode].insert(row/dofsPerNode);
+          localAggs[(*c)/colsPerNode].insert(row/dofsPerNode);
         }
       }
       //fill aggOffsets
@@ -445,7 +374,7 @@ namespace VizHelpers {
           P->getLocalRowView(row, indices, valsUnused);
           for(auto c = indices.begin(); c != indices.end(); ++c)
           {
-            aggMembers[(*c) / columnsPerNode].insert(row / dofsPerNode);
+            aggMembers[(*c) / colsPerNode].insert(row / dofsPerNode);
           }
         }
       }
@@ -469,7 +398,7 @@ namespace VizHelpers {
               if(colMap->isNodeGlobalElement(indices[entry]))
               {
                 //record this vertex-aggregate pair
-                GlobalOrdinal thisAgg = entry / columnsPerNode;
+                GlobalOrdinal thisAgg = entry / colsPerNode;
                 GlobalOrdinal thisVert = rowMap->getGlobalElement(row / dofsPerNode);
                 toSend.emplace_back(thisAgg, thisVert, xCoord(thisVert), yCoord(thisVert), zCoord(thisVert));
               }
@@ -1688,10 +1617,29 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  EdgeGeometry(Teuchos::RCP<GraphBase> G, int dofs, Teuchos::RCP<Matrix> A = Teuchos::null)
+  EdgeGeometry(Teuchos::RCP<CoordArray> coords, Teuchos::RCP<GraphBase> G, int dofs, Teuchos::RCP<Matrix> A = Teuchos::null)
   {
     G_ = G;
     A_ = A;
+    //in verts_, set position of each global row represented in coords (note: some may be ghosted)
+    auto coordMap = coords->getMap();
+    auto xCol = coords->getData(0);
+    auto yCol = coords->getData(0);
+    if(coords->getNumVectors() == 3)
+    {
+      auto zCol = coords->getData(0);
+      for(LocalOrdinal i = 0; i < coords->getLocalLength(); i++)
+      {
+        verts_[coordMap->getGlobalElement(i)] = Vec3(xCol(i), yCol(i), zCol(i));
+      }
+    }
+    else
+    {
+      for(LocalOrdinal i = 0; i < coords->getLocalLength(); i++)
+      {
+        verts_[coordMap->getGlobalElement(i)] = Vec3(xCol(i), yCol(i), 0);
+      }
+    }
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -1848,13 +1796,13 @@ namespace VizHelpers {
   writeAggGeom(AggGeometry& ag)
   {
     //note: makeUnique modifies ag.geomVerts_ in place, but OK because it won't be used again
-    std::vector<int> uniqueVerts = makeUnique(ag.geomVerts_);
+    std::vector<GeomPoint> uniqueVerts = getUniqueAggGeom(ag.geomVerts_);
     std::ofstream fout(getAggFilename(rank_));
     writeOpening(fout, uniqueVerts.size(), ag.geomSizes_.size());
-    writeNodes(fout, uniqueVerts, fineMap_);
-    writeAggData(fout, uniqueVerts, ag.vertex2Agg_);
-    writeCoordinates(fout, uniqueVerts, ag.x_, ag.y_, ag.z_);
-    writeCells(fout, ag.geomVerts_, ag.geomSizes_);
+    writeNodes(fout, uniqueVerts);
+    writeAggData(fout, uniqueVerts);
+    writeCoordinates(fout, uniqueVerts, ag.verts_);
+    writeAggCells(fout, ag.geomVerts_, ag.geomSizes_);
     writeClosing(fout);
     fout.close();
     if(ag.bubbles_)
@@ -1871,14 +1819,17 @@ namespace VizHelpers {
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   writeEdgeGeom(EdgeGeometry& eg, bool fine)
   {
-    std::vector<int> uniqueVerts = makeUnique(eg.geomVerts_);
+    auto uniqueVertsNonFilt = getUniqueEdgeGeom(eg.vertsNonFilt_);
+    auto uniqueVertsFilt = getUniqueEdgeGeom(eg.vertsFilt_);
+    auto positions = eg.verts_;
     //get filename
     string filename = fine ? getFineEdgeFilename() : getCoarseEdgeFilename();
     std::ofstream fout(filename);
-    writeOpening(fout, uniqueVerts.size(), eg.geomSizes_.size());
-    writeNodes(fout, uniqueVerts, fine ? fineMap_ : coarseMap_);
-    writeEdgeData(fout, uniqueVerts, ag.vertex2Agg_);
-    writeCoordinates(fout, uniqueVerts, eg.x_, eg.y_, eg.z_);
+    writeOpening(fout, uniqueVertsNonFilt.size() + uniqueVertsFilt.size,
+        (eg.vertsNonFilt_.size() + eg.vertsFilt_.size()) / 2);
+    writeNodes(fout, uniqueVertsNonFilt, uniqueVertsFilt);
+    writeEdgeData(fout, uniqueVertsNonFilt.size(), uniqueVertsFilt.size());
+    writeCoordinates(fout, uniqueVertsNonFilt, uniqueVertsFilt, positions);
     writeCells(fout, eg.geomVerts_, eg.geomSizes_);
     writeClosing(fout);
     fout.close();
@@ -1914,19 +1865,14 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  writeNodes(std::ofstream& fout, const std::vector<int>& uniqueVerts, const Teuchos::RCP<Map>& map) {
+  writeNodes(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts)
+  {
     std::string indent = "      ";
     fout << "        <DataArray type=\"Int32\" Name=\"Node\" format=\"ascii\">" << std::endl;
     indent = "          ";
-    bool localIsGlobal = GlobalOrdinal(map->getGlobalNumElements()) == GlobalOrdinal(map->getNodeNumElements());
-    for(size_t i = 0; i < uniqueVerts.size(); i++)
+    for(auto& v : uniqueVerts)
     {
-      if(localIsGlobal)
-      {
-        fout << uniqueVerts[i] << " "; //if all nodes are on this processor, do not map from local to global
-      }
-      else
-        fout << map->getGlobalElement(uniqueVerts[i]) << " ";
+      fout << v.vert << " "; //if all nodes are on this processor, do not map from local to global
       if(i % 10 == 9)
         fout << std::endl << indent;
     }
@@ -1936,41 +1882,31 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  writeAggData(std::ofstream& fout, const std::vector<int>& uniqueVerts, const ArrayRCP<const LocalOrdinal>& vertex2AggId) {
-    std::string indent = "          ";
-    fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">" << std::endl;
-    fout << indent;
-    for(size_t i = 0; i < uniqueFine.size(); i++)
+  writeNodes(std::ofstream& fout, std::vector<GlobalOrdinal>& uniqueVerts)
+  {
+    std::string indent = "      ";
+    fout << "        <DataArray type=\"Int32\" Name=\"Node\" format=\"ascii\">" << std::endl;
+    indent = "          ";
+    for(auto& v : uniqueVerts)
     {
-      fout << myAggOffset + vertex2AggId[uniqueVerts[i]] << " ";
+      fout << v << " "; //if all nodes are on this processor, do not map from local to global
       if(i % 10 == 9)
         fout << std::endl << indent;
     }
     fout << std::endl;
     fout << "        </DataArray>" << std::endl;
-    fout << "        <DataArray type=\"Int32\" Name=\"Processor\" format=\"ascii\">" << std::endl;
-    fout << indent;
-    for(size_t i = 0; i < uniqueFine.size(); i++)
-    {
-      fout << rank_ << " ";
-      if(i % 20 == 19)
-        fout << std::endl << indent;
-    }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "      </PointData>" << std::endl;
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  writeEdgeData(std::ofstream& fout, const std::vector<int>& uniqueVerts)
+  writeAggData(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts)
   {
     std::string indent = "          ";
     fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">" << std::endl;
     fout << indent;
     for(size_t i = 0; i < uniqueFine.size(); i++)
     {
-      fout << myAggOffset + vertex2AggId[uniqueVerts[i]] << " ";
+      fout << myAggOffset + uniqueVerts[i].agg << " ";
       if(i % 10 == 9)
         fout << std::endl << indent;
     }
@@ -1991,18 +1927,58 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  writeCoordinates(std::ofstream& fout, const std::vector<int>& uniqueVerts, const Teuchos::ArrayRCP<const double>& x, const Teuchos::ArrayRCP<const double>& y, const Teuchos::ArrayRCP<const double>& z) const {
+  writeEdgeData(std::ofstream& fout, size_t vertsNonFilt, size_t vertsFilt)
+  {
+    auto contrast1 = EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::contrast1_;
+    auto contrast2 = EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::contrast2_;
+    std::string indent = "          ";
+    fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">" << std::endl;
+    fout << indent;
+    for(size_t i = 0; i < vertsNonFilt.size(); i++) 
+    {
+      fout << contrast1 << " ";
+      if(i % 10 == 9)
+        fout << std::endl << indent;
+    }
+    for(size_t i = 0; i < vertsNonFilt.size(); i++) 
+    {
+      fout << contrast2 << " ";
+      if(i % 10 == 9)
+        fout << std::endl << indent;
+    }
+    fout << std::endl;
+    fout << "        </DataArray>" << std::endl;
+    fout << "        <DataArray type=\"Int32\" Name=\"Processor\" format=\"ascii\">" << std::endl;
+    fout << indent;
+    for(size_t i = 0; i < vertsNonFilt.size(); i++) 
+    {
+      fout << contrast1 << " ";
+      if(i % 10 == 9)
+        fout << std::endl << indent;
+    }
+    for(size_t i = 0; i < vertsNonFilt.size(); i++) 
+    {
+      fout << contrast2 << " ";
+      if(i % 10 == 9)
+        fout << std::endl << indent;
+    }
+    fout << std::endl;
+    fout << "        </DataArray>" << std::endl;
+    fout << "      </PointData>" << std::endl;
+  }
+
+  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+  void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+  writeCoordinates(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, std::map<GlobalOrdinal, Vec3>& positions)
+  {
     std::string indent = "      ";
     fout << "      <Points>" << std::endl;
     fout << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << std::endl;
     fout << indent;
-    for(size_t i = 0; i < uniqueFine.size(); i++)
+    for(auto& v : uniqueVerts)
     {
-      fout << x[uniqueVerts[i]] << " " << y[uniqueVerts[i]] << " ";
-      if(z.is_null())
-        fout << "0 ";
-      else
-        fout << z[uniqueVerts[i]] << " ";
+      auto vpos = positions[v];
+      fout << vpos.x << ' ' << vpos.y << ' ' << vpos.z << ' ';
       //write 3 coordinates per line
       if(i % 3 == 2)
         fout << std::endl << indent;
@@ -2014,14 +1990,46 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  writeCells(std::ofstream& fout, const std::vector<int>& geomVerts, const std::vector<int>& geomSizes) const {
+  writeCoordinates(std::ofstream& fout,
+      std::vector<GlobalOrdinal>& uniqueVertsNonFilt, std::vector<GlobalOrdinal>& uniqueVertsFilt,
+      std::map<GlobalOrdinal, Vec3>& positions)
+  {
+    std::string indent = "      ";
+    fout << "      <Points>" << std::endl;
+    fout << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << std::endl;
+    fout << indent;
+    for(auto& v : uniqueVertsNonFilt)
+    {
+      auto vpos = positions[v];
+      fout << vpos.x << ' ' << vpos.y << ' ' << vpos.z << ' ';
+      //write 3 coordinates per line
+      if(i % 3 == 2)
+        fout << std::endl << indent;
+    }
+    for(auto& v : uniqueVertsFilt)
+    {
+      auto vpos = positions[v];
+      fout << vpos.x << ' ' << vpos.y << ' ' << vpos.z << ' ';
+      //write 3 coordinates per line
+      if(i % 3 == 2)
+        fout << std::endl << indent;
+    }
+    fout << std::endl;
+    fout << "        </DataArray>" << std::endl;
+    fout << "      </Points>" << std::endl;
+  }
+
+  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+  void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+  writeAggCells(std::ofstream& fout, std::vector<GeomPoint>& geomVerts, std::vector<int>& geomSizes)
+  {
     std::string indent = "      ";
     fout << "      <Cells>" << std::endl;
     fout << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << std::endl;
     fout << indent;
     for(size_t i = 0; i < geomVerts_.size(); i++)
     {
-      fout << geomVerts[i] << " ";
+      fout << geomVerts[i].vert << " ";
       if(i % 10 == 9)
         fout << std::endl << indent;
     }
@@ -2067,7 +2075,55 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  writeFileVTKClosing(std::ofstream& fout) const {
+  writeEdgeCells(std::ofstream& fout, std::vector<GlobalOrdinal>& vertsNonFilt, std::vector<GlobalOrdinal>& vertsFilt, size_t numUniqueNonFilt)
+  {
+    std::string indent = "      ";
+    fout << "      <Cells>" << std::endl;
+    fout << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << std::endl;
+    fout << indent;
+    for(size_t i = 0; i < vertsNonFilt.size(); i++)
+    {
+      fout << vertsNonFilt[i] << " ";
+      if(i % 10 == 9)
+        fout << std::endl << indent;
+    }
+    for(size_t i = 0; i < vertsNonFilt.size(); i++)
+    {
+      fout << numUniqueNonFilt + vertsFilt[i] << " ";
+      if(i % 10 == 9)
+        fout << std::endl << indent;
+    }
+    fout << std::endl;
+    fout << "        </DataArray>" << std::endl;
+    fout << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << std::endl;
+    fout << indent;
+    int accum = 0;
+    for(size_t i = 0; i < geomSize.size(); i++)
+    {
+      accum += 2;
+      fout << accum << " ";
+      if(i % 10 == 9)
+        fout << std::endl << indent;
+    }
+    fout << std::endl;
+    fout << "        </DataArray>" << std::endl;
+    fout << "        <DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">" << std::endl;
+    fout << indent;
+    for(size_t i = 0; i < geomSizes.size(); i++)
+    {
+      fout << "3 ";
+      if(i % 30 == 29)
+        fout << std::endl << indent;
+    }
+    fout << std::endl;
+    fout << "        </DataArray>" << std::endl;
+    fout << "      </Cells>" << std::endl;
+  }
+
+  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+  void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+  writeFileVTKClosing(std::ofstream& fout) const
+  {
     fout << "    </Piece>" << std::endl;
     fout << "  </UnstructuredGrid>" << std::endl;
     fout << "</VTKFile>" << std::endl;
@@ -2092,7 +2148,10 @@ namespace VizHelpers {
         if(didCoarseEdges_)
           numGeoms++;
         if(numGeoms <= 1)
+        {
+          //no reason to emit .pvtu if only one .vtu, because user can just open it directly
           return;
+        }
       }
       std::ofstream pvtu(getPVTUFilename());
       //If using vtk, filenameToWrite now contains final, correct ***.vtu filename (for the current proc)
