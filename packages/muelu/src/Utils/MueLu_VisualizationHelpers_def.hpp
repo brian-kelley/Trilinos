@@ -155,7 +155,7 @@ namespace VizHelpers {
       norm.x /= normScl;
       norm.y /= normScl;
       norm.z /= normScl;
-      rv = fabs(dotProduct(norm, vecSubtract(point, v1)));
+      rv = fabs(dotProduct(norm, point - v1));
     } else {
       // triangle is degenerated
       Vec3 test1 = v3 - v1;
@@ -182,14 +182,14 @@ namespace VizHelpers {
     return rv;
   }
 
-  std::vector<int> makeUnique(std::vector<int>& verts)
+  std::vector<GlobalOrdinal> makeUnique(std::vector<GlobalOrdinal>& verts)
   {
     using std::vector;
     using std::sort;
     using std::unique;
-    vector<int> uniqueVerts = verts;
+    vector<GlobalOrdinal> uniqueVerts = verts;
     sort(uniqueVerts.begin(), uniqueVerts.end());
-    vector<int>::iterator newUniqueEnd = unique(uniqueVerts.begin(), uniqueVerts.end());
+    auto newUniqueEnd = unique(uniqueVerts.begin(), uniqueVerts.end());
     uniqueVerts.erase(newUniqueEnd, uniqueVerts.end());
     //uniqueNodes is now a sorted list of the nodes whose info actually goes in file
     //Now replace values in vertices with locations of the old values in uniqueFine
@@ -198,7 +198,7 @@ namespace VizHelpers {
       int lo = 0;
       int hi = uniqueVerts.size() - 1;
       int mid = 0;
-      int search = verts[i];
+      auto search = verts[i];
       while(lo <= hi)
       {
         mid = lo + (hi - lo) / 2;
@@ -210,30 +210,34 @@ namespace VizHelpers {
           lo = mid + 1;
       }
       if(uniqueVerts[mid] != search)
-        throw runtime_error("Issue in makeUnique_() - a point wasn't found in list.");
+        throw std::runtime_error("Issue in makeUnique_() - a point that should be in uniqueVerts isn't.");
       verts[i] = mid;
     }
     return uniqueVerts;
   }
 
-  std::vector<int> mergeAndMakeUnique(std::vector<int>& verts1, std::vector<int>& verts2)
+  template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+  std::vector<GlobalOrdinal> AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+  mergeAndMakeUnique(std::vector<GlobalOrdinal>& verts1, std::vector<GlobalOrdinal>& verts2)
   {
     using namespace std;
-    vector<int> uniqueNodes;
+    vector<GlobalOrdinal> uniqueNodes;
     uniqueNodes.reserve(verts1.size() + verts2.size());
     uniqueNodes.insert(uniqueNodes.end(), verts1.begin(), verts1.end());
     uniqueNodes.insert(uniqueNodes.end(), verts2.begin(), verts2.end());
     sort(uniqueNodes.begin(), uniqueNodes.end());
-    vector<int>::iterator newUniqueFineEnd = unique(uniqueNodes.begin(), uniqueNodes.end());
-    uniqueNodes.erase(newUniqueFineEnd, uniqueNodes.end());
+    {
+      auto newUniqueFineEnd = unique(uniqueNodes.begin(), uniqueNodes.end());
+      uniqueNodes.erase(newUniqueFineEnd, uniqueNodes.end());
+    }
     //uniqueNodes is now a sorted list of the nodes whose info actually goes in file
     //Now replace values in vertices with locations of the old values in uniqueFine
-    for(int i = 0; i < int(geomVerts_.size()); i++)
+    for(size_t i = 0; i < geomVerts_.size(); i++)
     {
       int lo = 0;
       int hi = uniqueNodes.size() - 1;
       int mid = 0;
-      int search = geomVerts_[i];
+      auto search = geomVerts_[i];
       while(lo <= hi)
       {
         mid = lo + (hi - lo) / 2;
@@ -245,7 +249,7 @@ namespace VizHelpers {
           lo = mid + 1;
       }
       if(uniqueNodes[mid] != search)
-        throw runtime_error("Issue in makeUnique_() - a point wasn't found in list.");
+        throw std::runtime_error("Issue in makeUnique_() - a point that should be in uniqueNodes isn't.");
       geomVerts_[i] = mid;
     }
     return uniqueNodes;
@@ -255,7 +259,7 @@ namespace VizHelpers {
   {
     auto pl = Teuchos::rcp(new Teuchos::ParameterList);
     pl->set<std::string>("visualization: output filename", "viz%LEVELID", "Output filename for VTK-formatted aggregate visualization");
-    pl->set<int>("visualization: style", "Convex Hulls", "Style of aggregate visualization. Can be 'Point Cloud', 'Jacks', 'Convex Hulls', or 'Alpha Hulls'");
+    pl->set<std::string>("visualization: style", "Convex Hulls", "Style of aggregate visualization. Can be 'Point Cloud', 'Jacks', 'Convex Hulls', or 'Alpha Hulls'");
     pl->set<bool>("visualization: build colormap", false, "Whether to output a randomized colormap for use in ParaView.");
     pl->set<bool>("visualization: fine graph edges", false, "Whether to draw all fine node connections along with the aggregates.");
     return pl;
@@ -268,16 +272,16 @@ namespace VizHelpers {
   //Constructor for AggregationExportFactory
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  AggGeometry(const Teuchos::RCP<Aggregates>& aggs, const std::vector<bool>& isRoot, const Teuchos::RCP<const Teuchos::Comm>& comm,
-      const Teuchos::RCP<MultiVector>& coords)
+  AggGeometry(const Teuchos::RCP<Aggregates>& aggs, const Teuchos::RCP<Teuchos::Comm<int>>& comm,
+      const Teuchos::RCP<CoordArray>& coords)
   {
     bubbles_ = false;
     numNodes_ = coords->getLocalLength();
     numLocalAggs_ = aggs->GetNumAggregates();
-    dims = coords->getNumVectors();
+    dims_ = coords->getNumVectors();
     this->x_ = coords->getData(0);
     this->y_ = coords->getData(1);
-    if(dims == 3)
+    if(dims_ == 3)
     {
       this->z_ = coords->getData(2);
     }
@@ -287,10 +291,10 @@ namespace VizHelpers {
     if(nprocs_ != 1)
     {
       //prepare for calculating global aggregate ids
-      std::vector<GlobalOrdinal> numAggsGlobal (numProcs, 0);
-      std::vector<GlobalOrdinal> numAggsLocal  (numProcs, 0);
-      std::vector<GlobalOrdinal> minGlobalAggId(numProcs, 0);
-      numAggsLocal[rank_] = aggregates->GetNumAggregates();
+      std::vector<GlobalOrdinal> numAggsGlobal (nprocs_, 0);
+      std::vector<GlobalOrdinal> numAggsLocal  (nprocs_, 0);
+      std::vector<GlobalOrdinal> minGlobalAggId(nprocs_, 0);
+      numAggsLocal[rank_] = aggs->GetNumAggregates();
       Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, nprocs_, &numAggsLocal[0], &numAggsGlobal[0]);
       for(size_t i = 1; i < numAggsGlobal.size(); ++i)
       {
@@ -304,8 +308,8 @@ namespace VizHelpers {
       firstAgg_ = 0;
     }
     //can already compute aggOffsets_, since sizes of all aggregates known
-    aggOffsets_.reserve(aggSizes.size() + 1);
-    LocalOrdinal accum = 0;
+    aggOffsets_.reserve(numLocalAggs_ + 1);
+    GlobalOrdinal accum = 0;
     for(size_t i = 0; i < aggSizes.size(); i++)
     {
       aggOffsets_[i] = accum;
@@ -328,12 +332,12 @@ namespace VizHelpers {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   AggGeometry(const Teuchos::RCP<Matrix>& P, const Teuchos::RCP<Map>& map, const Teuchos::RCP<Teuchos::Comm>& comm,
-      const Teuchos::RCP<MultiVector>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent)
+      const Teuchos::RCP<CoordArray>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent)
   {
     bubbles_ = !ptent;
     //use P (possibly including non-local entries)
     //to populate aggVerts_, aggOffsets_, vertex2Agg_, firstAgg_
-    dims = coords->getNumVectors();
+    dims_ = coords->getNumVectors();
     auto xVals = coords->getData(0);
     auto yVals = coords->getData(1);
     auto zVals = coords->getData(2);
@@ -554,12 +558,12 @@ namespace VizHelpers {
     else if(style == "Convex Hulls")
     {
 #ifdef HAVE_MUELU_CGAL
-      if(dims == 2)
+      if(dims_ == 2)
         cgalConvexHulls2D();
       else
         cgalConvexHulls3D();
 #else
-      if(dims == 2)
+      if(dims_ == 2)
         convexHulls2D();
       else
         convexHulls3D();
@@ -568,7 +572,7 @@ namespace VizHelpers {
 #ifdef HAVE_MUELU_CGAL
     else if(style == "Alpha Hulls")
     {
-      if(dims == 2)
+      if(dims_ == 2)
         cgalAlphaHulls2D();
       else
         cgalAlphaHulls3D();
@@ -587,14 +591,13 @@ namespace VizHelpers {
   pointCloud() {
     geomVerts_.reserve(numFineNodes);
     geomSizes_.reserve(numFineNodes);
-    for(LocalOrdinal i = 0; i < numLocalAggs_; i++)
+    for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
     {
-      GlobalOrdinal numVerts = aggOffsets_[i + 1] - aggOffsets_[i];
-      for(GlobalOrdinal j = 0; j < numVerts; j++)
+      GlobalOrdinal numVerts = aggOffsets_[agg + 1] - aggOffsets_[agg];
+      for(GlobalOrdinal i = 0; i < numVerts; i++)
       {
-        GlobalOrdinal go = aggVerts_[aggOffsets_[i] + j];
-        geomVerts_.push_back(go);
-        geomAggs_.push_back(i);
+        GlobalOrdinal v = aggVerts_[aggOffsets_[i] + j];
+        geomVerts_.emplace_back(v, agg);
         geomSizes_.push_back(1);
       }
     }
@@ -676,10 +679,8 @@ namespace VizHelpers {
         int vert = aggVerts_[i];
         if(vert == root)
           continue;
-        geomVerts_.push_back(vert);
-        geomAggs_.push(back(agg));
-        geomVerts_.push_back(root);
-        geomAggs_.push(back(agg));
+        geomVerts_.emplace_back(vert, agg);
+        geomVerts_.emplace_back(root, agg);
         geomSizes_.push_back(2);
       }
     }
@@ -700,8 +701,7 @@ namespace VizHelpers {
       std::vector geom = giftWrap(aggPoints);
       for(size_t i = 0; i < geom.size(); i++)
       {
-        geomVerts_.push_back(geom[i]);
-        geomAggs_.push_back(agg);
+        geomVerts_.emplace_back(geom[i], agg);
       }
       geomSizes_.push_back(geom.size());
     }
@@ -723,73 +723,13 @@ namespace VizHelpers {
         aggPoints.push_back(Point_2(point.x, point.y));
         aggNodes.push_back(i);
       }
+      if(handleDegenerate(aggNodes, false))
+      {
+        continue;
+      }
       //have a list of nodes in the aggregate
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
                "CoarseningVisualization::doCGALConvexHulls2D: aggregate contains zero nodes!");
-      if(aggNodes.size() == 1) {
-        geomVerts_.push_back(aggNodes.front());
-        geomAggs_.push_back(agg);
-        geomSizes_.push_back(1);
-        continue;
-      }
-      if(aggNodes.size() == 2) {
-        geomVerts_.push_back(aggNodes.front());
-        geomAggs_.push_back(agg);
-        geomVerts_.push_back(aggNodes.back());
-        geomAggs_.push_back(agg);
-        geomSizes_.push_back(2);
-        continue;
-      }
-      //check if all points are collinear, need to explicitly draw a line in that case.
-      bool collinear = true; //assume true at first, if a segment not parallel to others then clear
-      {
-        auto it = aggNodes.begin();
-        Vec2 firstPoint = verts_[*it].toVec2();
-        it++;
-        Vec2 secondPoint = verts_[*it].toVec2();
-        it++;  //it now points to third node in the aggregate
-        Vec2 norm1 = segmentNormal(secondPoint - firstPoint);
-        do {
-          Vec2 thisNorm = segmentNormal(verts_[*it].toVec2() - firstPoint);
-          //rotate one of the vectors by 90 degrees so that dot product is 0 if the two are parallel
-          double temp = thisNorm.x;
-          thisNorm.x = thisNorm.y;
-          thisNorm.y = temp;
-          double comp = dotProduct(norm1, thisNorm);
-          if(-1e-8 > comp || comp > 1e-8) {
-            collinear = false;
-            break;
-          }
-          it++;
-        }
-        while(it != aggNodes.end());
-      }
-      if(collinear)
-      {
-        //find the most distant two points in the plane and use as endpoints of line representing agg
-        GlobalOrdinal minNode = aggNodes[0];    //min X then min Y where x is equal
-        GlobalOrdinal maxNode = aggNodes[0];    //max X then max Y where x is equal
-        for(auto& it : aggNodes) {
-          auto itPoint = verts_[it].toVec2();
-          auto minPoint = verts_[minNode].toVec2();
-          auto maxPoint = verts_[maxNode].toVec2();
-          if(it.x < minPoint.x || (it.x == minPoint.x && it.y < minPoint.y))
-          {
-            minPoint = it;
-          }
-          if(it.x > maxPoint.x || (it.x == maxPoint.x && it.y > maxPoint.y))
-          {
-            maxPoint = it;
-          }
-        }
-        //Just set up a line between nodes *min and *max
-        geomVerts_.push_back(minNode);
-        geomAggs_.push_back(agg);
-        geomVerts_.push_back(maxNode);
-        geomAggs_.push_back(agg);
-        geomSizes_.push_back(2);
-        continue; //jump to next aggregate (in outermost loop)
-      }
       // aggregate has > 2 points and isn't collinear; must run the CGAL convex hull algo
       {
         std::vector<Point_2> result;
@@ -803,8 +743,7 @@ namespace VizHelpers {
             if(fabs(result[r].x() - aggPoints[l].x) < eps &&
                fabs(result[r].y() - aggPoints[l].y) < eps)
             {
-              geomVerts_.push_back(aggNodes[l]);
-              geomAggs_.push_back(agg);
+              geomVerts_.emplace_back(aggNodes[l], agg);
               break;
             }
           }
@@ -1144,6 +1083,13 @@ namespace VizHelpers {
           newTri.v2 = e.v2;
           newTri.v3 = farPoint;
           newTris.push_back(ind);
+          //make sure triangle is oriented correctly - barycenter must be behind
+          if(pointDistFromTri(barycenter, verts_[newTri.v1], verts_[newTri.v2], verts_[newTri.v3]) < 0)
+          {
+            auto tempv = newTri.v1;
+            newTri.v1 = newTri.v2;
+            newTri.v2 = tempv;
+          }
         }
         //now set up neighbors for new triangles
         //first, build set of all triangels to search: all still-valid neighbors of visible and also all new triangles
@@ -1226,12 +1172,9 @@ namespace VizHelpers {
       {
         if(tri.valid)
         {
-          geomVerts_.push_back(tri.v1);
-          geomVerts_.push_back(tri.v2);
-          geomVerts_.push_back(tri.v3);
-          geomAggs_.push_back(agg);
-          geomAggs_.push_back(agg);
-          geomAggs_.push_back(agg);
+          geomVerts_.emplace_back(tri.v1, agg);
+          geomVerts_.emplace_back(tri.v2, agg);
+          geomVerts_.emplace_back(tri.v3, agg);
           geomSizes_.push_back(3);
         }
       }
@@ -1281,8 +1224,7 @@ namespace VizHelpers {
                fabs(pp.y() - aggVert.y) < 1e-12 &&
                fabs(pp.z() - aggVert.z) < 1e-12)
             {
-              geomVerts_.push_back(aggNodes[l]);
-              geomAggs_.push_back(agg);
+              geomVerts_.emplace_back(aggNodes[l], agg);
               cntVertInAgg++;
               break;
             }
@@ -1394,8 +1336,7 @@ namespace VizHelpers {
       //add polygon to geometry
       for(size_t i = 0; i < polyVerts.size(); i++)
       {
-        geomVerts_.push_back(polyVerts[i]);
-        geomAggs_.push_back(agg);
+        geomVerts_.emplace_back(polyVerts[i], agg);
       }
       geomSizes_.push_back(polyVerts.size());
     }
@@ -1459,8 +1400,7 @@ namespace VizHelpers {
           {
             if(facetPts[j] == aggPoints[ap])
             {
-              geomVerts_.push_back(aggVerts_[aggStart + ap]);
-              geomAggs_.push_back(agg);
+              geomVerts_.emplace_back(aggVerts_[aggStart + ap], agg);
             }
           }
         }
@@ -1641,17 +1581,14 @@ namespace VizHelpers {
   {
     if(aggNodes.size() == 1)
     {
-      geomVerts_.push_back(aggNodes[0]);
-      geomAggs_.push_back(agg);
+      geomVerts_.emplace_back(aggNodes[0], agg);
       geomSizes_.push_back(1);
       return true;
     }
     else if(aggNodes.size() == 2)
     {
-      geomVerts_.push_back(aggNodes[0]);
-      geomAggs_.push_back(agg);
-      geomVerts_.push_back(aggNodes[1]);
-      geomAggs_.push_back(agg);
+      geomVerts_.emplace_back(aggNodes[0], agg);
+      geomVerts_.emplace_back(aggNodes[1], agg);
       geomSizes_.push_back(2);
       return true;
     }
@@ -1699,10 +1636,8 @@ namespace VizHelpers {
           maxPos = thisVert;
         }
       }
-      geomVerts_.push_back(minVert);
-      geomAggs_.push_back(agg);
-      geomVerts_.push_back(maxVert);
-      geomAggs_.push_back(agg);
+      geomVerts_.emplace_back(minVert, agg);
+      geomVerts_.emplace_back(maxVert, agg);
       geomSizes_.push_back(2);
       return true;
     }
@@ -1737,8 +1672,7 @@ namespace VizHelpers {
         auto convhull2d = giftWrap(aggPoints);
         for(size_t i = 0; i < convhull2d.size(); i++)
         {
-          geomVerts_.push_back(convhull2d[i]);
-          geomAggs_.push_back(agg);
+          geomVerts_.emplace_back(convhull2d[i], agg);
         }
         geomSizes_.push_back(convhull2d.size());
         return true;
@@ -1758,42 +1692,6 @@ namespace VizHelpers {
   {
     G_ = G;
     A_ = A;
-  }
-
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  build() {
-    ArrayView<const Scalar> values;
-    ArrayView<const LocalOrdinal> neighbors;
-
-    std::vector<std::pair<int, int> > vert1; //vertices (node indices)
-
-    ArrayView<const LocalOrdinal> indices;
-    for(LocalOrdinal locRow = 0; locRow < LocalOrdinal(G->GetNodeNumVertices()); locRow++) {
-      neighbors = G->getNeighborVertices(locRow);
-      //Add those local indices (columns) to the list of connections (which are pairs of the form (localM, localN))
-      for(int gEdge = 0; gEdge < int(neighbors.size()); ++gEdge) {
-        vert1.push_back(std::pair<int, int>(locRow, neighbors[gEdge]));
-      }
-    }
-    for(size_t i = 0; i < vert1.size(); i ++) {
-      if(vert1[i].first > vert1[i].second) {
-        int temp = vert1[i].first;
-        vert1[i].first = vert1[i].second;
-        vert1[i].second = temp;
-      }
-    }
-    std::sort(vert1.begin(), vert1.end());
-    std::vector<std::pair<int, int> >::iterator newEnd = unique(vert1.begin(), vert1.end()); //remove duplicate edges
-    vert1.erase(newEnd, vert1.end());
-    //std::vector<int> points1;
-    geomVerts_.reserve(2 * vert1.size());
-    geomSizes_.reserve(vert1.size());
-    for(size_t i = 0; i < vert1.size(); i++) {
-      geomVerts_.push_back(vert1[i].first);
-      geomVerts_.push_back(vert1[i].second);
-      geomSizes_.push_back(2);
-    }
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -2258,6 +2156,46 @@ namespace VizHelpers {
       TEUCHOS_TEST_FOR_EXCEPTION(true, Exceptions::RuntimeError,
                "VisualizationHelpers::buildColormap: Error while building colormap file: " << e.what());
     }
+  }
+
+  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node> 
+  std::vector<GeomPoint> VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getUniqueAggGeom(std::vector<GeomPoint>& geomPoints)
+  {
+    auto geomPointLess = [] (const GeomPoint& lhs, const GeomPoint& rhs) -> bool
+    {
+      return lhs.vert < rhs.vert || (lhs.vert == rhs.vert && lhs.agg < rhs.agg);
+    }
+    auto geomPointsEqual = [] (const GeomPoint& lhs, const GeomPoint& rhs) -> bool
+    {
+      return lhs.vert == rhs.vert && lhs.agg == rhs.agg;
+    }
+    auto copy = geomPoints;
+    std::sort(copy.begin(), copy.end(), geomPointLess);
+    auto end = std::unique(copy.begin(), copy.end(), geomPointsEqual);
+    copy.erase(end, copy.end());
+    //now replace all vert values in geomPoints with indices into copy
+    for(auto& gp : geomPoints)
+    {
+      auto findPos = std::lower_bound(copy.begin(), copy.end(), gp, geomPointLess);
+      gp.vert = findPos - copy.begin();
+    }
+    return copy;
+  }
+
+
+  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+  std::vector<GlobalOrdinal> VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getUniqueEdgeGeom(std::vector<GlobalOrdinal>& edges)
+  {
+    auto copy = edges;
+    std::sort(copy.begin(), copy.end());
+    auto end = std::unique(copy.begin(), copy.end());
+    copy.erase(end, copy.end());
+    for(auto& g : edges)
+    {
+      auto findPos = std::lower_bound(copy.begin(), copy.end(), g);
+      g = findPos - copy.begin();
+    }
+    return copy;
   }
 
 } // namespace VizHelpers

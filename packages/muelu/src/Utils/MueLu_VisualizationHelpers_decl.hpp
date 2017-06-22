@@ -164,14 +164,6 @@ namespace VizHelpers {
 
   std::string replaceAll(std::string original, std::string replaceWhat, std::string replaceWithWhat);
 
-  //! Replaces node indices in vertices in place with compressed unique indices, and returns list of unique points
-  //! Elements of vertices (originally local rows/vertices) are replaced by indices of returned vector
-  std::vector<int> makeUnique(std::vector<int>& verts); 
-
-  //! Make list of unique vertices from union of two vertex lists, and replace elements of the two
-  //! lists with indices of the unique list
-  std::vector<int> mergeAndMakeUnique(std::vector<int>& verts1, std::vector<int>& verts2); 
-
   /*!
     @class AggGeoemtry class.
     @brief Generates geometry for visualizing aggregates and coarsening information.
@@ -193,14 +185,17 @@ namespace VizHelpers {
 #undef MUELU_VISUALIZATIONHELPERS_SHORT
 #include "MueLu_UseShortNames.hpp"
     public:
+      //! Type of coordinates array (for input only).
+      //! Always has double scalar type, no matter the matrix scalar type.
+      typedef Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> CoordArray;
       //! @name Constructors/Destructors.
       //@{
 
       //! Constructor used by AggregationExportFactory
       //! Map is Coordinates non-overlapping map that describes vertex-processor association
       //! Number of dimensions inferred from whether z is null
-      AggGeometry(const Teuchos::RCP<Aggregates>& aggs, const Teuchos::RCP<Map>& map, const Teuchos::RCP<Teuchos::Comm<int>>& comm,
-          const Teuchos::RCP<MultiVector>& coords);
+      AggGeometry(const Teuchos::RCP<Aggregates>& aggs, const Teuchos::RCP<Teuchos::Comm<int>>& comm,
+          const Teuchos::RCP<CoordArray>& coords);
 
       //! Constructor used by CoarseningVisualizationFactory 
       //! P can be either smoothed or tentative prolongator
@@ -208,7 +203,7 @@ namespace VizHelpers {
       //! Aggregates can be overlapping, in the case of smoothed P
       //! Number of dimensions inferred from whether z is null
       AggGeometry(const Teuchos::RCP<Matrix>& P, const Teuchos::RCP<Map>& map, const Teuchos::RCP<Teuchos::Comm<int>>& comm,
-          const Teuchos::RCP<MultiVector>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent);
+          const Teuchos::RCP<CoordArray>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent);
 
       //! Generate the geometry. style is the "visualization: agg style" parameter value, and doesn't need to be valid.
       //! If style not valid, default to Point Cloud and return false.
@@ -216,8 +211,23 @@ namespace VizHelpers {
 
       //@}
 
-      std::vector<GlobalOrdinal> geomVerts_;
-      std::vector<GlobalOrdinal> geomAggs_;
+      struct GeomPoint
+      {
+        GeomPoint()
+        {
+          vert = 0;
+          agg = 0;
+        }
+        GeomPoint(GlobalOrdinal geomVert, GlobalOrdinal geomAgg)
+        {
+          vert = geomVert;
+          agg = geomAgg;
+        }
+        GlobalOrdinal vert;
+        GlobalOrdinal agg;
+      };
+
+      std::vector<GeomPoint> geomVerts_;
       std::vector<int> geomSizes_;
       Teuchos::RCP<Aggregates> aggs_;
       //The row map of A
@@ -356,10 +366,11 @@ namespace VizHelpers {
       void build();
       const Teuchos::RCP<GraphBase> G_;
       const Teuchos::RCP<Matrix> A_;
+      //Note: vertsFilt/vertsNonFilt are not accompanied by local aggregate index because all edge data attribs are contrast1/contrast2
       //! Vertices for non-filtered edges
-      std::vector<int> vertsNonFilt_;
+      std::vector<GlobalOrdinal> vertsNonFilt_;
       //! Vertices for filtered edges 
-      std::vector<int> vertsFilt_;
+      std::vector<GlobalOrdinal> vertsFilt_;
       //! Special node index value representing non-filtered edges (in both graph and matrix)
       static const int contrast1_ = -1;
       //! Special node index value representing filtered edges (in graph but not filtered matrix)
@@ -373,6 +384,7 @@ namespace VizHelpers {
 #include "MueLu_UseShortNames.hpp"
     public:
       typedef AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeometry;
+      typedef typename AggGeometry::GeomPoint GeomPoint;
       typedef EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> EdgeGeometry;
       VTKEmitter(const Teuchos::ParameterList& pL, int numProcs, int level, int rank, const Teuchos::RCP<Map>& fineMap = Teuchos::null, const Teuchos::RCP<Map>& coarseMap = Teuchos::null);
       //! Write one VTK file per process with ag's geometry data (also does bubbles)
@@ -384,12 +396,16 @@ namespace VizHelpers {
       void writePVTU();
       void buildColormap();
     private:
+      //Replace global vertex IDs with indices into indices for minimal local set of vertices
+      //the minimal set is returned and will become the set of points written to VTK
+      std::vector<GeomPoint> getUniqueAggGeom(std::vector<GeomPoint>& geomPoints);
+      std::vector<GlobalOrdinal> getUniqueEdgeGeom(std::vector<GlobalOrdinal>& edges);  //0,1 form edge, 2,3 form edge, etc.
       void writeOpening(std::ofstream& fout, int numVerts, int numCells);
-      void writeNodes(std::ofstream& fout, const std::vector<int>& uniqueVerts, const Teuchos::RCP<Map>& map);
-      void writeAggData(std::ofstream& fout, const std::vector<int>& uniqueVerts, const Teuchos::ArrayRCP<LocalOrdinal>& vertex2AggId);
-      void writeEdgeData(std::ofstream& fout, const std::vector<int>& uniqueVerts);
-      void writeCoordinates(std::ofstream& fout, const std::vector<int>& uniqueVerts, const Teuchos::ArrayRCP<const double>& x, const Teuchos::ArrayRCP<const double>& y, const Teuchos::ArrayRCP<const double>& z);
-      void writeCells(std::ofstream& fout, const std::vector<int>& geomVerts, const std::vector<int>& geomSizes);
+      void writePointsAndData(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, Teuchos::RCP<Map>& map);
+      void writeAggData(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, Teuchos::ArrayRCP<LocalOrdinal>& vertex2AggId);
+      void writeEdgeData(std::ofstream& fout, std::vector<GlobalOrdinal>& uniqueVerts);
+      void writeCoordinates(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, std::vector<Vec3>& positions);
+      void writeCells(std::ofstream& fout, std::vector<GeomPoint>& geomVerts, std::vector<int>& geomSizes);
       void writeClosing(std::ofstream& fout);
       //! Generate filename to use for main aggregate geometry file.
       std::string getAggFilename(int proc);
@@ -419,3 +435,4 @@ namespace VizHelpers {
 #define MUELU_VISUALIZATIONHELPERS_SHORT
 
 #endif /* MUELU_VISUALIZATIONHELPERS_DECL_HPP_ */
+
