@@ -1894,6 +1894,293 @@ void KernelWrappers<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosOpen
 
 
 /*********************************************************************************************************/
+// AB NewMatrix Kernel wrappers (KokkosKernels/CUDA Version)
+#if defined(HAVE_KOKKOSKERNELS_EXPERIMENTAL) && defined (HAVE_TPETRA_INST_CUDA)
+template<class Scalar,
+           class LocalOrdinal,
+           class GlobalOrdinal>
+struct KernelWrappers<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosCudaWrapperNode> {
+    static inline void mult_A_B_newmatrix_kernel_wrapper(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosCudaWrapperNode>& Aview,
+                                                  CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosCudaWrapperNode>& Bview,
+                                                  const Teuchos::Array<LocalOrdinal> & Acol2Brow,
+                                                         const Teuchos::Array<LocalOrdinal> & Acol2Irow,
+                                                  const Teuchos::Array<LocalOrdinal> & Bcol2Ccol,
+                                                  const Teuchos::Array<LocalOrdinal> & Icol2Ccol,
+                                                  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosCudaWrapperNode>& C,
+                                                  Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosCudaWrapperNode> > Cimport,
+                                                  const std::string& label = std::string(),
+                                                  const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
+    //Define functors
+    template<typename MrowptrType, typename LOViewType, typename GraphRowMapType>
+    struct MrowptrFunctor
+    {
+      MrowptrFunctor(MrowptrType& MrowptrIn, const LOViewType& Acol2BrowIn, const LOViewType& Acol2IrowIn,
+          const GraphRowMapType& BkRowMapIn, const GraphRowMapType& IkRowMapIn, size_t merge_numrowsIn)
+        : Mrowptr(MrowptrIn), Acol2Brow(Acol2BrowIn), Acol2Irow(Acol2IrowIn),
+        BkRowMap(BkRowMapIn), IkRowMap(IkRowMapIn),
+        merge_numrows(merge_numrowsIn),
+        LO_INVALID(Teuchos::OrdinalTraits<LocalOrdinal>::invalid()) {}
+
+      KOKKOS_INLINE_FUNCTION void operator()(const size_t i, size_t& update, const bool final) const
+      {
+        if(final)
+          Mrowptr(i) = update;
+        // Get the row count
+        size_t ct = 0;
+        if(Acol2Brow[i] != LO_INVALID)
+          ct = BkRowMap(Acol2Brow(i) + 1) - BkRowMap(Acol2Brow(i));
+        else
+          ct = IkRowMap(Acol2Irow(i) + 1) - IkRowMap(Acol2Irow(i));
+        update += ct;
+        if(final && (i + 1 == merge_numrows))
+          Mrowptr(i + 1) = update;
+      }
+      MrowptrType& Mrowptr;
+      const LOViewType& Acol2Brow;
+      const LOViewType& Acol2Irow;
+      const GraphRowMapType& BkRowMap;
+      const GraphRowMapType& IkRowMap;
+      size_t merge_numrows;
+      const LocalOrdinal LO_INVALID;
+    };
+
+    template<typename LOViewType, typename KcrsValuesType, typename KcrsRowptrType, typename KcrsColindType,
+      typename KcrsValuesTypeConst, typename KcrsRowptrTypeConst, typename KcrsColindTypeConst>
+    struct McolindValuesFunctor
+    {
+      McolindValuesFunctor(KcrsValuesType& MvaluesIn, KcrsRowptrType& MrowptrIn, KcrsColindType& McolindIn,
+          const LOViewType& Acol2BrowIn, const LOViewType& Acol2IrowIn, const LOViewType& Bcol2CcolIn, const LOViewType& Icol2CcolIn,
+          const KcrsValuesTypeConst& BkValuesIn, const KcrsRowptrTypeConst& BkRowptrIn, const KcrsColindTypeConst& BkColindIn,
+          const KcrsValuesTypeConst& IkValuesIn, const KcrsRowptrTypeConst& IkRowptrIn, const KcrsColindTypeConst& IkColindIn)
+        :
+          Mvalues(MvaluesIn), Mrowptr(MrowptrIn), Mcolind(McolindIn),
+          Acol2Brow(Acol2BrowIn), Acol2Irow(Acol2IrowIn),
+          Bcol2Ccol(Bcol2CcolIn), Icol2Ccol(Icol2CcolIn),
+          BkValues(BkValuesIn), BkRowptr(BkRowptrIn), BkColind(BkColindIn),
+          IkValues(IkValuesIn), IkRowptr(IkRowptrIn), IkColind(IkColindIn),
+          LO_INVALID(Teuchos::OrdinalTraits<LocalOrdinal>::invalid()) {}
+
+      KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const
+      {
+        if(Acol2Brow(i) != LO_INVALID) {
+          size_t row = Acol2Brow(i);
+          size_t start = BkRowptr(row);
+          for(size_t j = Mrowptr(i); j < Mrowptr(i + 1); j++)
+          {
+            Mvalues(j) = BkValues(j - Mrowptr(i) + start);
+            Mcolind(j) = Bcol2Ccol[BkColind(j - Mrowptr(i) + start)];
+          }
+        }
+        else
+        {
+          size_t row = Acol2Irow(i);
+          size_t start = IkRowptr(row);
+          for(size_t j = Mrowptr(i); j < Mrowptr(i + 1); j++)
+          {
+            Mvalues(j) = IkValues(j - Mrowptr(i) + start);
+            Mcolind(j) = Icol2Ccol[IkColind(j - Mrowptr(i) + start)];
+          }
+        }
+      }
+
+      KcrsValuesType& Mvalues;
+      KcrsRowptrType& Mrowptr;
+      KcrsColindType& Mcolind;
+      const LOViewType& Acol2Brow;
+      const LOViewType& Acol2Irow;
+      const LOViewType& Bcol2Ccol;
+      const LOViewType& Icol2Ccol;
+      const KcrsValuesTypeConst& BkValues;
+      const KcrsRowptrTypeConst& BkRowptr;
+      const KcrsColindTypeConst& BkColind;
+      const KcrsValuesTypeConst& IkValues;
+      const KcrsRowptrTypeConst& IkRowptr;
+      const KcrsColindTypeConst& IkColind;
+      const LocalOrdinal LO_INVALID;
+    };
+  };
+
+/*********************************************************************************************************/
+template<class Scalar,
+         class LocalOrdinal,
+         class GlobalOrdinal>
+void KernelWrappers<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosCudaWrapperNode>::mult_A_B_newmatrix_kernel_wrapper(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosCudaWrapperNode>& Aview,
+                                                                                               CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosCudaWrapperNode>& Bview,
+                                                                                               const Teuchos::Array<LocalOrdinal> & Acol2Brow,
+                                                                                               const Teuchos::Array<LocalOrdinal> & Acol2Irow,
+                                                                                               const Teuchos::Array<LocalOrdinal> & Bcol2Ccol,
+                                                                                               const Teuchos::Array<LocalOrdinal> & Icol2Ccol,
+                                                                                               CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosCudaWrapperNode>& C,
+                                                                                               Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosCudaWrapperNode> > Cimport,
+                                                                                               const std::string& label,
+                                                                                               const Teuchos::RCP<Teuchos::ParameterList>& params) {
+
+#ifdef HAVE_TPETRA_MMM_TIMINGS
+  std::string prefix_mmm = std::string("TpetraExt ") + label + std::string(": ");
+  using Teuchos::TimeMonitor;
+  Teuchos::RCP<TimeMonitor> MM = rcp(new TimeMonitor(*(TimeMonitor::getNewTimer(prefix_mmm + std::string("MMM Newmatrix CudaWrapper")))));
+#endif
+  //  printf("[%d] Cuda kernel called\n",Aview.origMatrix->getRowMap()->getComm()->getRank());
+
+  // Node-specific code<
+  typedef Kokkos::Compat::KokkosCudaWrapperNode Node;
+  std::string nodename("Cuda");
+
+  // Lots and lots of typedefs
+  using Teuchos::RCP;
+  typedef typename Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::local_matrix_type KCRS;
+  typedef typename KCRS::device_type device_t;
+  typedef typename KCRS::StaticCrsGraphType graph_t;
+  typedef typename graph_t::row_map_type::non_const_type lno_view_t;
+  typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;
+  typedef typename KCRS::values_type::non_const_type scalar_view_t;
+  //typedef typename graph_t::row_map_type::const_type lno_view_t_const;
+
+  // Options
+  int team_work_size = 16;  // Defaults to 16 as per Deveci 12/7/16 - csiefer
+  std::string myalg("SPGEMM_KK_MEMORY");
+  if(!params.is_null()) {
+    if(params->isParameter("cuda: algorithm"))
+      myalg = params->get("cuda: algorithm",myalg);
+    if(params->isParameter("cuda: team work size"))
+      team_work_size = params->get("cuda: team work size",team_work_size);
+  }
+
+  // KokkosKernelsHandle
+  typedef KokkosKernels::Experimental::KokkosKernelsHandle<lno_view_t,lno_nnz_view_t, scalar_view_t, typename device_t::execution_space, typename device_t::memory_space,typename device_t::memory_space > KernelHandle;
+
+  // Grab the  Kokkos::SparseCrsMatrices
+  const KCRS & Ak = Aview.origMatrix->getLocalMatrix();
+  const KCRS & Bk = Bview.origMatrix->getLocalMatrix();
+  RCP<const KCRS> Bmerged;
+
+  // Get the algorithm mode
+  std::string alg = nodename+std::string(" algorithm");
+  //  printf("DEBUG: Using kernel: %s\n",myalg.c_str());
+  if(!params.is_null() && params->isParameter(alg)) myalg = params->get(alg,myalg);
+  KokkosKernels::Experimental::Graph::SPGEMMAlgorithm alg_enum = KokkosKernels::Experimental::Graph::StringToSPGEMMAlgorithm(myalg);
+
+  // We need to do this dance if either (a) We have Bimport or (b) We don't A's colMap is not the same as B's rowMap
+  if(!Bview.importMatrix.is_null() || (Bview.importMatrix.is_null() && (&*Aview.origMatrix->getGraph()->getColMap() != &*Bview.origMatrix->getGraph()->getRowMap()))) {
+    // We do have a Bimport
+    // NOTE: We're going merge Borig and Bimport into a single matrix and reindex the columns *before* we multiply.
+    // This option was chosen because we know we don't have any duplicate entries, so we can allocate once.
+    RCP<const KCRS> Ik;
+    if(!Bview.importMatrix.is_null()) Ik = Teuchos::rcpFromRef<const KCRS>(Bview.importMatrix->getLocalMatrix());
+
+    size_t merge_numrows =  Ak.numCols();
+    lno_view_t Mrowptr("Mrowptr", merge_numrows + 1);
+    auto MrowptrHost = Kokkos::create_mirror(Mrowptr);
+
+    const LocalOrdinal LO_INVALID = Teuchos::OrdinalTraits<LocalOrdinal>::invalid();
+
+    // Grap the raw pointers out of the  Teuchos::Array's to avoid the Teuchos::Array+Kokkos+DEBUG problems
+    // Then copy all four arrays to host Views, and copy those to device
+    typedef Kokkos::View<LocalOrdinal*, Kokkos::CudaUVMSpace> DeviceViewLO;
+    const LocalOrdinal * Acol2Brow_ptr = Acol2Brow.getRawPtr();
+    const LocalOrdinal * Acol2Irow_ptr = Acol2Irow.getRawPtr();
+    const LocalOrdinal * Bcol2Ccol_ptr = Bcol2Ccol.getRawPtr();
+    const LocalOrdinal * Icol2Ccol_ptr = Icol2Ccol.getRawPtr();
+    DeviceViewLO Acol2BrowDev("", Acol2Brow.size());
+    DeviceViewLO Acol2IrowDev("", Acol2Irow.size());
+    DeviceViewLO Bcol2CcolDev("", Bcol2Ccol.size());
+    DeviceViewLO Icol2CcolDev("", Icol2Ccol.size());
+    auto Acol2BrowHost = create_mirror(Acol2BrowDev);
+    auto Acol2IrowHost = create_mirror(Acol2IrowDev);
+    auto Bcol2CcolHost = create_mirror(Bcol2CcolDev);
+    auto Icol2CcolHost = create_mirror(Icol2CcolDev);
+    for(LocalOrdinal i = 0; i < Acol2Brow.size(); i++)
+      Acol2BrowHost[i] = Acol2Brow_ptr[i];
+    for(LocalOrdinal i = 0; i < Acol2Irow.size(); i++)
+      Acol2IrowHost[i] = Acol2Irow_ptr[i];
+    for(LocalOrdinal i = 0; i < Bcol2Ccol.size(); i++)
+      Bcol2CcolHost[i] = Bcol2Ccol_ptr[i];
+    for(LocalOrdinal i = 0; i < Icol2Ccol.size(); i++)
+      Icol2CcolHost[i] = Icol2Ccol_ptr[i];
+    Kokkos::deep_copy(Acol2BrowDev, Acol2BrowHost);
+    Kokkos::deep_copy(Acol2IrowDev, Acol2IrowHost);
+    Kokkos::deep_copy(Bcol2CcolDev, Bcol2CcolHost);
+    Kokkos::deep_copy(Icol2CcolDev, Icol2CcolHost);
+    // Use a Kokkos::parallel_scan to build the rowptr
+    typedef Node::execution_space execution_space;
+    typedef Kokkos::RangePolicy<execution_space, size_t> range_type;
+
+    MrowptrFunctor<decltype(Mrowptr), decltype(Acol2BrowDev), decltype(Bk.graph.row_map)> funct1(Mrowptr, Acol2BrowDev, Acol2IrowDev, Bk.graph.row_map, Ik->graph.row_map, merge_numrows);
+
+    // Allocate nnz
+    size_t merge_nnz = Mrowptr(merge_numrows);
+    lno_nnz_view_t Mcolind("Mcolind",merge_nnz);
+    scalar_view_t Mvalues("Mvals",merge_nnz);
+
+    // Use a Kokkos::parallel_for to fill the rowptr/colind arrays
+    typedef Node::execution_space execution_space;
+    typedef Kokkos::RangePolicy<execution_space, size_t> range_type;
+
+    McolindValuesFunctor<decltype(Acol2BrowDev), decltype(Mvalues), decltype(Mrowptr), decltype(Mcolind), decltype(Bk.values), decltype(Bk.graph.row_map), decltype(Bk.graph.entries)>
+    funct2(Mvalues, Mrowptr, Mcolind,
+        Acol2BrowDev, Acol2IrowDev, Bcol2CcolDev, Icol2CcolDev,
+        Bk.values, Bk.graph.row_map, Bk.graph.entries,
+        Ik->values, Ik->graph.row_map, Ik->graph.entries);
+
+    Kokkos::parallel_for (range_type (0, merge_numrows), funct2);
+
+    Bmerged = Teuchos::rcp(new KCRS("CrsMatrix",merge_numrows,C.getColMap()->getNodeNumElements(),merge_nnz,Mvalues,Mrowptr,Mcolind));
+
+  }
+  else {
+    // We don't have a Bimport (the easy case)
+    Bmerged = Teuchos::rcpFromRef(Bk);
+  }
+
+#ifdef HAVE_TPETRA_MMM_TIMINGS
+  MM = rcp(new TimeMonitor (*TimeMonitor::getNewTimer(prefix_mmm + std::string("MMM Newmatrix CudaCore"))));
+#endif
+
+  // Do the multiply on whatever we've got
+  typename KernelHandle::nnz_lno_t AnumRows = Ak.numRows();
+  typename KernelHandle::nnz_lno_t BnumRows = Bmerged->numRows();
+  typename KernelHandle::nnz_lno_t BnumCols = Bmerged->numCols();
+
+  lno_view_t      row_mapC ("non_const_lnow_row", AnumRows + 1);
+  lno_nnz_view_t  entriesC;
+  scalar_view_t   valuesC;
+  KernelHandle kh;
+  kh.create_spgemm_handle(alg_enum);
+  kh.set_team_work_size(team_work_size);
+
+  KokkosKernels::Experimental::Graph::spgemm_symbolic(&kh,AnumRows,BnumRows,BnumCols,Ak.graph.row_map,Ak.graph.entries,false,Bmerged->graph.row_map,Bmerged->graph.entries,false,row_mapC);
+
+  size_t c_nnz_size = kh.get_spgemm_handle()->get_c_nnz();
+  if (c_nnz_size){
+    entriesC = lno_nnz_view_t (Kokkos::ViewAllocateWithoutInitializing("entriesC"), c_nnz_size);
+    valuesC = scalar_view_t (Kokkos::ViewAllocateWithoutInitializing("valuesC"), c_nnz_size);
+  }
+  KokkosKernels::Experimental::Graph::spgemm_numeric(&kh,AnumRows,BnumRows,BnumCols,Ak.graph.row_map,Ak.graph.entries,Ak.values,false,Bmerged->graph.row_map,Bmerged->graph.entries,Bmerged->values,false,row_mapC,entriesC,valuesC);
+  kh.destroy_spgemm_handle();
+
+#ifdef HAVE_TPETRA_MMM_TIMINGS
+  MM = rcp(new TimeMonitor (*TimeMonitor::getNewTimer(prefix_mmm + std::string("MMM Newmatrix CudaSort"))));
+#endif
+
+  // Sort & set values
+  Import_Util::sortCrsEntries(row_mapC, entriesC, valuesC);
+  C.setAllValues(row_mapC,entriesC,valuesC);
+
+#ifdef HAVE_TPETRA_MMM_TIMINGS
+  MM = rcp(new TimeMonitor (*TimeMonitor::getNewTimer(prefix_mmm + std::string("MMM Newmatrix CudaESFC"))));
+#endif
+
+  // Final Fillcomplete
+  RCP<Teuchos::ParameterList> labelList = rcp(new Teuchos::ParameterList);
+  labelList->set("Timer Label",label);
+  RCP<const Export<LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosCudaWrapperNode> > dummyExport;
+  C.expertStaticFillComplete(Bview.origMatrix->getDomainMap(), Aview.origMatrix->getRangeMap(), Cimport,dummyExport,labelList);
+}
+#endif
+
+
+
+/*********************************************************************************************************/
 // Kernel method for computing the local portion of C = A*B
 template<class Scalar,
          class LocalOrdinal,

@@ -1140,11 +1140,61 @@ sortCrsEntries (const Teuchos::ArrayView<size_t> &CRS_rowptr,
 }
 
 
+template<typename Scalar, typename Ordinal, typename RowPtrType, typename ColIndType, typename ValsType>
+struct SortCrsEntriesFunctor
+{
+  SortCrsEntriesFunctor(const RowPtrType& CRS_rowptr_, ColIndType& CRS_colind_, ValsType& CRS_vals_, const size_t nnz_) :
+    CRS_rowptr(CRS_rowptr_),
+    CRS_colind(CRS_colind_),
+    CRS_vals(CRS_vals_),
+    nnz(nnz_) {}
+  KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const
+  {
+    CRS_colind(i) = 4;
+    CRS_vals(i) = 2.71828;
+    /*
+    size_t start = CRS_rowptr(i);
+    if(start < nnz)
+    {
+      size_t NumEntries = CRS_rowptr(i+1) - start;
+      Ordinal n = (Ordinal) NumEntries;
+      Ordinal m = 1;
+      while (m<n)
+        m = m*3+1;
+      m /= 3;
+
+      while(m > 0) {
+        Ordinal max = n - m;
+        for(Ordinal j = 0; j < max; j++) {
+          for(Ordinal k = j; k >= 0; k-=m) {
+            size_t sk = start+k;
+            if(CRS_colind(sk+m) >= CRS_colind(sk))
+              break;
+            Scalar dtemp     = CRS_vals(sk+m);
+            CRS_vals(sk+m)   = CRS_vals(sk);
+            CRS_vals(sk)     = dtemp;
+            Ordinal itemp    = CRS_colind(sk+m);
+            CRS_colind(sk+m) = CRS_colind(sk);
+            CRS_colind(sk)   = itemp;
+          }
+        }
+        m = m/3;
+      }
+    }
+    */
+  }
+  const RowPtrType& CRS_rowptr;
+  ColIndType& CRS_colind;
+  ValsType& CRS_vals;
+  const size_t nnz;
+};
+
+
 template<typename rowptr_array_type, typename colind_array_type, typename vals_array_type>
 void
 sortCrsEntries (const rowptr_array_type& CRS_rowptr,
-                const colind_array_type& CRS_colind,
-                const vals_array_type& CRS_vals) {
+    const colind_array_type& CRS_colind,
+    const vals_array_type& CRS_vals) {
   // For each row, sort column entries from smallest to largest.
   // Use shell sort. Stable sort so it is fast if indices are already sorted.
   // Code copied from  Epetra_CrsMatrix::SortEntries()
@@ -1159,41 +1209,25 @@ sortCrsEntries (const rowptr_array_type& CRS_rowptr,
   typedef typename vals_array_type::execution_space execution_space;
   // Specify RangePolicy explicitly, in order to use correct execution
   // space.  See #1345.
+  std::cout << "Execution space 1: " << typeid(typename vals_array_type::execution_space).name() << '\n';
+  std::cout << "Execution space 2: " << typeid(typename colind_array_type::execution_space).name() << '\n';
+  std::cout << "Execution space 3: " << typeid(typename rowptr_array_type::execution_space).name() << '\n';
+  std::cout << "Rowptr array type: " << typeid(rowptr_array_type).name() << '\n';
+  std::cout << "Colind array type: " << typeid(colind_array_type).name() << '\n';
+  std::cout << "Values array type: " << typeid(vals_array_type).name() << '\n';
+
   typedef Kokkos::RangePolicy<execution_space, index_type> range_type;
-
-  Kokkos::parallel_for (range_type (0, NumRows), KOKKOS_LAMBDA (const size_t i) {
-      size_t start=CRS_rowptr(i);
-      if(start < nnz) {
-        size_t NumEntries = CRS_rowptr(i+1) - start;
-
-        Ordinal n = (Ordinal) NumEntries;
-        Ordinal m = 1;
-        while (m<n) m = m*3+1;
-        m /= 3;
-
-        while(m > 0) {
-          Ordinal max = n - m;
-          for(Ordinal j = 0; j < max; j++) {
-            for(Ordinal k = j; k >= 0; k-=m) {
-              size_t sk = start+k;
-              if(CRS_colind(sk+m) >= CRS_colind(sk))
-                break;
-              Scalar dtemp     = CRS_vals(sk+m);
-              CRS_vals(sk+m)   = CRS_vals(sk);
-              CRS_vals(sk)     = dtemp;
-              Ordinal itemp    = CRS_colind(sk+m);
-              CRS_colind(sk+m) = CRS_colind(sk);
-              CRS_colind(sk)   = itemp;
-            }
-          }
-          m = m/3;
-        }
-      }
-    });
+  std::cout << "Note: rowptr ptr on device: " << CRS_rowptr.ptr_on_device() << '\n';
+  std::cout << "Note: colind ptr on device: " << CRS_colind.ptr_on_device() << '\n';
+  std::cout << "Note: values ptr on device: " << CRS_vals.ptr_on_device() << '\n';
+  std::cout << "NNZ is " << nnz << '\n';
+  std::cout << "Nrows is " << NumRows << '\n';
+  std::cout << "Colind/values size: " << CRS_colind.dimension_0() << ", " << CRS_vals.dimension_0() << '\n';
+  SortCrsEntriesFunctor<Scalar, Ordinal, rowptr_array_type, colind_array_type, vals_array_type> functor(CRS_rowptr, (colind_array_type&) CRS_colind, (vals_array_type&) CRS_vals, nnz);
+  Kokkos::parallel_for(range_type(0, NumRows), functor);
+  std::cout << "Just finished running BMK's functor\n";
+  std::cout << "Returning from sortCrsEntries\n";
 }
-
-
-
 
 
 // Note: This should get merged with the other Tpetra sort routines eventually.
