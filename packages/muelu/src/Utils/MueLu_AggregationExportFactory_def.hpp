@@ -151,9 +151,9 @@ namespace MueLu {
     using std::vector;
     using Teuchos::RCP;
     using Teuchos::ArrayRCP;
-    typedef VisualizationHelpers::AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeometry;
-    typedef VisualizationHelpers::EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> EdgeGeometry;
-    typedef VisualizationHelpers::VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node> VTKEmitter;
+    typedef VizHelpers::AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeometry;
+    typedef VizHelpers::EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> EdgeGeometry;
+    typedef VizHelpers::VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node> VTKEmitter;
 
     //Decide which build function to follow, based on input params
     const ParameterList& pL = GetParameterList();
@@ -225,8 +225,6 @@ namespace MueLu {
     ArrayRCP<LocalOrdinal>  vertex2AggId        = aggregates->GetVertex2AggId()->getDataNonConst(0);
     ArrayRCP<LocalOrdinal>  procWinner          = aggregates->GetProcWinner()->getDataNonConst(0);
 
-    vertex2AggId_ = vertex2AggId;
-
     // prepare for calculating global aggregate ids
     std::vector<GlobalOrdinal> numAggsGlobal (numProcs, 0);
     std::vector<GlobalOrdinal> numAggsLocal  (numProcs, 0);
@@ -239,30 +237,26 @@ namespace MueLu {
       numAggsGlobal [i] += numAggsGlobal[i-1];
       minGlobalAggId[i]  = numAggsGlobal[i-1];
     }
-    if(numProcs == 0)
-      aggsOffset_ = 0;
-    else
-      aggsOffset_ = minGlobalAggId[myRank];
     ArrayRCP<LO>            aggStart;
     ArrayRCP<GlobalOrdinal> aggToRowMap;
     amalgInfo->UnamalgamateAggregates(*aggregates, aggStart, aggToRowMap);
     int timeStep = pL.get< int > ("Output file: time step");
     int iter = pL.get< int > ("Output file: iter");
-    filenameToWrite = this->replaceAll(filenameToWrite, "%LEVELID",  toString(fineLevel.GetLevelID()));
-    filenameToWrite = this->replaceAll(filenameToWrite, "%TIMESTEP", toString(timeStep));
-    filenameToWrite = this->replaceAll(filenameToWrite, "%ITER",     toString(iter));
+    filenameToWrite = VizHelpers::replaceAll(filenameToWrite, "%LEVELID",  toString(fineLevel.GetLevelID()));
+    filenameToWrite = VizHelpers::replaceAll(filenameToWrite, "%TIMESTEP", toString(timeStep));
+    filenameToWrite = VizHelpers::replaceAll(filenameToWrite, "%ITER",     toString(iter));
     //Proc id MUST be included in vtu filenames to distinguish them (if multiple procs)
     //In all other cases (else), including processor # in filename is optional
     string masterStem = "";
     if(useVTK)
     {
       masterStem = filenameToWrite.substr(0, filenameToWrite.rfind(".vtu"));
-      masterStem = this->replaceAll(masterStem, "%PROCID", "");
+      masterStem = VizHelpers::replaceAll(masterStem, "%PROCID", "");
     }
     string baseFname = filenameToWrite;  //get a version of the filename string with the %PROCID token, but without substituting myRank (needed for pvtu output)
-    filenameToWrite = this->replaceAll(filenameToWrite, "%PROCID", toString(myRank));
+    filenameToWrite = VizHelpers::replaceAll(filenameToWrite, "%PROCID", toString(myRank));
     GetOStream(Runtime0) << "AggregationExportFactory: outputfile \"" << filenameToWrite << "\"" << std::endl;
-    ofstream fout(filenameToWrite.c_str());
+    std::ofstream fout(filenameToWrite.c_str());
     GO numAggs = aggregates->GetNumAggregates();
     if(!useVTK)
     {
@@ -295,8 +289,6 @@ namespace MueLu {
       using std::string;
       //Make sure we have coordinates
       TEUCHOS_TEST_FOR_EXCEPTION(coords.is_null(), Exceptions::RuntimeError,"AggExportFactory could not get coordinates, but they are required for VTK output.");
-      numAggs_ = numAggs;
-      numNodes_ = coords->getLocalLength();
       //get access to fine coord data
       typedef ArrayRCP<const double> Coords;
       Coords fx = Teuchos::arcp_reinterpret_cast<const double>(coords->getData(0));
@@ -312,7 +304,7 @@ namespace MueLu {
       {
         fz = Teuchos::arcp_reinterpret_cast<const double>(coords->getData(2));
         if(doCoarseGraphEdges)
-          cz_ = Teuchos::arcp_reinterpret_cast<const double>(coordsCoarse->getData(2));
+          cz = Teuchos::arcp_reinterpret_cast<const double>(coordsCoarse->getData(2));
       }
       //Get the sizes of the aggregates to speed up grabbing node IDs
       string aggStyle = "Point Cloud";
@@ -320,15 +312,15 @@ namespace MueLu {
       {
         aggStyle = pL.get<string>("aggregation: output file: agg style"); //Let "Point Cloud" be the default style
       }
-      catch(exception& e) {}
-      RCP<Map> fineMap = Amat->getMap();
-      RCP<Map> coarseMap;
+      catch(std::exception& e) {}
+      auto fineMap = Amat->getMap();
+      decltype(fineMap) coarseMap;
       if(!Ac.is_null())
       {
         coarseMap = Ac->getMap();
       }
-      VTKEmitter vtk(pL, numProcs, fineLevel.getLevelID(), myRank, fineMap, coarseMap);
-      AggGeometry aggGeom(aggregates, fineMap, comm, coords);
+      VTKEmitter vtk(pL, numProcs, fineLevel.GetLevelID(), myRank, fineMap, coarseMap);
+      AggGeometry aggGeom(aggregates, comm, coords);
       if(!aggGeom.build(aggStyle))
       {
 #ifdef HAVE_MUELU_CGAL
@@ -342,14 +334,15 @@ namespace MueLu {
       //do fine and coarse edges, if requested
       if(doFineGraphEdges)
       {
-        EdgeGeom fineEdge(fineGraph, Amat, DofsPerNode);
+      //EdgeGeometry(Teuchos::RCP<CoordArray>& coords, Teuchos::RCP<GraphBase>& G, int dofs, Teuchos::RCP<Matrix> A = Teuchos::null);
+        EdgeGeometry fineEdge(coords, fineGraph, DofsPerNode, Amat);
         fineEdge.build();
         vtk.writeEdgeGeom(fineEdge, true);
       }
       if(doCoarseGraphEdges)
       {
         LocalOrdinal dofsCoarse = Get<LocalOrdinal> (coarseLevel, "DofsPerNode");
-        EdgeGeom coarseEdge(coarseGraph, Ac, dofsCoarse);
+        EdgeGeometry coarseEdge(coordsCoarse, coarseGraph, dofsCoarse, Ac);
         coarseEdge.build();
         vtk.writeEdgeGeom(coarseEdge, false);
       }
@@ -361,5 +354,6 @@ namespace MueLu {
       }
     }
   }
+}
 
 #endif /* MUELU_AGGREGATIONEXPORTFACTORY_DEF_HPP_ */
