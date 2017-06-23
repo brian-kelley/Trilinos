@@ -212,11 +212,29 @@ namespace VizHelpers {
     numLocalAggs_ = aggs->GetNumAggregates();
     dims_ = coords->getNumVectors();
     aggs_ = aggs;
-    this->x_ = coords->getData(0);
-    this->y_ = coords->getData(1);
-    if(dims_ == 3)
+    //Set vertex positions
     {
-      this->z_ = coords->getData(2);
+      auto localLength = coords->getLocalLength();
+      auto coordsMap = coords->getMap();
+      auto x = coords->getData(0);
+      auto y = coords->getData(1);
+      if(dims_ == 3)
+      {
+        auto z = coords->getData(2);
+        for(LocalOrdinal lv = 0; lv < localLength; lv++)
+        {
+          GlobalOrdinal gv = coordsMap->getGlobalElement(lv);
+          verts_[gv] = Vec3(x[lv], y[lv], z[lv]);
+        }
+      }
+      else
+      {
+        for(LocalOrdinal lv = 0; lv < localLength; lv++)
+        {
+          GlobalOrdinal gv = coordsMap->getGlobalElement(lv);
+          verts_[gv] = Vec3(x[lv], y[lv], 0);
+        }
+      }
     }
     this->rank_ = comm->getRank();
     this->nprocs_ = comm->getSize();
@@ -544,7 +562,7 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  computeIsRoot(Teuchos::RCP<Aggregates>& aggs, Teuchos::RCP<Map>& map)
+  computeIsRoot()
   {
     isRoot_.clear();
     if(!aggs_.is_null())
@@ -552,7 +570,7 @@ namespace VizHelpers {
       //can ask Aggregates whether each node is root
       for(LocalOrdinal i = 0; i < numNodes_; i++)
       {
-        isRoot_[map->getGlobalElement(i)] = aggs_->IsRoot(i);
+        isRoot_[map_->getGlobalElement(i)] = aggs_->IsRoot(i);
       }
     }
     else
@@ -565,7 +583,7 @@ namespace VizHelpers {
         int aggSize = aggOffsets_[agg + 1] - aggOffsets_[agg];
         for(LocalOrdinal i = aggOffsets_[agg]; i < aggOffsets_[agg + 1]; i++)
         {
-          LocalOrdinal vert = verts_[aggVerts_[i]];
+          avgPos += verts_[aggVerts_[i]];
         }
         avgPos *= (1.0 / aggSize);
         GlobalOrdinal centerVert;
@@ -611,7 +629,7 @@ namespace VizHelpers {
       }
       TEUCHOS_TEST_FOR_EXCEPTION(root == -1, Exceptions::RuntimeError,
           std::string("MueLu: \"Jacks\" aggregate visualization requires a root vertex "
-            "per aggregate, but aggregate ") + to_string(agg) + " on proc " + to_string(rank_) + " does not have a root.");
+            "per aggregate, but aggregate ") + std::to_string(agg) + " on proc " + std::to_string(rank_) + " does not have a root.");
       //for each vert in agg (except root), make a line segment between the vert and root
       for(GlobalOrdinal i = aggStart; i < aggEnd; i++)
       {
@@ -1144,7 +1162,7 @@ namespace VizHelpers {
       //First, check anomalous cases
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
                "CoarseningVisualization::doCGALConvexHulls3D: aggregate contains zero nodes!");
-      if(handleDegenerate3D(aggNodes, agg))
+      if(handleDegenerate(aggNodes, agg))
       {
         continue;
       }
@@ -1199,7 +1217,6 @@ namespace VizHelpers {
       //Populate a list of Point_2 for this aggregate
       GlobalOrdinal aggStart = aggOffsets_[agg];
       GlobalOrdinal aggEnd = aggOffsets_[agg + 1];
-      GlobalOrdinal aggSize = aggEnd - aggStart;
       //Handle point and line segment case
       //because make assumption later that alpha shape is a polygon
       vector<Point> aggPoints;
@@ -1311,13 +1328,12 @@ namespace VizHelpers {
       vector<GlobalOrdinal> aggNodes;
       GlobalOrdinal aggStart = aggOffsets_[agg];
       GlobalOrdinal aggEnd = aggOffsets_[agg + 1];
-      GlobalOrdinal aggSize = aggEnd - aggStart;
       for(GlobalOrdinal i = aggStart; i < aggEnd; i++)
       {
         GlobalOrdinal v = aggVerts_[i];
         aggNodes.push_back(v);
         auto vpos = verts_[v];
-        aggPoints.emplace_back(vpos.x, vpos.y);
+        aggPoints.emplace_back(vpos.x, vpos.y, vpos.z);
       }
       Alpha_shape_3 hull(aggPoints.begin(), aggPoints.end());
       //vector<Cell_handle> cells;
@@ -1650,14 +1666,14 @@ namespace VizHelpers {
       auto zCol = coords->getData(0);
       for(LocalOrdinal i = 0; i < coords->getLocalLength(); i++)
       {
-        verts_[coordMap->getGlobalElement(i)] = Vec3(xCol(i), yCol(i), zCol(i));
+        verts_[coordMap->getGlobalElement(i)] = Vec3(xCol[i], yCol[i], zCol[i]);
       }
     }
     else
     {
       for(LocalOrdinal i = 0; i < coords->getLocalLength(); i++)
       {
-        verts_[coordMap->getGlobalElement(i)] = Vec3(xCol(i), yCol(i), 0);
+        verts_[coordMap->getGlobalElement(i)] = Vec3(xCol[i], yCol[i], 0);
       }
     }
   }
@@ -1668,31 +1684,34 @@ namespace VizHelpers {
     using namespace std;
     ArrayView<const Scalar> values;
     ArrayView<const LocalOrdinal> neighbors;
-    if(A_->isGloballyIndexed())
+    if(!A_->getRowMap()->isDistributed())
     {
+      //Matrix is locally replicated - global row views available locally
       ArrayView<const GlobalOrdinal> indices;
       for(GlobalOrdinal globRow = 0; globRow < A_->getGlobalNumRows(); globRow++)
       {
         if(dofs_ == 1)
           A_->getGlobalRowView(globRow, indices, values);
-        neighbors = G_->getNeighborVertices((LocalOrdinal) globRow);
+        neighbors = G_->getNeighborVertices(globRow);
         size_t gEdge = 0;
         size_t aEdge = 0;
-        while(gEdge != int(neighbors.size()))
+        while(gEdge != neighbors.size())
         {
           if(dofs_ == 1)
           {
             if(neighbors[gEdge] == indices[aEdge])
             {
               //graph and matrix both have this edge, wasn't filtered
-              vertsNonFilt_.push_back(pair<int, int>(int(globRow), neighbors[gEdge]));
+              vertsNonFilt_.push_back(globRow);
+              vertsNonFilt_.push_back(neighbors[gEdge]);
               gEdge++;
               aEdge++;
             }
             else
             {
               //graph contains an edge at gEdge which was filtered from A
-              vertsFilt_.push_back(pair<int, int>(int(globRow), neighbors[gEdge]));
+              vertsFilt_.push_back(globRow);
+              vertsFilt_.push_back(neighbors[gEdge]);
               gEdge++;
             }
           }
@@ -1700,7 +1719,8 @@ namespace VizHelpers {
           {
             //for multiple DOF problems, don't try to detect filtered edges and ignore A
             //TODO bmk: do detect them
-            vertsNonFilt_.push_back(pair<int, int>(int(globRow), neighbors[gEdge]));
+            vertsNonFilt_.push_back(globRow);
+            vertsNonFilt_.push_back(neighbors[gEdge]);
             gEdge++;
           }
         }
@@ -1723,19 +1743,22 @@ namespace VizHelpers {
           {
             if(neighbors[gEdge] == indices[aEdge])
             {
-              vertsNonFilt_.push_back(pair<int, int>(locRow, neighbors[gEdge]));
+              vertsNonFilt_.push_back(locRow);
+              vertsNonFilt_.push_back(neighbors[gEdge]);
               gEdge++;
               aEdge++;
             }
             else
             {
-              vertsFilt_.push_back(pair<int, int>(locRow, neighbors[gEdge]));
+              vertsFilt_.push_back(locRow);
+              vertsFilt_.push_back(neighbors[gEdge]);
               gEdge++;
             }
           }
           else
           {
-            vertsNonFilt_.push_back(pair<int, int>(locRow, neighbors[gEdge]));
+            vertsNonFilt_.push_back(locRow);
+            vertsNonFilt_.push_back(neighbors[gEdge]);
             gEdge++;
           }
         }
@@ -1750,7 +1773,7 @@ namespace VizHelpers {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   VTKEmitter(const Teuchos::ParameterList& pL, int numProcs, int level, int rank,
-      const Teuchos::RCP<const Map> fineMap, const Teuchos::RCP<const Map> coarseMap)
+      Teuchos::RCP<const Map> fineMap, Teuchos::RCP<const Map> coarseMap)
   {
     baseName_    = pL.get<std::string>("visualization: output filename");
     int timeStep = pL.get<int>("visualization: output file: time step");
@@ -1766,12 +1789,12 @@ namespace VizHelpers {
     {
       baseName_ += "-proc%PROCID";
     }
-    baseName_ = this->replaceAll(baseName_, "%LEVELID", toString(level));
-    baseName_ = this->replaceAll(baseName_, "%TIMESTEP", toString(timeStep));
-    baseName_ = this->replaceAll(baseName_, "%ITER", toString(iter));
-    this->rank_ = rank;
-    this->fineMap_ = fineMap;
-    this->coarseMap_ = coarseMap;
+    baseName_ = replaceAll(baseName_, "%LEVELID", toString(level));
+    baseName_ = replaceAll(baseName_, "%TIMESTEP", toString(timeStep));
+    baseName_ = replaceAll(baseName_, "%ITER", toString(iter));
+    rank_ = rank;
+    fineMap_ = fineMap;
+    coarseMap_ = coarseMap;
     didFineEdges_ = false;
     didCoarseEdges_ = false;
   }
@@ -1843,14 +1866,14 @@ namespace VizHelpers {
     auto uniqueVertsFilt = getUniqueEdgeGeom(eg.vertsFilt_);
     auto positions = eg.verts_;
     //get filename
-    std::string filename = fine ? getFineEdgeFilename() : getCoarseEdgeFilename();
+    std::string filename = fine ? getFineEdgeFilename(rank_) : getCoarseEdgeFilename(rank_);
     std::ofstream fout(filename);
-    writeOpening(fout, uniqueVertsNonFilt.size() + uniqueVertsFilt.size,
+    writeOpening(fout, uniqueVertsNonFilt.size() + uniqueVertsFilt.size(),
         (eg.vertsNonFilt_.size() + eg.vertsFilt_.size()) / 2);
     writeEdgeNodes(fout, uniqueVertsNonFilt, uniqueVertsFilt);
-    writeEdgeData(fout, uniqueVertsNonFilt.size(), uniqueVertsFilt.size());
+    writeEdgeData(fout, uniqueVertsNonFilt.size(), uniqueVertsNonFilt.size());
     writeCoordinates(fout, uniqueVertsNonFilt, uniqueVertsFilt, positions);
-    writeCells(fout, eg.geomVerts_, eg.geomSizes_);
+    writeEdgeCells(fout, eg.vertsNonFilt_, eg.vertsFilt_, uniqueVertsNonFilt.size());
     writeClosing(fout);
     fout.close();
     if(fine)
@@ -1998,7 +2021,7 @@ namespace VizHelpers {
     size_t i = 0;
     for(auto& v : uniqueVerts)
     {
-      auto vpos = positions[v];
+      auto vpos = positions[v.vert];
       fout << vpos.x << ' ' << vpos.y << ' ' << vpos.z << ' ';
       //write 3 coordinates per line
       if(i % 3 == 2)
