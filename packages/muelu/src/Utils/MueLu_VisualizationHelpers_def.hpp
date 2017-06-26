@@ -758,6 +758,7 @@ namespace VizHelpers {
       {
         aggNodes.push_back(aggVerts_[i]);
       }
+      std::cout << "Hello from convexHulls 3D, agg " << agg << " has " << aggNodes.size() << " verts.\n";
       //First, check anomalous cases
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
                "CoarseningVisualization::doConvexHulls3D: aggregate contains zero nodes!");
@@ -848,7 +849,9 @@ namespace VizHelpers {
       maxDist = 0;
       //need the vectors to do "quadruple product" formula
       Vec3 b1 = extremeVectors[base1];
+      std::cout << "Starting tri base 1: " << extremeSix[base1] << '\n';
       Vec3 b2 = extremeVectors[base2];
+      std::cout << "Starting tri base 2: " << extremeSix[base2] << '\n';
       GlobalOrdinal thirdNode;
       for(size_t i = 0; i < aggNodes.size(); i++)
       {
@@ -860,6 +863,7 @@ namespace VizHelpers {
         }
       }
       //Now know the last node in the first triangle
+      std::cout << "Starting tri third point: " << thirdNode << '\n';
       tri.v3 = thirdNode;
       hull.push_back(tri);
       Vec3 b3 = verts_[thirdNode];
@@ -871,12 +875,14 @@ namespace VizHelpers {
       {
         Vec3 thisNode = verts_[aggNodes[i]];
         double nodeDist = pointDistFromTri(thisNode, b1, b2, b3);
-        if(nodeDist > maxDist) {
+        if(nodeDist > maxDist)
+        {
           maxDist = nodeDist;
           fourthVertex = aggNodes[i];
         }
       }
       aggNodes.erase(find(aggNodes.begin(), aggNodes.end(), fourthVertex));
+      std::cout << "Starting tetrahedron final point: " << fourthVertex << '\n';
       Vec3 b4 = verts_[fourthVertex];
       //Add three new triangles to hull to form the first tetrahedron
       //use tri to hold the triangle info temporarily before being added to list
@@ -891,6 +897,7 @@ namespace VizHelpers {
       hull.push_back(tri);
       //now orient all four triangles so that the vertices are oriented clockwise (so getNorm_ points outward for each)
       Vec3 barycenter((b1.x + b2.x + b3.x + b4.x) / 4.0, (b1.y + b2.y + b3.y + b4.y) / 4.0, (b1.z + b2.z + b3.z + b4.z) / 4.0);
+      std::cout << "  Have the starting tetrahedron, with barycenter " << barycenter.x << " " << barycenter.y << " " << barycenter.z << '\n';
       for(size_t i = 0; i < 4; i++)
       {
         Triangle& tetTri = hull[i];
