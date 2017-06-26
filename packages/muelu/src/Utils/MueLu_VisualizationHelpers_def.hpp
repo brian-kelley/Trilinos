@@ -108,7 +108,7 @@ namespace VizHelpers {
     return dotProduct(rel, n) > 1e-12 ? true : false;
   }
 
-  inline bool collinear(Vec2 v1, Vec2 v2, Vec3 v3)
+  inline bool collinear(Vec2 v1, Vec2 v2, Vec2 v3)
   {
     Vec3 diff1(v2.x - v1.x, v2.y - v1.y, 0);
     Vec3 diff2(v3.x - v2.x, v3.y - v2.y, 0);
@@ -162,7 +162,7 @@ namespace VizHelpers {
       norm.z /= normScl;
       rv = fabs(dotProduct(norm, point - v1));
     } else {
-      // triangle is degenerated
+      // degenerate triangle (collinear vertices)
       Vec3 test1 = v3 - v1;
       Vec3 test2 = v2 - v1;
       bool useTest1 = mag(test1) > 0.0 ? true : false;
@@ -501,6 +501,34 @@ namespace VizHelpers {
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+  AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+  AggGeometry(std::vector<Vec3>& coords, int dims)
+  {
+    numNodes_ = coords.size();
+    numLocalAggs_ = 1;
+    firstAgg_ = 0;
+    for(size_t i = 0; i < coords.size(); i++)
+    {
+      verts_[i] = coords[i];
+    }
+    //Don't need map
+    map_ = Teuchos::null;
+    aggVerts_.resize(coords.size());
+    for(size_t i = 0; i < coords.size(); i++)
+    {
+      aggVerts_[i] = i;
+    }
+    aggOffsets_.resize(2);
+    aggOffsets_[0] = 0;
+    aggOffsets_[1] = coords.size();
+    aggs_ = Teuchos::null;
+    dims_ = dims;
+    rank_ = 0;
+    nprocs_ = 1;
+    bubbles_ = false;
+  }
+
+  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   build(std::string& style)
   {
@@ -580,12 +608,13 @@ namespace VizHelpers {
       for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
       {
         Vec3 avgPos(0, 0, 0);
-        int aggSize = aggOffsets_[agg + 1] - aggOffsets_[agg];
-        for(LocalOrdinal i = aggOffsets_[agg]; i < aggOffsets_[agg + 1]; i++)
+        GlobalOrdinal aggSize = aggOffsets_[agg + 1] - aggOffsets_[agg];
+        for(GlobalOrdinal i = aggOffsets_[agg]; i < aggOffsets_[agg + 1]; i++)
         {
           avgPos += verts_[aggVerts_[i]];
         }
         avgPos *= (1.0 / aggSize);
+        //now find the aggregate that is closest to avgPos
         GlobalOrdinal centerVert;
         //distance squared between centerVert and avg
         double distSquared = 1e30;
@@ -655,7 +684,7 @@ namespace VizHelpers {
       {
         aggPoints.push_back(aggVerts_[i]);
       }
-      auto geom = giftWrap(aggPoints);
+      auto geom = giftWrap(aggPoints, verts_);
       for(size_t i = 0; i < geom.size(); i++)
       {
         geomVerts_.emplace_back(geom[i], agg);
@@ -732,7 +761,7 @@ namespace VizHelpers {
       //First, check anomalous cases
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
                "CoarseningVisualization::doConvexHulls3D: aggregate contains zero nodes!");
-      if(handleDegenerate3D(aggNodes, agg))
+      if(handleDegenerate(aggNodes, agg))
       {
         continue;
       }
@@ -834,7 +863,7 @@ namespace VizHelpers {
       tri.v3 = thirdNode;
       hull.push_back(tri);
       Vec3 b3 = verts_[thirdNode];
-      aggNodes.remove(find(aggNodes.begin(), aggNodes.end(), thirdNode));
+      aggNodes.erase(find(aggNodes.begin(), aggNodes.end(), thirdNode));
       //Find the fourth node (most distant from triangle) to form tetrahedron
       maxDist = 0;
       GlobalOrdinal fourthVertex = -1;
@@ -847,7 +876,7 @@ namespace VizHelpers {
           fourthVertex = aggNodes[i];
         }
       }
-      aggNodes.remove(find(aggNodes.begin(), aggNodes.end(), fourthVertex));
+      aggNodes.erase(find(aggNodes.begin(), aggNodes.end(), fourthVertex));
       Vec3 b4 = verts_[fourthVertex];
       //Add three new triangles to hull to form the first tetrahedron
       //use tri to hold the triangle info temporarily before being added to list
@@ -900,13 +929,13 @@ namespace VizHelpers {
       {
         Vec3 ptPos = verts_[pt];
         if(isInFront(ptPos, b1, trinorms[0]))
-          startPoints[0].push_back(ptPos);
+          startPoints[0].push_back(pt);
         else if(isInFront(ptPos, b4, trinorms[1]))
-          startPoints[1].push_back(ptPos);
+          startPoints[1].push_back(pt);
         else if(isInFront(ptPos, b4, trinorms[2]))
-          startPoints[2].push_back(ptPos);
+          startPoints[2].push_back(pt);
         else if(isInFront(ptPos, b4, trinorms[3]))
-          startPoints[3].push_back(ptPos);
+          startPoints[3].push_back(pt);
         //else: point already inside starting tetrahedron, so ignore
       }
       aggNodes.clear();
@@ -928,7 +957,7 @@ namespace VizHelpers {
         if(startPoints[i].size())
         {
           trisToProcess.push(i);
-          hull[i].setPointList[startPoints[i]];
+          hull[i].setPointList(startPoints[i]);
           startPoints[i].clear();
           startPoints[i].shrink_to_fit();
         }
@@ -946,8 +975,8 @@ namespace VizHelpers {
         //therefore, it is also guaranteed to be replaced
         Triangle t = hull[triIndex];
         //mark space as free
-        freelist.push(tri);
-        hull[tri].valid = false;
+        freelist.push(triIndex);
+        hull[triIndex].valid = false;
         //note: t is a shallow copy that keeps the front point list
         //out of the point list, get the most distant point
         double furthest = 0;
@@ -1373,9 +1402,8 @@ namespace VizHelpers {
 
 #endif
   
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  std::vector<GlobalOrdinal> AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  giftWrap(std::vector<GlobalOrdinal>& points)
+  template <class GlobalOrdinal>
+  std::vector<GlobalOrdinal> giftWrap(std::vector<GlobalOrdinal>& points, std::map<GlobalOrdinal, Vec3>& verts)
   {
     if(points.size() < 3) {
       //aggregate is a point or line segment, so just use all its points as the geometry
@@ -1384,14 +1412,14 @@ namespace VizHelpers {
     //first, get the normal to the plane containing the points
     Vec3 normal;
     {
-      Vec3 v1 = verts_[points[0]];
-      Vec3 v2 = verts_[points[1]];
-      Vec3 v3 = verts_[points[2]];
+      Vec3 v1 = verts[points[0]];
+      Vec3 v2 = verts[points[1]];
+      Vec3 v3 = verts[points[2]];
       size_t i = 3;
       //make sure triangle is not degenerate when getting its normal
       while(i < points.size() && mag(crossProduct(v1 - v2, v1 - v3)) < 1e-8)
       {
-        v3 = verts_[points[i]];
+        v3 = verts[points[i]];
         i++;
       }
       normal = crossProduct(v1 - v2, v1 - v3).normalize();
@@ -1419,6 +1447,10 @@ namespace VizHelpers {
       }
       return Vec2();
     };
+    auto pos = [&] (GlobalOrdinal g) -> Vec2
+    {
+      return proj(verts[g]);
+    };
     //check if all points are collinear, need to explicitly draw a line in that case.
     {
       //find first pair (v1, v2) of vertices that are not the same, in case multiple nodes share positions
@@ -1427,22 +1459,22 @@ namespace VizHelpers {
       GlobalOrdinal iter;
       for(iter = 2; iter < points.size(); iter++)
       {
-        if(proj(verts_[v1]) != proj(verts_[v2]))
+        if(pos(v1) != pos(v2))
           break;
         v2 = points[iter];
       }
-      if(proj(verts_[v1]) == proj(verts_[v2]))
+      if(pos(v1) == pos(v2))
       {
         //all vertices in agg have same position (would be very strange corner case)
         return std::vector<GlobalOrdinal>(1, points[0]);
       }
       //check if the rest of the vertices are collinear with v1, v2
-      Vec2 vec1 = proj(verts_[v1]);
-      Vec2 vec2 = proj(verts_[v2]);
+      Vec2 vec1 = pos(v1);
+      Vec2 vec2 = pos(v2);
       bool allCollinear = true;
       for(; iter < points.size(); iter++)
       {
-        Vec2 vec3 = proj(verts_[points[iter]]);
+        Vec2 vec3 = pos(points[iter]);
         if(!collinear(vec1, vec2, vec3))
         {
           allCollinear = false;
@@ -1455,13 +1487,13 @@ namespace VizHelpers {
         //find min and max coordinates in agg and make line segment between them
         GlobalOrdinal minVert = points[0];
         GlobalOrdinal maxVert = points[0];
-        Vec2 minPos = proj(verts_[minVert]);
-        Vec2 maxPos = proj(verts_[maxVert]);
+        Vec2 minPos = pos(minVert);
+        Vec2 maxPos = pos(maxVert);
         for(size_t i = 1; i < points.size(); i++)
         {
           GlobalOrdinal v = points[i];
           //compare X first and then use Y as a tiebreak (will always find 2 most distant points on the line)
-          Vec2 vPos = proj(verts_[v]);
+          Vec2 vPos = pos(v);
           if(vPos.x < minPos.x || (vPos.x == minPos.x && vPos.y < minPos.y)) 
           {
             minVert = v;
@@ -1479,14 +1511,19 @@ namespace VizHelpers {
         return lineSeg;
       }
     }
+    if(points.size() == 3)
+    {
+      //all triangles are convex, so don't need to run algorithm
+      return points;
+    }
     //use "gift wrap" algorithm to find the convex hull
     //first, find vert with minimum x (and use min y as a tiebreak)
     GlobalOrdinal minVert = points[0];
-    Vec2 minPos = proj(verts_[minVert]);
+    Vec2 minPos = pos(minVert);
     for(GlobalOrdinal i = 1; i < points.size(); i++)
     {
       GlobalOrdinal test = points[i];
-      Vec2 testPos = proj(verts_[test]);
+      Vec2 testPos = pos(test);
       if(testPos.x < minPos.x || (testPos.x == minPos.x && testPos.y < minPos.y))
       {
         minVert = test;
@@ -1494,47 +1531,42 @@ namespace VizHelpers {
       }
     }
     std::vector<GlobalOrdinal> loop;
-    GlobalOrdinal loopIter = minVert;
+    //start loop with minVert
+    loop.push_back(minVert);
     //loop until a closed loop (with > 1 vertices) has been formed
-    while(true)
+    while(loop.size() == 1 || loop.front() != loop.back())
     {
-      //find another vertex "ray" in the aggregate 
+      //find another vertex "ray" in the aggregate (one that is not the same as loopIter)
+      //the geometric ray that sweeps to the left goes from loopIter to ray
+      GlobalOrdinal loopIter = loop.back();
       GlobalOrdinal ray = points[0];
+      if(ray == loopIter)
       {
-        GlobalOrdinal i = 0;
-        if(ray == loopIter)
-        {
-          i++;
-          ray = points[i];
-        }
+        ray = points[1];
       }
       //sweep through all vertices, and if one is on the left side of loopIter->ray, change ray to it
       //"is point left of ray?" is answered by segmentNormal and dot prod
-      Vec2 norm = segmentNormal(proj(verts_[ray]) - proj(verts_[loopIter]));
-      bool foundNext = false;
-      while(!foundNext)
+      Vec2 norm = segmentNormal(pos(ray) - pos(loopIter));
+      double rayLen = mag(pos(ray) - pos(loopIter));
+      for(size_t i = 0; i < points.size(); i++)
       {
-        for(size_t i = 0; i < points.size(); i++)
+        if(points[i] == loopIter || points[i] == ray)
+          continue;
+        double dotProd = dotProduct(norm, pos(points[i]) - pos(loopIter));
+        double thisLen = mag(pos(points[i]) - pos(loopIter));
+        //use point i as loopIter if it is left of the ray OR if it is exactly on the ray but further away from loopIter
+        if(dotProd > 0 || (dotProd == 0 && thisLen > rayLen))
         {
-          if(points[i] == loopIter || points[i] == ray)
-            continue;
-          if(dotProduct(norm, proj(verts_[points[i]]) - proj(verts_[loopIter])) > 0)
-          {
-            foundNext = true;
-            loop.push_back(loopIter);
-            loopIter = points[i];
-            break;
-          }
+          //update loopIter to point[i]
+          rayLen = thisLen;
+          ray = points[i];
+          norm = segmentNormal(pos(ray) - pos(loopIter));
         }
-        foundNext = true;
       }
-      if(loop.back() == loop.front() && loop.size() > 1)
-      {
-        //have a closed loop
-        loop.pop_back();
-        break;
-      }
+      loop.push_back(ray);
     }
+    //first point same as last point: remove last because don't want repeats
+    loop.pop_back();
     //loop now contains the vertex loop representing convex hull (with none repeated)
     return loop;
   }
@@ -1633,7 +1665,7 @@ namespace VizHelpers {
       }
       if(areCoplanar) {
         //do 2D convex hull
-        auto convhull2d = giftWrap(aggNodes);
+        auto convhull2d = giftWrap(aggNodes, verts_);
         for(size_t i = 0; i < convhull2d.size(); i++)
         {
           geomVerts_.emplace_back(convhull2d[i], agg);

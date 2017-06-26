@@ -110,16 +110,6 @@ namespace MueLu {
 #include "MueLu_UseShortNames.hpp"
 
   public:
-    //! @name Constructors/Destructors.
-    //@{
-
-    //! Constructor.
-    AggregationExportFactory();
-
-    //! Destructor.
-    virtual ~AggregationExportFactory() { }
-    //@}
-
     RCP<const ParameterList> GetValidParameterList() const;
 
     //! Input
@@ -136,6 +126,8 @@ namespace MueLu {
     void Build(Level &fineLevel, Level &coarseLevel) const;
 
     //@}
+    private:
+      typedef VizHelpers::AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeometry;
   }; // class AggregationExportFactory
 } // namespace MueLu
 

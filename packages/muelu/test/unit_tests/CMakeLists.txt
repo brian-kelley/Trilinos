@@ -50,6 +50,7 @@ APPEND_SET(SOURCES
   Utilities
   VariableContainer.cpp
   VariableDofLaplacianFactory.cpp
+  VizGeom.cpp
 )
 
 TRIBITS_COPY_FILES_TO_BINARY_DIR(UnitTestsUserData_cp

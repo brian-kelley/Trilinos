@@ -83,7 +83,6 @@
 #endif
 
 namespace MueLu {
-
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
     RCP<ParameterList> validParamList = rcp(new ParameterList());
@@ -151,7 +150,6 @@ namespace MueLu {
     using std::vector;
     using Teuchos::RCP;
     using Teuchos::ArrayRCP;
-    typedef VizHelpers::AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeometry;
     typedef VizHelpers::EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> EdgeGeometry;
     typedef VizHelpers::VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node> VTKEmitter;
 
@@ -357,3 +355,4 @@ namespace MueLu {
 }
 
 #endif /* MUELU_AGGREGATIONEXPORTFACTORY_DEF_HPP_ */
+

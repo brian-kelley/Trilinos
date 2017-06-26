@@ -172,21 +172,27 @@ namespace VizHelpers {
     return lhs.x != rhs.x || lhs.y != rhs.y;
   }
 
-  Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList();
+  inline Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList();
 
-  Vec3 crossProduct(Vec3 v1, Vec3 v2);
-  double dotProduct(Vec2 v1, Vec2 v2);
-  double dotProduct(Vec3 v1, Vec3 v2);
-  bool isInFront(Vec3 point, Vec3 inPlane, Vec3 n);
-  bool collinear(Vec2 v1, Vec2 v2, Vec2 v3);
-  double dist(Vec2 p1, Vec2 p2);
-  double dist(Vec3 p1, Vec3 p2);
+  inline Vec3 crossProduct(Vec3 v1, Vec3 v2);
+  inline double dotProduct(Vec2 v1, Vec2 v2);
+  inline double dotProduct(Vec3 v1, Vec3 v2);
+  inline bool isInFront(Vec3 point, Vec3 inPlane, Vec3 n);
+  inline bool collinear(Vec2 v1, Vec2 v2, Vec2 v3);
+  inline double dist(Vec2 p1, Vec2 p2);
+  inline double dist(Vec3 p1, Vec3 p2);
   //! Get "normal" to given 2D vector - rotate left 90 degrees
-  Vec2 segmentNormal(Vec2 v);
+  inline Vec2 segmentNormal(Vec2 v);
   //! Get normal to triangle (oriented outward)
-  Vec3 triNormal(Vec3 v1, Vec3 v2, Vec3 v3);
+  inline Vec3 triNormal(Vec3 v1, Vec3 v2, Vec3 v3);
+  inline double pointDistFromTri(Vec3 point, Vec3 v1, Vec3 v2, Vec3 v3);
 
-  std::string replaceAll(std::string original, std::string replaceWhat, std::string replaceWithWhat);
+  inline std::string replaceAll(std::string original, std::string replaceWhat, std::string replaceWithWhat);
+
+  //used by convexHulls2D and convexHulls3D (in case of agg with all-coplanar points)
+  //precondition: all points are coplanar (but the plane is allowed to have any 3D orientation)
+  template<typename GlobalOrdinal>
+  std::vector<GlobalOrdinal> giftWrap(std::vector<GlobalOrdinal>& points, std::map<GlobalOrdinal, Vec3>& verts);
 
   /*!
     @class AggGeoemtry class.
@@ -248,6 +254,9 @@ namespace VizHelpers {
       AggGeometry(const Teuchos::RCP<Matrix>& P, const Teuchos::RCP<const Map>& map, const Teuchos::RCP<const Teuchos::Comm<int>>& comm,
           const Teuchos::RCP<CoordArray>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent);
 
+      //! Constructor used to create a single artificial aggregate (for testing)
+      AggGeometry(std::vector<Vec3>& coords, int dims);
+
       //! Generate the geometry. style is the "visualization: agg style" parameter value, and doesn't need to be valid.
       //! If style not valid, default to Point Cloud and return false.
       bool build(std::string& style);
@@ -287,10 +296,6 @@ namespace VizHelpers {
       //quickhull algorithm, as described at thomasdiewald.com/blog/?p=1888
       void convexHulls3D();
 
-      //used by convexHulls2D and convexHulls3D (in case of agg with all-coplanar points)
-      //precondition: all points are coplanar (but the plane is allowed to have any 3D orientation)
-      std::vector<GlobalOrdinal> giftWrap(std::vector<GlobalOrdinal>& points);
-
       //used by all 3D convex hull and alpha shape functions to deal with collinear/coplanar nodes
       bool handleDegenerate(std::vector<GlobalOrdinal>& points, int agg, bool is3D = true);
 
@@ -303,8 +308,6 @@ namespace VizHelpers {
       void cgalAlphaHulls2D();
       void cgalAlphaHulls3D();
 #endif
-      //Internal geometry utilities
-      static double pointDistFromTri(Vec3 point, Vec3 v1, Vec3 v2, Vec3 v3);
       struct Triangle
       {
         Triangle() : v1(0), v2(0), v3(0), valid(false)
@@ -329,8 +332,8 @@ namespace VizHelpers {
         }
         void setPointList(std::vector<GlobalOrdinal>& pts)
         {
-          frontPoints = new GlobalOrdinal[pts.length()];
-          memcpy(frontPoints, &pts[0], pts.length() * sizeof(GlobalOrdinal));
+          frontPoints = new GlobalOrdinal[pts.size()];
+          memcpy(frontPoints, &pts[0], pts.size() * sizeof(GlobalOrdinal));
         }
         void freePointList()
         {
@@ -359,13 +362,14 @@ namespace VizHelpers {
         bool adjacent(Triangle& tri)
         {
           int shared = 0;
-          GlobalOrdinal thisVerts[3] = {v1, v2, v3};
-          GlobalOrdinal otherVerts[3] = {tri.v1, tri.v2, tri.v3};
+          GlobalOrdinal thisVerts[] = {v1, v2, v3};
+          GlobalOrdinal otherVerts[] = {tri.v1, tri.v2, tri.v3};
           for(int i = 0; i < 3; i++)
           {
-            for(int j = i; j < 3; j++)
+            for(int j = 0; j < 3; j++)
             {
-              shared++;
+              if(thisVerts[i] == otherVerts[j])
+                shared++;
             }
           }
           return shared == 2;
