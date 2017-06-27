@@ -217,12 +217,12 @@ namespace MueLuTests {
     std::vector<Vec3> pts;
     srand(42);
     pts.emplace_back(0, 0, 0);
-    pts.emplace_back(0, 1, 0);
     pts.emplace_back(1, 0, 0);
+    pts.emplace_back(0, 1, 0);
     pts.emplace_back(1, 1, 0);
     pts.emplace_back(0, 0, 1);
-    pts.emplace_back(0, 1, 1);
     pts.emplace_back(1, 0, 1);
+    pts.emplace_back(0, 1, 1);
     pts.emplace_back(1, 1, 1);
     const int resolution = 100000;
     for(int i = 0; i < n; i++)

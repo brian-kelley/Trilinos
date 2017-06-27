@@ -79,7 +79,7 @@ namespace VizHelpers {
   inline std::string replaceAll(std::string original, std::string replaceWhat, std::string replaceWithWhat)
   {
     while(1) {
-      const int pos = original.find(replaceWhat);
+      const size_t pos = original.find(replaceWhat);
       if (pos == std::string::npos)
         break;
       original.replace(pos, replaceWhat.size(), replaceWithWhat);
@@ -945,6 +945,10 @@ namespace VizHelpers {
           startPoints[3].push_back(pt);
         //else: point already inside starting tetrahedron, so ignore
       }
+      for(int i = 0; i < 4; i++)
+      {
+        std::cout << "Tetrahedron face " << i << " has " << startPoints[i].size() << " points in front.\n";
+      }
       aggNodes.clear();
       aggNodes.shrink_to_fit();
       stack<int> trisToProcess;   //list of triangles still to process - done when empty
@@ -974,9 +978,14 @@ namespace VizHelpers {
           hull[i].numPoints = 0;
         }
       }
+      std::cout << "Done setting up for DFS\n";
+      int asdf = 0;
       while(!trisToProcess.empty())
       {
+        std::cout << "In DFS iter " << asdf++ << '\n';
+        std::cout << "  Have " << trisToProcess.size() << " tris left to process and " << freelist.size() << " free triangles in hull\n";
         int triIndex = trisToProcess.top();
+        std::cout << "Processing tri " << triIndex << '\n';
         trisToProcess.pop();
         //note: since faces was in queue, it is guaranteed to have front points 
         //therefore, it is also guaranteed to be replaced
@@ -986,6 +995,7 @@ namespace VizHelpers {
         hull[triIndex].valid = false;
         //note: t is a shallow copy that keeps the front point list
         //out of the point list, get the most distant point
+        std::cout << "  Finding the most distant point in front...\n";
         double furthest = 0;
         int bestInd = -1;
         for(int i = 0; i < t.numPoints; i++)
@@ -997,6 +1007,7 @@ namespace VizHelpers {
             furthest = thisDist;
           }
         }
+        std::cout << "  Point " << t.frontPoints[bestInd] << " is the most distant point.\n";
         //get the set of triangles adjacent to t which are visible from the furthest point
         auto farPoint = t.frontPoints[bestInd];
         vector<Triangle> visible;
@@ -1006,6 +1017,7 @@ namespace VizHelpers {
           auto& nei = hull[t.neighbor[i]];
           if(pointInFront(nei, farPoint))
           {
+            std::cout << "  have visible neighbor " << t.neighbor[i] << '\n';
             visible.push_back(nei);
             freelist.push(t.neighbor[i]);
             hull[t.neighbor[i]].valid = false;
@@ -1042,6 +1054,7 @@ namespace VizHelpers {
           allEdges.emplace_back(nei.v2, nei.v3);
           allEdges.emplace_back(nei.v1, nei.v3);
         }
+        std::cout << "  Have a list of " << allEdges.size() << " edges.\n";
         //sort it - already have the two vertices in each edge sorted (v1 < v2)
         std::sort(allEdges.begin(), allEdges.end(),
             [] (const Edge& e1, const Edge& e2) -> bool
@@ -1054,12 +1067,13 @@ namespace VizHelpers {
           if(i < allEdges.size() - 1 && allEdges[i] == allEdges[i + 1])
           {
             i++;
-            continue;
           }
           boundary.push_back(allEdges[i]);
         }
+        std::cout << "  Have a list of " << boundary.size() << " hole boundary edges.\n";
         //for each boundary edge, form a new triangle with the farPoint - can't assign neighbors yet
         vector<int> newTris;
+        std::cout << "  Creating " << boundary.size() << " new tris...\n";
         for(auto& e : boundary)
         {
           int ind;
@@ -1078,6 +1092,7 @@ namespace VizHelpers {
           newTri.v1 = e.v1;
           newTri.v2 = e.v2;
           newTri.v3 = farPoint;
+          newTri.clearNeighbors();
           newTris.push_back(ind);
           //make sure triangle is oriented correctly - barycenter must be behind
           if(pointDistFromTri(barycenter, verts_[newTri.v1], verts_[newTri.v2], verts_[newTri.v3]) < 0)
@@ -1087,8 +1102,10 @@ namespace VizHelpers {
             newTri.v2 = tempv;
           }
         }
+        std::cout << "  Done creating new tris\n";
         //now set up neighbors for new triangles
         //first, build set of all triangels to search: all still-valid neighbors of visible and also all new triangles
+        std::cout << "  Searching for all neighbors of new tris.\n";
         set<int> edgeSearch;
         for(auto& newTri : newTris)
         {
@@ -1103,21 +1120,22 @@ namespace VizHelpers {
           if(hull[visibleTri.v3].valid)
             edgeSearch.insert(visibleTri.v3);
         }
+        std::cout << "  Have " << edgeSearch.size() << " candidate edges making up the boundary of all new tris\n";
         for(auto newTri : newTris)
         {
           Triangle& nt = hull[newTri];
+          std::cout << "    Finding neighbors for tri " << newTri << '\n';
+          std::cout << "    Note: existing neighbors (should be -1): " << nt.neighbor[0] << " " << nt.neighbor[1] << " " << nt.neighbor[2] << '\n';
           for(auto& searchTri : edgeSearch)
           {
-            if(nt.adjacent(hull[searchTri]))
+            if(nt.adjacent(hull[searchTri]) && !nt.hasNeighbor(searchTri))
             {
-              if(!nt.hasNeighbor(searchTri))
-              {
-                nt.addNeighbor(searchTri);
-              }
+              std::cout << "      Adding unique neighbor " << searchTri << '\n';
+              nt.addNeighbor(searchTri);
             }
           }
         }
-        //now, collect all the front points from visible triangles into one vector, and free the originals
+        //now, collect all the front points from visible (deleted) triangles into one vector, and free the originals
         int totalFrontPoints = 0;
         for(auto& v : visible)
         {
@@ -1155,6 +1173,7 @@ namespace VizHelpers {
           Triangle& nt = hull[newTri];
           if(triFrontPoints[i].size())
           {
+            std::cout << "  New tri " << newTri << " has " << triFrontPoints[i].size() << " points in front.\n";
             nt.setPointList(triFrontPoints[i]);
             trisToProcess.push(newTri);
           }
@@ -1875,7 +1894,7 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  writeAggGeom(AggGeometry& ag)
+  writeAggGeom(AggGeom& ag)
   {
     //note: makeUnique modifies ag.geomVerts_ in place, but OK because it won't be used again
     auto uniqueVerts = getUniqueAggGeom(ag.geomVerts_);
@@ -1899,7 +1918,7 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  writeEdgeGeom(EdgeGeometry& eg, bool fine)
+  writeEdgeGeom(EdgeGeom& eg, bool fine)
   {
     auto uniqueVertsNonFilt = getUniqueEdgeGeom(eg.vertsNonFilt_);
     auto uniqueVertsFilt = getUniqueEdgeGeom(eg.vertsFilt_);
@@ -2307,7 +2326,7 @@ namespace VizHelpers {
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node> 
-  std::vector<GeomPoint<GlobalOrdinal>> VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getUniqueAggGeom(std::vector<GeomPoint>& geomPoints)
+  std::vector<GeometryPoint<GlobalOrdinal>> VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getUniqueAggGeom(std::vector<GeometryPoint<GlobalOrdinal>>& geomPoints)
   {
     auto geomPointLess = [] (const GeomPoint& lhs, const GeomPoint& rhs) -> bool
     {

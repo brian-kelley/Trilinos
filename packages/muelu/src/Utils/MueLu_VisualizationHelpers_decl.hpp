@@ -211,14 +211,14 @@ namespace VizHelpers {
    */
 
   template<typename GlobalOrdinal>
-  struct GeomPoint
+  struct GeometryPoint
   {
-    GeomPoint()
+    GeometryPoint()
     {
       vert = 0;
       agg = 0;
     }
-    GeomPoint(GlobalOrdinal geomVert, GlobalOrdinal geomAgg)
+    GeometryPoint(GlobalOrdinal geomVert, GlobalOrdinal geomAgg)
     {
       vert = geomVert;
       agg = geomAgg;
@@ -236,7 +236,7 @@ namespace VizHelpers {
       //! Always has double scalar type, no matter the matrix scalar type.
       typedef Xpetra::MultiVector<double, LocalOrdinal, GlobalOrdinal, Node> CoordArray;
       typedef MueLu::Aggregates<LocalOrdinal, GlobalOrdinal, Node> Aggs;
-      typedef GeomPoint<GlobalOrdinal> GeomPoint;
+      typedef GeometryPoint<GlobalOrdinal> GeomPoint;
       //! @name Constructors/Destructors.
       //@{
 
@@ -339,24 +339,33 @@ namespace VizHelpers {
         {
           delete[] frontPoints;
         }
+        void clearNeighbors()
+        {
+          neighbor[0] = -1;
+          neighbor[1] = -1;
+          neighbor[2] = -1;
+        }
         bool hasNeighbor(int tri)
         {
-          if(neighbor[0] == tri)
-            return true;
-          if(neighbor[1] == tri)
-            return true;
-          if(neighbor[2] == tri)
-            return true;
-          return false;
+          return neighbor[0] == tri || neighbor[1] == tri || neighbor[2] == tri;
         }
         void addNeighbor(int tri)
         {
           if(neighbor[0] < 0)
+          {
             neighbor[0] = tri;
+            return;
+          }
           else if(neighbor[1] < 0)
+          {
             neighbor[1] = tri;
+            return;
+          }
           else if(neighbor[2] < 0)
+          {
             neighbor[2] = tri;
+            return;
+          }
           throw std::runtime_error("Convex hull mesh face already has 3 neighbors.");
         }
         bool adjacent(Triangle& tri)
@@ -364,6 +373,7 @@ namespace VizHelpers {
           int shared = 0;
           GlobalOrdinal thisVerts[] = {v1, v2, v3};
           GlobalOrdinal otherVerts[] = {tri.v1, tri.v2, tri.v3};
+          std::cout << "      In Tri::adj: testing whether (" << v1 << " " << v2 << " " << v3 << ") and (" << tri.v1 << " " << tri.v2 << " " << tri.v3 << ") are adjacent: ";
           for(int i = 0; i < 3; i++)
           {
             for(int j = 0; j < 3; j++)
@@ -372,7 +382,16 @@ namespace VizHelpers {
                 shared++;
             }
           }
-          return shared == 2;
+          if(shared == 2)
+          {
+            std::cout << " YES\n";
+            return true;
+          }
+          else
+          {
+            std::cout << " NO\n";
+            return false;
+          }
         }
         GlobalOrdinal v1;
         GlobalOrdinal v2;
@@ -415,15 +434,15 @@ namespace VizHelpers {
 #undef MUELU_VISUALIZATIONHELPERS_SHORT
 #include "MueLu_UseShortNames.hpp"
     public:
-      typedef AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeometry;
-      typedef EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> EdgeGeometry;
-      typedef GeomPoint<GlobalOrdinal> GeomPoint;
+      typedef AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeom;
+      typedef EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> EdgeGeom;
+      typedef GeometryPoint<GlobalOrdinal> GeomPoint;
       VTKEmitter(const Teuchos::ParameterList& pL, int numProcs, int level, int rank, Teuchos::RCP<const Map> fineMap = Teuchos::null, Teuchos::RCP<const Map> coarseMap = Teuchos::null);
       //! Write one VTK file per process with ag's geometry data (also does bubbles)
       //! Note: filename automatically generated with proc id, level id
-      void writeAggGeom(AggGeometry& ag);
+      void writeAggGeom(AggGeom& ag);
       //! Write one VTK file per process with eg's geometry data, using fine or coarse map
-      void writeEdgeGeom(EdgeGeometry& eg, bool fine);
+      void writeEdgeGeom(EdgeGeom& eg, bool fine);
       //! Write PVTU linking to all previously written VTU files, allowing all geometry to be viewed together
       void writePVTU();
       void buildColormap();
