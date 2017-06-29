@@ -310,11 +310,12 @@ namespace VizHelpers {
 #endif
       struct Triangle
       {
-        Triangle() : v1(0), v2(0), v3(0), valid(false)
+        Triangle() : v1(1337), v2(1337), v3(1337), valid(false)
         {
           neighbor[0] = -1;
           neighbor[1] = -1;
           neighbor[2] = -1;
+          valid = false;
         }
         Triangle(GlobalOrdinal v1in, GlobalOrdinal v2in, GlobalOrdinal v3in, int nei1, int nei2, int nei3) :
           v1(v1in), v2(v2in), v3(v3in)
@@ -322,6 +323,7 @@ namespace VizHelpers {
           neighbor[0] = nei1;
           neighbor[1] = nei2;
           neighbor[2] = nei3;
+          valid = false;
         }
         ~Triangle() {}
         bool operator==(const Triangle& l)
@@ -332,12 +334,7 @@ namespace VizHelpers {
         }
         void setPointList(std::vector<GlobalOrdinal>& pts)
         {
-          frontPoints = new GlobalOrdinal[pts.size()];
-          memcpy(frontPoints, &pts[0], pts.size() * sizeof(GlobalOrdinal));
-        }
-        void freePointList()
-        {
-          delete[] frontPoints;
+          frontPoints = pts;
         }
         void clearNeighbors()
         {
@@ -349,24 +346,34 @@ namespace VizHelpers {
         {
           return neighbor[0] == tri || neighbor[1] == tri || neighbor[2] == tri;
         }
+        void replaceNeighbor(int toReplace, int with)
+        {
+          if(neighbor[0] == toReplace)
+          {
+            neighbor[0] = with;
+            return;
+          }
+          else if(neighbor[1] == toReplace)
+          {
+            neighbor[1] = with;
+            return;
+          }
+          else if(neighbor[2] == toReplace)
+          {
+            neighbor[2] = with;
+            return;
+          }
+          std::ostringstream oss;
+          oss << "Convex hull face " << v1 << " " << v2 << " " << v3 << " should have neighbor " << toReplace << " but it doesn't.";
+          throw std::runtime_error(oss.str());
+        }
+        void deleteNeighbor(int tri)
+        {
+          replaceNeighbor(tri, -1);
+        }
         void addNeighbor(int tri)
         {
-          if(neighbor[0] < 0)
-          {
-            neighbor[0] = tri;
-            return;
-          }
-          else if(neighbor[1] < 0)
-          {
-            neighbor[1] = tri;
-            return;
-          }
-          else if(neighbor[2] < 0)
-          {
-            neighbor[2] = tri;
-            return;
-          }
-          throw std::runtime_error("Convex hull mesh face already has 3 neighbors.");
+          replaceNeighbor(-1, tri);
         }
         bool adjacent(Triangle& tri)
         {
@@ -397,8 +404,7 @@ namespace VizHelpers {
         GlobalOrdinal v2;
         GlobalOrdinal v3;
         int neighbor[3];      //note: order of neighbors wrt vertices and normal is not specified
-        GlobalOrdinal* frontPoints;   //array of points that are in front of this face - or null
-        int numPoints;
+        std::vector<GlobalOrdinal> frontPoints;
         bool valid;
       };
       bool pointInFront(Triangle& t, GlobalOrdinal p)

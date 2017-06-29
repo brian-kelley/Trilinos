@@ -182,15 +182,18 @@ namespace MueLuTests {
     TEST_EQUALITY(ag.geomSizes_[0], 4);
   }
 
+  //Minimal test of 3D convex hull geometry and VTK output
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(VizGeom, ConvHull3D, Scalar, LocalOrdinal, GlobalOrdinal, Node)
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     using MueLu::VizHelpers::Vec3;
+    using Teuchos::ParameterList;
+    using std::string;
     typedef MueLu::VizHelpers::AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeom;
     //Make an agg out of n random points in [0,1) x [0,1) x [0,1)
-    const int n = 100;
+    const int n = 1000;
     std::vector<Vec3> pts;
     srand(42);
     for(int i = 0; i < n; i++)
@@ -198,11 +201,28 @@ namespace MueLuTests {
       pts.emplace_back(1.0 * rand() / RAND_MAX, 1.0 * rand() / RAND_MAX, 1.0 * rand() / RAND_MAX);
     }
     AggGeom ag(pts, 3);
-    std::string style = "Convex Hulls";
+    string style = "Convex Hulls";
     ag.build(style);
     //check geometry - should have exactly one geometry element (some polyhedron) with 4 <= faces <= n
-    TEST_EQUALITY(ag.geomSizes_.size(), 1);
-    TEST_EQUALITY(4 <= ag.geomSizes_[0] && ag.geomSizes_[0] <= n, true);
+    TEST_EQUALITY(ag.geomSizes_.size() >= 4, true);
+    //every geometry element should be a triangle
+    bool areAllTriangles = true;
+    for(auto gs : ag.geomSizes_)
+    {
+      if(gs != 3)
+      {
+        areAllTriangles = false;
+        break;
+      }
+    }
+    TEST_EQUALITY(areAllTriangles, true);
+    typedef MueLu::VizHelpers::VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node> VTK;
+    ParameterList p;
+    string vizFnameParam = "visualization: output filename";
+    string vizFname = "ConvexHull_Test.vtu";
+    p.set<string>(vizFnameParam, vizFname);
+    VTK vtk(p, 1, 0, 0);
+    vtk.writeAggGeom(ag);
   }
 
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(VizGeom, ConvHull3D_Cube, Scalar, LocalOrdinal, GlobalOrdinal, Node)
@@ -250,10 +270,12 @@ namespace MueLuTests {
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     using MueLu::VizHelpers::Vec3;
+    using std::string;
+    using std::vector;
     typedef MueLu::VizHelpers::AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeom;
     //Make an agg out of the square [0, 1] x [0, 1], plus n points inside and on boundary
-    const int n = 1000;
-    std::vector<Vec3> pts;
+    const int n = 100;
+    vector<Vec3> pts;
     srand(42);
     for(int i = 0; i < n; i++)
     {
@@ -269,8 +291,15 @@ namespace MueLuTests {
       pts.emplace_back(v);
     }
     AggGeom ag(pts, 3);
-    std::string style = "Convex Hulls";
+    string style = "Convex Hulls";
     ag.build(style);
+    typedef MueLu::VizHelpers::VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node> VTK;
+    ParameterList p;
+    string vizFnameParam = "visualization: output filename";
+    string vizFname = "ConvexHull_Test.vtu";
+    p.set<string>(vizFnameParam, vizFname);
+    VTK vtk(p, 1, 0, 0);
+    vtk.writeAggGeom(ag);
   }
 
   //Make an agg consisting of many points on a line in 3D (with random orientation and fixed length)

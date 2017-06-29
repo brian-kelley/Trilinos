@@ -153,38 +153,11 @@ namespace VizHelpers {
     using namespace std;
     //get (oriented) unit normal for triangle (v1,v2,v3)
     Vec3 norm = triNormal(v1, v2, v3);
-    //must normalize the normal vector
-    double normScl = mag(norm);
-    double rv = 0.0;
-    if (normScl > 1e-8) {
-      norm.x /= normScl;
-      norm.y /= normScl;
-      norm.z /= normScl;
-      rv = fabs(dotProduct(norm, point - v1));
-    } else {
-      // degenerate triangle (collinear vertices)
-      Vec3 test1 = v3 - v1;
-      Vec3 test2 = v2 - v1;
-      bool useTest1 = mag(test1) > 0.0 ? true : false;
-      bool useTest2 = mag(test2) > 0.0 ? true : false;
-      if(useTest1 == true) {
-        double normScl1 = mag(test1);
-        test1.x /= normScl1;
-        test1.y /= normScl1;
-        test1.z /= normScl1;
-        rv = fabs(dotProduct(test1, point - v1));
-      } else if (useTest2 == true) {
-        double normScl2 = mag(test2);
-        test2.x /= normScl2;
-        test2.y /= normScl2;
-        test2.z /= normScl2;
-        rv = fabs(dotProduct(test2, point - v1));
-      } else {
-        TEUCHOS_TEST_FOR_EXCEPTION(true, Exceptions::RuntimeError,
-                 "VisualizationHelpers::pointDistFromTri: Could not determine the distance of a point to a triangle.");
-      }
+    if(mag(norm) == 0)
+    {
+      throw std::runtime_error("Requested plane-point distance but plane was not uniquely defined.");
     }
-    return rv;
+    return dotProduct(norm, point - v1);
   }
 
   Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList()
@@ -323,7 +296,7 @@ namespace VizHelpers {
     if(ptent)
     {
       //know that aggs are not overlapping, so save time by using only local row views
-      vector< std::set<LocalOrdinal> > localAggs(numLocalAggs_);
+      vector<std::set<LocalOrdinal>> localAggs(numLocalAggs_);
       // do loop over all local rows of prolongator and extract column information
       for (LocalOrdinal row = 0; row < Teuchos::as<LocalOrdinal>(P->getRowMap()->getNodeNumElements()); ++row)
       {
@@ -720,7 +693,7 @@ namespace VizHelpers {
       {
         std::vector<Point_2> result;
         CGAL::convex_hull_2(aggPoints.begin(), aggPoints.end(), std::back_inserter(result));
-        const double eps = 1e-8;
+        const double eps = 1e-6;
         // loop over all result points and find the corresponding node id
         for (size_t r = 0; r < result.size(); r++) {
           // loop over all aggregate nodes and find corresponding node id
@@ -743,10 +716,46 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  convexHulls3D() {
+  convexHulls3D()
+  {
     using std::vector;
     using std::stack;
     using std::set;
+    struct Edge
+    {
+      Edge() {}
+      Edge(GlobalOrdinal v1i, GlobalOrdinal v2i)
+      {
+        if(v1i == v2i)
+        {
+          std::cout << "Tried to make degenerate edge starting and ending at vert " << v1i << '\n';
+        }
+        if(v1i < v2i)
+        {
+          v1 = v1i;
+          v2 = v2i;
+        }
+        else
+        {
+          v1 = v2i;
+          v2 = v1i;
+        }
+      }
+      bool operator==(const Edge& rhs) const
+      {
+        return v1 == rhs.v1 && v2 == rhs.v2;
+      }
+      bool operator<(const Edge& rhs) const
+      {
+        return (v1 < rhs.v1) || (v1 == rhs.v1 && v2 < rhs.v2);
+      }
+      GlobalOrdinal v1;
+      GlobalOrdinal v2;
+    };
+    //value used to fuzzy-compare doubles with 0
+    //note: this value chosen arbitrarily, with the assumption
+    //that distances between vertices are on the order of one unit
+    const double eps = 1e-6;
     //Use 3D quickhull algo.
     //Vector of node indices representing triangle vertices
     //Note: Calculate the hulls first since will only include point data for points in the hulls
@@ -766,137 +775,98 @@ namespace VizHelpers {
       {
         continue;
       }
-      GlobalOrdinal extremeSix[6];  //verts with minx, maxx, miny, maxy, minz, maxz
-      Vec3 extremeVectors[6];
-      for(int i = 0; i < 6; i++)
+      else if(aggNodes.size() == 4)
       {
-        extremeSix[i] = aggNodes[0];
-        extremeVectors[i] = verts_[extremeSix[i]];
-      }
-      auto lessX = [&] (Vec3 v1, Vec3 v2) -> bool {
-        return v1.x < v2.x || (v1.x == v2.x && v1.y < v2.y) || (v1.x == v2.x && v1.y == v2.y && v1.z < v2.z);
-      };
-      auto greaterX = [&] (Vec3 v1, Vec3 v2) -> bool {
-        return v1.x > v2.x || (v1.x == v2.x && v1.y > v2.y) || (v1.x == v2.x && v1.y == v2.y && v1.z > v2.z);
-      };
-      auto lessY = [&] (Vec3 v1, Vec3 v2) -> bool {
-        return v1.y < v2.y || (v1.y == v2.y && v1.z < v2.z) || (v1.y == v2.y && v1.z == v2.z && v1.x < v2.x);
-      };
-      auto greaterY = [&] (Vec3 v1, Vec3 v2) -> bool {
-        return v1.y > v2.y || (v1.y == v2.y && v1.z > v2.z) || (v1.y == v2.y && v1.z == v2.z && v1.x > v2.x);
-      };
-      auto lessZ = [&] (Vec3 v1, Vec3 v2) -> bool {
-        return v1.z < v2.z || (v1.z == v2.z && v1.x < v2.x) || (v1.z == v2.z && v1.x == v2.x && v1.y < v2.y);
-      };
-      auto greaterZ = [&] (Vec3 v1, Vec3 v2) -> bool {
-        return v1.x < v2.x || (v1.z == v2.z && v1.x > v2.x) || (v1.z == v2.z && v1.x == v2.x && v1.y > v2.y);
-      };
-      for(size_t i = 1; i < aggNodes.size(); i++) {
-        GlobalOrdinal test = aggNodes[i];
-        Vec3 testVert = verts_[test];
-        if(lessX(testVert, extremeVectors[0])) {
-          extremeSix[0] = test;
-          extremeVectors[0] = testVert;
-        }
-        if(greaterX(testVert, extremeVectors[1])) {
-          extremeSix[1] = test;
-          extremeVectors[1] = testVert;
-        }
-        if(lessY(testVert, extremeVectors[2])) {
-          extremeSix[2] = test;
-          extremeVectors[2] = testVert;
-        }
-        if(greaterY(testVert, extremeVectors[3])) {
-          extremeSix[3] = test;
-          extremeVectors[3] = testVert;
-        }
-        if(lessZ(testVert, extremeVectors[4])) {
-          extremeSix[4] = test;
-          extremeVectors[4] = testVert;
-        }
-        if(greaterZ(testVert, extremeVectors[5])) {
-          extremeSix[5] = test;
-          extremeVectors[5] = testVert;
-        }
-      }
-      for(int i = 0; i < 6; i++) {
-        extremeVectors[i] = verts_[extremeSix[i]];
-      }
-      double maxDist = 0;
-      //ints from 0-5: which pair out of the 6 extreme points are the most distant? (indices in extremeSix and extremeVectors)
-      int base1 = 0; 
-      int base2 = 0;
-      for(int i = 0; i < 5; i++) {
-        for(int j = i + 1; j < 6; j++) {
-          double thisDist = distance(extremeVectors[i], extremeVectors[j]);
-          if(thisDist > maxDist)
+        //aggregate is a tetrahedron
+        for(int face = 0; face < 4; face++)
+        {
+          std::vector<GlobalOrdinal> faceVerts;
+          for(int vert = 0; vert < 4; vert++)
           {
-            maxDist = thisDist;
-            base1 = i;
-            base2 = j;
+            if(vert == face)
+              continue;
+            faceVerts.push_back(aggNodes[vert]);
+          }
+          for(auto vert : faceVerts)
+          {
+            geomVerts_.emplace_back(vert, agg);
+          }
+          geomSizes_.push_back(3);
+        }
+        continue;
+      }
+      std::vector<Triangle> hull;
+      //Extreme vertices: min x, max x, min y, ...
+      GlobalOrdinal extreme[6];
+      extreme[0] = *std::min_element(aggNodes.begin(), aggNodes.end(),
+        [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
+        { return verts_[lhs].x < verts_[rhs].x;}); 
+      extreme[1] = *std::max_element(aggNodes.begin(), aggNodes.end(),
+        [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
+        { return verts_[lhs].x < verts_[rhs].x;}); 
+      extreme[2] = *std::min_element(aggNodes.begin(), aggNodes.end(),
+        [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
+        { return verts_[lhs].y < verts_[rhs].y;}); 
+      extreme[3] = *std::max_element(aggNodes.begin(), aggNodes.end(),
+        [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
+        { return verts_[lhs].y < verts_[rhs].y;}); 
+      extreme[4] = *std::min_element(aggNodes.begin(), aggNodes.end(),
+        [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
+        { return verts_[lhs].z < verts_[rhs].z;}); 
+      extreme[5] = *std::max_element(aggNodes.begin(), aggNodes.end(),
+        [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
+        { return verts_[lhs].z < verts_[rhs].z;}); 
+      GlobalOrdinal tet[4];
+      {
+        double maxDist = 0;
+        for(int i = 0; i < 6; i++)
+        {
+          for(int j = i + 1; j < 6; j++)
+          {
+            if(mag(verts_[extreme[i]] - verts_[extreme[j]]) > maxDist)
+            {
+              tet[0] = extreme[i];
+              tet[1] = extreme[j];
+            }
           }
         }
       }
-      vector<Triangle> hull;    //each Triangle is a triplet of nodes (int IDs) that form a triangle
-      //remove base1 and base2 iters from aggNodes, they are known to be in the hull
-      aggNodes.erase(find(aggNodes.begin(), aggNodes.end(), extremeSix[base1]));
-      aggNodes.erase(find(aggNodes.begin(), aggNodes.end(), extremeSix[base2]));
-      //extremeSix[base1] and [base2] still have the Vec3 representation
-      Triangle tri;
-      tri.v1 = extremeSix[base1];
-      tri.v2 = extremeSix[base2];
-      //Now find the point that is furthest away from the line between base1 and base2
-      maxDist = 0;
-      //need the vectors to do "quadruple product" formula
-      Vec3 b1 = extremeVectors[base1];
-      std::cout << "Starting tri base 1: " << extremeSix[base1] << '\n';
-      Vec3 b2 = extremeVectors[base2];
-      std::cout << "Starting tri base 2: " << extremeSix[base2] << '\n';
-      GlobalOrdinal thirdNode;
-      for(size_t i = 0; i < aggNodes.size(); i++)
-      {
-        Vec3 nodePos = verts_[aggNodes[i]];
-        double dist = mag(crossProduct(nodePos - b1, nodePos - b2)) / mag(b2 - b1);
-        if(dist > maxDist) {
-          maxDist = dist;
-          thirdNode = aggNodes[i];
-        }
-      }
-      //Now know the last node in the first triangle
-      std::cout << "Starting tri third point: " << thirdNode << '\n';
-      tri.v3 = thirdNode;
-      hull.push_back(tri);
-      Vec3 b3 = verts_[thirdNode];
-      aggNodes.erase(find(aggNodes.begin(), aggNodes.end(), thirdNode));
-      //Find the fourth node (most distant from triangle) to form tetrahedron
-      maxDist = 0;
-      GlobalOrdinal fourthVertex = -1;
-      for(size_t i = 0; i < aggNodes.size(); i++)
-      {
-        Vec3 thisNode = verts_[aggNodes[i]];
-        double nodeDist = pointDistFromTri(thisNode, b1, b2, b3);
-        if(nodeDist > maxDist)
+      Vec3 tetPoints[4];
+      tetPoints[0] = verts_[tet[0]];
+      tetPoints[1] = verts_[tet[1]];
+      //point 2 is the furthest point from segment from 0 to 1
+      tet[2] = *std::max_element(aggNodes.begin(), aggNodes.end(),
+        [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
         {
-          maxDist = nodeDist;
-          fourthVertex = aggNodes[i];
-        }
-      }
-      aggNodes.erase(find(aggNodes.begin(), aggNodes.end(), fourthVertex));
-      std::cout << "Starting tetrahedron final point: " << fourthVertex << '\n';
-      Vec3 b4 = verts_[fourthVertex];
+          double distLHS = mag(crossProduct(verts_[lhs] - tetPoints[0], verts_[lhs] - tetPoints[1])) / mag(tetPoints[1] - tetPoints[0]);
+          double distRHS = mag(crossProduct(verts_[rhs] - tetPoints[0], verts_[rhs] - tetPoints[1])) / mag(tetPoints[1] - tetPoints[0]);
+          return distLHS < distRHS;
+        });
+      //point 3 is the furthest point from triangle 0 1 2
+      tetPoints[2] = verts_[tet[2]];
+      tet[3] = *std::max_element(aggNodes.begin(), aggNodes.end(),
+        [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
+        {
+          double distLHS = pointDistFromTri(verts_[lhs], tetPoints[0], tetPoints[1], tetPoints[2]);
+          double distRHS = pointDistFromTri(verts_[rhs], tetPoints[0], tetPoints[1], tetPoints[2]);
+          return distLHS < distRHS;
+        });
       //Add three new triangles to hull to form the first tetrahedron
       //use tri to hold the triangle info temporarily before being added to list
-      tri = hull.front();
-      tri.v1 = fourthVertex;
-      hull.push_back(tri);
-      tri = hull.front();
-      tri.v2 = fourthVertex;
-      hull.push_back(tri);
-      tri = hull.front();
-      tri.v3 = fourthVertex;
-      hull.push_back(tri);
+      tetPoints[3] = verts_[tet[3]];
+      hull.emplace_back(tet[0], tet[1], tet[2], -1, -1, -1);
+      hull.push_back(hull.front());
+      hull.back().v1 = tet[3];
+      hull.push_back(hull.front());
+      hull.back().v2 = tet[3];
+      hull.push_back(hull.front());
+      hull.back().v3 = tet[3];
       //now orient all four triangles so that the vertices are oriented clockwise (so getNorm_ points outward for each)
-      Vec3 barycenter((b1.x + b2.x + b3.x + b4.x) / 4.0, (b1.y + b2.y + b3.y + b4.y) / 4.0, (b1.z + b2.z + b3.z + b4.z) / 4.0);
+      //barycenter aka centroid (average of 4 vertices) is guaranteed to be inside the convex hull at all times
+      Vec3 barycenter(0, 0, 0);
+      for(int i = 0; i < 4; i++)
+        barycenter += tetPoints[i];
+      barycenter *= 0.25;
       std::cout << "  Have the starting tetrahedron, with barycenter " << barycenter.x << " " << barycenter.y << " " << barycenter.z << '\n';
       for(size_t i = 0; i < 4; i++)
       {
@@ -904,17 +874,13 @@ namespace VizHelpers {
         Vec3 triVert1 = verts_[tetTri.v1];
         Vec3 triVert2 = verts_[tetTri.v2];
         Vec3 triVert3 = verts_[tetTri.v3];
-        Vec3 trinorm = triNormal(triVert1, triVert2, triVert3);
-        Vec3 ptInPlane = (i == 0) ? b1 : b4; //first triangle definitely has b1 in it, other three definitely have b4
-        if(isInFront(barycenter, ptInPlane, trinorm)) {
-          //don't want the faces of the tetrahedron to face inwards (towards barycenter) so reverse orientation
-          //by swapping two vertices
-          auto temp = tetTri.v1;
-          tetTri.v1 = tetTri.v2;
-          tetTri.v2 = temp;
+        if(pointDistFromTri(barycenter, triVert1, triVert2, triVert3) > 0) {
+          //don't want the barycenter to be in front of any faces
+          //flip triangle by swapping two vertices
+          std::swap(tetTri.v1, tetTri.v2);
         }
       }
-      //now, have starting polyhedron in hull (all faces are facing outwards according to getNorm_) and remaining nodes to process are in aggNodes
+      //now, have starting polyhedron in hull (with all faces oriented correctly)
       //recursively, for each triangle, make a list of the points that are 'in front' of the triangle. Find the point with the maximum distance from the triangle.
       //Add three new triangles, each sharing one edge with the original triangle but now with the most distant point as a vertex. Remove the most distant point from
       //the list of all points that need to be processed. Also from that list remove all points that are in front of the original triangle but not in front of all three
@@ -935,15 +901,17 @@ namespace VizHelpers {
       for(auto& pt : aggNodes)
       {
         Vec3 ptPos = verts_[pt];
-        if(isInFront(ptPos, b1, trinorms[0]))
-          startPoints[0].push_back(pt);
-        else if(isInFront(ptPos, b4, trinorms[1]))
-          startPoints[1].push_back(pt);
-        else if(isInFront(ptPos, b4, trinorms[2]))
-          startPoints[2].push_back(pt);
-        else if(isInFront(ptPos, b4, trinorms[3]))
-          startPoints[3].push_back(pt);
-        //else: point already inside starting tetrahedron, so ignore
+#define PT_DIST(t) pointDistFromTri(ptPos, verts_[hull[t].v1], verts_[hull[t].v2], verts_[hull[t].v3])
+        for(int i = 0; i < 4; i++)
+        {
+          if(PT_DIST(i) > eps)
+          {
+            startPoints[i].push_back(pt);
+            break;
+          }
+        }
+        //else: point inside tetrahedron, so ignore
+        #undef PT_DIST
       }
       for(int i = 0; i < 4; i++)
       {
@@ -951,54 +919,90 @@ namespace VizHelpers {
       }
       aggNodes.clear();
       aggNodes.shrink_to_fit();
-      stack<int> trisToProcess;   //list of triangles still to process - done when empty
-      stack<int> freelist;        //list of free indices in hull (triangles that have been deleted)
+      std::deque<int> trisToProcess;   //list of triangles still to process - done when empty
       //set up the neighbors of the first four triangles --
       //  in a tetrahedron, every triangle is a neighbor of every other triangle
       for(int i = 0; i < 4; i++)
       {
         hull[i].valid = true;
-        int numNeighbors = 0;
         for(int j = 0; j < 4; j++)
         {
           if(i == j)
             continue;
-          hull[i].neighbor[numNeighbors++] = j;
+          hull[i].addNeighbor(j);
         }
         if(startPoints[i].size())
         {
-          trisToProcess.push(i);
+          trisToProcess.push_back(i);
           hull[i].setPointList(startPoints[i]);
           startPoints[i].clear();
           startPoints[i].shrink_to_fit();
         }
-        else
-        {
-          hull[i].frontPoints = NULL;
-          hull[i].numPoints = 0;
-        }
       }
       std::cout << "Done setting up for DFS\n";
+      std::cout << "First 4 tris:\n";
+      for(int i = 0; i < 4; i++)
+      {
+        std::cout << hull[i].v1 << " " << hull[i].v2 << " " << hull[i].v3 << '\n';
+      }
       int asdf = 0;
       while(!trisToProcess.empty())
       {
-        std::cout << "In DFS iter " << asdf++ << '\n';
-        std::cout << "  Have " << trisToProcess.size() << " tris left to process and " << freelist.size() << " free triangles in hull\n";
-        int triIndex = trisToProcess.top();
+      /*
+        if(asdf == 20)
+          break;
+      */
+        std::cout << "\n\nHave handled " << asdf++ << " tris.\n";
+        std::cout << "  Have " << trisToProcess.size() << " tris left to process\n";
+        int validTris = 0;
+        for(auto& ht : hull)
+          if(ht.valid)
+            validTris++;
+        std::cout << "  Have allocated " << hull.size() << " tris but " << validTris << " are actually in the hull.\n";
+        //check if current hull is a correct manifold
+        {
+          vector<GlobalOrdinal> verts;
+          vector<Edge> edges;
+          int F = 0;
+          for(auto& ht : hull)
+          {
+            if(ht.valid)
+            {
+              F++;
+              edges.emplace_back(ht.v1, ht.v2);
+              edges.emplace_back(ht.v2, ht.v3);
+              edges.emplace_back(ht.v1, ht.v3);
+              verts.push_back(ht.v1);
+              verts.push_back(ht.v2);
+              verts.push_back(ht.v3);
+            }
+          }
+          //vertices can appear arbitrarily many times so unique them
+          std::sort(verts.begin(), verts.end());
+          verts.erase(std::unique(verts.begin(), verts.end()), verts.end());
+          //each edge must appear exactly twice (one triangle on each side)
+          int uniqueEdges = edges.size() / 2;
+          std::cout << "Polyhedron has " << verts.size() << " verts, " << uniqueEdges << " edges, and " << F << " faces.\n";
+          //use Euler's formula V - E + F = 2 which indicates hull is a manifold
+          if(2 != verts.size() - uniqueEdges + F)
+          {
+            std::cout << "Not manifold!\n";
+            while(1);
+          }
+        }
+        int triIndex = trisToProcess.back();
         std::cout << "Processing tri " << triIndex << '\n';
-        trisToProcess.pop();
+        trisToProcess.pop_back();
+        if(!hull[triIndex].valid)
+          continue;
         //note: since faces was in queue, it is guaranteed to have front points 
         //therefore, it is also guaranteed to be replaced
         Triangle t = hull[triIndex];
-        //mark space as free
-        freelist.push(triIndex);
-        hull[triIndex].valid = false;
-        //note: t is a shallow copy that keeps the front point list
-        //out of the point list, get the most distant point
-        std::cout << "  Finding the most distant point in front...\n";
+        std::cout << "Tri has verts: " << t.v1 << " " << t.v2 << " " << t.v3 << '\n';
+        std::cout << "  Finding the most distant point in front among " << t.frontPoints.size() <<  " points.\n";
         double furthest = 0;
         int bestInd = -1;
-        for(int i = 0; i < t.numPoints; i++)
+        for(int i = 0; i < t.frontPoints.size(); i++)
         {
           double thisDist = pointDistFromTri(verts_[t.frontPoints[i]], verts_[t.v1], verts_[t.v2], verts_[t.v3]);
           if(thisDist > furthest)
@@ -1007,58 +1011,61 @@ namespace VizHelpers {
             furthest = thisDist;
           }
         }
-        std::cout << "  Point " << t.frontPoints[bestInd] << " is the most distant point.\n";
+        if(furthest < eps)
+        {
+          //best point is on the face, so keep the triangle
+          //comparing against eps instead of 0 simplifies geometry and
+          //prevents inconsistent round-off errors
+          continue;
+        }
+        //will delete this triangle: mark its spot in hull as free so it can be reused
+        std::cout << "Deleting triangle " << triIndex << ": " << t.v1 << " " << t.v2 << " " << t.v3 << '\n';
+        hull[triIndex].valid = false;
+        //set all neighbor links pointing to triIndex to -1
+        for(int i = 0; i < 3; i++)
+        {
+          Triangle& neighbor = hull[t.neighbor[i]];
+          neighbor.deleteNeighbor(triIndex);
+        }
+        //note: t is a shallow copy that keeps the front point list
+        //out of the point list, get the most distant point
         //get the set of triangles adjacent to t which are visible from the furthest point
         auto farPoint = t.frontPoints[bestInd];
+        std::cout << "  Point " << farPoint << " is the most distant point, with distance " << furthest << "\n";
         vector<Triangle> visible;
         visible.push_back(t);
         for(int i = 0; i < 3; i++)
         {
+          if(t.neighbor[i] == -1 || !hull[t.neighbor[i]].valid)
+            throw std::runtime_error("Triangle had invalid neighbor!");
           auto& nei = hull[t.neighbor[i]];
-          if(pointInFront(nei, farPoint))
+          if(pointDistFromTri(verts_[farPoint], verts_[nei.v1], verts_[nei.v2], verts_[nei.v3]) > 0)
           {
-            std::cout << "  have visible neighbor " << t.neighbor[i] << '\n';
+            std::cout << "  Have visible neighbor " << t.neighbor[i] << '\n';
+            std::cout << "  it has verts: " << nei.v1 << " " << nei.v2 << " " << nei.v3 << '\n';
             visible.push_back(nei);
-            freelist.push(t.neighbor[i]);
-            hull[t.neighbor[i]].valid = false;
+            for(int j = 0; j < 3; j++)
+            {
+              Triangle& nn = hull[nei.neighbor[j]];
+              if(nn.valid && nn.hasNeighbor(t.neighbor[i]))
+                nn.replaceNeighbor(t.neighbor[i], -1);
+            }
+            nei.valid = false;
+            nei.frontPoints.clear();
+            nei.frontPoints.shrink_to_fit();
           }
         }
-        struct Edge
-        {
-          Edge() {}
-          Edge(GlobalOrdinal v1i, GlobalOrdinal v2i)
-          {
-            if(v1i < v2i)
-            {
-              v1 = v1i;
-              v2 = v2i;
-            }
-            else
-            {
-              v1 = v2i;
-              v2 = v1i;
-            }
-          }
-          bool operator==(const Edge& rhs)
-          {
-            return v1 == rhs.v1 && v2 == rhs.v2;
-          }
-          GlobalOrdinal v1;
-          GlobalOrdinal v2;
-        };
         //get a list of all edges contained in all the deleted triangles (keeping duplicates)
         vector<Edge> allEdges;
-        for(auto& nei : visible)
+        for(auto& v : visible)
         {
-          allEdges.emplace_back(nei.v1, nei.v2);
-          allEdges.emplace_back(nei.v2, nei.v3);
-          allEdges.emplace_back(nei.v1, nei.v3);
+          allEdges.emplace_back(v.v1, v.v2);
+          allEdges.emplace_back(v.v2, v.v3);
+          allEdges.emplace_back(v.v1, v.v3);
         }
         std::cout << "  Have a list of " << allEdges.size() << " edges.\n";
         //sort it - already have the two vertices in each edge sorted (v1 < v2)
-        std::sort(allEdges.begin(), allEdges.end(),
-            [] (const Edge& e1, const Edge& e2) -> bool
-            {return e1.v1 < e2.v1 || (e1.v1 == e2.v1 && e1.v2 < e2.v2);});
+        std::sort(allEdges.begin(), allEdges.end());
         //make a new list of edges that only appear in this list once (the boundary of the hole in the mesh)
         //note: edges can appear at most twice
         vector<Edge> boundary;
@@ -1067,7 +1074,9 @@ namespace VizHelpers {
           if(i < allEdges.size() - 1 && allEdges[i] == allEdges[i + 1])
           {
             i++;
+            continue;
           }
+          std::cout << "Edge <" << allEdges[i].v1 << ", " << allEdges[i].v2 << "> is part of the boundary.\n";
           boundary.push_back(allEdges[i]);
         }
         std::cout << "  Have a list of " << boundary.size() << " hole boundary edges.\n";
@@ -1076,51 +1085,47 @@ namespace VizHelpers {
         std::cout << "  Creating " << boundary.size() << " new tris...\n";
         for(auto& e : boundary)
         {
-          int ind;
-          if(!freelist.empty())
-          {
-            ind = freelist.top();
-            freelist.pop();
-          }
-          else
-          {
-            hull.emplace_back();
-            ind = hull.size() - 1;
-          }
+          hull.emplace_back();
+          int ind = hull.size() - 1;
           Triangle& newTri = hull[ind];
           newTri.valid = true;
           newTri.v1 = e.v1;
           newTri.v2 = e.v2;
           newTri.v3 = farPoint;
-          newTri.clearNeighbors();
+          std::cout << "    Created a new tri with verts " << e.v1 << " " << e.v2 << " " << farPoint << '\n';
           newTris.push_back(ind);
           //make sure triangle is oriented correctly - barycenter must be behind
-          if(pointDistFromTri(barycenter, verts_[newTri.v1], verts_[newTri.v2], verts_[newTri.v3]) < 0)
+          if(pointDistFromTri(barycenter, verts_[newTri.v1], verts_[newTri.v2], verts_[newTri.v3]) > 0)
           {
-            auto tempv = newTri.v1;
-            newTri.v1 = newTri.v2;
-            newTri.v2 = tempv;
+            std::swap(newTri.v1, newTri.v2);
           }
         }
         std::cout << "  Done creating new tris\n";
         //now set up neighbors for new triangles
         //first, build set of all triangels to search: all still-valid neighbors of visible and also all new triangles
         std::cout << "  Searching for all neighbors of new tris.\n";
-        set<int> edgeSearch;
-        for(auto& newTri : newTris)
+        //edgeSearch is a complete set of all triangles which may share an edge with a new triangle
+        vector<int> edgeSearch;
+        std::cout << "Constructing edgeSearch:\n";
+        //first, new tris will share some edges with each other
+        for(auto newTri : newTris)
         {
-          edgeSearch.insert(newTri);
+          edgeSearch.push_back(newTri);
+          std::cout << edgeSearch.back() << ": " << hull[edgeSearch.back()].v1 << " "<< hull[edgeSearch.back()].v2 << " "<< hull[edgeSearch.back()].v3 << "\n";
         }
+        //also, still-valid neighbors of deleted ("visible") triangles will share edges
         for(auto& visibleTri : visible)
         {
-          if(hull[visibleTri.v1].valid)
-            edgeSearch.insert(visibleTri.v1);
-          if(hull[visibleTri.v2].valid)
-            edgeSearch.insert(visibleTri.v2);
-          if(hull[visibleTri.v3].valid)
-            edgeSearch.insert(visibleTri.v3);
+          for(int i = 0; i < 3; i++)
+          {
+            if(visibleTri.neighbor[i] >= 0 && hull[visibleTri.neighbor[i]].valid)
+            {
+              edgeSearch.push_back(visibleTri.neighbor[i]);
+              std::cout << edgeSearch.back() << ": " << hull[edgeSearch.back()].v1 << " "<< hull[edgeSearch.back()].v2 << " "<< hull[edgeSearch.back()].v3 << "\n";
+            }
+          }
         }
-        std::cout << "  Have " << edgeSearch.size() << " candidate edges making up the boundary of all new tris\n";
+        std::cout << "  Have " << edgeSearch.size() << " candidate triangles that could be on the boundary of all new tris\n";
         for(auto newTri : newTris)
         {
           Triangle& nt = hull[newTri];
@@ -1132,24 +1137,31 @@ namespace VizHelpers {
             {
               std::cout << "      Adding unique neighbor " << searchTri << '\n';
               nt.addNeighbor(searchTri);
+              //searchTri also needs its neighbor set
+              hull[searchTri].addNeighbor(newTri);
             }
           }
+          for(int i = 0; i < 3; i++)
+          {
+            if(nt.neighbor[i] < 0 || nt.neighbor[i] >= hull.size() || !hull[nt.neighbor[i]].valid)
+            {
+              std::cout << "****  Geometry error: new triangle " << newTri << " has invalid neighbor " << nt.neighbor[i] << '\n';
+              std::cout << "All existing triangles:\n";
+              while(1);
+            }
+          }
+          std::cout << "  Finalized neighbors for " << newTri << ": " << nt.neighbor[0] << " " << nt.neighbor[1] << " " << nt.neighbor[2] << '\n';
         }
         //now, collect all the front points from visible (deleted) triangles into one vector, and free the originals
-        int totalFrontPoints = 0;
-        for(auto& v : visible)
-        {
-          totalFrontPoints += v.numPoints;
-        }
         vector<GlobalOrdinal> frontPoints;
-        frontPoints.reserve(totalFrontPoints);
         for(auto& v : visible)
         {
-          for(int i = 0; i < v.numPoints; i++)
+          for(auto fp : v.frontPoints)
           {
-            frontPoints.push_back(v.frontPoints[i]);
+            frontPoints.push_back(fp);
           }
-          v.freePointList();
+          v.frontPoints.clear();
+          v.frontPoints.shrink_to_fit();
         }
         //now, redistribute the points among all new triangles
         vector<vector<GlobalOrdinal>> triFrontPoints(newTris.size());
@@ -1159,9 +1171,12 @@ namespace VizHelpers {
           for(size_t i = 0; i < newTris.size(); i++)
           {
             int nt = newTris[i];
-            if(pointInFront(hull[nt], frontPoint))
+            Triangle& ntt = hull[nt];
+            if(pointDistFromTri(verts_[frontPoint],
+                  verts_[ntt.v1], verts_[ntt.v2], verts_[ntt.v3]) > eps)
             {
               triFrontPoints[i].push_back(frontPoint);
+              //point can only be assigned to one face
               break;
             }
           }
@@ -1175,7 +1190,7 @@ namespace VizHelpers {
           {
             std::cout << "  New tri " << newTri << " has " << triFrontPoints[i].size() << " points in front.\n";
             nt.setPointList(triFrontPoints[i]);
-            trisToProcess.push(newTri);
+            trisToProcess.push_back(newTri);
           }
         }
       }
@@ -1834,8 +1849,18 @@ namespace VizHelpers {
       Teuchos::RCP<const Map> fineMap, Teuchos::RCP<const Map> coarseMap)
   {
     baseName_    = pL.get<std::string>("visualization: output filename");
-    int timeStep = pL.get<int>("visualization: output file: time step");
-    int iter     = pL.get<int>("visualization: output file: iter");
+    int iter = 0;
+    int timeStep = 0;
+    //iter and time step are deprecated parameters, and are not set
+    //in the default valid parameter list (so they may not be in pL)
+    if(pL.isParameter("visualization: output file: iter"))
+    {
+      iter = pL.get<int>("visualization: output file: iter");
+    }
+    if(pL.isParameter("visualization: output file: time step"))
+    {
+      timeStep = pL.get<int>("visualization: output file: time step");
+    }
     //strip vtu file extension
     if(baseName_.rfind(".vtu") == baseName_.length() - 4)
     {
@@ -1948,11 +1973,11 @@ namespace VizHelpers {
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   writeOpening(std::ofstream& fout, size_t numVerts, size_t numCells) {
     std::string indent = "      ";
-    fout << "<!--MueLu Aggregates/Coarsening Visualization-->" << std::endl;
-    fout << "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\">" << std::endl;
-    fout << "  <UnstructuredGrid>" << std::endl;
-    fout << "    <Piece NumberOfPoints=\"" << numVerts << "\" NumberOfCells=\"" << numCells << "\">" << std::endl;
-    fout << "      <PointData Scalars=\"Node Aggregate Processor\">" << std::endl;
+    fout << "<!--MueLu Aggregates/Coarsening Visualization-->\n";
+    fout << "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\">\n";
+    fout << "  <UnstructuredGrid>\n";
+    fout << "    <Piece NumberOfPoints=\"" << numVerts << "\" NumberOfCells=\"" << numCells << "\">" << '\n';
+    fout << "      <PointData Scalars=\"Node Aggregate Processor\">\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -1960,16 +1985,16 @@ namespace VizHelpers {
   writeAggNodes(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts)
   {
     std::string indent = "      ";
-    fout << "        <DataArray type=\"Int32\" Name=\"Node\" format=\"ascii\">" << std::endl;
+    fout << "        <DataArray type=\"Int32\" Name=\"Node\" format=\"ascii\">\n";
     indent = "          ";
+    fout << indent;
     for(size_t i = 0; i < uniqueVerts.size(); i++)
     {
       fout << uniqueVerts[i].vert << " "; //if all nodes are on this processor, do not map from local to global
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
+    fout << "\n        </DataArray>\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -1977,25 +2002,24 @@ namespace VizHelpers {
   writeEdgeNodes(std::ofstream& fout, std::vector<GlobalOrdinal>& uniqueVertsNonFilt, std::vector<GlobalOrdinal>& uniqueVertsFilt)
   {
     std::string indent = "      ";
-    fout << "        <DataArray type=\"Int32\" Name=\"Node\" format=\"ascii\">" << std::endl;
+    fout << "        <DataArray type=\"Int32\" Name=\"Node\" format=\"ascii\">\n";
     indent = "          ";
     size_t i = 0;
     for(auto& v : uniqueVertsNonFilt)
     {
       fout << v << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
       i++;
     }
     for(auto& v : uniqueVertsFilt)
     {
       fout << v << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
       i++;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
+    fout << "\n        </DataArray>\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -2003,27 +2027,26 @@ namespace VizHelpers {
   writeAggData(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, GlobalOrdinal firstAgg)
   {
     std::string indent = "          ";
-    fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">" << std::endl;
+    fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">\n";
     fout << indent;
     for(size_t i = 0; i < uniqueVerts.size(); i++)
     {
       fout << firstAgg + uniqueVerts[i].agg << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "        <DataArray type=\"Int32\" Name=\"Processor\" format=\"ascii\">" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "        <DataArray type=\"Int32\" Name=\"Processor\" format=\"ascii\">\n";
     fout << indent;
     for(size_t i = 0; i < uniqueVerts.size(); i++)
     {
       fout << rank_ << " ";
       if(i % 20 == 19)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "      </PointData>" << std::endl;
+    fout << '\n';
+    fout << "        </DataArray>\n";
+    fout << "      </PointData>\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -2033,39 +2056,37 @@ namespace VizHelpers {
     int contrast1 = -1;
     int contrast2 = -2;
     std::string indent = "          ";
-    fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">" << std::endl;
+    fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">\n";
     fout << indent;
     for(size_t i = 0; i < vertsNonFilt; i++) 
     {
       fout << contrast1 << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
     for(size_t i = 0; i < vertsFilt; i++) 
     {
       fout << contrast2 << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "        <DataArray type=\"Int32\" Name=\"Processor\" format=\"ascii\">" << std::endl;
+    fout << "\n        </DataArray>" << '\n';
+    fout << "        <DataArray type=\"Int32\" Name=\"Processor\" format=\"ascii\">\n";
     fout << indent;
     for(size_t i = 0; i < vertsNonFilt; i++) 
     {
       fout << contrast1 << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
     for(size_t i = 0; i < vertsFilt; i++) 
     {
       fout << contrast2 << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "      </PointData>" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "      </PointData>\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -2073,8 +2094,8 @@ namespace VizHelpers {
   writeCoordinates(std::ofstream& fout, std::vector<GeomPoint>& uniqueVerts, std::map<GlobalOrdinal, Vec3>& positions)
   {
     std::string indent = "      ";
-    fout << "      <Points>" << std::endl;
-    fout << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << std::endl;
+    fout << "      <Points>\n";
+    fout << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
     fout << indent;
     size_t i = 0;
     for(auto& v : uniqueVerts)
@@ -2083,12 +2104,11 @@ namespace VizHelpers {
       fout << vpos.x << ' ' << vpos.y << ' ' << vpos.z << ' ';
       //write 3 coordinates per line
       if(i % 3 == 2)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
       i++;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "      </Points>" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "      </Points>\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -2098,8 +2118,8 @@ namespace VizHelpers {
       std::map<GlobalOrdinal, Vec3>& positions)
   {
     std::string indent = "      ";
-    fout << "      <Points>" << std::endl;
-    fout << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << std::endl;
+    fout << "      <Points>\n";
+    fout << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
     fout << indent;
     size_t i = 0;
     for(auto& v : uniqueVertsNonFilt)
@@ -2108,7 +2128,7 @@ namespace VizHelpers {
       fout << vpos.x << ' ' << vpos.y << ' ' << vpos.z << ' ';
       //write 3 coordinates per line
       if(i % 3 == 2)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
       i++;
     }
     for(auto& v : uniqueVertsFilt)
@@ -2117,12 +2137,11 @@ namespace VizHelpers {
       fout << vpos.x << ' ' << vpos.y << ' ' << vpos.z << ' ';
       //write 3 coordinates per line
       if(i % 3 == 2)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
       i++;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "      </Points>" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "      </Points>\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -2130,18 +2149,17 @@ namespace VizHelpers {
   writeAggCells(std::ofstream& fout, std::vector<GeomPoint>& geomVerts, std::vector<int>& geomSizes)
   {
     std::string indent = "      ";
-    fout << "      <Cells>" << std::endl;
-    fout << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << std::endl;
+    fout << "      <Cells>\n";
+    fout << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
     fout << indent;
     for(size_t i = 0; i < geomVerts.size(); i++)
     {
       fout << geomVerts[i].vert << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
     fout << indent;
     int accum = 0;
     for(size_t i = 0; i < geomSizes.size(); i++)
@@ -2149,11 +2167,10 @@ namespace VizHelpers {
       accum += geomSizes[i];
       fout << accum << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "        <DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "        <DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">\n";
     fout << indent;
     for(size_t i = 0; i < geomSizes.size(); i++)
     {
@@ -2172,11 +2189,10 @@ namespace VizHelpers {
           fout << "7 "; //Polygon
       }
       if(i % 30 == 29)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "      </Cells>" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "      </Cells>\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -2184,25 +2200,24 @@ namespace VizHelpers {
   writeEdgeCells(std::ofstream& fout, std::vector<GlobalOrdinal>& vertsNonFilt, std::vector<GlobalOrdinal>& vertsFilt, size_t numUniqueNonFilt)
   {
     std::string indent = "      ";
-    fout << "      <Cells>" << std::endl;
-    fout << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << std::endl;
+    fout << "      <Cells>\n";
+    fout << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
     fout << indent;
     size_t totalEdges = (vertsNonFilt.size() + vertsFilt.size()) / 2;
     for(size_t i = 0; i < vertsNonFilt.size(); i++)
     {
       fout << vertsNonFilt[i] << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
     for(size_t i = 0; i < vertsFilt.size(); i++)
     {
       fout << numUniqueNonFilt + vertsFilt[i] << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
     fout << indent;
     int accum = 0;
     for(size_t i = 0; i < totalEdges; i++)
@@ -2210,31 +2225,29 @@ namespace VizHelpers {
       accum += 2;
       fout << accum << " ";
       if(i % 10 == 9)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
       i++;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "        <DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "        <DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">\n";
     fout << indent;
     for(size_t i = 0; i < totalEdges; i++)
     {
       fout << "3 ";
       if(i % 30 == 29)
-        fout << std::endl << indent;
+        fout << '\n' << indent;
     }
-    fout << std::endl;
-    fout << "        </DataArray>" << std::endl;
-    fout << "      </Cells>" << std::endl;
+    fout << "\n        </DataArray>\n";
+    fout << "      </Cells>\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   writeClosing(std::ofstream& fout)
   {
-    fout << "    </Piece>" << std::endl;
-    fout << "  </UnstructuredGrid>" << std::endl;
-    fout << "</VTKFile>" << std::endl;
+    fout << "    </Piece>\n";
+    fout << "  </UnstructuredGrid>\n";
+    fout << "</VTKFile>\n";
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -2265,40 +2278,40 @@ namespace VizHelpers {
       //If using vtk, filenameToWrite now contains final, correct ***.vtu filename (for the current proc)
       //So the root proc will need to use its own filenameToWrite to make a list of the filenames of all other procs to put in
       //pvtu file.
-      pvtu << "<VTKFile type=\"PUnstructuredGrid\" byte_order=\"LittleEndian\">" << std::endl;
-      pvtu << "  <PUnstructuredGrid GhostLevel=\"0\">" << std::endl;
-      pvtu << "    <PPointData Scalars=\"Node Aggregate Processor\">" << std::endl;
-      pvtu << "      <PDataArray type=\"Int32\" Name=\"Node\"/>" << std::endl;
-      pvtu << "      <PDataArray type=\"Int32\" Name=\"Aggregate\"/>" << std::endl;
-      pvtu << "      <PDataArray type=\"Int32\" Name=\"Processor\"/>" << std::endl;
-      pvtu << "    </PPointData>" << std::endl;
-      pvtu << "    <PPoints>" << std::endl;
-      pvtu << "      <PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>" << std::endl;
-      pvtu << "    </PPoints>" << std::endl;
+      pvtu << "<VTKFile type=\"PUnstructuredGrid\" byte_order=\"LittleEndian\">\n";
+      pvtu << "  <PUnstructuredGrid GhostLevel=\"0\">\n";
+      pvtu << "    <PPointData Scalars=\"Node Aggregate Processor\">\n";
+      pvtu << "      <PDataArray type=\"Int32\" Name=\"Node\"/>\n";
+      pvtu << "      <PDataArray type=\"Int32\" Name=\"Aggregate\"/>\n";
+      pvtu << "      <PDataArray type=\"Int32\" Name=\"Processor\"/>\n";
+      pvtu << "    </PPointData>\n";
+      pvtu << "    <PPoints>\n";
+      pvtu << "      <PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
+      pvtu << "    </PPoints>\n";
       //there are 4 sets of geometry, each with one output file per MPI process
       //can have any combination of these
       if(didAggs_)
       {
         for(int i = 0; i < nprocs_; i++)
-          pvtu << "    <Piece Source=\"" << getAggFilename(i) << "\"/>" << std::endl;
+          pvtu << "    <Piece Source=\"" << getAggFilename(i) << "\"/>\n";
       }
       if(didBubbles_)
       {
         for(int i = 0; i < nprocs_; i++)
-          pvtu << "    <Piece Source=\"" << getBubbleFilename(i) << "\"/>" << std::endl;
+          pvtu << "    <Piece Source=\"" << getBubbleFilename(i) << "\"/>\n";
       }
       if(didFineEdges_)
       {
         for(int i = 0; i < nprocs_; i++)
-          pvtu << "    <Piece Source=\"" << getFineEdgeFilename(i) << "\"/>" << std::endl;
+          pvtu << "    <Piece Source=\"" << getFineEdgeFilename(i) << "\"/>\n";
       }
       if(didCoarseEdges_)
       {
         for(int i = 0; i < nprocs_; i++)
-          pvtu << "    <Piece Source=\"" << getCoarseEdgeFilename(i) << "\"/>" << std::endl;
+          pvtu << "    <Piece Source=\"" << getCoarseEdgeFilename(i) << "\"/>\n";
       }
-      pvtu << "  </PUnstructuredGrid>" << std::endl;
-      pvtu << "</VTKFile>" << std::endl;
+      pvtu << "  </PUnstructuredGrid>\n";
+      pvtu << "</VTKFile>\n";
       pvtu.close();
     }
   }
@@ -2307,16 +2320,16 @@ namespace VizHelpers {
   void VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::buildColormap() {
     try {
       std::ofstream color("random-colormap.xml");
-      color << "<ColorMap name=\"MueLu-Random\" space=\"RGB\">" << std::endl;
+      color << "<ColorMap name=\"MueLu-Random\" space=\"RGB\">\n";
       //Give -1, and -2 distinctive colors (so that the style functions can have constrasted geometry types)
       //Do red + orange to constrast with cool color spectrum for aggregates
-      color << "  <Point x=\"" << -1 << "\" o=\"1\" r=\"1\" g=\"0.2\" b=\"0\"/>" << std::endl;
-      color << "  <Point x=\"" << -2 << "\" o=\"1\" r=\"1\" g=\"0.6\" b=\"0\"/>" << std::endl;
+      color << "  <Point x=\"" << -1 << "\" o=\"1\" r=\"1\" g=\"0.2\" b=\"0\"/>\n";
+      color << "  <Point x=\"" << -2 << "\" o=\"1\" r=\"1\" g=\"0.6\" b=\"0\"/>\n";
       srand(time(NULL));
       for(int i = 0; i < 5000; i += 4) {
-        color << "  <Point x=\"" << i << "\" o=\"1\" r=\"" << (rand() % 100) / 256.0 << "\" g=\"" << (rand() % 256) / 256.0 << "\" b=\"" << (rand() % 256) / 256.0 << "\"/>" << std::endl;
+        color << "  <Point x=\"" << i << "\" o=\"1\" r=\"" << (rand() % 100) / 256.0 << "\" g=\"" << (rand() % 256) / 256.0 << "\" b=\"" << (rand() % 256) / 256.0 << "\"/>\n";
       }
-      color << "</ColorMap>" << std::endl;
+      color << "</ColorMap>\n";
       color.close();
     }
     catch(std::exception& e) {
