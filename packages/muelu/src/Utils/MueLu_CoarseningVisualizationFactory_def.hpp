@@ -50,6 +50,7 @@
 #include <Xpetra_Matrix.hpp>
 #include <Xpetra_ImportFactory.hpp>
 #include <Xpetra_MultiVectorFactory.hpp>
+#include "MueLu_Visualization_def.hpp"
 #include "MueLu_CoarseningVisualizationFactory_decl.hpp"
 #include "MueLu_Level.hpp"
 

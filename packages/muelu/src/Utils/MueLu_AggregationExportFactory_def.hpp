@@ -57,6 +57,7 @@
 #include <Xpetra_CrsMatrixWrap.hpp>
 #include <Xpetra_ImportFactory.hpp>
 #include <Xpetra_MultiVectorFactory.hpp>
+#include "MueLu_Visualization_def.hpp"
 #include "MueLu_AggregationExportFactory_decl.hpp"
 #include "MueLu_Level.hpp"
 #include "MueLu_Aggregates.hpp"

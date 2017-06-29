@@ -51,7 +51,7 @@
 
 #include "MueLu_ConfigDefs.hpp"
 #include "MueLu_TwoLevelFactoryBase.hpp"
-#include "MueLu_VisualizationHelpers_def.hpp"
+#include "MueLu_Visualization_decl.hpp"
 #include "MueLu_CoarseningVisualizationFactory_fwd.hpp"
 
 
