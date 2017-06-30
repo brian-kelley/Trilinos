@@ -312,17 +312,11 @@ namespace VizHelpers {
       {
         Triangle() : v1(1337), v2(1337), v3(1337), valid(false)
         {
-          neighbor[0] = -1;
-          neighbor[1] = -1;
-          neighbor[2] = -1;
           valid = false;
         }
         Triangle(GlobalOrdinal v1in, GlobalOrdinal v2in, GlobalOrdinal v3in, int nei1, int nei2, int nei3) :
           v1(v1in), v2(v2in), v3(v3in)
         {
-          neighbor[0] = nei1;
-          neighbor[1] = nei2;
-          neighbor[2] = nei3;
           valid = false;
         }
         ~Triangle() {}
@@ -335,45 +329,6 @@ namespace VizHelpers {
         void setPointList(std::vector<GlobalOrdinal>& pts)
         {
           frontPoints = pts;
-        }
-        void clearNeighbors()
-        {
-          neighbor[0] = -1;
-          neighbor[1] = -1;
-          neighbor[2] = -1;
-        }
-        bool hasNeighbor(int tri)
-        {
-          return neighbor[0] == tri || neighbor[1] == tri || neighbor[2] == tri;
-        }
-        void replaceNeighbor(int toReplace, int with)
-        {
-          if(neighbor[0] == toReplace)
-          {
-            neighbor[0] = with;
-            return;
-          }
-          else if(neighbor[1] == toReplace)
-          {
-            neighbor[1] = with;
-            return;
-          }
-          else if(neighbor[2] == toReplace)
-          {
-            neighbor[2] = with;
-            return;
-          }
-          std::ostringstream oss;
-          oss << "Convex hull face " << v1 << " " << v2 << " " << v3 << " should have neighbor " << toReplace << " but it doesn't (was trying to replace with " << with << ')';
-          throw std::runtime_error(oss.str());
-        }
-        void deleteNeighbor(int tri)
-        {
-          replaceNeighbor(tri, -1);
-        }
-        void addNeighbor(int tri)
-        {
-          replaceNeighbor(-1, tri);
         }
         bool adjacent(Triangle& tri)
         {
@@ -400,7 +355,6 @@ namespace VizHelpers {
         GlobalOrdinal v1;
         GlobalOrdinal v2;
         GlobalOrdinal v3;
-        int neighbor[3];      //note: order of neighbors wrt vertices and normal is not specified
         std::vector<GlobalOrdinal> frontPoints;
         bool valid;
       };

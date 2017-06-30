@@ -795,6 +795,8 @@ namespace VizHelpers {
         continue;
       }
       std::vector<Triangle> hull;
+      //in general, the number of triangles is roughly twice the number of vertices
+      hull.reserve(aggNodes.size() * 2);
       //Extreme vertices: min x, max x, min y, ...
       GlobalOrdinal extreme[6];
       extreme[0] = *std::min_element(aggNodes.begin(), aggNodes.end(),
@@ -924,12 +926,6 @@ namespace VizHelpers {
       for(int i = 0; i < 4; i++)
       {
         hull[i].valid = true;
-        for(int j = 0; j < 4; j++)
-        {
-          if(i == j)
-            continue;
-          hull[i].addNeighbor(j);
-        }
         if(startPoints[i].size())
         {
           trisToProcess.push_back(i);
@@ -947,26 +943,6 @@ namespace VizHelpers {
       int asdf = 0;
       while(!trisToProcess.empty())
       {
-        /*
-        //DEBUGGGING: Fix neighbors (slowly)
-        for(size_t i = 0; i < hull.size(); i++)
-        {
-          Triangle& ti = hull[i];
-          if(ti.valid)
-          {
-            ti.clearNeighbors();
-            for(size_t j = 0; j < hull.size(); j++)
-            {
-              if(hull[j].valid && hull[j].adjacent(ti))
-              {
-                ti.addNeighbor(j);
-              }
-            }
-          }
-        }
-        */
-        if(asdf == 243)
-          break;
         std::cout << "\n\nHave handled " << asdf++ << " tris.\n";
         std::cout << "  Have " << trisToProcess.size() << " tris left to process\n";
         int validTris = 0;
@@ -1033,40 +1009,25 @@ namespace VizHelpers {
         //will delete this triangle: mark its spot in hull as free so it can be reused
         std::cout << "Deleting triangle " << triIndex << ": " << t.v1 << " " << t.v2 << " " << t.v3 << '\n';
         hull[triIndex].valid = false;
-        //set all neighbor links pointing to triIndex to -1
-        for(int i = 0; i < 3; i++)
-        {
-          Triangle& neighbor = hull[t.neighbor[i]];
-          if(neighbor.hasNeighbor(triIndex))
-            neighbor.deleteNeighbor(triIndex);
-        }
         //note: t is a shallow copy that keeps the front point list
         //out of the point list, get the most distant point
         //get the set of triangles adjacent to t which are visible from the furthest point
         std::cout << "  Point " << farPoint << " is the most distant point, with distance " << furthest << "\n";
         vector<int> visible;
-        for(int i = 0; i < 3; i++)
+        //already know the triangle being processed can see farPoint
+        visible.push_back(triIndex);
+        for(size_t i = 0; i < hull.size(); i++)
         {
-          if(t.neighbor[i] == -1 || !hull[t.neighbor[i]].valid)
-            throw std::runtime_error("Triangle had invalid neighbor!");
-          auto& nei = hull[t.neighbor[i]];
-          if(pointDistFromTri(verts_[farPoint], verts_[nei.v1], verts_[nei.v2], verts_[nei.v3]) > 0)
+          auto& vt = hull[i];
+          if(!vt.valid)
+            continue;
+          if(pointDistFromTri(verts_[farPoint], verts_[vt.v1], verts_[vt.v2], verts_[vt.v3]) > 0)
           {
-            std::cout << "  Have visible neighbor " << t.neighbor[i] << '\n';
-            std::cout << "  it has verts: " << nei.v1 << " " << nei.v2 << " " << nei.v3 << '\n';
-            visible.push_back(t.neighbor[i]);
-            for(int j = 0; j < 3; j++)
-            {
-              Triangle& nn = hull[nei.neighbor[j]];
-              if(nn.valid && nn.hasNeighbor(t.neighbor[i]))
-              {
-                nn.replaceNeighbor(t.neighbor[i], -1);
-              }
-            }
-            //Mark visible face as invalid (deleted) but don't clear its point list yet
-            nei.valid = false;
+            visible.push_back(i);
+            vt.valid = false;
           }
         }
+        std::cout << "Have " << visible.size() << " visible triangles.\n";
         //get a list of all edges contained in all the deleted triangles (keeping duplicates)
         vector<Edge> allEdges;
         for(auto& vis : visible)
@@ -1113,79 +1074,22 @@ namespace VizHelpers {
           }
         }
         std::cout << "  Done creating new tris\n";
-        //now set up neighbors for new triangles
-        //first, build set of all triangels to search: all still-valid neighbors of visible and also all new triangles
-        std::cout << "  Searching for all neighbors of new tris.\n";
-        //edgeSearch is a complete set of all triangles which may share an edge with a new triangle
-        vector<int> edgeSearch;
-        std::cout << "Constructing edgeSearch:\n";
-        //first, new tris will share some edges with each other
-        for(auto newTri : newTris)
-        {
-          edgeSearch.push_back(newTri);
-          std::cout << edgeSearch.back() << ": " << hull[edgeSearch.back()].v1 << " "<< hull[edgeSearch.back()].v2 << " "<< hull[edgeSearch.back()].v3 << "\n";
-        }
-        //also, still-valid neighbors of deleted ("visible") triangles will share edges
-        for(auto v: visible)
-        {
-          auto& visibleTri = hull[v];
-          for(int i = 0; i < 3; i++)
-          {
-            if(visibleTri.neighbor[i] >= 0 && hull[visibleTri.neighbor[i]].valid)
-            {
-              edgeSearch.push_back(visibleTri.neighbor[i]);
-              std::cout << edgeSearch.back() << ": " << hull[edgeSearch.back()].v1 << " "<< hull[edgeSearch.back()].v2 << " "<< hull[edgeSearch.back()].v3 << "\n";
-            }
-          }
-        }
-        std::cout << "  Have " << edgeSearch.size() << " candidate triangles that could be on the boundary of all new tris\n";
-        for(auto newTri : newTris)
-        {
-          Triangle& nt = hull[newTri];
-          std::cout << "    Finding neighbors for tri " << newTri << '\n';
-          // TEMPORARY
-          /*
-          std::set<int> neighbors;
-          for(size_t i = 0; i < hull.size(); i++)
-          {
-            auto& test = hull[i];
-            if(test.valid && test.adjacent(nt))
-            {
-              neighbors.insert(i);
-            }
-          }
-          for(auto& i : neighbors)
-            nt.addNeighbor(i);
-          // END TEMPORARY
-          */
-          std::cout << "    Note: existing neighbors (should be -1): " << nt.neighbor[0] << " " << nt.neighbor[1] << " " << nt.neighbor[2] << '\n';
-          for(auto& searchTri : edgeSearch)
-          {
-            if(nt.adjacent(hull[searchTri]) && !nt.hasNeighbor(searchTri))
-            {
-              std::cout << "      Adding unique neighbor " << searchTri << '\n';
-              nt.addNeighbor(searchTri);
-              //searchTri also needs its neighbor set
-              hull[searchTri].addNeighbor(newTri);
-            }
-          }
-          for(int i = 0; i < 3; i++)
-          {
-            if(nt.neighbor[i] < 0 || nt.neighbor[i] >= hull.size() || !hull[nt.neighbor[i]].valid)
-            {
-              std::cout << "****  Geometry error: new triangle " << newTri << " has invalid neighbor " << nt.neighbor[i] << '\n';
-              std::cout << "All existing triangles:\n";
-              while(1);
-            }
-          }
-          std::cout << "  Finalized neighbors for " << newTri << ": " << nt.neighbor[0] << " " << nt.neighbor[1] << " " << nt.neighbor[2] << '\n';
-        }
         //now, redistribute the front points of all deleted triangles among all new triangles
         for(auto& vis : visible)
         {
           auto& v = hull[vis];
           for(auto frontPoint : v.frontPoints)
           {
+            for(size_t i = 0; i < newTris.size(); i++)
+            {
+              auto& nt = hull[newTris[i]];
+              if(pointDistFromTri(verts_[frontPoint], verts_[nt.v1], verts_[nt.v2], verts_[nt.v3]) > eps)
+              {
+                nt.frontPoints.push_back(frontPoint);
+                break;
+              }
+            }
+          /*
             //find a new triangle such that frontPoint is in front of it
             double bestDist = 0;
             int bestInd = -1;
@@ -1208,6 +1112,7 @@ namespace VizHelpers {
               //point can only be assigned to one face
               break;
             }
+            */
           }
           v.frontPoints.clear();
           v.frontPoints.shrink_to_fit();
