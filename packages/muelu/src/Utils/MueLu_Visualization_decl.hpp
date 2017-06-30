@@ -364,7 +364,7 @@ namespace VizHelpers {
             return;
           }
           std::ostringstream oss;
-          oss << "Convex hull face " << v1 << " " << v2 << " " << v3 << " should have neighbor " << toReplace << " but it doesn't.";
+          oss << "Convex hull face " << v1 << " " << v2 << " " << v3 << " should have neighbor " << toReplace << " but it doesn't (was trying to replace with " << with << ')';
           throw std::runtime_error(oss.str());
         }
         void deleteNeighbor(int tri)
@@ -380,7 +380,6 @@ namespace VizHelpers {
           int shared = 0;
           GlobalOrdinal thisVerts[] = {v1, v2, v3};
           GlobalOrdinal otherVerts[] = {tri.v1, tri.v2, tri.v3};
-          std::cout << "      In Tri::adj: testing whether (" << v1 << " " << v2 << " " << v3 << ") and (" << tri.v1 << " " << tri.v2 << " " << tri.v3 << ") are adjacent: ";
           for(int i = 0; i < 3; i++)
           {
             for(int j = 0; j < 3; j++)
@@ -391,12 +390,10 @@ namespace VizHelpers {
           }
           if(shared == 2)
           {
-            std::cout << " YES\n";
             return true;
           }
           else
           {
-            std::cout << " NO\n";
             return false;
           }
         }

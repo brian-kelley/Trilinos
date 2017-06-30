@@ -51,7 +51,7 @@
 #include <Xpetra_CrsMatrixWrap.hpp>
 #include <Xpetra_ImportFactory.hpp>
 #include <Xpetra_MultiVectorFactory.hpp>
-#include "MueLu_VisualizationHelpers_decl.hpp"
+#include "MueLu_Visualization_decl.hpp"
 #include "MueLu_Graph.hpp"
 #include "MueLu_Monitor.hpp"
 #include <vector>
@@ -150,7 +150,6 @@ namespace VizHelpers {
   //get minimum distance from 'point' to plane containing v1, v2, v3 (or the triangle with v1, v2, v3 as vertices)
   inline double pointDistFromTri(Vec3 point, Vec3 v1, Vec3 v2, Vec3 v3)
   {
-    using namespace std;
     //get (oriented) unit normal for triangle (v1,v2,v3)
     Vec3 norm = triNormal(v1, v2, v3);
     if(mag(norm) == 0)
@@ -755,7 +754,7 @@ namespace VizHelpers {
     //value used to fuzzy-compare doubles with 0
     //note: this value chosen arbitrarily, with the assumption
     //that distances between vertices are on the order of one unit
-    const double eps = 1e-6;
+    const double eps = 1e-14;
     //Use 3D quickhull algo.
     //Vector of node indices representing triangle vertices
     //Note: Calculate the hulls first since will only include point data for points in the hulls
@@ -948,10 +947,26 @@ namespace VizHelpers {
       int asdf = 0;
       while(!trisToProcess.empty())
       {
-      /*
-        if(asdf == 20)
+        /*
+        //DEBUGGGING: Fix neighbors (slowly)
+        for(size_t i = 0; i < hull.size(); i++)
+        {
+          Triangle& ti = hull[i];
+          if(ti.valid)
+          {
+            ti.clearNeighbors();
+            for(size_t j = 0; j < hull.size(); j++)
+            {
+              if(hull[j].valid && hull[j].adjacent(ti))
+              {
+                ti.addNeighbor(j);
+              }
+            }
+          }
+        }
+        */
+        if(asdf == 243)
           break;
-      */
         std::cout << "\n\nHave handled " << asdf++ << " tris.\n";
         std::cout << "  Have " << trisToProcess.size() << " tris left to process\n";
         int validTris = 0;
@@ -977,13 +992,13 @@ namespace VizHelpers {
               verts.push_back(ht.v3);
             }
           }
-          //vertices can appear arbitrarily many times so unique them
+          //vertices can appear arbitrarily many times, so unique them
           std::sort(verts.begin(), verts.end());
           verts.erase(std::unique(verts.begin(), verts.end()), verts.end());
           //each edge must appear exactly twice (one triangle on each side)
           int uniqueEdges = edges.size() / 2;
           std::cout << "Polyhedron has " << verts.size() << " verts, " << uniqueEdges << " edges, and " << F << " faces.\n";
-          //use Euler's formula V - E + F = 2 which indicates hull is a manifold
+          //use Euler's formula V - E + F = 2 which indicates hull is topologically a sphere
           if(2 != verts.size() - uniqueEdges + F)
           {
             std::cout << "Not manifold!\n";
@@ -1000,17 +1015,14 @@ namespace VizHelpers {
         Triangle t = hull[triIndex];
         std::cout << "Tri has verts: " << t.v1 << " " << t.v2 << " " << t.v3 << '\n';
         std::cout << "  Finding the most distant point in front among " << t.frontPoints.size() <<  " points.\n";
-        double furthest = 0;
-        int bestInd = -1;
-        for(int i = 0; i < t.frontPoints.size(); i++)
-        {
-          double thisDist = pointDistFromTri(verts_[t.frontPoints[i]], verts_[t.v1], verts_[t.v2], verts_[t.v3]);
-          if(thisDist > furthest)
-          {
-            bestInd = i;
-            furthest = thisDist;
-          }
-        }
+        auto farPoint = *std::max_element(t.frontPoints.begin(), t.frontPoints.end(),
+            [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
+            {
+              double dist1 = pointDistFromTri(verts_[lhs], verts_[t.v1], verts_[t.v2], verts_[t.v3]);
+              double dist2 = pointDistFromTri(verts_[rhs], verts_[t.v1], verts_[t.v2], verts_[t.v3]);
+              return dist1 < dist2;
+            });
+        double furthest = pointDistFromTri(verts_[farPoint], verts_[t.v1], verts_[t.v2], verts_[t.v3]);
         if(furthest < eps)
         {
           //best point is on the face, so keep the triangle
@@ -1025,15 +1037,14 @@ namespace VizHelpers {
         for(int i = 0; i < 3; i++)
         {
           Triangle& neighbor = hull[t.neighbor[i]];
-          neighbor.deleteNeighbor(triIndex);
+          if(neighbor.hasNeighbor(triIndex))
+            neighbor.deleteNeighbor(triIndex);
         }
         //note: t is a shallow copy that keeps the front point list
         //out of the point list, get the most distant point
         //get the set of triangles adjacent to t which are visible from the furthest point
-        auto farPoint = t.frontPoints[bestInd];
         std::cout << "  Point " << farPoint << " is the most distant point, with distance " << furthest << "\n";
-        vector<Triangle> visible;
-        visible.push_back(t);
+        vector<int> visible;
         for(int i = 0; i < 3; i++)
         {
           if(t.neighbor[i] == -1 || !hull[t.neighbor[i]].valid)
@@ -1043,27 +1054,28 @@ namespace VizHelpers {
           {
             std::cout << "  Have visible neighbor " << t.neighbor[i] << '\n';
             std::cout << "  it has verts: " << nei.v1 << " " << nei.v2 << " " << nei.v3 << '\n';
-            visible.push_back(nei);
+            visible.push_back(t.neighbor[i]);
             for(int j = 0; j < 3; j++)
             {
               Triangle& nn = hull[nei.neighbor[j]];
               if(nn.valid && nn.hasNeighbor(t.neighbor[i]))
+              {
                 nn.replaceNeighbor(t.neighbor[i], -1);
+              }
             }
+            //Mark visible face as invalid (deleted) but don't clear its point list yet
             nei.valid = false;
-            nei.frontPoints.clear();
-            nei.frontPoints.shrink_to_fit();
           }
         }
         //get a list of all edges contained in all the deleted triangles (keeping duplicates)
         vector<Edge> allEdges;
-        for(auto& v : visible)
+        for(auto& vis : visible)
         {
+          Triangle& v = hull[vis];
           allEdges.emplace_back(v.v1, v.v2);
           allEdges.emplace_back(v.v2, v.v3);
           allEdges.emplace_back(v.v1, v.v3);
         }
-        std::cout << "  Have a list of " << allEdges.size() << " edges.\n";
         //sort it - already have the two vertices in each edge sorted (v1 < v2)
         std::sort(allEdges.begin(), allEdges.end());
         //make a new list of edges that only appear in this list once (the boundary of the hole in the mesh)
@@ -1085,8 +1097,8 @@ namespace VizHelpers {
         std::cout << "  Creating " << boundary.size() << " new tris...\n";
         for(auto& e : boundary)
         {
+          int ind = hull.size();
           hull.emplace_back();
-          int ind = hull.size() - 1;
           Triangle& newTri = hull[ind];
           newTri.valid = true;
           newTri.v1 = e.v1;
@@ -1114,8 +1126,9 @@ namespace VizHelpers {
           std::cout << edgeSearch.back() << ": " << hull[edgeSearch.back()].v1 << " "<< hull[edgeSearch.back()].v2 << " "<< hull[edgeSearch.back()].v3 << "\n";
         }
         //also, still-valid neighbors of deleted ("visible") triangles will share edges
-        for(auto& visibleTri : visible)
+        for(auto v: visible)
         {
+          auto& visibleTri = hull[v];
           for(int i = 0; i < 3; i++)
           {
             if(visibleTri.neighbor[i] >= 0 && hull[visibleTri.neighbor[i]].valid)
@@ -1130,6 +1143,21 @@ namespace VizHelpers {
         {
           Triangle& nt = hull[newTri];
           std::cout << "    Finding neighbors for tri " << newTri << '\n';
+          // TEMPORARY
+          /*
+          std::set<int> neighbors;
+          for(size_t i = 0; i < hull.size(); i++)
+          {
+            auto& test = hull[i];
+            if(test.valid && test.adjacent(nt))
+            {
+              neighbors.insert(i);
+            }
+          }
+          for(auto& i : neighbors)
+            nt.addNeighbor(i);
+          // END TEMPORARY
+          */
           std::cout << "    Note: existing neighbors (should be -1): " << nt.neighbor[0] << " " << nt.neighbor[1] << " " << nt.neighbor[2] << '\n';
           for(auto& searchTri : edgeSearch)
           {
@@ -1152,44 +1180,46 @@ namespace VizHelpers {
           }
           std::cout << "  Finalized neighbors for " << newTri << ": " << nt.neighbor[0] << " " << nt.neighbor[1] << " " << nt.neighbor[2] << '\n';
         }
-        //now, collect all the front points from visible (deleted) triangles into one vector, and free the originals
-        vector<GlobalOrdinal> frontPoints;
-        for(auto& v : visible)
+        //now, redistribute the front points of all deleted triangles among all new triangles
+        for(auto& vis : visible)
         {
-          for(auto fp : v.frontPoints)
+          auto& v = hull[vis];
+          for(auto frontPoint : v.frontPoints)
           {
-            frontPoints.push_back(fp);
-          }
-          v.frontPoints.clear();
-          v.frontPoints.shrink_to_fit();
-        }
-        //now, redistribute the points among all new triangles
-        vector<vector<GlobalOrdinal>> triFrontPoints(newTris.size());
-        for(auto frontPoint : frontPoints)
-        {
-          //find a new triangle such that frontPoint is in front of it
-          for(size_t i = 0; i < newTris.size(); i++)
-          {
-            int nt = newTris[i];
-            Triangle& ntt = hull[nt];
-            if(pointDistFromTri(verts_[frontPoint],
-                  verts_[ntt.v1], verts_[ntt.v2], verts_[ntt.v3]) > eps)
+            //find a new triangle such that frontPoint is in front of it
+            double bestDist = 0;
+            int bestInd = -1;
+            for(size_t i = 0; i < newTris.size(); i++)
             {
-              triFrontPoints[i].push_back(frontPoint);
+              int nt = newTris[i];
+              Triangle& ntt = hull[nt];
+              double thisDist = pointDistFromTri(verts_[frontPoint],
+                  verts_[ntt.v1], verts_[ntt.v2], verts_[ntt.v3]);
+              if(thisDist > bestDist)
+              {
+                bestDist = thisDist;
+                bestInd = newTris[i];
+              }
+            }
+            if(bestDist > eps)
+            {
+              //frontPoint is in front of triangle bestInd
+              hull[bestInd].frontPoints.push_back(frontPoint);
               //point can only be assigned to one face
               break;
             }
           }
+          v.frontPoints.clear();
+          v.frontPoints.shrink_to_fit();
         }
         //for each triangle that has some front points, allocate its points array and add it to stack
         for(size_t i = 0; i < newTris.size(); i++)
         {
           int newTri = newTris[i];
           Triangle& nt = hull[newTri];
-          if(triFrontPoints[i].size())
+          if(nt.frontPoints.size())
           {
-            std::cout << "  New tri " << newTri << " has " << triFrontPoints[i].size() << " points in front.\n";
-            nt.setPointList(triFrontPoints[i]);
+            std::cout << "  New tri " << newTri << " has " << nt.frontPoints.size() << " points in front.\n";
             trisToProcess.push_back(newTri);
           }
         }
@@ -1197,16 +1227,20 @@ namespace VizHelpers {
       //hull now has all triangles that make up this hull.
       //Dump hull info into the list of all triangles for the scene.
       geomVerts_.reserve(geomVerts_.size() + 3 * hull.size());
+      int asdfasdf = 0;
       for(auto& hullTri : hull)
       {
         if(hullTri.valid)
         {
+          std::cout << "Have tri: " << hullTri.v1 << " " << hullTri.v2 << " " << hullTri.v3 << "\n";
           geomVerts_.emplace_back(hullTri.v1, agg);
           geomVerts_.emplace_back(hullTri.v2, agg);
           geomVerts_.emplace_back(hullTri.v3, agg);
           geomSizes_.push_back(3);
+          asdfasdf++;
         }
       }
+      std::cout << "Final geometry: " << asdfasdf << " triangles.\n";
     }
   }
 
