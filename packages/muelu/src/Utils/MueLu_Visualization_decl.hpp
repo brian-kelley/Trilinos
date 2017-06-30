@@ -310,13 +310,14 @@ namespace VizHelpers {
 #endif
       struct Triangle
       {
-        Triangle() : valid(false)
+        Triangle() : v1(1337), v2(1337), v3(1337), valid(false)
         {
-          clearNeighbors();
+          valid = false;
         }
-        Triangle(int vv1, int vv2, int vv3) : v1(vv1), v2(vv2), v3(vv3), valid(false)
+        Triangle(GlobalOrdinal v1in, GlobalOrdinal v2in, GlobalOrdinal v3in, int nei1, int nei2, int nei3) :
+          v1(v1in), v2(v2in), v3(v3in)
         {
-          clearNeighbors();
+          valid = false;
         }
         ~Triangle() {}
         bool operator==(const Triangle& l)
@@ -351,51 +352,10 @@ namespace VizHelpers {
             return false;
           }
         }
-        void clearNeighbors()
-        {
-          for(int i = 0; i < 3; i++)
-            nei[i] = -1;
-        }
-        void replaceNeighbor(int toReplace, int with)
-        {
-          for(int i = 0; i < 3; i++)
-          {
-            if(nei[i] == toReplace)
-            {
-              nei[i] = with;
-              return;
-            }
-          }
-          std::ostringstream oss;
-          oss << "Expected triangle to have neighbor " << toReplace << " which was to be replaced with " << with << ", but it didn't.";
-          throw(std::runtime_error(oss.str()));
-        }
-        bool hasNeighbor(int n)
-        {
-          for(int i = 0; i < 3; i++)
-          {
-            if(nei[i] == n)
-              return true;
-          }
-          return false;
-        }
-        void addNeighbor(int n)
-        {
-          if(!hasNeighbor(n))
-          {
-            replaceNeighbor(-1, n);
-          }
-        }
-        void removeNeighbor(int n)
-        {
-          if(hasNeighbor(n))
-            replaceNeighbor(n, -1);
-        }
         GlobalOrdinal v1;
         GlobalOrdinal v2;
         GlobalOrdinal v3;
         std::vector<GlobalOrdinal> frontPoints;
-        int nei[3];
         bool valid;
       };
       bool pointInFront(Triangle& t, GlobalOrdinal p)
