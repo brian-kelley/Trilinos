@@ -154,9 +154,19 @@ namespace VizHelpers {
     Vec3 norm = triNormal(v1, v2, v3);
     if(mag(norm) == 0)
     {
+      std::cout << "Note: tri verts are:\n";
+      std::cout << v1.x << " " << v1.y << " " << v1.z << '\n';
+      std::cout << v2.x << " " << v2.y << " " << v2.z << '\n';
+      std::cout << v3.x << " " << v3.y << " " << v3.z << '\n';
       throw std::runtime_error("Requested plane-point distance but plane was not uniquely defined.");
     }
     return dotProduct(norm, point - v1);
+  }
+
+  inline double pointDistFromLine(Vec3 point, Vec3 line1, Vec3 line2)
+  {
+    //see: http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+    return mag(crossProduct(point - line1, point - line2)) / mag(line2 - line1);
   }
 
   Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList()
@@ -179,6 +189,7 @@ namespace VizHelpers {
   AggGeometry(const Teuchos::RCP<Aggregates>& aggs, const Teuchos::RCP<const Teuchos::Comm<int>>& comm,
       const Teuchos::RCP<CoordArray>& coords)
   {
+    std::cout << "In aggregates construcotr for AggGeometry\n";
     bubbles_ = false;
     numNodes_ = coords->getLocalLength();
     numLocalAggs_ = aggs->GetNumAggregates();
@@ -232,7 +243,7 @@ namespace VizHelpers {
       firstAgg_ = minGlobalAggId[rank_];
     }
     //can already compute aggOffsets_, since sizes of all aggregates known
-    aggOffsets_.reserve(numLocalAggs_ + 1);
+    aggOffsets_.resize(numLocalAggs_ + 1);
     GlobalOrdinal accum = 0;
     auto aggSizes = aggs->ComputeAggregateSizes();
     for(size_t i = 0; i < numLocalAggs_; i++)
@@ -250,6 +261,18 @@ namespace VizHelpers {
       aggVerts_[aggOffsets_[agg] + vertCount[agg]] = i;
       vertCount[agg]++;
     }
+    std::ofstream asdf("asdf.txt");
+    asdf << "Have " << numLocalAggs_ << " aggs, starting at " << firstAgg_ << "\n";
+    for(size_t i = 0; i < numLocalAggs_; i++)
+    {
+      asdf << "Agg " << i << " contains:\n";
+      for(size_t j = aggOffsets_[i]; j < aggOffsets_[i + 1]; j++)
+      {
+        auto v = verts_[aggVerts_[j]];
+        asdf << aggVerts_[j] << ":      " << v.x << " " << v.y << " " << v.z << '\n';
+      }
+    }
+    asdf.close();
   }
 
   //Constructor for CoarseningVisualizationFactory
@@ -762,6 +785,12 @@ namespace VizHelpers {
       {
         aggNodes.push_back(aggVerts_[i]);
       }
+      std::cout << "Computing convhull 3D for agg " << agg << " (" << aggNodes.size() << " verts)\n";
+      for(auto i : aggNodes)
+      {
+        std::cout << i << ' ';
+      }
+      std::cout << '\n';
       //First, check anomalous cases
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
                "CoarseningVisualization::doConvexHulls3D: aggregate contains zero nodes!");
@@ -819,10 +848,12 @@ namespace VizHelpers {
         {
           for(int j = i + 1; j < 6; j++)
           {
-            if(mag(verts_[extreme[i]] - verts_[extreme[j]]) > maxDist)
+            double thisDist = mag(verts_[extreme[i]] - verts_[extreme[j]]);
+            if(thisDist > maxDist)
             {
               tet[0] = extreme[i];
               tet[1] = extreme[j];
+              maxDist = thisDist;
             }
           }
         }
@@ -834,8 +865,10 @@ namespace VizHelpers {
       tet[2] = *std::max_element(aggNodes.begin(), aggNodes.end(),
         [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
         {
-          double distLHS = mag(crossProduct(verts_[lhs] - tetPoints[0], verts_[lhs] - tetPoints[1])) / mag(tetPoints[1] - tetPoints[0]);
-          double distRHS = mag(crossProduct(verts_[rhs] - tetPoints[0], verts_[rhs] - tetPoints[1])) / mag(tetPoints[1] - tetPoints[0]);
+          double distLHS = pointDistFromLine(verts_[lhs], tetPoints[0], tetPoints[1]);
+          double distRHS = pointDistFromLine(verts_[rhs], tetPoints[0], tetPoints[1]);
+          std::cout << "Note: line-point dist for " << lhs << ": " << distLHS << '\n';
+          std::cout << "Note: line-point dist for " << rhs << ": " << distRHS << '\n';
           return distLHS < distRHS;
         });
       //point 3 is the furthest point from triangle 0 1 2
@@ -843,8 +876,8 @@ namespace VizHelpers {
       tet[3] = *std::max_element(aggNodes.begin(), aggNodes.end(),
         [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
         {
-          double distLHS = pointDistFromTri(verts_[lhs], tetPoints[0], tetPoints[1], tetPoints[2]);
-          double distRHS = pointDistFromTri(verts_[rhs], tetPoints[0], tetPoints[1], tetPoints[2]);
+          double distLHS = fabs(pointDistFromTri(verts_[lhs], tetPoints[0], tetPoints[1], tetPoints[2]));
+          double distRHS = fabs(pointDistFromTri(verts_[rhs], tetPoints[0], tetPoints[1], tetPoints[2]));
           return distLHS < distRHS;
         });
       //Add three new triangles to hull to form the first tetrahedron
@@ -859,10 +892,16 @@ namespace VizHelpers {
       hull.back().v3 = tet[3];
       //now orient all four triangles so that the vertices are oriented clockwise (so getNorm_ points outward for each)
       //barycenter aka centroid (average of 4 vertices) is guaranteed to be inside the convex hull at all times
+      std::cout << "Note: tetrahedron verts are: " << tet[0] << ' '  << tet[1] << ' ' << tet[2] << ' ' << tet[3] << '\n';
+      for(int i = 0; i < 4; i++)
+      {
+        std::cout << tetPoints[i].x << " " << tetPoints[i].y << " " << tetPoints[i].z << '\n';
+      }
       Vec3 barycenter(0, 0, 0);
       for(int i = 0; i < 4; i++)
         barycenter += tetPoints[i];
       barycenter *= 0.25;
+      std::cout << "Barycenter: " << barycenter.x << " " << barycenter.y << " " << barycenter.z << "\n";
       for(size_t i = 0; i < 4; i++)
       {
         Triangle& tetTri = hull[i];
@@ -1027,30 +1066,6 @@ namespace VizHelpers {
                 break;
               }
             }
-          /*
-            //find a new triangle such that frontPoint is in front of it
-            double bestDist = 0;
-            int bestInd = -1;
-            for(size_t i = 0; i < newTris.size(); i++)
-            {
-              int nt = newTris[i];
-              Triangle& ntt = hull[nt];
-              double thisDist = pointDistFromTri(verts_[frontPoint],
-                  verts_[ntt.v1], verts_[ntt.v2], verts_[ntt.v3]);
-              if(thisDist > bestDist)
-              {
-                bestDist = thisDist;
-                bestInd = newTris[i];
-              }
-            }
-            if(bestDist > eps)
-            {
-              //frontPoint is in front of triangle bestInd
-              hull[bestInd].frontPoints.push_back(frontPoint);
-              //point can only be assigned to one face
-              break;
-            }
-            */
           }
           v.frontPoints.clear();
           v.frontPoints.shrink_to_fit();

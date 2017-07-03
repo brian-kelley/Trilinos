@@ -186,6 +186,7 @@ namespace VizHelpers {
   //! Get normal to triangle (oriented outward)
   inline Vec3 triNormal(Vec3 v1, Vec3 v2, Vec3 v3);
   inline double pointDistFromTri(Vec3 point, Vec3 v1, Vec3 v2, Vec3 v3);
+  inline double pointDistFromLine(Vec3 point, Vec3 line1, Vec3 line2);
 
   inline std::string replaceAll(std::string original, std::string replaceWhat, std::string replaceWithWhat);
 
