@@ -867,8 +867,6 @@ namespace VizHelpers {
         {
           double distLHS = pointDistFromLine(verts_[lhs], tetPoints[0], tetPoints[1]);
           double distRHS = pointDistFromLine(verts_[rhs], tetPoints[0], tetPoints[1]);
-          std::cout << "Note: line-point dist for " << lhs << ": " << distLHS << '\n';
-          std::cout << "Note: line-point dist for " << rhs << ": " << distRHS << '\n';
           return distLHS < distRHS;
         });
       //point 3 is the furthest point from triangle 0 1 2
@@ -935,7 +933,7 @@ namespace VizHelpers {
       for(auto& pt : aggNodes)
       {
         Vec3 ptPos = verts_[pt];
-#define PT_DIST(t) pointDistFromTri(ptPos, verts_[hull[t].v1], verts_[hull[t].v2], verts_[hull[t].v3])
+#define PT_DIST(t) pointDistFromTri(ptPos, verts_[hull[i].v1], verts_[hull[i].v2], verts_[hull[i].v3])
         for(int i = 0; i < 4; i++)
         {
           if(PT_DIST(i) > eps)
@@ -975,7 +973,7 @@ namespace VizHelpers {
           continue;
         //note: since faces was in queue, it is guaranteed to have front points 
         //therefore, it is also guaranteed to be replaced
-        Triangle t = hull[triIndex];
+        Triangle& t = hull[triIndex];
         auto farPoint = *std::max_element(t.frontPoints.begin(), t.frontPoints.end(),
             [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
             {
@@ -992,7 +990,7 @@ namespace VizHelpers {
           continue;
         }
         //will delete this triangle: mark its spot in hull as free so it can be reused
-        hull[triIndex].valid = false;
+        t.valid = false;
         //note: t is a shallow copy that keeps the front point list
         //out of the point list, get the most distant point
         //get the set of triangles adjacent to t which are visible from the furthest point
@@ -1004,8 +1002,9 @@ namespace VizHelpers {
           auto& vt = hull[i];
           if(!vt.valid)
             continue;
-          if(pointDistFromTri(verts_[farPoint], verts_[vt.v1], verts_[vt.v2], verts_[vt.v3]) > 0)
+          if(pointDistFromTri(verts_[farPoint], verts_[vt.v1], verts_[vt.v2], verts_[vt.v3]) > eps)
           {
+            std::cout << "Have visible tri " << i << ": " << vt.v1 << " " << vt.v2 << " " << vt.v3 << '\n';
             visible.push_back(i);
             vt.valid = false;
           }
@@ -1035,6 +1034,7 @@ namespace VizHelpers {
         }
         //for each boundary edge, form a new triangle with the farPoint - can't assign neighbors yet
         vector<int> newTris;
+        std::cout << "Creating " << boundary.size() << " new triangles.\n";
         for(auto& e : boundary)
         {
           int ind = hull.size();
