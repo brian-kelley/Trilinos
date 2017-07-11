@@ -154,10 +154,6 @@ namespace VizHelpers {
     Vec3 norm = triNormal(v1, v2, v3);
     if(mag(norm) == 0)
     {
-      std::cout << "Note: tri verts are:\n";
-      std::cout << v1.x << " " << v1.y << " " << v1.z << '\n';
-      std::cout << v2.x << " " << v2.y << " " << v2.z << '\n';
-      std::cout << v3.x << " " << v3.y << " " << v3.z << '\n';
       throw std::runtime_error("Requested plane-point distance but plane was not uniquely defined.");
     }
     return dotProduct(norm, point - v1);
@@ -189,7 +185,6 @@ namespace VizHelpers {
   AggGeometry(const Teuchos::RCP<Aggregates>& aggs, const Teuchos::RCP<const Teuchos::Comm<int>>& comm,
       const Teuchos::RCP<CoordArray>& coords)
   {
-    std::cout << "In aggregates construcotr for AggGeometry\n";
     bubbles_ = false;
     numNodes_ = coords->getLocalLength();
     numLocalAggs_ = aggs->GetNumAggregates();
@@ -785,12 +780,6 @@ namespace VizHelpers {
       {
         aggNodes.push_back(aggVerts_[i]);
       }
-      std::cout << "Computing convhull 3D for agg " << agg << " (" << aggNodes.size() << " verts)\n";
-      for(auto i : aggNodes)
-      {
-        std::cout << i << ' ';
-      }
-      std::cout << '\n';
       //First, check anomalous cases
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
                "CoarseningVisualization::doConvexHulls3D: aggregate contains zero nodes!");
@@ -881,25 +870,16 @@ namespace VizHelpers {
       //Add three new triangles to hull to form the first tetrahedron
       //use tri to hold the triangle info temporarily before being added to list
       tetPoints[3] = verts_[tet[3]];
-      hull.emplace_back(tet[0], tet[1], tet[2], -1, -1, -1);
-      hull.push_back(hull.front());
-      hull.back().v1 = tet[3];
-      hull.push_back(hull.front());
-      hull.back().v2 = tet[3];
-      hull.push_back(hull.front());
-      hull.back().v3 = tet[3];
+      hull.emplace_back(tet[0], tet[1], tet[2], 1, 2, 3);
+      hull.emplace_back(tet[0], tet[1], tet[3], 0, 2, 3);
+      hull.emplace_back(tet[0], tet[2], tet[3], 0, 1, 3);
+      hull.emplace_back(tet[1], tet[2], tet[3], 0, 1, 2);
       //now orient all four triangles so that the vertices are oriented clockwise (so getNorm_ points outward for each)
       //barycenter aka centroid (average of 4 vertices) is guaranteed to be inside the convex hull at all times
-      std::cout << "Note: tetrahedron verts are: " << tet[0] << ' '  << tet[1] << ' ' << tet[2] << ' ' << tet[3] << '\n';
-      for(int i = 0; i < 4; i++)
-      {
-        std::cout << tetPoints[i].x << " " << tetPoints[i].y << " " << tetPoints[i].z << '\n';
-      }
       Vec3 barycenter(0, 0, 0);
       for(int i = 0; i < 4; i++)
         barycenter += tetPoints[i];
       barycenter *= 0.25;
-      std::cout << "Barycenter: " << barycenter.x << " " << barycenter.y << " " << barycenter.z << "\n";
       for(size_t i = 0; i < 4; i++)
       {
         Triangle& tetTri = hull[i];
@@ -989,27 +969,46 @@ namespace VizHelpers {
           //prevents inconsistent round-off errors
           continue;
         }
+        //remove t's neighbor links to t
+        for(int i = 0; i < 3; i++)
+        {
+          hull[t.nei[i]].removeNeighbor(triIndex);
+        }
         //will delete this triangle: mark its spot in hull as free so it can be reused
         t.valid = false;
         //note: t is a shallow copy that keeps the front point list
         //out of the point list, get the most distant point
         //get the set of triangles adjacent to t which are visible from the furthest point
         vector<int> visible;
+        //list of triangles to search for neighbors of new triangles
+        //(size also has constant upper bound)
+        vector<int> neiSearch;
         //already know the triangle being processed can see farPoint
         visible.push_back(triIndex);
-        for(size_t i = 0; i < hull.size(); i++)
+        //note: only neighbors of t can be visible from farPoint
+        for(int i = 0; i < 3; i++)
         {
-          auto& vt = hull[i];
+          int vtIndex = t.nei[i];
+          auto& vt = hull[vtIndex];
+          //assert(vt.valid);
+          /*
           if(!vt.valid)
             continue;
+          */
           if(pointDistFromTri(verts_[farPoint], verts_[vt.v1], verts_[vt.v2], verts_[vt.v3]) > eps)
           {
-            std::cout << "Have visible tri " << i << ": " << vt.v1 << " " << vt.v2 << " " << vt.v3 << '\n';
-            visible.push_back(i);
+            visible.push_back(vtIndex);
+            //when removing vt from mesh, mark its neighbors' links to it as -1
+            for(int j = 0; j < 3; j++)
+            {
+              //later this invalid link will be replaced with some new triangle
+              hull[vt.nei[j]].removeNeighbor(vtIndex);
+              neiSearch.push_back(vt.nei[j]);
+            }
             vt.valid = false;
           }
         }
-        //get a list of all edges contained in all the deleted triangles (keeping duplicates)
+        //get a list of all edges contained in all the deleted triangles (keeping any duplicates)
         vector<Edge> allEdges;
         for(auto& vis : visible)
         {
@@ -1034,11 +1033,12 @@ namespace VizHelpers {
         }
         //for each boundary edge, form a new triangle with the farPoint - can't assign neighbors yet
         vector<int> newTris;
-        std::cout << "Creating " << boundary.size() << " new triangles.\n";
         for(auto& e : boundary)
         {
           int ind = hull.size();
           hull.emplace_back();
+          //new triangles will have other new triangles as neighbors
+          neiSearch.push_back(ind);
           Triangle& newTri = hull[ind];
           newTri.valid = true;
           newTri.v1 = e.v1;
@@ -1051,6 +1051,26 @@ namespace VizHelpers {
             std::swap(newTri.v1, newTri.v2);
           }
         }
+        //restore neighbor links
+        for(auto nt : newTris)
+        {
+          auto& newTri = hull[nt];
+          for(auto search : neiSearch)
+          {
+            if(!hull[search].valid)
+              continue;
+            if(newTri.adjacent(hull[search]))
+            {
+              //create mutual link across shared edge
+              newTri.addNeighbor(search);
+              hull[search].addNeighbor(nt);
+            }
+          }
+        }
+        std::cout << "All visible tri #s: ";
+        for(auto v : visible)
+          std::cout << v << ' ';
+        std::cout << '\n';
         //now, redistribute the front points of all deleted triangles among all new triangles
         for(auto& vis : visible)
         {

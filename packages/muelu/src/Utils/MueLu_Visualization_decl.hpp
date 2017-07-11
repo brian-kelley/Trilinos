@@ -314,11 +314,16 @@ namespace VizHelpers {
         Triangle() : v1(1337), v2(1337), v3(1337), valid(false)
         {
           valid = false;
+          nei[0] = -1;
+          nei[1] = -1;
+          nei[2] = -1;
         }
-        Triangle(GlobalOrdinal v1in, GlobalOrdinal v2in, GlobalOrdinal v3in, int nei1, int nei2, int nei3) :
-          v1(v1in), v2(v2in), v3(v3in)
+        Triangle(GlobalOrdinal v1in, GlobalOrdinal v2in, GlobalOrdinal v3in, int nei1, int nei2, int nei3) : v1(v1in), v2(v2in), v3(v3in)
         {
           valid = false;
+          nei[0] = nei1;
+          nei[1] = nei2;
+          nei[2] = nei3;
         }
         ~Triangle() {}
         bool operator==(const Triangle& l)
@@ -330,6 +335,37 @@ namespace VizHelpers {
         void setPointList(std::vector<GlobalOrdinal>& pts)
         {
           frontPoints = pts;
+        }
+        bool hasNeighbor(int n)
+        {
+          for(int i = 0; i < 3; i++)
+          {
+            if(nei[i] == n)
+              return true;
+          }
+          return false;
+        }
+        void replaceNeighbor(int toReplace, int with)
+        {
+          for(int i = 0; i < 3; i++)
+          {
+            if(nei[i] == toReplace)
+            {
+              nei[i] = with;
+              return;
+            }
+          }
+          //throw std::runtime_error("Tri: tried to replace neighbor " +
+          //    std::to_string(toReplace) + " with " + std::to_string(with) +
+          //    " but didn't have the one to replace.");
+        }
+        void removeNeighbor(int n)
+        {
+          replaceNeighbor(n, -1);
+        }
+        void addNeighbor(int n)
+        {
+          replaceNeighbor(-1, n);
         }
         bool adjacent(Triangle& tri)
         {
@@ -356,6 +392,7 @@ namespace VizHelpers {
         GlobalOrdinal v1;
         GlobalOrdinal v2;
         GlobalOrdinal v3;
+        int nei[3];
         std::vector<GlobalOrdinal> frontPoints;
         bool valid;
       };
