@@ -284,7 +284,7 @@ namespace MueLuTests {
     using std::vector;
     typedef MueLu::VizHelpers::AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeom;
     //Make an agg out of the square [0, 1] x [0, 1], plus n points inside and on boundary
-    const int n = 10000;
+    const int n = 1000;
     vector<Vec3> pts;
     srand(42);
     for(int i = 0; i < n; i++)

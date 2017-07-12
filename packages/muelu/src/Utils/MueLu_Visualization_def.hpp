@@ -738,6 +738,7 @@ namespace VizHelpers {
     using std::vector;
     using std::stack;
     using std::set;
+    using std::cout;
     struct Edge
     {
       Edge() {}
@@ -768,7 +769,7 @@ namespace VizHelpers {
     //value used to fuzzy-compare doubles with 0
     //note: this value chosen arbitrarily, with the assumption
     //that distances between vertices are on the order of one unit
-    const double eps = 1e-14;
+    const double eps = 1e-12;
     //Use 3D quickhull algo.
     //Vector of node indices representing triangle vertices
     //Note: Calculate the hulls first since will only include point data for points in the hulls
@@ -914,13 +915,20 @@ namespace VizHelpers {
       {
         Vec3 ptPos = verts_[pt];
 #define PT_DIST(t) pointDistFromTri(ptPos, verts_[hull[i].v1], verts_[hull[i].v2], verts_[hull[i].v3])
+        double bestDist = 0;
+        int bestFace = -1;
         for(int i = 0; i < 4; i++)
         {
-          if(PT_DIST(i) > eps)
+          double thisDist = PT_DIST(i);
+          if(thisDist > bestDist)
           {
-            startPoints[i].push_back(pt);
-            break;
+            bestDist = thisDist;
+            bestFace = i;
           }
+        }
+        if(bestDist > eps)
+        {
+          startPoints[bestFace].push_back(pt);
         }
         //else: point inside tetrahedron, so ignore
         #undef PT_DIST
@@ -937,20 +945,44 @@ namespace VizHelpers {
         {
           trisToProcess.push_back(i);
           hull[i].setPointList(startPoints[i]);
-          startPoints[i].clear();
+;         startPoints[i].clear();
           startPoints[i].shrink_to_fit();
         }
       }
       while(!trisToProcess.empty())
       {
+        //get all neighbor links correct
         int validTris = 0;
         for(auto& ht : hull)
           if(ht.valid)
             validTris++;
         int triIndex = trisToProcess.back();
         trisToProcess.pop_back();
+        cout << "\n**** LOOP BEGIN: PROCESSING " << triIndex << " AND HAVE " << trisToProcess.size() << " REMAINING.\n";
+        cout << "**** VALID TRIANGLES: ";
+        for(size_t i = 0; i < hull.size(); i++)
+          if(hull[i].valid)
+            cout << i << ' ';
+        cout << '\n';
         if(!hull[triIndex].valid)
+        {
           continue;
+        }
+        //Full neighbor check!!!!
+        for(size_t i = 0; i < hull.size(); i++)
+        {
+          if(!hull[i].valid)
+            continue;
+          for(int j = 0; j < 3; j++)
+          {
+            if(hull[i].nei[j] < 0 || !hull[hull[i].nei[j]].valid)
+            {
+              cout << "ERROR: triangle " << i << " has invalid neighbor but mesh should be completely correct now!\n";
+              cout << "Note: neighbors are: " << hull[i].nei[0] << ' ' << hull[i].nei[1] << ' ' << hull[i].nei[2] << '\n';
+              //assert(false);
+            }
+          }
+        }
         //note: since faces was in queue, it is guaranteed to have front points 
         //therefore, it is also guaranteed to be replaced
         Triangle& t = hull[triIndex];
@@ -969,43 +1001,56 @@ namespace VizHelpers {
           //prevents inconsistent round-off errors
           continue;
         }
-        //remove t's neighbor links to t
-        for(int i = 0; i < 3; i++)
-        {
-          hull[t.nei[i]].removeNeighbor(triIndex);
-        }
-        //will delete this triangle: mark its spot in hull as free so it can be reused
-        t.valid = false;
         //note: t is a shallow copy that keeps the front point list
         //out of the point list, get the most distant point
         //get the set of triangles adjacent to t which are visible from the furthest point
-        vector<int> visible;
+        set<int> visible;
         //list of triangles to search for neighbors of new triangles
         //(size also has constant upper bound)
         vector<int> neiSearch;
-        //already know the triangle being processed can see farPoint
-        visible.push_back(triIndex);
         //note: only neighbors of t can be visible from farPoint
-        for(int i = 0; i < 3; i++)
+        //do a depth-first flood fill of all visible faces, starting with t
         {
-          int vtIndex = t.nei[i];
-          auto& vt = hull[vtIndex];
-          //assert(vt.valid);
-          /*
-          if(!vt.valid)
-            continue;
-          */
-          if(pointDistFromTri(verts_[farPoint], verts_[vt.v1], verts_[vt.v2], verts_[vt.v3]) > eps)
+          //insert faces into visible, after "processing" them from this stack
+          stack<int> maybeVisible;
+          maybeVisible.push(triIndex);
+          while(maybeVisible.size())
           {
-            visible.push_back(vtIndex);
-            //when removing vt from mesh, mark its neighbors' links to it as -1
-            for(int j = 0; j < 3; j++)
+            int maybe = maybeVisible.top();
+            maybeVisible.pop();
+            Triangle& m = hull[maybe];
+            if(pointDistFromTri(verts_[farPoint], verts_[m.v1], verts_[m.v2], verts_[m.v3]) > eps)
             {
-              //later this invalid link will be replaced with some new triangle
-              hull[vt.nei[j]].removeNeighbor(vtIndex);
-              neiSearch.push_back(vt.nei[j]);
+              visible.insert(maybe);
+              //visit neighbors that haven't already been visited
+              for(int i = 0; i < 3; i++)
+              {
+                int neighbor = m.nei[i];
+                if(visible.find(neighbor) == visible.end())
+                  maybeVisible.push(neighbor);
+              }
             }
-            vt.valid = false;
+          }
+        }
+        for(auto v : visible)
+          hull[v].valid = false;
+        cout << "Have " << visible.size() << " visible tris: ";
+        for(auto v : visible)
+          cout << v << ' ';
+        cout << '\n';
+        //Add to neiSearch all still-valid neighbors of visible tris
+        //Now remove all neighbor links from any neighbors of visible tris
+        for(auto v : visible)
+        {
+          auto& vt = hull[v];
+          for(int i = 0; i < 3; i++)
+          {
+            int vnei = vt.nei[i];
+            if(vnei >= 0 && hull[vnei].valid)
+            {
+              neiSearch.push_back(vnei);
+              hull[vnei].removeNeighbor(v);
+            }
           }
         }
         //get a list of all edges contained in all the deleted triangles (keeping any duplicates)
@@ -1036,14 +1081,11 @@ namespace VizHelpers {
         for(auto& e : boundary)
         {
           int ind = hull.size();
-          hull.emplace_back();
+          hull.emplace_back(e.v1, e.v2, farPoint, -1, -1, -1);
           //new triangles will have other new triangles as neighbors
           neiSearch.push_back(ind);
           Triangle& newTri = hull[ind];
-          newTri.valid = true;
-          newTri.v1 = e.v1;
-          newTri.v2 = e.v2;
-          newTri.v3 = farPoint;
+          newTri.valid = true;  //constructor does not set this
           newTris.push_back(ind);
           //make sure triangle is oriented correctly - barycenter must be behind
           if(pointDistFromTri(barycenter, verts_[newTri.v1], verts_[newTri.v2], verts_[newTri.v3]) > 0)
@@ -1051,9 +1093,33 @@ namespace VizHelpers {
             std::swap(newTri.v1, newTri.v2);
           }
         }
-        //restore neighbor links
+        //Only neighbor updates are happening completely within neiSearch
+        for(auto nt : neiSearch)
+        {
+          if(nt < 0)
+            continue;
+          auto& neiTri = hull[nt];
+          if(!neiTri.valid)
+            continue;
+          for(int i = 0; i < 3; i++)
+          {
+            if(neiTri.nei[i] < 0 || !hull[neiTri.nei[i]].valid)
+            {
+              neiTri.nei[i] = -1;
+            }
+          }
+          for(auto nt2 : neiSearch)
+          {
+            if(nt2 >= 0 && hull[nt2].valid && hull[nt2].adjacent(neiTri))
+            {
+              hull[nt].addNeighbor(nt2);
+            }
+          }
+        }
+        /*
         for(auto nt : newTris)
         {
+          std::cout << "Determining neighbors for new tri " << nt << '\n';
           auto& newTri = hull[nt];
           for(auto search : neiSearch)
           {
@@ -1061,12 +1127,15 @@ namespace VizHelpers {
               continue;
             if(newTri.adjacent(hull[search]))
             {
+              std::cout << "  Got a neighbor: " << search << '\n';
               //create mutual link across shared edge
               newTri.addNeighbor(search);
               hull[search].addNeighbor(nt);
+              std::cout << "  Neighbors now: " << newTri.nei[0] << ' ' << newTri.nei[1] << ' ' << newTri.nei[2] << '\n';
             }
           }
         }
+        */
         std::cout << "All visible tri #s: ";
         for(auto v : visible)
           std::cout << v << ' ';
@@ -1077,20 +1146,26 @@ namespace VizHelpers {
           auto& v = hull[vis];
           for(auto frontPoint : v.frontPoints)
           {
+            double bestDist = 0;
+            int bestFace = -1;
             for(size_t i = 0; i < newTris.size(); i++)
             {
               auto& nt = hull[newTris[i]];
-              if(pointDistFromTri(verts_[frontPoint], verts_[nt.v1], verts_[nt.v2], verts_[nt.v3]) > eps)
+              double thisDist = pointDistFromTri(verts_[frontPoint], verts_[nt.v1], verts_[nt.v2], verts_[nt.v3]);
+              if(thisDist > bestDist)
               {
-                nt.frontPoints.push_back(frontPoint);
-                break;
+                bestDist = thisDist;
+                bestFace = newTris[i];
               }
+            }
+            if(bestDist > eps)
+            {
+              hull[bestFace].frontPoints.push_back(frontPoint);
             }
           }
           v.frontPoints.clear();
           v.frontPoints.shrink_to_fit();
         }
-        //for each triangle that has some front points, allocate its points array and add it to stack
         for(size_t i = 0; i < newTris.size(); i++)
         {
           int newTri = newTris[i];

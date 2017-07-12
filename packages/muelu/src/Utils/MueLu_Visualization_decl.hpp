@@ -311,7 +311,7 @@ namespace VizHelpers {
 #endif
       struct Triangle
       {
-        Triangle() : v1(1337), v2(1337), v3(1337), valid(false)
+        Triangle() : v1(-1), v2(-1), v3(-1), valid(false)
         {
           valid = false;
           nei[0] = -1;
@@ -347,6 +347,12 @@ namespace VizHelpers {
         }
         void replaceNeighbor(int toReplace, int with)
         {
+          //if already have with, don't duplicate it
+          if(hasNeighbor(with))
+            return;
+          //if don't already have toReplace, can't replace it
+          if(!hasNeighbor(toReplace))
+            return;
           for(int i = 0; i < 3; i++)
           {
             if(nei[i] == toReplace)
