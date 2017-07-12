@@ -964,14 +964,15 @@ namespace VizHelpers {
         //note: since faces was in queue, it is guaranteed to have front points 
         //therefore, it is also guaranteed to be replaced
         Triangle& t = hull[triIndex];
+        auto tnorm = triNormal(verts_[t.v1], verts_[t.v2], verts_[t.v3]);
         auto farPoint = *std::max_element(t.frontPoints.begin(), t.frontPoints.end(),
             [&] (GlobalOrdinal lhs, GlobalOrdinal rhs) -> bool
             {
-              double dist1 = pointDistFromTri(verts_[lhs], verts_[t.v1], verts_[t.v2], verts_[t.v3]);
-              double dist2 = pointDistFromTri(verts_[rhs], verts_[t.v1], verts_[t.v2], verts_[t.v3]);
+              double dist1 = dotProduct(verts_[lhs] - verts_[t.v1], tnorm);
+              double dist2 = dotProduct(verts_[rhs] - verts_[t.v1], tnorm);
               return dist1 < dist2;
             });
-        double furthest = pointDistFromTri(verts_[farPoint], verts_[t.v1], verts_[t.v2], verts_[t.v3]);
+        double furthest = dotProduct(verts_[farPoint] - verts_[t.v1], tnorm);
         if(furthest < eps)
         {
           //best point is on the face, so keep the triangle
