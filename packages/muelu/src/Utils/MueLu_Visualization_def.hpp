@@ -738,7 +738,6 @@ namespace VizHelpers {
     using std::vector;
     using std::stack;
     using std::set;
-    using std::cout;
     struct Edge
     {
       Edge() {}
@@ -958,30 +957,9 @@ namespace VizHelpers {
             validTris++;
         int triIndex = trisToProcess.back();
         trisToProcess.pop_back();
-        cout << "\n**** LOOP BEGIN: PROCESSING " << triIndex << " AND HAVE " << trisToProcess.size() << " REMAINING.\n";
-        cout << "**** VALID TRIANGLES: ";
-        for(size_t i = 0; i < hull.size(); i++)
-          if(hull[i].valid)
-            cout << i << ' ';
-        cout << '\n';
         if(!hull[triIndex].valid)
         {
           continue;
-        }
-        //Full neighbor check!!!!
-        for(size_t i = 0; i < hull.size(); i++)
-        {
-          if(!hull[i].valid)
-            continue;
-          for(int j = 0; j < 3; j++)
-          {
-            if(hull[i].nei[j] < 0 || !hull[hull[i].nei[j]].valid)
-            {
-              cout << "ERROR: triangle " << i << " has invalid neighbor but mesh should be completely correct now!\n";
-              cout << "Note: neighbors are: " << hull[i].nei[0] << ' ' << hull[i].nei[1] << ' ' << hull[i].nei[2] << '\n';
-              //assert(false);
-            }
-          }
         }
         //note: since faces was in queue, it is guaranteed to have front points 
         //therefore, it is also guaranteed to be replaced
@@ -1034,10 +1012,6 @@ namespace VizHelpers {
         }
         for(auto v : visible)
           hull[v].valid = false;
-        cout << "Have " << visible.size() << " visible tris: ";
-        for(auto v : visible)
-          cout << v << ' ';
-        cout << '\n';
         //Add to neiSearch all still-valid neighbors of visible tris
         //Now remove all neighbor links from any neighbors of visible tris
         for(auto v : visible)
@@ -1116,30 +1090,6 @@ namespace VizHelpers {
             }
           }
         }
-        /*
-        for(auto nt : newTris)
-        {
-          std::cout << "Determining neighbors for new tri " << nt << '\n';
-          auto& newTri = hull[nt];
-          for(auto search : neiSearch)
-          {
-            if(!hull[search].valid)
-              continue;
-            if(newTri.adjacent(hull[search]))
-            {
-              std::cout << "  Got a neighbor: " << search << '\n';
-              //create mutual link across shared edge
-              newTri.addNeighbor(search);
-              hull[search].addNeighbor(nt);
-              std::cout << "  Neighbors now: " << newTri.nei[0] << ' ' << newTri.nei[1] << ' ' << newTri.nei[2] << '\n';
-            }
-          }
-        }
-        */
-        std::cout << "All visible tri #s: ";
-        for(auto v : visible)
-          std::cout << v << ' ';
-        std::cout << '\n';
         //now, redistribute the front points of all deleted triangles among all new triangles
         for(auto& vis : visible)
         {
