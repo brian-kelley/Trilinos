@@ -1,4 +1,3 @@
-// @HEADER
 //
 // ***********************************************************************
 //
@@ -277,7 +276,7 @@ namespace VizHelpers {
       //! For each locally used vertex, whether it is the root of its aggregate
       //! Only used by jacks(), so will only be populated if jacks() is called.
       //! If roots not available from aggregates, use vertex nearest to centroid of aggregate
-      std::map<GlobalOrdinal, bool> isRoot_;
+      std::set<GlobalOrdinal> roots_;
       LocalOrdinal numLocalAggs_;
       GlobalOrdinal numNodes_;
       //! Global id of local aggregate 0 (note: aggregate indices are always contiguous)

@@ -98,27 +98,10 @@ namespace MueLu {
     validParamList->set< RCP<const FactoryBase> >("Aggregates", Teuchos::null, "Factory for Aggregates.");
     validParamList->set< RCP<const FactoryBase> >("UnAmalgamationInfo", Teuchos::null, "Factory for UnAmalgamationInfo.");
     validParamList->set< RCP<const FactoryBase> >("DofsPerNode", Teuchos::null, "Factory for DofsPerNode.");
-    // CMS/BMK: Old style factory-only options.  Deprecate me.
-    validParamList->set< std::string >           ("Output filename",           output_def, output_msg);
-    validParamList->set< int >                   ("Output file: time step",             0, "time step variable for output file name");
-    validParamList->set< int >                   ("Output file: iter",                  0, "nonlinear iteration variable for output file name");
 
-    // New-style master list options (here are same defaults as in masterList.xml)
-    validParamList->set< std::string >           ("aggregation: output filename",                    "",                    "filename for VTK-style visualization output");
-    validParamList->set< int >                   ("aggregation: output file: time step",             0,                     "time step variable for output file name");// Remove me?
-    validParamList->set< int >                   ("aggregation: output file: iter",                  0,                     "nonlinear iteration variable for output file name");//Remove me?
-    validParamList->set<std::string>             ("aggregation: output file: agg style",             "Point Cloud",         "style of aggregate visualization for VTK output");
-    validParamList->set<bool>                    ("aggregation: output file: fine graph edges",      false,                 "Whether to draw all fine node connections along with the aggregates.");
-    validParamList->set<bool>                    ("aggregation: output file: coarse graph edges",    false,                 "Whether to draw all coarse node connections along with the aggregates.");
-    validParamList->set<bool>                    ("aggregation: output file: build colormap",        false,                 "Whether to output a random colormap for ParaView in a separate XML file.");
+    auto vizParams = VizHelpers::GetVizParameterList();
+    validParamList->setParametersNotAlreadySet(*vizParams); 
 
-    /* New + improved style parameter names (not in master list yet) */
-    validParamList->set< std::string >           ("visualization: output filename",                    "viz%LEVELID",                    "filename for VTK-style visualization output");
-    validParamList->set< int >                   ("visualization: output file: time step",             0,                     "time step variable for output file name");// Remove me?
-    validParamList->set< int >                   ("visualization: output file: iter",                  0,                     "nonlinear iteration variable for output file name");//Remove me?
-    validParamList->set<std::string>             ("visualization: style", "Point Cloud", "style of aggregate visualization for VTK output. Can be 'Point Cloud', 'Jacks', 'Convex Hulls'");
-    validParamList->set<bool>                    ("visualization: build colormap",        false,       "Whether to build a random color map in a separate xml file.");
-    validParamList->set<bool>                    ("visualization: fine graph edges",      false,                 "Whether to draw all fine node connections along with the aggregates.");
     return validParamList;
   }
 
@@ -162,22 +145,20 @@ namespace MueLu {
     int numProcs = comm->getSize();
     int myRank   = comm->getRank();
     string masterFilename = pL.get<std::string>("aggregation: output filename"); //filename parameter from master list
-    string localFilename = pL.get<std::string>("Output filename");
     string filenameToWrite;
     bool useVTK = false;
     bool doCoarseGraphEdges = pL.get<bool>("aggregation: output file: coarse graph edges");
     bool doFineGraphEdges = pL.get<bool>("aggregation: output file: fine graph edges");
-    if(masterFilename.length())
+    useVTK = true;
+    filenameToWrite = masterFilename;
+    if(filenameToWrite.rfind(".vtu") == string::npos) //Must have the file extension in the name
     {
-      useVTK = true;
-      filenameToWrite = masterFilename;
-      if(filenameToWrite.rfind(".vtu") == string::npos) //Must have the file extension in the name
-        filenameToWrite.append(".vtu");
-      if(numProcs > 1 && filenameToWrite.rfind("%PROCID") == string::npos) //filename can't be identical between processsors in parallel problem
-        filenameToWrite.insert(filenameToWrite.rfind(".vtu"), "-proc%PROCID");
+      filenameToWrite.append(".vtu");
     }
-    else
-      filenameToWrite = localFilename;
+    if(numProcs > 1 && filenameToWrite.rfind("%PROCID") == string::npos) //filename can't be identical between processsors in parallel problem
+    {
+      filenameToWrite.insert(filenameToWrite.rfind(".vtu"), "-proc%PROCID");
+    }
     LocalOrdinal          DofsPerNode = Get< LocalOrdinal >          (fineLevel, "DofsPerNode");
     RCP<AmalgamationInfo> amalgInfo   = Get< RCP<AmalgamationInfo> > (fineLevel, "UnAmalgamationInfo");
     RCP<Matrix> Amat = Get<RCP<Matrix> >(fineLevel, "A");
@@ -239,8 +220,8 @@ namespace MueLu {
     ArrayRCP<LO>            aggStart;
     ArrayRCP<GlobalOrdinal> aggToRowMap;
     amalgInfo->UnamalgamateAggregates(*aggregates, aggStart, aggToRowMap);
-    int timeStep = pL.get< int > ("Output file: time step");
-    int iter = pL.get< int > ("Output file: iter");
+    int timeStep = pL.get< int > ("aggregation: output file: time step");
+    int iter = pL.get< int > ("aggregation: output file: iter");
     filenameToWrite = VizHelpers::replaceAll(filenameToWrite, "%LEVELID",  toString(fineLevel.GetLevelID()));
     filenameToWrite = VizHelpers::replaceAll(filenameToWrite, "%TIMESTEP", toString(timeStep));
     filenameToWrite = VizHelpers::replaceAll(filenameToWrite, "%ITER",     toString(iter));

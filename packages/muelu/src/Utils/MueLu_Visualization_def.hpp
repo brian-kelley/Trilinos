@@ -168,10 +168,13 @@ namespace VizHelpers {
   Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList()
   {
     auto pl = Teuchos::rcp(new Teuchos::ParameterList);
-    pl->set<std::string>("visualization: output filename", "viz%LEVELID", "Output filename for VTK-formatted aggregate visualization");
-    pl->set<std::string>("visualization: style", "Convex Hulls", "Style of aggregate visualization. Can be 'Point Cloud', 'Jacks', 'Convex Hulls', or 'Alpha Hulls'");
-    pl->set<bool>("visualization: build colormap", false, "Whether to output a randomized colormap for use in ParaView.");
-    pl->set<bool>("visualization: fine graph edges", false, "Whether to draw all fine node connections along with the aggregates.");
+    pl->set<std::string>("aggregation: output filename", "viz%LEVELID", "Output filename for VTK-formatted aggregate visualization");
+    pl->set<std::string>("aggregation: output file: agg style", "Convex Hulls", "Style of aggregate visualization. Can be 'Point Cloud', 'Jacks', 'Convex Hulls', or 'Alpha Hulls'");
+    pl->set<bool>("aggregation: output file: build colormap", false, "Whether to output a randomized colormap for use in ParaView.");
+    pl->set<bool>("aggregation: output file: fine graph edges", false, "Whether to draw all fine node connections along with the aggregates.");
+    pl->set<bool>("aggregation: output file: coarse graph edges", false, "Whether to draw all fine node connections along with the aggregates.");
+    pl->set<int>("aggregation: output file: iter", 0, "Problem iteration count");
+    pl->set<int>("aggregation: output file: time step", 0, "Time step for FEM problem");
     return pl;
   }
 
@@ -186,14 +189,15 @@ namespace VizHelpers {
       const Teuchos::RCP<CoordArray>& coords)
   {
     bubbles_ = false;
+    map_ = coords->getMap();
     numNodes_ = coords->getLocalLength();
     numLocalAggs_ = aggs->GetNumAggregates();
     dims_ = coords->getNumVectors();
     aggs_ = aggs;
+    auto coordsMap = coords->getMap();
     //Set vertex positions
     {
       auto localLength = coords->getLocalLength();
-      auto coordsMap = coords->getMap();
       auto x = coords->getData(0);
       auto y = coords->getData(1);
       if(dims_ == 3)
@@ -201,7 +205,7 @@ namespace VizHelpers {
         auto z = coords->getData(2);
         for(LocalOrdinal lv = 0; lv < localLength; lv++)
         {
-          GlobalOrdinal gv = coordsMap->getGlobalElement(lv);
+          GlobalOrdinal gv = map_->getGlobalElement(lv);
           verts_[gv] = Vec3(x[lv], y[lv], z[lv]);
         }
       }
@@ -209,7 +213,7 @@ namespace VizHelpers {
       {
         for(LocalOrdinal lv = 0; lv < localLength; lv++)
         {
-          GlobalOrdinal gv = coordsMap->getGlobalElement(lv);
+          GlobalOrdinal gv = map_->getGlobalElement(lv);
           verts_[gv] = Vec3(x[lv], y[lv], 0);
         }
       }
@@ -217,7 +221,7 @@ namespace VizHelpers {
     this->rank_ = comm->getRank();
     this->nprocs_ = comm->getSize();
     auto vertex2Agg_ = aggs->GetVertex2AggId()->getData(0);
-    if(nprocs_ != 1)
+    if(nprocs_ == 1)
     {
       //serial, so local agg ID == global agg ID
       firstAgg_ = 0;
@@ -230,17 +234,23 @@ namespace VizHelpers {
       std::vector<GlobalOrdinal> minGlobalAggId(nprocs_);
       numAggsLocal[rank_] = aggs->GetNumAggregates();
       Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, nprocs_, &numAggsLocal[0], &numAggsGlobal[0]);
-      for(size_t i = 1; i < numAggsGlobal.size(); ++i)
+      for(size_t i = 1; i < nprocs_; i++)
       {
-        numAggsGlobal[i] += numAggsGlobal[i-1];
-        minGlobalAggId[i]  = numAggsGlobal[i-1];
+        numAggsGlobal[i] += numAggsGlobal[i - 1];
+        minGlobalAggId[i] = numAggsGlobal[i - 1];
       }
       firstAgg_ = minGlobalAggId[rank_];
     }
-    //can already compute aggOffsets_, since sizes of all aggregates known
-    aggOffsets_.resize(numLocalAggs_ + 1);
+    std::vector<LocalOrdinal> aggSizes(numLocalAggs_, 0);
+    for(size_t i = 0; i < vertex2Agg_.size(); i++)
+    {
+      if(vertex2Agg_[i] >= 0 && vertex2Agg_[i] < numLocalAggs_)
+      {
+        aggSizes[vertex2Agg_[i]]++;
+      }
+    }
     GlobalOrdinal accum = 0;
-    auto aggSizes = aggs->ComputeAggregateSizes();
+    aggOffsets_.resize(numLocalAggs_ + 1);
     for(size_t i = 0; i < numLocalAggs_; i++)
     {
       aggOffsets_[i] = accum;
@@ -249,25 +259,17 @@ namespace VizHelpers {
     aggOffsets_[numLocalAggs_] = accum;
     aggVerts_.resize(accum);
     //temporary array for counting vertices inserted into aggVerts_
-    std::vector<int> vertCount(aggSizes.size(), 0);
+    std::vector<LocalOrdinal> vertCount(numLocalAggs_, 0);
     for(size_t i = 0; i < vertex2Agg_.size(); i++)
     {
+      if(vertex2Agg_[i] < 0 || vertex2Agg_[i] >= numLocalAggs_)
+      {
+        continue;
+      }
       LocalOrdinal agg = vertex2Agg_[i];
-      aggVerts_[aggOffsets_[agg] + vertCount[agg]] = i;
+      aggVerts_[aggOffsets_[agg] + vertCount[agg]] = coordsMap->getGlobalElement(i);
       vertCount[agg]++;
     }
-    std::ofstream asdf("asdf.txt");
-    asdf << "Have " << numLocalAggs_ << " aggs, starting at " << firstAgg_ << "\n";
-    for(size_t i = 0; i < numLocalAggs_; i++)
-    {
-      asdf << "Agg " << i << " contains:\n";
-      for(size_t j = aggOffsets_[i]; j < aggOffsets_[i + 1]; j++)
-      {
-        auto v = verts_[aggVerts_[j]];
-        asdf << aggVerts_[j] << ":      " << v.x << " " << v.y << " " << v.z << '\n';
-      }
-    }
-    asdf.close();
   }
 
   //Constructor for CoarseningVisualizationFactory
@@ -279,6 +281,7 @@ namespace VizHelpers {
   {
     using std::vector;
     bubbles_ = !ptent;
+    map_ = map;
     //use P (possibly including non-local entries)
     //to populate aggVerts_, aggOffsets_, vertex2Agg_, firstAgg_
     dims_ = coords->getNumVectors();
@@ -555,6 +558,7 @@ namespace VizHelpers {
 #endif
     else
     {
+      //return false to indicate that style wasn't valid
       pointCloud();
       return false;
     }
@@ -563,7 +567,8 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  pointCloud() {
+  pointCloud()
+  {
     geomVerts_.reserve(aggVerts_.size());
     geomSizes_.reserve(aggVerts_.size());
     for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
@@ -582,13 +587,16 @@ namespace VizHelpers {
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   computeIsRoot()
   {
-    isRoot_.clear();
+    roots_.clear();
     if(!aggs_.is_null())
     {
       //can ask Aggregates whether each node is root
       for(LocalOrdinal i = 0; i < numNodes_; i++)
       {
-        isRoot_[map_->getGlobalElement(i)] = aggs_->IsRoot(i);
+        if(aggs_->IsRoot(i))
+        {
+          roots_.insert(map_->getGlobalElement(i));
+        }
       }
     }
     else
@@ -619,28 +627,30 @@ namespace VizHelpers {
             centerVert = vert;
           }
         }
-        isRoot_[centerVert] = true;
+        roots_.insert(centerVert);
       }
     }
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  jacks() {
-    if(isRoot_.size() == 0)
+  jacks()
+  {
+    std::cout << "Running jacks()...\n";
+    if(roots_.size() == 0)
     {
       computeIsRoot();
     }
     for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
     {
-      //iterate through aggregate's vertices to find root
+      //find root of agg
       GlobalOrdinal root = -1;
       GlobalOrdinal aggStart = aggOffsets_[agg];
       GlobalOrdinal aggEnd = aggOffsets_[agg + 1];
       for(GlobalOrdinal i = aggStart; i < aggEnd; i++)
       {
         GlobalOrdinal vert = aggVerts_[i];
-        if(isRoot_[vert])
+        if(roots_.find(vert) != roots_.end())
         {
           root = vert;
           break;
@@ -649,6 +659,7 @@ namespace VizHelpers {
       TEUCHOS_TEST_FOR_EXCEPTION(root == -1, Exceptions::RuntimeError,
           std::string("MueLu: \"Jacks\" aggregate visualization requires a root vertex "
             "per aggregate, but aggregate ") + std::to_string(agg) + " on proc " + std::to_string(rank_) + " does not have a root.");
+      std::cout << "Root of agg " << agg << " on proc " << rank_ << " is " << root << '\n';
       //for each vert in agg (except root), make a line segment between the vert and root
       for(GlobalOrdinal i = aggStart; i < aggEnd; i++)
       {
@@ -664,7 +675,8 @@ namespace VizHelpers {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  convexHulls2D() {
+  convexHulls2D()
+  {
     //giftWrap() can handle any 2D collection of points (including point/line/collinear)
     for(LocalOrdinal agg = 0; agg < numLocalAggs_; agg++)
     {
@@ -1781,18 +1793,18 @@ namespace VizHelpers {
   VTKEmitter(const Teuchos::ParameterList& pL, int numProcs, int level, int rank,
       Teuchos::RCP<const Map> fineMap, Teuchos::RCP<const Map> coarseMap)
   {
-    baseName_    = pL.get<std::string>("visualization: output filename");
+    baseName_    = pL.get<std::string>("aggregation: output filename");
     int iter = 0;
     int timeStep = 0;
     //iter and time step are deprecated parameters, and are not set
     //in the default valid parameter list (so they may not be in pL)
-    if(pL.isParameter("visualization: output file: iter"))
+    if(pL.isParameter("aggregation: output file: iter"))
     {
-      iter = pL.get<int>("visualization: output file: iter");
+      iter = pL.get<int>("aggregation: output file: iter");
     }
-    if(pL.isParameter("visualization: output file: time step"))
+    if(pL.isParameter("aggregation: output file: time step"))
     {
-      timeStep = pL.get<int>("visualization: output file: time step");
+      timeStep = pL.get<int>("aggregation: output file: time step");
     }
     //strip vtu file extension
     if(baseName_.rfind(".vtu") == baseName_.length() - 4)
@@ -1809,8 +1821,11 @@ namespace VizHelpers {
     baseName_ = replaceAll(baseName_, "%TIMESTEP", toString(timeStep));
     baseName_ = replaceAll(baseName_, "%ITER", toString(iter));
     rank_ = rank;
+    nprocs_ = numProcs;
     fineMap_ = fineMap;
     coarseMap_ = coarseMap;
+    didAggs_ = false;
+    didBubbles_ = false;
     didFineEdges_ = false;
     didCoarseEdges_ = false;
   }
@@ -2189,23 +2204,22 @@ namespace VizHelpers {
     //don't let multiple processes try to write same file
     if(rank_ == 0)
     {
+      std::cout << "Writing PVTU from rank 0 ( there are " << nprocs_ << " procs)\n";
       //decide whether PVTU is required
-      if(nprocs_ == 0)
+      int numGeoms = 0;
+      if(didAggs_)
+        numGeoms++;
+      if(didBubbles_)
+        numGeoms++;
+      if(didFineEdges_)
+        numGeoms++;
+      if(didCoarseEdges_)
+        numGeoms++;
+      numGeoms *= nprocs_;
+      if(numGeoms <= 1)
       {
-        int numGeoms = 0;
-        if(didAggs_)
-          numGeoms++;
-        if(didBubbles_)
-          numGeoms++;
-        if(didFineEdges_)
-          numGeoms++;
-        if(didCoarseEdges_)
-          numGeoms++;
-        if(numGeoms <= 1)
-        {
-          //no reason to emit .pvtu if only one .vtu, because user can just open it directly
-          return;
-        }
+        //no reason to emit .pvtu if only zero or one .vtu files, because user can just open that directly
+        return;
       }
       std::ofstream pvtu(getPVTUFilename());
       //If using vtk, filenameToWrite now contains final, correct ***.vtu filename (for the current proc)
