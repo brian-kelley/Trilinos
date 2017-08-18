@@ -197,10 +197,18 @@ namespace MueLu {
   "<Parameter name=\"aggregation: output filename\" type=\"string\" value=\"\"/>"
   "<Parameter name=\"aggregation: output file: time step\" type=\"int\" value=\"0\"/>"
   "<Parameter name=\"aggregation: output file: iter\" type=\"int\" value=\"0\"/>"
-  "<Parameter name=\"aggregation: output file: agg style\" type=\"string\" value=\"Point Cloud\"/>"
+  "<Parameter name=\"aggregation: output file: agg style\" type=\"string\" value=\"Convex Hulls\"/>"
   "<Parameter name=\"aggregation: output file: fine graph edges\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: output file: coarse graph edges\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: output file: build colormap\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"coarsening: export visualization data\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"coarsening: output filename\" type=\"string\" value=\"\"/>"
+  "<Parameter name=\"coarsening: output file: time step\" type=\"int\" value=\"0\"/>"
+  "<Parameter name=\"coarsening: output file: iter\" type=\"int\" value=\"0\"/>"
+  "<Parameter name=\"coarsening: output file: agg style\" type=\"string\" value=\"Convex Hulls\"/>"
+  "<Parameter name=\"coarsening: output file: fine graph edges\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"coarsening: output file: coarse graph edges\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"coarsening: output file: build colormap\" type=\"bool\" value=\"false\"/>"
   "<ParameterList name=\"aggregation: params\"/>"
   "<ParameterList name=\"strength-of-connection: params\"/>"
   "<ParameterList name=\"export data\"/>"
@@ -545,6 +553,22 @@ namespace MueLu {
          ("aggregation: output file: coarse graph edges","aggregation: output file: coarse graph edges")
       
          ("aggregation: output file: build colormap","aggregation: output file: build colormap")
+
+         ("coarsening: export visualization data","coarsening: export visualization data")
+      
+         ("coarsening: output filename","coarsening: output filename")
+      
+         ("coarsening: output file: time step","coarsening: output file: time step")
+      
+         ("coarsening: output file: iter","coarsening: output file: iter")
+      
+         ("coarsening: output file: agg style","coarsening: output file: agg style")
+      
+         ("coarsening: output file: fine graph edges","coarsening: output file: fine graph edges")
+      
+         ("coarsening: output file: coarse graph edges","coarsening: output file: coarse graph edges")
+      
+         ("coarsening: output file: build colormap","coarsening: output file: build colormap")
       
          ("aggregation: params","aggregation: params")
       

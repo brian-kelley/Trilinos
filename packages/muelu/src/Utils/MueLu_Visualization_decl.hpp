@@ -171,7 +171,7 @@ namespace VizHelpers {
     return lhs.x != rhs.x || lhs.y != rhs.y;
   }
 
-  inline Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList();
+  inline Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList(std::string factoryPrefix);
 
   inline Vec3 crossProduct(Vec3 v1, Vec3 v2);
   inline double dotProduct(Vec2 v1, Vec2 v2);
@@ -437,7 +437,7 @@ namespace VizHelpers {
       typedef AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggGeom;
       typedef EdgeGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node> EdgeGeom;
       typedef GeometryPoint<GlobalOrdinal> GeomPoint;
-      VTKEmitter(const Teuchos::ParameterList& pL, int numProcs, int level, int rank, Teuchos::RCP<const Map> fineMap = Teuchos::null, Teuchos::RCP<const Map> coarseMap = Teuchos::null);
+      VTKEmitter(const Teuchos::ParameterList& pL, int numProcs, int level, int rank, Teuchos::RCP<const Map> fineMap, Teuchos::RCP<const Map> coarseMap, std::string factoryPrefix);
       //! Write one VTK file per process with ag's geometry data (also does bubbles)
       //! Note: filename automatically generated with proc id, level id
       void writeAggGeom(AggGeom& ag);

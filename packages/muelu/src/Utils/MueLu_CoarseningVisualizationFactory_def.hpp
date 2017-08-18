@@ -60,9 +60,7 @@ namespace MueLu {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
 
-    RCP<ParameterList> validParamList = VizHelpers::GetVizParameterList();
-
-    validParamList->set< int >                   ("visualization: start level",             0,                     "visualize only levels with level ids greater or equal than start level");// Remove me?
+    RCP<ParameterList> validParamList = VizHelpers::GetVizParameterList("coarsening");
 
     validParamList->set< RCP<const FactoryBase> >("P",           Teuchos::null, "Prolongator factory. The user has to declare either P or Ptent but not both at the same time.");
     validParamList->set< RCP<const FactoryBase> >("Ptent",       Teuchos::null, "Tentative prolongator factory. The user has to declare either P or Ptent as input but not both at the same time");
@@ -74,17 +72,20 @@ namespace MueLu {
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
-    this->Input(fineLevel, "Coordinates");
-
     const ParameterList & pL = this->GetParameterList();
-
+    Input(fineLevel, "Coordinates");
     if (GetFactory("P") != Teuchos::null)
-      this->Input(coarseLevel, "P");
+    {
+      Input(coarseLevel, "P");
+    }
     if (GetFactory("Ptent") != Teuchos::null)
-      this->Input(coarseLevel, "Ptent");
-
-    if(pL.get<bool>("visualization: fine graph edges"))
+    {
+      Input(coarseLevel, "Ptent");
+    }
+    if(pL.get<bool>("coarsening: output file: fine graph edges"))
+    {
       Input(fineLevel, "Graph");
+    }
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -102,6 +103,10 @@ namespace MueLu {
       P = Get< RCP<Matrix> >(coarseLevel, "P");
     if (this->GetFactory("Ptent") != Teuchos::null)
       Ptent = Get< RCP<Matrix> >(coarseLevel, "Ptent");
+    if(P.is_null() && Ptent.is_null())
+    {
+      throw std::runtime_error("CoarseningVisualizationFactory could not get P or Ptent, but requires at least one.");
+    }
 
     LocalOrdinal dofsPerNode = 0;
     LocalOrdinal colsPerNode = 0;
@@ -116,7 +121,7 @@ namespace MueLu {
       colsPerNode = getColsPerNode(Ptent);
     }
 
-    bool doGraphEdges = pL.get<bool>("visualization: fine graph edges", false);
+    bool doGraphEdges = pL.get<bool>("coarsening: fine graph edges", false);
 
     RCP<const Teuchos::Comm<int> > comm = P->getRowMap()->getComm();
 
@@ -154,12 +159,13 @@ namespace MueLu {
 
     int levelID = fineLevel.GetLevelID();
 
-    VTKEmitter vtk(pL, comm->getSize(), levelID, comm->getRank(), nodeMap, Teuchos::null);
+    VTKEmitter vtk(pL, comm->getSize(), levelID, comm->getRank(), nodeMap, Teuchos::null, "coarsening");
 
-    int vizLevel = pL.get<int>("visualization: start level");
+    //TODO: int vizLevel = pL.get<int>("coarsening: start level");
+    int vizLevel = 0;
     if(vizLevel <= levelID)
     {
-      auto aggStyle = pL.get<std::string>("visualization: style");
+      auto aggStyle = pL.get<std::string>("coarsening: output file: agg style");
       if(!P.is_null())
       {
         AggGeometry aggGeom(P, nodeMap, comm, coords, dofsPerNode, colsPerNode, false);
@@ -198,7 +204,7 @@ namespace MueLu {
 
     vtk.writePVTU();
 
-    if(comm->getRank() == 0 && pL.get<bool>("visualization: build colormap")) {
+    if(comm->getRank() == 0 && pL.get<bool>("coarsening: output file: build colormap")) {
       vtk.buildColormap();
     }
   }

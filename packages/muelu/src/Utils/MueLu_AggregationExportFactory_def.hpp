@@ -99,7 +99,7 @@ namespace MueLu {
     validParamList->set< RCP<const FactoryBase> >("UnAmalgamationInfo", Teuchos::null, "Factory for UnAmalgamationInfo.");
     validParamList->set< RCP<const FactoryBase> >("DofsPerNode", Teuchos::null, "Factory for DofsPerNode.");
 
-    auto vizParams = VizHelpers::GetVizParameterList();
+    auto vizParams = VizHelpers::GetVizParameterList("aggregation");
     validParamList->setParametersNotAlreadySet(*vizParams); 
 
     return validParamList;
@@ -299,7 +299,7 @@ namespace MueLu {
       {
         coarseMap = Ac->getMap();
       }
-      VTKEmitter vtk(pL, numProcs, fineLevel.GetLevelID(), myRank, fineMap, coarseMap);
+      VTKEmitter vtk(pL, numProcs, fineLevel.GetLevelID(), myRank, fineMap, coarseMap, "aggregation");
       AggGeometry aggGeom(aggregates, comm, coords);
       if(!aggGeom.build(aggStyle))
       {

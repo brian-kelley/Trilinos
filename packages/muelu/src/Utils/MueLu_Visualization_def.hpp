@@ -165,16 +165,16 @@ namespace VizHelpers {
     return mag(crossProduct(point - line1, point - line2)) / mag(line2 - line1);
   }
 
-  Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList()
+  Teuchos::RCP<Teuchos::ParameterList> GetVizParameterList(std::string factoryPrefix)
   {
     auto pl = Teuchos::rcp(new Teuchos::ParameterList);
-    pl->set<std::string>("aggregation: output filename", "viz%LEVELID", "Output filename for VTK-formatted aggregate visualization");
-    pl->set<std::string>("aggregation: output file: agg style", "Convex Hulls", "Style of aggregate visualization. Can be 'Point Cloud', 'Jacks', 'Convex Hulls', or 'Alpha Hulls'");
-    pl->set<bool>("aggregation: output file: build colormap", false, "Whether to output a randomized colormap for use in ParaView.");
-    pl->set<bool>("aggregation: output file: fine graph edges", false, "Whether to draw all fine node connections along with the aggregates.");
-    pl->set<bool>("aggregation: output file: coarse graph edges", false, "Whether to draw all fine node connections along with the aggregates.");
-    pl->set<int>("aggregation: output file: iter", 0, "Problem iteration count");
-    pl->set<int>("aggregation: output file: time step", 0, "Time step for FEM problem");
+    pl->set<std::string>(factoryPrefix + ": output filename", "viz%LEVELID", "Output filename for VTK-formatted aggregate visualization");
+    pl->set<std::string>(factoryPrefix + ": output file: agg style", "Convex Hulls", "Style of aggregate visualization. Can be 'Point Cloud', 'Jacks', 'Convex Hulls', or 'Alpha Hulls'");
+    pl->set<bool>(factoryPrefix + ": output file: build colormap", false, "Whether to output a randomized colormap for use in ParaView.");
+    pl->set<bool>(factoryPrefix + ": output file: fine graph edges", false, "Whether to draw all fine node connections along with the aggregates.");
+    pl->set<bool>(factoryPrefix + ": output file: coarse graph edges", false, "Whether to draw all fine node connections along with the aggregates.");
+    pl->set<int>(factoryPrefix + ": output file: iter", 0, "Problem iteration count");
+    pl->set<int>(factoryPrefix + ": output file: time step", 0, "Time step for FEM problem");
     return pl;
   }
 
@@ -279,16 +279,22 @@ namespace VizHelpers {
   AggGeometry(const Teuchos::RCP<Matrix>& P, const Teuchos::RCP<const Map>& map, const Teuchos::RCP<const Teuchos::Comm<int>>& comm,
       const Teuchos::RCP<CoordArray>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent)
   {
+    std::cout << "In AggGeometry ctor for CVF, have P = " << P.get() << '\n';
     using std::vector;
+    using Teuchos::RCP;
+    using Teuchos::ArrayRCP;
     bubbles_ = !ptent;
     map_ = map;
     //use P (possibly including non-local entries)
     //to populate aggVerts_, aggOffsets_, vertex2Agg_, firstAgg_
     dims_ = coords->getNumVectors();
     aggs_ = Teuchos::null;
-    auto xVals = coords->getData(0);
-    auto yVals = coords->getData(1);
-    auto zVals = coords->getData(2);
+    std::cout << "Getting coords...\n";
+    ArrayRCP<const double> xVals = coords->getData(0);
+    ArrayRCP<const double> yVals = coords->getData(1);
+    ArrayRCP<const double> zVals;
+    if(dims_ == 3)
+      zVals = coords->getData(2);
     //lambdas for getting x,y,z for a local row (just for use within this function)
     auto xCoord = [&] (LocalOrdinal row) -> double {return xVals[row];};
     auto yCoord = [&] (LocalOrdinal row) -> double {return yVals[row];};
@@ -302,7 +308,7 @@ namespace VizHelpers {
     };
     this->rank_ = comm->getRank();
     this->nprocs_ = comm->getSize();
-
+    std::cout << "Getting strided map...\n";
     RCP<const StridedMap> strDomainMap = Teuchos::null;
     if (P->IsView("stridedMaps") && Teuchos::rcp_dynamic_cast<const StridedMap>(P->getRowMap("stridedMaps")) != Teuchos::null)
     {
@@ -310,11 +316,13 @@ namespace VizHelpers {
     }
     TEUCHOS_TEST_FOR_EXCEPTION(strDomainMap.is_null(), std::runtime_error, "Aggregate geometry requires the strided domain map from P/Ptent, but it was null.");
     numLocalAggs_ = strDomainMap->getNodeNumElements() / colsPerNode;
+    std::cout << "Have " << numLocalAggs_ << " local aggs.\n";
     numNodes_ = coords->getLocalLength();
     auto rowMap = P->getRowMap();
     auto colMap = P->getColMap();
     if(ptent)
     {
+      std::cout << "Using Ptent.\n";
       //know that aggs are not overlapping, so save time by using only local row views
       vector<std::set<LocalOrdinal>> localAggs(numLocalAggs_);
       // do loop over all local rows of prolongator and extract column information
@@ -358,6 +366,7 @@ namespace VizHelpers {
     }
     else  //smoothed P
     {
+      std::cout << "Using P (smooth).\n";
       //aggs can overlap and locally owned vertices can be included in off-process aggregates
       //such vert-agg pairs must be communicated to the process owning the aggregate
       //use the VertexData struct to communicate each vertex <-> agg pair
@@ -381,12 +390,13 @@ namespace VizHelpers {
       int rank = comm->getRank();
       int nprocs = comm->getSize();
       //Temporary but easy to work with representation of all local aggregates and the global rows they contain
-      vector<std::set<GlobalOrdinal>> aggMembers;
+      vector<std::set<GlobalOrdinal>> aggMembers(numLocalAggs_);
+      std::cout << "Getting agg members...\n";
       //First, get all local vert-agg pairs as VertexData
       vector<VertexData> localVerts;
       {
         //Do this by getting local row views of every local row and adding LocalOrdinals to a std::set representing agg
-        vector< std::set<LocalOrdinal> > localAggs(numLocalAggs_);
+        //vector< std::set<LocalOrdinal> > localAggs(numLocalAggs_);
         // do loop over all local rows of prolongator and extract column information
         for (LocalOrdinal row = 0; row < Teuchos::as<LocalOrdinal>(P->getRowMap()->getNodeNumElements()); ++row)
         {
@@ -395,10 +405,20 @@ namespace VizHelpers {
           P->getLocalRowView(row, indices, valsUnused);
           for(auto c = indices.begin(); c != indices.end(); ++c)
           {
-            aggMembers[(*c) / colsPerNode].insert(row / dofsPerNode);
+            auto agg = *c / colsPerNode;
+            if(agg >= 0 && agg < numLocalAggs_)
+              aggMembers[agg].insert(rowMap->getGlobalElement(row / dofsPerNode));
           }
         }
       }
+      for(int i = 0; i < numLocalAggs_; i++)
+      {
+        std::cout << "(local) verts in (local) agg " << i << ": ";
+        for(auto asdf : aggMembers[i])
+          std::cout << asdf << ' ';
+        std::cout << '\n';
+      }
+      std::cout << "Finding VertexData that need to be communicated...\n";
       //next, get VertexData for owned rows in non-owned aggregates
       vector<VertexData> ghost;
       for(int i = 0; i < nprocs; i++)
@@ -425,9 +445,7 @@ namespace VizHelpers {
               }
             }
           }
-        }
-        //now, gather all toSend arrays to proc i from all other procs
-        {
+          //now, gather all toSend arrays to proc i from all other procs
           vector<int> sendCounts(nprocs);
           vector<int> localSendCounts(nprocs, 0);
           localSendCounts[rank] = toSend.size();
@@ -444,7 +462,7 @@ namespace VizHelpers {
           //running total is now the total number of VertexData to receive on proc i
           if(i == rank)
             ghost.resize(runningTotal);
-          Teuchos::gatherv<int, VertexData>(&toSend[0], toSend.size(), &ghost[0], &sendCounts[0], &recvDispls[0], i, *comm);
+          comm->gather(toSend.size() * sizeof(VertexData), &toSend[0], &ghost[0], &sendCounts[0], &recvDispls[0], i, *comm);
           if(i == rank)
           {
             //add ghosts' positions and agg info
@@ -1791,20 +1809,20 @@ namespace VizHelpers {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   VTKEmitter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   VTKEmitter(const Teuchos::ParameterList& pL, int numProcs, int level, int rank,
-      Teuchos::RCP<const Map> fineMap, Teuchos::RCP<const Map> coarseMap)
+      Teuchos::RCP<const Map> fineMap, Teuchos::RCP<const Map> coarseMap, std::string factoryPrefix)
   {
-    baseName_    = pL.get<std::string>("aggregation: output filename");
+    baseName_    = pL.get<std::string>(factoryPrefix + ": output filename");
     int iter = 0;
     int timeStep = 0;
     //iter and time step are deprecated parameters, and are not set
     //in the default valid parameter list (so they may not be in pL)
-    if(pL.isParameter("aggregation: output file: iter"))
+    if(pL.isParameter(factoryPrefix + ": output file: iter"))
     {
-      iter = pL.get<int>("aggregation: output file: iter");
+      iter = pL.get<int>(factoryPrefix + ": output file: iter");
     }
-    if(pL.isParameter("aggregation: output file: time step"))
+    if(pL.isParameter(factoryPrefix + ": output file: time step"))
     {
-      timeStep = pL.get<int>("aggregation: output file: time step");
+      timeStep = pL.get<int>(factoryPrefix + ": output file: time step");
     }
     //strip vtu file extension
     if(baseName_.rfind(".vtu") == baseName_.length() - 4)

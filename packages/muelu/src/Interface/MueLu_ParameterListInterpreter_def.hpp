@@ -63,6 +63,7 @@
 #include "MueLu_BrickAggregationFactory.hpp"
 #include "MueLu_CoalesceDropFactory.hpp"
 #include "MueLu_CoarseMapFactory.hpp"
+#include "MueLu_CoarseningVisualizationFactory.hpp"
 #include "MueLu_ConstraintFactory.hpp"
 #include "MueLu_CoordinatesTransferFactory.hpp"
 #include "MueLu_CoupledAggregationFactory.hpp"
@@ -338,7 +339,8 @@ namespace MueLu {
     useCoordinates_ = false;
     if (MUELU_TEST_PARAM_2LIST(paramList, paramList, "aggregation: drop scheme", std::string, "distance laplacian") ||
         MUELU_TEST_PARAM_2LIST(paramList, paramList, "aggregation: type",        std::string, "brick") ||
-        MUELU_TEST_PARAM_2LIST(paramList, paramList, "aggregation: export visualization data", bool, true)) {
+        MUELU_TEST_PARAM_2LIST(paramList, paramList, "aggregation: export visualization data", bool, true) ||
+        MUELU_TEST_PARAM_2LIST(paramList, paramList, "coarsening: export visualization data", bool, true)) {
       useCoordinates_ = true;
     } else if(paramList.isSublist("smoother: params")) {
       const auto smooParamList = paramList.sublist("smoother: params");
@@ -355,7 +357,8 @@ namespace MueLu {
 
           if (MUELU_TEST_PARAM_2LIST(levelList, paramList, "aggregation: drop scheme", std::string, "distance laplacian") ||
               MUELU_TEST_PARAM_2LIST(levelList, paramList, "aggregation: type",        std::string, "brick") ||
-              MUELU_TEST_PARAM_2LIST(levelList, paramList, "aggregation: export visualization data", bool, true)) {
+              MUELU_TEST_PARAM_2LIST(levelList, paramList, "aggregation: export visualization data", bool, true) ||
+              MUELU_TEST_PARAM_2LIST(levelList, paramList, "coarsening: export visualization data", bool, true)) {
             useCoordinates_ = true;
             break;
           }
@@ -1107,10 +1110,29 @@ namespace MueLu {
 
       if (!RAP.is_null())
         RAP->AddTransferFactory(aggExport);
-      else
-        RAPs->AddTransferFactory(aggExport);
-    }
-    if (!RAP.is_null())
+      }
+      else if (MUELU_TEST_PARAM_2LIST(paramList, defaultList, "coarsening: export visualization data", bool, true)) {
+        typedef CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> CVF;
+        RCP<CVF> coarseExport = rcp(new CVF());
+        ParameterList coarseExportParams;
+        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output filename",             std::string, coarseExportParams);
+        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: agg style",      std::string, coarseExportParams);
+        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: iter",                   int, coarseExportParams);
+        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: time step",              int, coarseExportParams);
+        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: fine graph edges",      bool, coarseExportParams);
+        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: coarse graph edges",    bool, coarseExportParams);
+        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: build colormap",        bool, coarseExportParams);
+        if(manager.GetFactory("P").get())
+        {
+          coarseExport->SetFactory("P", manager.GetFactory("P"));
+        }
+        else
+        {
+          coarseExport->SetFactory("Ptent", manager.GetFactory("Ptent"));
+        }
+        coarseExport->SetParameterList(coarseExportParams);
+        RAP->AddTransferFactory(coarseExport);
+      }
       manager.SetFactory("A", RAP);
     else
       manager.SetFactory("A", RAPs);
