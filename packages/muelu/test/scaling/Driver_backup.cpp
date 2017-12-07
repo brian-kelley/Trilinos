@@ -55,8 +55,6 @@
 #include <Xpetra_MultiVectorFactory.hpp>
 #include <Xpetra_ImportFactory.hpp>
 #include <Xpetra_Operator.hpp>
-#include <Xpetra_Map.hpp>
-#include <Xpetra_MultiVector.hpp>
 #include <Xpetra_IO.hpp>
 
 // Galeri
@@ -85,37 +83,9 @@
 #include <BelosPseudoBlockCGSolMgr.hpp>
 #include <BelosXpetraAdapter.hpp>     // => This header defines Belos::XpetraOp
 #include <BelosMueLuAdapter.hpp>      // => This header defines Belos::MueLuOp
-#ifdef HAVE_MUELU_TPETRA
-#include <BelosTpetraAdapter.hpp>    // => This header defines Belos::TpetraOp
-#endif
-#endif
-
-#ifdef HAVE_MUELU_CUDA
-#include "cuda_profiler_api.h"
-#endif
-
-#ifdef HAVE_MUELU_AMGX
-#include <MueLu_AMGXOperator.hpp>
-#endif
-#ifdef HAVE_MUELU_TPETRA
-#include <MueLu_TpetraOperator.hpp>
-#include <MueLu_CreateTpetraPreconditioner.hpp>
-#include <Xpetra_TpetraOperator.hpp>
 #endif
 
 #include <MueLu_CreateXpetraPreconditioner.hpp>
-
-#include "MueLu_CoupledAggregationFactory.hpp"
-#include "MueLu_CoalesceDropFactory_kokkos.hpp"
-#include "MueLu_AmalgamationFactory.hpp"
-#include "MueLu_TentativePFactory.hpp"
-#include "MueLu_TrilinosSmoother.hpp"
-#include "MueLu_Utilities.hpp"
-#include "MueLu_TransPFactory.hpp"
-#include "MueLu_RAPFactory.hpp"
-#include "MueLu_SmootherFactory.hpp"
-#include "MueLu_CoarseMapFactory.hpp"
-#include "MueLu_UncoupledAggregationFactory_kokkos.hpp"
 
 
 /*********************************************************************/
@@ -137,7 +107,7 @@ struct ML_Wrapper{
 template<class GlobalOrdinal>
 struct ML_Wrapper<double,int,GlobalOrdinal,Kokkos::Compat::KokkosSerialWrapperNode> {
   static void Generate_ML_MultiLevelPreconditioner(Teuchos::RCP<Xpetra::Matrix<double,int,GlobalOrdinal,Kokkos::Compat::KokkosSerialWrapperNode> >& A,Teuchos::ParameterList & mueluList,
-                                                   Teuchos::RCP<Xpetra::Operator<double,int,GlobalOrdinal,Kokkos::Compat::KokkosSerialWrapperNode> >& mlopX) {
+                                                   Teuchos::RCP<Xpetra::Operator<double,int,GlobalOrdinal,Kokkos::Compat::KokkosSerialWrapperNode> >& mlopX) {  
     typedef double SC;
     typedef int LO;
     typedef GlobalOrdinal GO;
@@ -197,7 +167,6 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   int         numRebuilds       = 0;                 clp.setOption("rebuild",               &numRebuilds,       "#times to rebuild hierarchy");
   int         maxIts            = 200;               clp.setOption("its",                   &maxIts,            "maximum number of solver iterations");
   bool        scaleResidualHist = true;              clp.setOption("scale", "noscale",      &scaleResidualHist, "scaled Krylov residual history");
-  std::string phase1Algo = "serial";                 clp.setOption("phase1algo",            &phase1Algo,        "algorithm for phase 1 aggregation");
 
   clp.recogniseAllOptions(true);
   switch (clp.parse(argc, argv)) {
@@ -454,60 +423,28 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
       if(useML && lib != Xpetra::UseEpetra) throw std::runtime_error("Error: Cannot use ML on non-epetra matrices");
 
       RCP<Hierarchy> H;
-      //      RCP<MueLu::TpetraOperator<SC,LO,GO,NO> > AMGXprec;
-      RCP<Operator> Prec;
+#if defined (HAVE_MUELU_AMGX) and defined (HAVE_MUELU_TPETRA)
+      RCP<MueLu::AMGXOperator<SC,LO,GO,NO> > aH;
+#endif
+#if defined(HAVE_MUELU_ML) and defined(HAVE_MUELU_EPETRA)
+      RCP<Operator> mlopX;
+#endif
       for (int i = 0; i <= numRebuilds; i++) {
         A->SetMaxEigenvalueEstimate(-Teuchos::ScalarTraits<SC>::one());
-	if(useAMGX) {
-#if defined(HAVE_MUELU_AMGX) and defined(HAVE_MUELU_TPETRA)	  
-	  Teuchos::ParameterList dummyList;
-	  Teuchos::RCP<Tpetra::CrsMatrix<SC,LO,GO,NO> > Ac = Utilities::Op2NonConstTpetraCrs(A);
-	  Teuchos::RCP<Tpetra::Operator<SC,LO,GO,NO> > At = Teuchos::rcp_dynamic_cast<Tpetra::Operator<SC,LO,GO,NO> >(Ac);
-	  Teuchos::RCP<MueLu::TpetraOperator<SC,LO,GO,NO> > Top = MueLu::CreateTpetraPreconditioner(At, mueluList, dummyList);
-	  Prec = Teuchos::rcp(new Xpetra::TpetraOperator<SC,LO,GO,NO>(Top));
+
+        if (useAMGX) {
+#if defined (HAVE_MUELU_AMGX) and defined (HAVE_MUELU_TPETRA)
+          aH = Teuchos::rcp_dynamic_cast<MueLu::AMGXOperator<SC, LO, GO, NO> >(tH);
 #endif
-	} else if(useML) {
+        } 
+        else if(useML) {
 #if defined(HAVE_MUELU_ML) and defined(HAVE_MUELU_EPETRA)
           mueluList.remove("use external multigrid package");
-          ML_Wrapper<SC, LO, GO, NO>::Generate_ML_MultiLevelPreconditioner(A,mueluList,Prec);
-#endif
+          ML_Wrapper<SC, LO, GO, NO>::Generate_ML_MultiLevelPreconditioner(A,mueluList,mlopX);
+#endif        
         }
         else {
-          //H = MueLu::CreateXpetraPreconditioner(A, mueluList, coordinates);
-///////////////////////////////////
-          typedef Teuchos::ScalarTraits<Scalar> TST;
-          //typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
-
-          Level fineLevel, coarseLevel;
-          fineLevel.SetLevelID(0);
-          coarseLevel.SetLevelID(1);
-
-          coarseLevel.SetPreviousLevel(rcpFromRef(fineLevel));
-
-          fineLevel.SetFactoryManager(Teuchos::null);  // factory manager is not used on this test
-          coarseLevel.SetFactoryManager(Teuchos::null);
-
-          fineLevel.Request("A");
-          fineLevel.Set("A",A);
-
-          LocalOrdinal NSdim = 3;
-          RCP<MultiVector> nullSpace = MultiVectorFactory::Build(A->getRowMap(),NSdim);
-          nullSpace->randomize();
-          fineLevel.Set("Nullspace",nullspace);
-          fineLevel.Set("DofsPerNode",1);
-
-          RCP<AmalgamationFactory> amalgFact = rcp(new AmalgamationFactory());
-          RCP<CoalesceDropFactory_kokkos> dropFact = rcp(new CoalesceDropFactory_kokkos());
-          dropFact->SetFactory("UnAmalgamationInfo", amalgFact);
-          RCP<UncoupledAggregationFactory_kokkos> UnCoupledAggFact = rcp(new UncoupledAggregationFactory_kokkos());
-          UnCoupledAggFact->SetFactory("Graph", dropFact);
-          UnCoupledAggFact->SetParameter("aggregation: phase 1 algorithm", Teuchos::ParameterEntry(std::string("Distance2")));
-
-          fineLevel.Request("Aggregates", UnCoupledAggFact.get());
-          fineLevel.Request(*UnCoupledAggFact);
-          UnCoupledAggFact->Build(fineLevel);
-
-          ///////////////////////////////////
+          H = MueLu::CreateXpetraPreconditioner(A, mueluList, coordinates);
         }
       }
 
@@ -531,11 +468,19 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
       comm->barrier();
       if (solveType == "none") {
         // Do not perform a solve
-	
+
       } else if (solveType == "standalone") {
         tm = rcp (new TimeMonitor(*TimeMonitor::getNewTimer("Driver: 4 - Fixed Point Solve")));
-	H->IsPreconditioner(false);
-	H->Iterate(*B, *X, maxIts);
+
+        if (useAMGX) {
+#if defined (HAVE_MUELU_AMGX) and defined (HAVE_MUELU_TPETRA)
+          aH->apply(*(Utilities::MV2TpetraMV(B)), *(Utilities::MV2NonConstTpetraMV(X)));
+#endif
+        } else {
+          H->IsPreconditioner(false);
+          H->Iterate(*B, *X, maxIts);
+        }
+
       } else if (solveType == "cg" || solveType == "gmres" || solveType == "bicgstab") {
 #ifdef HAVE_MUELU_BELOS
         tm = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("Driver: 5 - Belos Solve")));
@@ -545,17 +490,17 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
         typedef Belos::OperatorT<MV> OP;
 
         // Define Operator and Preconditioner
-        Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operato
+        Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
         Teuchos::RCP<OP> belosPrec; // Turns a MueLu::Hierarchy object into a Belos operator
-	if(useAMGX) {
-#if defined(HAVE_MUELU_AMGX) and defined(HAVE_MUELU_TPETRA)
-          belosPrec = Teuchos::rcp(new Belos::XpetraOp <SC, LO, GO, NO>(Prec)); // Turns an Xpetra::Operator object into a Belos operator
+        if (useAMGX) {
+#if defined (HAVE_MUELU_AMGX) and defined (HAVE_MUELU_TPETRA)
+          belosPrec = Teuchos::rcp(new Belos::MueLuOp <SC, LO, GO, NO>(aH)); // Turns a MueLu::Hierarchy object into a Belos operator
 #endif
-        }
-	else if(useML) {
+        } 
+        else if(useML) {
 #if defined(HAVE_MUELU_ML) and defined(HAVE_MUELU_EPETRA)
-          belosPrec = Teuchos::rcp(new Belos::XpetraOp <SC, LO, GO, NO>(Prec)); // Turns an Xpetra::Operator object into a Belos operator
-#endif
+          belosPrec = Teuchos::rcp(new Belos::XpetraOp <SC, LO, GO, NO>(mlopX)); // Turns an Xpetra::Operator object into a Belos operator
+#endif  
         }
         else {
           H->IsPreconditioner(true);
