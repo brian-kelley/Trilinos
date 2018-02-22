@@ -116,8 +116,6 @@ namespace MueLu {
       LO minNodesPerAggregate, LO maxNodesPerAggregate,
       LO maxNeighAlreadySelected, std::string& orderingStr) const;
 
-    void BuildAggregatesDistance2(const LWGraph_kokkos& graph, Aggregates_kokkos& aggregates,
-        std::vector<unsigned>& aggStat, LO& numNonAggregatedNodes, LO maxAggSize) const;
     //@}
 
     std::string description() const { return "Phase 1 (main)"; }

@@ -106,9 +106,27 @@ namespace MueLu {
     /*! @brief Local aggregation. */
 
     void BuildAggregates(const ParameterList& params, const GraphBase& graph, Aggregates& aggregates, std::vector<unsigned>& aggStat, LO& numNonAggregatedNodes) const;
+
+    void BuildAggregatesSerial(const GraphBase& graph, Aggregates& aggregates,
+          std::vector<unsigned>& aggStat, LO& numNonAggregatedNodes,
+          LO minNodesPerAggregate, LO maxNodesPerAggregate,
+          LO maxNeighAlreadySelected, std::string& orderingStr) const;
     //@}
 
     std::string description() const { return "Phase 1 (main)"; }
+
+    enum struct Algorithm
+    {
+      Serial,
+      Distance2 
+    };
+
+    static Algorithm algorithmFromName(const std::string& name)
+    {
+      if(name == "Distance2")
+        return Algorithm::Distance2;
+      return Algorithm::Serial;
+    }
 
   private:
 

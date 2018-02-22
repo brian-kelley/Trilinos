@@ -60,6 +60,11 @@
 #include "MueLu_Exceptions.hpp"
 #include "MueLu_Monitor.hpp"
 
+#ifdef HAVE_MUELU_TPETRA
+//Tpetra requires KokkosKernels, which provides everything needed by Dist2
+#include "MueLu_Distance2AggregationAlgorithm_def.hpp"
+#endif
+
 namespace MueLu {
 
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -73,8 +78,49 @@ namespace MueLu {
     int minNodesPerAggregate    = params.get<int>        ("aggregation: min agg size");
     int maxNodesPerAggregate    = params.get<int>        ("aggregation: max agg size");
 
+    Algorithm algorithm         = Algorithm::Serial;
+    #ifdef HAVE_MUELU_TPETRA
+    std::string algoParamName = "aggregation: phase 1 algorithm";
+    if(params.isParameter(algoParamName))
+    {
+      algorithm = algorithmFromName(params.get<std::string>(algoParamName));
+    }
+    #endif
+
+    TEUCHOS_TEST_FOR_EXCEPTION(maxNodesPerAggregate < minNodesPerAggregate, Exceptions::RuntimeError,
+                               "MueLu::UncoupledAggregationAlgorithm::BuildAggregates: minNodesPerAggregate must be smaller or equal to MaxNodePerAggregate!");
+
+    //Distance-2 gives less control than serial uncoupled phase 1
+    //no custom row reordering because would require making deep copy of local matrix entries and permuting it
+    //can only enforce max aggregate size
+    #ifdef HAVE_MUELU_TPETRA
+    if(algorithm == Algorithm::Distance2)
+    {
+      BuildAggregatesDistance2<Aggregates, GraphBase, LocalOrdinal, GlobalOrdinal, Node>
+        (graph, aggregates, aggStat, numNonAggregatedNodes, maxNodesPerAggregate);
+    }
+    else
+    #endif
+    {
+      BuildAggregatesSerial(graph, aggregates,
+          aggStat, numNonAggregatedNodes,
+          minNodesPerAggregate, maxNodesPerAggregate,
+          maxNeighAlreadySelected, orderingStr);
+    }
+  }
+
+  template <class LocalOrdinal, class GlobalOrdinal, class Node>
+  void AggregationPhase1Algorithm<LocalOrdinal, GlobalOrdinal, Node>::
+  BuildAggregatesSerial(const GraphBase& graph, Aggregates& aggregates,
+      std::vector<unsigned>& aggStat, LocalOrdinal& numNonAggregatedNodes,
+      LocalOrdinal minNodesPerAggregate, LocalOrdinal maxNodesPerAggregate,
+      LocalOrdinal maxNeighAlreadySelected, std::string& orderingStr) const
+  {
+
     TEUCHOS_TEST_FOR_EXCEPTION(maxNodesPerAggregate < minNodesPerAggregate, Exceptions::RuntimeError,
       "MueLu::UncoupledAggregationAlgorithm::BuildAggregates: minNodesPerAggregate must be smaller or equal to MaxNodePerAggregate!");
+
+    typedef LocalOrdinal LO;
 
     enum {
       O_NATURAL,
