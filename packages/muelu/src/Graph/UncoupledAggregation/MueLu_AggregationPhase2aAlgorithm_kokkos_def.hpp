@@ -78,6 +78,7 @@ namespace MueLu {
 
     int minNodesPerAggregate = params.get<int>("aggregation: min agg size");
     int maxNodesPerAggregate = params.get<int>("aggregation: max agg size");
+    std::cout << "Agg size must be in: [" << minNodesPerAggregate << ", " << maxNodesPerAggregate << "]\n";
 
     const LO  numRows = graph.GetNodeNumVertices();
     const int myRank  = graph.GetComm()->getRank();
