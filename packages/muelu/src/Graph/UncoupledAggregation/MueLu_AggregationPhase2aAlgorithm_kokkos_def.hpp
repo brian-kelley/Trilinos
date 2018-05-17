@@ -72,8 +72,9 @@ namespace MueLu {
                          typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type::
                          device_type::memory_space>& colorsDevice, LO& numColors) const
   {
-    typedef typename MueLu::LWGraph_kokkos<LO,GO,Node>::local_graph_type::device_type::memory_space memory_space;
-
+    typedef typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type graph_t;
+    typedef typename graph_t::device_type::execution_space execution_space;
+    typedef typename graph_t::device_type::memory_space memory_space;
     Monitor m(*this, "BuildAggregates");
 
     int minNodesPerAggregate = params.get<int>("aggregation: min agg size");
@@ -109,9 +110,12 @@ namespace MueLu {
     //
     // But, the precise values in vertex2AggId need to match exactly, so just sort the new
     // roots of each color before assigning aggregate IDs
-    Kokkos::View<LO*, memory_space> newRoots("New root LIDs", numRows);
+    if(numNonAggregatedNodes == 0)
+      return;
+    //numNonAggregatedNodes is the best available upper bound for the number of new aggregates,
+    //so use it for the size of newRoots
+    Kokkos::View<LO*, memory_space> newRoots("New root LIDs", numNonAggregatedNodes);
     Kokkos::View<LO, memory_space> numNewRoots("Number of new aggregates of current color");
-    auto h_newRoots = Kokkos::create_mirror_view(newRoots);
     auto h_numNewRoots = Kokkos::create_mirror_view(numNewRoots);
     for(int color = 1; color < numColors + 1; ++color)
     {
