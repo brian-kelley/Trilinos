@@ -72,7 +72,186 @@ namespace MueLu {
                   memory_space>& aggStatView, LO& numNonAggregatedNodes, Kokkos::View<LO*,
                   typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type::device_type::
                   memory_space>& colorsDevice, LO& numColors) const {
+    if(params.get<bool>("aggregation: deterministic"))
+    {
+      BuildAggregatesDeterministic(params, graph, aggregates, aggStatView, numNonAggregatedNodes, colorsDevice, numColors);
+      return;
+    }
     Monitor m(*this, "BuildAggregates");
+
+    typedef typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type graph_t;
+    typedef typename graph_t::device_type::memory_space memory_space;
+    typedef typename graph_t::device_type::execution_space execution_space;
+    typedef typename graph_t::device_type::execution_space::scratch_memory_space scratch_space;
+    typedef Kokkos::View<LO*,
+                         scratch_space,
+                         Kokkos::MemoryTraits<Kokkos::Unmanaged> > ScratchViewType;
+
+    const LO  numRows = graph.GetNodeNumVertices();
+    int myRank  = graph.GetComm()->getRank();
+
+    auto vertex2AggIdView = aggregates.GetVertex2AggId()->template getLocalView<memory_space>();
+    auto procWinnerView   = aggregates.GetProcWinner()  ->template getLocalView<memory_space>();
+
+    LO numLocalAggregates = aggregates.GetNumAggregates();
+
+    const int defaultConnectWeight = 100;
+    const int penaltyConnectWeight = 10;
+
+    // This actually corresponds to the maximum number of entries per row in the matrix.
+    const size_t maxNumNeighbors = graph.getNodeMaxNumRowEntries();
+    int scratch_size = ScratchViewType::shmem_size( 2*maxNumNeighbors );
+
+    Kokkos::View<int*, memory_space> connectWeightView("connectWeight", numRows);
+    Kokkos::View<int*, memory_space> aggPenaltiesView ("aggPenalties",  numRows);
+
+    Kokkos::parallel_for("Aggregation Phase 2b: Initialize connectWeightView", numRows,
+                         KOKKOS_LAMBDA (const LO i) {
+                           connectWeightView(i) = defaultConnectWeight;
+                         });
+
+    // We do this cycle twice.
+    // I don't know why, but ML does it too
+    // taw: by running the aggregation routine more than once there is a chance that also
+    // non-aggregated nodes with a node distance of two are added to existing aggregates.
+    // Assuming that the aggregate size is 3 in each direction running the algorithm only twice
+    // should be sufficient.
+    int maxIters = 2;
+    int maxNodesPerAggregate = params.get<int>("aggregation: max agg size");
+    if(maxNodesPerAggregate == std::numeric_limits<int>::max()) {maxIters = 1;}
+    for (int iter = 0; iter < maxIters; ++iter) {
+      // total work = numberOfTeams * teamSize
+      Kokkos::TeamPolicy<execution_space> outerPolicy(numRows, Kokkos::AUTO);
+      typedef typename Kokkos::TeamPolicy<execution_space>::member_type  member_type;
+      // Kokkos::RangePolicy<execution_space> numRowsPolicy(0, numRows);
+      LO tmpNumNonAggregatedNodes = 0;
+      for(LO color = 1; color <= numColors; color++)
+      {
+        std::cout << "Phase 2B, color " << color << "\n";
+        Kokkos::parallel_reduce("Aggregation Phase 2b: aggregates expansion",
+                                // numRowsPolicy,
+                                outerPolicy.set_scratch_size( 0, Kokkos::PerTeam( scratch_size ) ),
+                                KOKKOS_LAMBDA (const member_type &teamMember,
+                                               LO& lNumNonAggregatedNodes) {
+
+                                  // Retrieve the id of the vertex we are currently working on and
+                                  // allocate view locally so that threads do not trash the weigth
+                                  // when working on the same aggregate.
+                                  const int vertexIdx = teamMember.league_rank();
+                                  if(colorsDevice(vertexIdx) != color)
+                                  {
+                                    return;
+                                  }
+                                  ScratchViewType vertex2AggLIDView(teamMember.team_scratch( 0 ),
+                                                                    maxNumNeighbors);
+                                  ScratchViewType aggWeightView(teamMember.team_scratch( 0 ),
+                                                                maxNumNeighbors);
+
+                                  if (aggStatView(vertexIdx) == READY) {
+
+                                    // neighOfINode should become scratch and shared among
+                                    // threads in the team...
+                                    auto neighOfINode = graph.getNeighborVertices(vertexIdx);
+
+                                    // create a mapping from neighbor "lid" to aggregate "lid"
+                                    Kokkos::single( Kokkos::PerTeam( teamMember ), [&] () {
+                                        int aggLIDCount = 0;
+                                        for (int j = 0; j < as<int>(neighOfINode.length); ++j) {
+                                          LO jNodeID = neighOfINode(j);
+                                          if ( graph.isLocalNeighborVertex(jNodeID)
+                                               && (aggStatView(jNodeID) == AGGREGATED) ) {
+                                            bool useNewLID = true;
+                                            for(int k = 0; k < j; ++k) {
+                                              LO kNodeID = neighOfINode(k);
+                                              if(vertex2AggIdView(jNodeID, 0)
+                                                 == vertex2AggIdView(kNodeID, 0)) {
+                                                vertex2AggLIDView(j) = vertex2AggLIDView(k);
+                                                useNewLID = false;
+                                              }
+                                            }
+                                            if(useNewLID) {
+                                              vertex2AggLIDView(j) = aggLIDCount;
+                                              ++aggLIDCount;
+                                            }
+                                          }
+                                        }
+                                      });
+
+                                    for (int j = 0; j < as<int>(neighOfINode.length); j++) {
+                                      LO neigh = neighOfINode(j);
+
+                                      // We don't check (neigh != i), as it is covered by checking
+                                      // (aggStat[neigh] == AGGREGATED)
+                                      if ( graph.isLocalNeighborVertex(neigh)
+                                           && (aggStatView(neigh) == AGGREGATED) )
+                                        aggWeightView(vertex2AggLIDView(j)) =
+                                          aggWeightView(vertex2AggLIDView(j)) + connectWeightView(neigh);
+                                    }
+
+                                    int bestScore   = -100000;
+                                    int bestAggId   = -1;
+                                    int bestConnect = -1;
+
+                                    for (int j = 0; j < as<int>(neighOfINode.length); j++) {
+                                      LO neigh = neighOfINode(j);
+
+                                      if ( graph.isLocalNeighborVertex(neigh)
+                                           && (aggStatView(neigh) == AGGREGATED) ) {
+                                        int aggId = vertex2AggIdView(neigh, 0);
+                                        int score = aggWeightView(vertex2AggLIDView(j))
+                                          - aggPenaltiesView(aggId);
+
+                                        if (score > bestScore) {
+                                          bestAggId   = aggId;
+                                          bestScore   = score;
+                                          bestConnect = connectWeightView(neigh);
+
+                                        } else if (aggId == bestAggId
+                                                   && connectWeightView(neigh) > bestConnect) {
+                                          bestConnect = connectWeightView(neigh);
+                                        }
+
+                                        // Reset the weights for the next loop
+                                        // LBV: this looks a little suspicious, it would probably
+                                        // need to be taken out of this inner for loop...
+                                        aggWeightView(vertex2AggLIDView(j)) = 0;
+                                      }
+                                    }
+
+            // Do the actual aggregate update with a single thread!
+            Kokkos::single( Kokkos::PerTeam( teamMember ), [&] () {
+                if (bestScore >= 0) {
+                  aggStatView     (vertexIdx)    = AGGREGATED;
+                  vertex2AggIdView(vertexIdx, 0) = bestAggId;
+                  procWinnerView  (vertexIdx, 0) = myRank;
+
+                  lNumNonAggregatedNodes--;
+
+                  // This does not protect bestAggId's aggPenalties from being
+                  // fetched by another thread before this update happens, it just
+                  // guarantees that the update is performed correctly...
+                  Kokkos::atomic_add(&aggPenaltiesView(bestAggId), 1);
+                  connectWeightView(vertexIdx) = bestConnect
+                    - penaltyConnectWeight;
+                }
+              });
+                                  }
+                                }, tmpNumNonAggregatedNodes);
+        numNonAggregatedNodes += tmpNumNonAggregatedNodes;
+      } 
+    } // loop over k
+
+  }
+
+  template <class LocalOrdinal, class GlobalOrdinal, class Node>
+  void AggregationPhase2bAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+  BuildAggregatesDeterministic(const ParameterList& params, const LWGraph_kokkos& graph,
+                  Aggregates_kokkos& aggregates, Kokkos::View<unsigned*, typename MueLu::
+                  LWGraph_kokkos<LO,GO,Node>::local_graph_type::device_type::
+                  memory_space>& aggStatView, LO& numNonAggregatedNodes, Kokkos::View<LO*,
+                  typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type::device_type::
+                  memory_space>& colorsDevice, LO& numColors) const {
+    Monitor m(*this, "BuildAggregates (deterministic)");
 
     typedef typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type graph_t;
     typedef typename graph_t::device_type::memory_space memory_space;

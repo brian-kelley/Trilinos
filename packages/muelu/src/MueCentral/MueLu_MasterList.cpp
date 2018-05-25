@@ -184,6 +184,7 @@ namespace MueLu {
   "<Parameter name=\"aggregation: max selected neighbors\" type=\"int\" value=\"0\"/>"
   "<Parameter name=\"aggregation: Dirichlet threshold\" type=\"double\" value=\"0.0\"/>"
   "<Parameter name=\"aggregation: phase 1 algorithm\" type=\"string\" value=\"Serial\"/>"
+  "<Parameter name=\"aggregation: deterministic\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: enable phase 1\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 2a\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 2b\" type=\"bool\" value=\"true\"/>"
