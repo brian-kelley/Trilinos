@@ -267,7 +267,7 @@ namespace MueLu {
     Kokkos::View<LO, memory_space> numNewRoots("Number of new aggregates of current color");
     auto h_numNewRoots = Kokkos::create_mirror_view(numNewRoots);
 
-    for(LO color = 2; color <= numColors; color++)
+    for(LO color = 1; color <= numColors; color++)
     {
       h_numNewRoots() = 0;
       Kokkos::deep_copy(numNewRoots, h_numNewRoots);
@@ -335,6 +335,7 @@ namespace MueLu {
       //if new aggregates are being created, sort the set of roots so that
       //aggregate IDs are deterministic
       Kokkos::deep_copy(h_numNewRoots, numNewRoots);
+      std::cout << "Phase 3: creating " << h_numNewRoots() << " new aggregates with root color " << color << '\n';
       if(h_numNewRoots() > 0)
       {
         Kokkos::sort(newRoots, 0, h_numNewRoots());
@@ -355,7 +356,7 @@ namespace MueLu {
               aggStatView (neigh)    = AGGREGATED;
               vertex2AggId(neigh, 0) = newAggID;
               procWinner  (neigh, 0) = myRank;
-              aggNeighbors++;
+              aggSize++;
             }
           }
           aggStatView (i)    = AGGREGATED;

@@ -183,8 +183,8 @@ namespace MueLu {
   "<Parameter name=\"aggregation: brick z size\" type=\"int\" value=\"2\"/>"
   "<Parameter name=\"aggregation: max selected neighbors\" type=\"int\" value=\"0\"/>"
   "<Parameter name=\"aggregation: Dirichlet threshold\" type=\"double\" value=\"0.0\"/>"
-  "<Parameter name=\"aggregation: phase 1 algorithm\" type=\"string\" value=\"Serial\"/>"
-  "<Parameter name=\"aggregation: deterministic\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"aggregation: phase 1 algorithm\" type=\"string\" value=\"Distance2\"/>"
+  "<Parameter name=\"aggregation: deterministic\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 1\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 2a\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 2b\" type=\"bool\" value=\"true\"/>"
@@ -509,6 +509,8 @@ namespace MueLu {
       
          ("aggregation: Dirichlet threshold","aggregation: Dirichlet threshold")
       
+         ("aggregation: deterministic","aggregation: deterministic")
+
          ("aggregation: phase 1 algorithm","aggregation: phase 1 algorithm")
       
          ("aggregation: enable phase 1","aggregation: enable phase 1")
