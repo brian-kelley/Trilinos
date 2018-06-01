@@ -242,9 +242,13 @@ namespace MueLu {
                             execution_space,
                             memory_space, memory_space> KernelHandle;
 
+      auto algo = KokkosGraph::COLORING_DEFAULT;
+      if(pL.get<bool>("aggregation: deterministic")) {
+        algo = KokkosGraph::COLORING_VBD;
+      }
+
       KernelHandle kh;
-      //leave gc algorithm choice as the default
-      kh.create_graph_coloring_handle();
+      kh.create_graph_coloring_handle(algo);
 
       //run d2 graph coloring
       //graph is symmetric so row map/entries and col map/entries are the same
