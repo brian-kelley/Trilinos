@@ -96,6 +96,7 @@ namespace MueLu {
     SET_VALID_ENTRY("aggregation: ordering");
     validParamList->getEntry("aggregation: ordering").setValidator(
       rcp(new validatorType(Teuchos::tuple<std::string>("natural", "graph", "random"), "aggregation: ordering")));
+    SET_VALID_ENTRY("aggregation: deterministic");
     SET_VALID_ENTRY("aggregation: enable phase 1");
     SET_VALID_ENTRY("aggregation: phase 1 algorithm");
     SET_VALID_ENTRY("aggregation: enable phase 2a");
@@ -242,8 +243,11 @@ namespace MueLu {
                             memory_space, memory_space> KernelHandle;
 
       KernelHandle kh;
+      auto colorAlgo = pL.get<bool>("aggregation: deterministic")
+        ? KokkosGraph::COLORING_VBD
+        : KokkosGraph::COLORING_DEFAULT;
       //leave gc algorithm choice as the default
-      kh.create_graph_coloring_handle();
+      kh.create_graph_coloring_handle(colorAlgo);
 
       //run d2 graph coloring
       //graph is symmetric so row map/entries and col map/entries are the same

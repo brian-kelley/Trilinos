@@ -72,6 +72,11 @@ namespace MueLu {
                   memory_space>& aggStatView, LO& numNonAggregatedNodes, Kokkos::View<LO*,
                   typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type::device_type::
                   memory_space>& colorsDevice, LO& numColors) const {
+    if(params.get<bool>("aggregation: deterministic"))
+    {
+      BuildAggregatesDeterministic(params, graph, aggregates, aggStatView, numNonAggregatedNodes, colorsDevice, numColors);
+      return;
+    }
     Monitor m(*this, "BuildAggregates");
 
     typedef typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type graph_t;
@@ -231,6 +236,118 @@ namespace MueLu {
       numNonAggregatedNodes += tmpNumNonAggregatedNodes;
     } // loop over k
 
+  }
+
+  template <class LocalOrdinal, class GlobalOrdinal, class Node>
+  void AggregationPhase2bAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+  BuildAggregatesDeterministic(const ParameterList& params, const LWGraph_kokkos& graph,
+                  Aggregates_kokkos& aggregates, Kokkos::View<unsigned*, typename MueLu::
+                  LWGraph_kokkos<LO,GO,Node>::local_graph_type::device_type::
+                  memory_space>& aggStatView, LO& numNonAggregatedNodes, Kokkos::View<LO*,
+                  typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type::device_type::
+                  memory_space>& colorsDevice, LO& numColors) const {
+    Monitor m(*this, "BuildAggregates (deterministic)");
+
+    typedef typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type graph_t;
+    typedef typename graph_t::device_type::memory_space memory_space;
+    typedef typename graph_t::device_type::execution_space execution_space;
+
+    const LO  numRows = graph.GetNodeNumVertices();
+    int myRank  = graph.GetComm()->getRank();
+
+    auto vertex2AggIdView = aggregates.GetVertex2AggId()->template getLocalView<memory_space>();
+    auto procWinnerView   = aggregates.GetProcWinner()  ->template getLocalView<memory_space>();
+
+    LO numLocalAggregates = aggregates.GetNumAggregates();
+
+    const int defaultConnectWeight = 100;
+    const int penaltyConnectWeight = 10;
+
+    Kokkos::View<int*, memory_space> connectWeightView("connectWeight", numRows);
+    Kokkos::View<int*, memory_space> aggWeightView("aggWeight",  numLocalAggregates);
+    Kokkos::View<int*, memory_space> aggPenaltiesView ("aggPenalties",  numRows);
+
+    Kokkos::parallel_for("Aggregation Phase 2b: Initialize connectWeightView", numRows,
+                         KOKKOS_LAMBDA (const LO i) {
+                           connectWeightView(i) = defaultConnectWeight;
+                         });
+
+    // We do this cycle twice.
+    // I don't know why, but ML does it too
+    // taw: by running the aggregation routine more than once there is a chance that also
+    // non-aggregated nodes with a node distance of two are added to existing aggregates.
+    // Assuming that the aggregate size is 3 in each direction running the algorithm only twice
+    // should be sufficient.
+    int maxIters = 2;
+    int maxNodesPerAggregate = params.get<int>("aggregation: max agg size");
+    if(maxNodesPerAggregate == std::numeric_limits<int>::max()) {maxIters = 1;}
+    std::cout << "Entering phase 2b: there are " << numNonAggregatedNodes << " non aggregated.\n";
+    std::cout << "Have " << numColors << " colors.\n";
+    for (int iter = 0; iter < maxIters; ++iter) {
+      for(LO color = 1; color <= numColors; color++)
+      {
+        std::cout << "Phase 2B: processing color " << color << " in iteration " << iter << '\n';
+        Kokkos::parallel_for("Aggregation Phase 2b: zeroing aggWeights",
+          numLocalAggregates,
+          KOKKOS_LAMBDA(const LO i)
+          {
+            aggWeightView(i) = 0;
+          });
+        //the reduce counts how many nodes are aggregated by this phase,
+        //which will then be subtracted from numNonAggregatedNodes
+        LO numAggregated = 0;
+        Kokkos::parallel_reduce("Aggregation Phase 2b: aggregates expansion",
+          numRows,
+          KOKKOS_LAMBDA (const LO i, LO& tmpNumAggregated)
+          {
+            if (aggStatView(i) != READY || colorsDevice(i) != color)
+              return;
+
+            auto neighOfINode = graph.getNeighborVertices(i);
+            for (int j = 0; j < neighOfINode.length; j++) {
+              LO neigh = neighOfINode(j);
+
+              // We don't check (neigh != i), as it is covered by checking (aggStat[neigh] == AGGREGATED)
+              if (graph.isLocalNeighborVertex(neigh) && aggStatView(neigh) == AGGREGATED)
+                Kokkos::atomic_add(&aggWeightView(vertex2AggIdView(neigh, 0), 0), connectWeightView(neigh));
+            }
+
+            int bestScore   = -100000;
+            int bestAggId   = -1;
+            int bestConnect = -1;
+
+            for (int j = 0; j < neighOfINode.length; j++) {
+              LO neigh = neighOfINode(j);
+
+              if (graph.isLocalNeighborVertex(neigh) && aggStatView(neigh) == AGGREGATED) {
+                auto aggId = vertex2AggIdView(neigh, 0);
+                int score = aggWeightView(aggId) - aggPenaltiesView(aggId);
+
+                if (score > bestScore) {
+                  bestAggId   = aggId;
+                  bestScore   = score;
+                  bestConnect = connectWeightView(neigh);
+
+                } else if (aggId == bestAggId && connectWeightView(neigh) > bestConnect) {
+                  bestConnect = connectWeightView(neigh);
+                }
+              }
+            }
+            if (bestScore >= 0) {
+              std::cout << "Joining node " << i << " with aggregate " << bestAggId << '\n';
+              aggStatView(i, 0) = AGGREGATED;
+              vertex2AggIdView(i, 0) = bestAggId;
+              procWinnerView(i, 0) = myRank;
+
+              Kokkos::atomic_add(&aggPenaltiesView(bestAggId), 1);
+              connectWeightView(i) = bestConnect - penaltyConnectWeight;
+              tmpNumAggregated++;
+            }
+          }, numAggregated); //parallel_for
+          numNonAggregatedNodes -= numAggregated;
+          std::cout << "In color " << color << " aggregated " << numAggregated << " nodes, so num non aggregated is now " << numNonAggregatedNodes << '\n';
+      }
+    } // loop over k
   }
 
 } // end namespace

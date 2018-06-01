@@ -128,6 +128,14 @@ namespace MueLu {
                                   LO maxAggSize, Kokkos::View<LO*, typename MueLu::
                                   LWGraph_kokkos<LO, GO, Node>::local_graph_type::device_type::
                                   memory_space>& colorsDevice, LO& numColors) const;
+
+  void BuildAggregatesDeterministic(const LWGraph_kokkos& graph, Aggregates_kokkos& aggregates,
+                                    Kokkos::View<unsigned*, typename MueLu::LWGraph_kokkos<LO, GO, Node>::
+                                    local_graph_type::device_type::memory_space>& aggStatView,
+                                    LO& numNonAggregatedNodes, LO maxAggSize,
+                                    Kokkos::View<LO*, typename MueLu::LWGraph_kokkos<LO, GO, Node>::
+                                    local_graph_type::device_type::memory_space>& colorsDevice,
+                                    LO& numColors) const;
     //@}
 
     std::string description() const { return "Phase 1 (main)"; }

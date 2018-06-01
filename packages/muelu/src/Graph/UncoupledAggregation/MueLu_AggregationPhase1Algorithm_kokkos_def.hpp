@@ -82,6 +82,7 @@ namespace MueLu {
     int maxNeighAlreadySelected = params.get<int>        ("aggregation: max selected neighbors");
     int minNodesPerAggregate    = params.get<int>        ("aggregation: min agg size");
     int maxNodesPerAggregate    = params.get<int>        ("aggregation: max agg size");
+    bool deterministic          = params.get<bool>       ("aggregation: deterministic");
 
     Algorithm algorithm         = Algorithm::Serial;
     std::string algoParamName   = "aggregation: phase 1 algorithm";
@@ -98,8 +99,16 @@ namespace MueLu {
     //can only enforce max aggregate size
     if(algorithm == Algorithm::Distance2)
     {
-      BuildAggregatesDistance2(graph, aggregates, aggStatView, numNonAggregatedNodes,
-                               maxNodesPerAggregate, colorsDevice, numColors);
+      if(deterministic)
+      {
+        BuildAggregatesDistance2(graph, aggregates, aggStatView, numNonAggregatedNodes,
+            maxNodesPerAggregate, colorsDevice, numColors);
+      }
+      else
+      {
+        BuildAggregatesDeterministic(graph, aggregates, aggStatView, numNonAggregatedNodes,
+            maxNodesPerAggregate, colorsDevice, numColors);
+      }
     }
     else
     {
@@ -420,6 +429,87 @@ namespace MueLu {
 
     // update aggregate object
     aggregates.SetNumAggregates(numLocalAggregates);
+  }
+
+  template <class LocalOrdinal, class GlobalOrdinal, class Node>
+  void AggregationPhase1Algorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+  BuildAggregatesDeterministic(const LWGraph_kokkos& graph, Aggregates_kokkos& aggregates,
+                               Kokkos::View<unsigned*, typename MueLu::LWGraph_kokkos<LO, GO, Node>::
+                               local_graph_type::device_type::memory_space>& aggStatView,
+                               LO& numNonAggregatedNodes, LO maxAggSize,
+                               Kokkos::View<LO*, typename MueLu::LWGraph_kokkos<LO, GO, Node>::
+                               local_graph_type::device_type::memory_space>& colorsDevice,
+                               LO& numColors) const
+  {
+    typedef typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type graph_t;
+    typedef typename graph_t::device_type::memory_space memory_space;
+    typedef typename graph_t::device_type::execution_space execution_space;
+
+    const LO  numRows = graph.GetNodeNumVertices();
+    const int myRank  = graph.GetComm()->getRank();
+
+    auto vertex2AggIdView = aggregates.GetVertex2AggId()->template getLocalView<memory_space>();
+    auto procWinnerView = aggregates.GetProcWinner()    ->template getLocalView<memory_space>();
+
+    LO numLocalAggregates = aggregates.GetNumAggregates();
+
+    Kokkos::View<LO, memory_space> numLocalAggregatesView("Num aggregates");
+    {
+      auto h_nla = Kokkos::create_mirror_view(numLocalAggregatesView);
+      h_nla() = numLocalAggregates;
+      Kokkos::deep_copy(numLocalAggregatesView, h_nla);
+    }
+
+    Kokkos::View<LO*, memory_space> newRoots("New root LIDs", numNonAggregatedNodes);
+    Kokkos::View<LO, memory_space> numNewRoots("Number of new aggregates of current color");
+    auto h_numNewRoots = Kokkos::create_mirror_view(numNewRoots);
+
+    //first loop build the set of new roots
+    Kokkos::parallel_for("Aggregation Phase 1: building list of new roots", numRows,
+      KOKKOS_LAMBDA(const LO i)
+      {
+        if(colorsDevice(i) == 1 && aggStatView(i) == READY)
+        {
+          //i will become a root
+          newRoots(Kokkos::atomic_fetch_add(&numNewRoots(), 1)) = i;
+        }
+      });
+    Kokkos::deep_copy(h_numNewRoots, numNewRoots);
+    //sort new roots by LID to guarantee determinism in agg IDs
+    Kokkos::sort(newRoots, 0, h_numNewRoots());
+    LO numAggregated = 0;
+    Kokkos::parallel_reduce("Aggregation Phase 1: aggregating nodes", h_numNewRoots(),
+      KOKKOS_LAMBDA(const LO rootIndex, LO& lnumAggregated)
+      {
+        LO root = newRoots(rootIndex);
+        LO aggID = numLocalAggregatesView() + rootIndex;
+        LO aggSize = 1;
+        vertex2AggIdView(root, 0) = aggID;
+        procWinnerView(root, 0) = myRank;
+        aggStatView(root) = AGGREGATED;
+        auto neighOfRoot = graph.getNeighborVertices(root);
+        for(LO n = 0; n < neighOfRoot.length; n++)
+        {
+          LO neigh = neighOfRoot(n);
+          if (graph.isLocalNeighborVertex(neigh) && aggStatView(neigh) == READY)
+          {
+            //add neigh to aggregate
+            vertex2AggIdView(neigh, 0) = aggID;
+            procWinnerView(neigh, 0) = myRank;
+            aggStatView(neigh) = AGGREGATED;
+            aggSize++;
+            if(aggSize == maxAggSize)
+            {
+              //can't add any more nodes
+              break;
+            }
+          }
+        }
+        lnumAggregated += aggSize;
+      }, numAggregated);
+    numNonAggregatedNodes -= numAggregated;
+    // update aggregate object
+    aggregates.SetNumAggregates(numLocalAggregates + h_numNewRoots());
   }
 
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
