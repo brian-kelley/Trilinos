@@ -167,6 +167,82 @@ namespace MueLuTests {
     level.Release("Aggregates", aggFact.get());
   }
 
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, DeterministicUncoupledAggregation, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+  {
+    //TODO bmk: A lot of test code duplicated here from gimmeUncoupledAggregates
+    //because it can't take a custom parameter list, add that as parameter?
+#   include <MueLu_UseShortNames.hpp>
+    MUELU_TESTING_SET_OSTREAM;
+    MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+    out << "version: " << MueLu::Version() << std::endl;
+    //A must be big enough to catch non-determinism when threading/CUDA is enabled
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build2DPoisson(30, 30);
+    RCP<AmalgamationInfo> amalgInfo;
+    Level level;
+    TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::createSingleLevelHierarchy(level);
+    level.Set("A", A);
+
+    RCP<AmalgamationFactory> amalgFact = rcp(new AmalgamationFactory());
+    RCP<CoalesceDropFactory_kokkos> dropFact  = rcp(new CoalesceDropFactory_kokkos());
+    dropFact->SetFactory("UnAmalgamationInfo", amalgFact);
+
+    //Number of trials for attepting to find non-deterministic behavior
+    //vertex2AggId must match exactly across all trials for test to pass
+    int trials = 5;
+
+    Xpetra::UnderlyingLib lib = TestHelpers_kokkos::Parameters::getLib();
+
+    RCP<LOVector> vertex2Agg = Teuchos::null;
+
+    for(int i = 0; i < trials; i++)
+    {
+      // Setup aggregation factory (use default factory for graph)
+      RCP<UncoupledAggregationFactory_kokkos> aggFact = rcp(new UncoupledAggregationFactory_kokkos());
+      aggFact->SetFactory("Graph", dropFact);
+      aggFact->SetParameter("aggregation: max agg size",Teuchos::ParameterEntry(3));
+      aggFact->SetParameter("aggregation: min agg size",Teuchos::ParameterEntry(3));
+      aggFact->SetParameter("aggregation: max selected neighbors",Teuchos::ParameterEntry(0));
+      aggFact->SetParameter("aggregation: ordering",Teuchos::ParameterEntry(std::string("natural")));
+      aggFact->SetParameter("aggregation: enable phase 1",  Teuchos::ParameterEntry(true));
+      aggFact->SetParameter("aggregation: phase 1 algorithm",Teuchos::ParameterEntry(std::string("Distance2")));
+      aggFact->SetParameter("aggregation: deterministic", Teuchos::ParameterEntry(true));
+      aggFact->SetParameter("aggregation: enable phase 2a", Teuchos::ParameterEntry(true));
+      aggFact->SetParameter("aggregation: enable phase 2b", Teuchos::ParameterEntry(true));
+      aggFact->SetParameter("aggregation: enable phase 3",  Teuchos::ParameterEntry(true));
+
+      level.Request("Aggregates", aggFact.get());
+      level.Request("UnAmalgamationInfo", amalgFact.get());
+
+      level.Request(*aggFact);
+      aggFact->Build(level);
+      RCP<Aggregates_kokkos> aggregates = level.Get<RCP<Aggregates_kokkos> >("Aggregates",aggFact.get()); // fix me
+      if(i == 0)
+      {
+        TEST_INEQUALITY(aggregates, Teuchos::null);
+        TEST_EQUALITY(aggregates->AggregatesCrossProcessors(), false);
+        amalgInfo = level.Get<RCP<AmalgamationInfo> >("UnAmalgamationInfo",amalgFact.get()); // fix me
+        vertex2Agg = aggregates->GetVertex2AggId();
+      }
+      else
+      {
+        auto newVertex2Agg = aggregates->GetVertex2AggId();
+        //make sure vertex2Agg and newVertex2Agg match exactly
+        //Xpetra::Vector doesn't provide comparison for equality so
+        //use identity (x == y) == (dot(x, y) == dot(x, x))
+        //
+        //also Xpetra-wrapped Epetra vector doesn't support this
+        if(lib == Xpetra::UseTpetra)
+        {
+          auto dot = vertex2Agg->dot(*newVertex2Agg);
+          auto norm2 = vertex2Agg->norm2();
+          TEST_FLOATING_EQUALITY(dot, norm2 * norm2, 1e-7);
+        }
+      }
+      level.Release("UnAmalgamationInfo", amalgFact.get());
+      level.Release("Aggregates", aggFact.get());
+    }
+  }
+
   ///////////////////////////////////////////////////////////////////////////
 
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, GetNumUncoupledAggregates, Scalar, LocalOrdinal, GlobalOrdinal, Node)
@@ -354,6 +430,7 @@ namespace MueLuTests {
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, JustUncoupledAggregation, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, JustDist2UncoupledAggregation, SC, LO, GO, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, DeterministicUncoupledAggregation, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, GetNumUncoupledAggregates, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, UncoupledPhase1, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, UncoupledPhase2, SC, LO, GO, NO) \

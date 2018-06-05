@@ -180,7 +180,6 @@ namespace MueLu {
 
     int minNodesPerAggregate = params.get<int>("aggregation: min agg size");
     int maxNodesPerAggregate = params.get<int>("aggregation: max agg size");
-    std::cout << "Agg size must be in: [" << minNodesPerAggregate << ", " << maxNodesPerAggregate << "]\n";
 
     const LO  numRows = graph.GetNodeNumVertices();
     const int myRank  = graph.GetComm()->getRank();
@@ -254,7 +253,6 @@ namespace MueLu {
             }
           });
       Kokkos::deep_copy(h_numNewRoots, numNewRoots);
-      std::cout << "Phase 2a, rank " << myRank << ", color " << color << ": " << h_numNewRoots() << " new aggregates\n";
       if(h_numNewRoots() > 0)
       {
         //sort the new root indices

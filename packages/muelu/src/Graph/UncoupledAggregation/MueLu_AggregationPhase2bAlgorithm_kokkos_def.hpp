@@ -120,7 +120,6 @@ namespace MueLu {
     int maxIters = 2;
     int maxNodesPerAggregate = params.get<int>("aggregation: max agg size");
     if(maxNodesPerAggregate == std::numeric_limits<int>::max()) {maxIters = 1;}
-    std::cout << "maxIters set to: " << maxIters << std::endl;
     for (int iter = 0; iter < maxIters; ++iter) {
       // total work = numberOfTeams * teamSize
       Kokkos::TeamPolicy<execution_space> outerPolicy(numRows, Kokkos::AUTO);
@@ -281,12 +280,9 @@ namespace MueLu {
     int maxIters = 2;
     int maxNodesPerAggregate = params.get<int>("aggregation: max agg size");
     if(maxNodesPerAggregate == std::numeric_limits<int>::max()) {maxIters = 1;}
-    std::cout << "Entering phase 2b: there are " << numNonAggregatedNodes << " non aggregated.\n";
-    std::cout << "Have " << numColors << " colors.\n";
     for (int iter = 0; iter < maxIters; ++iter) {
       for(LO color = 1; color <= numColors; color++)
       {
-        std::cout << "Phase 2B: processing color " << color << " in iteration " << iter << '\n';
         Kokkos::parallel_for("Aggregation Phase 2b: zeroing aggWeights",
           numLocalAggregates,
           KOKKOS_LAMBDA(const LO i)
@@ -334,7 +330,6 @@ namespace MueLu {
               }
             }
             if (bestScore >= 0) {
-              std::cout << "Joining node " << i << " with aggregate " << bestAggId << '\n';
               aggStatView(i, 0) = AGGREGATED;
               vertex2AggIdView(i, 0) = bestAggId;
               procWinnerView(i, 0) = myRank;
@@ -345,7 +340,6 @@ namespace MueLu {
             }
           }, numAggregated); //parallel_for
           numNonAggregatedNodes -= numAggregated;
-          std::cout << "In color " << color << " aggregated " << numAggregated << " nodes, so num non aggregated is now " << numNonAggregatedNodes << '\n';
       }
     } // loop over k
   }

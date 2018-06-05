@@ -324,7 +324,6 @@ namespace MueLu {
       //if new aggregates are being created, sort the set of roots so that
       //aggregate IDs are deterministic
       Kokkos::deep_copy(h_numNewRoots, numNewRoots);
-      std::cout << "Phase 3: creating " << h_numNewRoots() << " new aggregates with root color " << color << '\n';
       if(h_numNewRoots() > 0)
       {
         Kokkos::sort(newRoots, 0, h_numNewRoots());
