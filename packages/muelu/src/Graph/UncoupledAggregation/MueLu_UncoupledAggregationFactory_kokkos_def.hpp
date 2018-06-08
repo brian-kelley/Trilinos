@@ -244,7 +244,7 @@ namespace MueLu {
 
       KernelHandle kh;
       auto colorAlgo = pL.get<bool>("aggregation: deterministic")
-        ? KokkosGraph::COLORING_VBD
+        ? KokkosGraph::COLORING_VBDBIT
         : KokkosGraph::COLORING_DEFAULT;
       //leave gc algorithm choice as the default
       kh.create_graph_coloring_handle(colorAlgo);
