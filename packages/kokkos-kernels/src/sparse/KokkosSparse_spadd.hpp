@@ -80,29 +80,26 @@ namespace Experimental {
     KOKKOS_INLINE_FUNCTION void operator()(const size_type i) const
     {
       //count the union of nonzeros in Arow and Brow
-      size_type numEntries = 0;
-      size_type ai = 0;
-      size_type bi = 0;
       size_type Arowstart = Arowptrs(i);
       size_type Arowlen = Arowptrs(i + 1) - Arowstart;
       size_type Browstart = Browptrs(i);
       size_type Browlen = Browptrs(i + 1) - Browstart;
-      while (ai < Arowlen && bi < Browlen)
+      size_type bi = 0;
+      size_type numSame = 0;
+      for(size_type ai = 0; ai < Arowlen && bi < Browlen; ai++)
       {
-        //have an entry in C's row
-        numEntries++;
         ordinal_type Acol = Acolinds(Arowstart + ai);
-        ordinal_type Bcol = Bcolinds(Browstart + bi);
-        if(Acol <= Bcol)
-          ai++;
-        if(Acol >= Bcol)
+        while(Bcolinds(Browstart + bi) < Acol && bi < Browlen)
+        {
           bi++;
+        }
+        if(Bcolinds(Browstart + bi) == Acol)
+        {
+          numSame++;
+          bi++;
+        }
       }
-      //if a and b have different numbers of entries in row i,
-      //the next two lines will account for remaining entries in the longer one
-      numEntries += Arowlen - ai;
-      numEntries += Browlen - bi;
-      Crowcounts(i) = numEntries;
+      Crowcounts(i) = Arowlen + Browlen - numSame;
     }
     const typename ARowPtrsT::const_type Arowptrs;
     const AColIndsT Acolinds;
@@ -138,7 +135,7 @@ namespace Experimental {
   //  -compress sorted C entries and A,B perm arrays at the same time, which produces Crowcounts value
   //Inputs: A, B rowptrs/colinds, C uncompressed rowptrs (and allocated C entries)
   //Output: C uncompressed colinds
-  template<typename size_type, typename ordinal_type,
+  template<typename size_type, typename ordinal_type, typename member_type,
                              typename ArowptrsT, typename BrowptrsT, typename CrowptrsT,
                              typename AcolindsT, typename BcolindsT, typename CcolindsT>
   struct UnmergedSumFunctor
@@ -150,8 +147,9 @@ namespace Experimental {
       Browptrs(Browptrs_), Bcolinds(Bcolinds_),
       Crowptrs(Crowptrs_), Ccolinds(Ccolinds_), ABperm(ABperm_)
     {}
-    KOKKOS_INLINE_FUNCTION void operator()(const size_type i) const
+    KOKKOS_INLINE_FUNCTION void operator()(member_type mem) const
     {
+      size_type i = mem.league_rank();
       size_type inserted = 0;
       size_type crowstart = Crowptrs(i);
       size_type arowstart = Arowptrs(i);
@@ -159,19 +157,18 @@ namespace Experimental {
       size_type browstart = Browptrs(i);
       size_type browlen = Browptrs(i + 1) - browstart;
       //Insert all A entries, then all B entries
-      for(size_type j = 0; j < arowlen; j++)
-      {
-        Ccolinds(crowstart + inserted) = Acolinds(arowstart + j);
-        ABperm(crowstart + inserted) = j;
-        inserted++;
-      }
-      for(size_type j = 0; j < browlen; j++)
-      {
-        Ccolinds(crowstart + inserted) = Bcolinds(browstart + j);
-        //tell A and B permutation values apart by adding arowlen as a bias to B values
-        ABperm(crowstart + inserted) = j + arowlen;
-        inserted++;
-      }
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(mem, arowlen),
+        [&](size_t j)
+        {
+          Ccolinds(crowstart + j) = Acolinds(arowstart + j);
+          ABperm(crowstart + j) = j;
+        });
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(mem, browlen),
+        [&](size_t j)
+        {
+          Ccolinds(crowstart + arowlen + j) = Bcolinds(browstart + j);
+          ABperm(crowstart + arowlen + j) = j + arowlen;
+        });
     }
     const ArowptrsT Arowptrs;
     const AcolindsT Acolinds;
@@ -182,9 +179,9 @@ namespace Experimental {
     CcolindsT ABperm;
   };
 
-  template<typename size_type, typename KeyType, typename ValueType, typename IndexType>
+  template<typename size_type, typename KeyType, typename ValueType, typename IndexType, typename member_type>
   KOKKOS_INLINE_FUNCTION void
-  radixSortKeysAndValues(KeyType* keys, KeyType* keysAux, ValueType* values, ValueType* valuesAux, IndexType n)
+  radixSortKeysAndValues(KeyType* keys, KeyType* keysAux, ValueType* values, ValueType* valuesAux, IndexType n, member_type mem)
   {
     if(n <= 1)
       return;
@@ -194,20 +191,26 @@ namespace Experimental {
     //maskPos counts the low bit index of mask (0, 4, 8, ...)
     IndexType maskPos = 0;
     IndexType sortBits = 0;
-    KeyType minKey = keys[0];
-    KeyType maxKey = keys[0];
-    for(size_type i = 0; i < n; i++)
-    {
-      if(keys[i] < minKey)
-        minKey = keys[i];
-      if(keys[i] > maxKey)
-        maxKey = keys[i];
-    }
+    KeyType minKey;
+    KeyType maxKey;
+    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(mem, n),
+      [&](size_t i, KeyType& lmin)
+      {
+        if(keys[i] < lmin)
+          lmin = keys[i];
+      }, minKey);
+    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(mem, n),
+      [&](size_t i, KeyType& lmax)
+      {
+        if(keys[i] > lmax)
+          lmax = keys[i];
+      }, maxKey);
     //subtract a bias of minKey so that key range starts at 0
-    for(size_type i = 0; i < n; i++)
-    {
-      keys[i] -= minKey;
-    }
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(mem, n),
+      [&](size_t i)
+      {
+        keys[i] -= minKey;
+      });
     KeyType upperBound = maxKey - minKey;
     while(upperBound)
     {
@@ -239,7 +242,6 @@ namespace Experimental {
         offset[i + 1] = offset[i] + count[i];
       }
       //now for each element in [lo, hi), move it to its offset in the other buffer
-      //this branch should be ok because whichBuf is the same on all threads
       if(!inAux)
       {
         //copy from *Over to *Aux
@@ -268,21 +270,22 @@ namespace Experimental {
     }
     if(inAux)
     {
-      //need to deep copy from aux arrays to main
-      for(IndexType i = 0; i < n; i++)
-      {
-        keys[i] = keysAux[i];
-        values[i] = valuesAux[i];
-      }
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(mem, n),
+        [&](size_t i)
+        {
+          keys[i] = keysAux[i];
+          values[i] = valuesAux[i];
+        });
     }
     //remove the bias
-    for(size_type i = 0; i < n; i++)
-    {
-      keys[i] += minKey;
-    }
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(mem, n),
+      [&](size_t i)
+      {
+        keys[i] += minKey;
+      });
   }
 
-  template<typename size_type, typename CrowptrsT, typename CcolindsT>
+  template<typename size_type, typename CrowptrsT, typename CcolindsT, typename member_type>
   struct SortEntriesFunctor
   {
     SortEntriesFunctor(const CrowptrsT Crowptrs_, CcolindsT Ccolinds_, CcolindsT ABperm_) :
@@ -292,16 +295,17 @@ namespace Experimental {
       ABperm(ABperm_),
       ABpermAux("AB perm aux", ABperm_.extent(0))
     {}
-    KOKKOS_INLINE_FUNCTION void operator()(const size_type i) const
+    KOKKOS_INLINE_FUNCTION void operator()(const member_type mem) const
     {
       //3: Sort each row's colinds (permuting values at same time), then count unique colinds (write that to Crowptr(i))
       //CrowptrTemp tells how many entries in each oversized row
+      size_type i = mem.league_rank();
       size_type rowStart = Crowptrs(i);
       size_type rowEnd = Crowptrs(i + 1);
       size_type rowNum = rowEnd - rowStart;
-      radixSortKeysAndValues<size_type, typename CcolindsT::non_const_value_type, typename CcolindsT::non_const_value_type>
+      radixSortKeysAndValues<size_type, typename CcolindsT::non_const_value_type, typename CcolindsT::non_const_value_type, typename CcolindsT::non_const_value_type, member_type>
         (Ccolinds.data() + rowStart, CcolindsAux.data() + rowStart,
-         ABperm.data() + rowStart, ABpermAux.data() + rowStart, rowNum);
+         ABperm.data() + rowStart, ABpermAux.data() + rowStart, rowNum, mem);
     }
     CrowptrsT Crowptrs;
     CcolindsT Ccolinds;
@@ -367,6 +371,30 @@ namespace Experimental {
     CcolindsT Bpos;
   };
 
+  template<typename size_type, typename member_type,
+           typename RowptrsT, typename ColindsT>
+  struct CheckSortedFunctor
+  {
+    CheckSortedFunctor(const RowptrsT rowptrs_, const ColindsT colinds_)
+      : rowptrs(rowptrs_), colinds(colinds_) {}
+    void operator()(member_type mem, int& localIsSorted) const
+    {
+      size_t i = mem.league_rank();
+      int rowIsSorted = 1;
+      for(int j = 0; j < rowptrs(i + 1) - rowptrs(i) - 1; j++)
+      {
+        if(colinds(rowptrs(i) + j) > colinds(rowptrs(i) + j + 1))
+        {
+          rowIsSorted = 0;
+          break;
+        }
+      }
+      localIsSorted &= rowIsSorted;
+    }
+    RowptrsT rowptrs;
+    ColindsT colinds;
+  };
+
   //from tpetra
   template <typename size_type, typename view_type>
   struct parallel_prefix_sum{
@@ -429,6 +457,23 @@ namespace Experimental {
     auto addHandle = handle->get_spadd_handle();
     auto nrows = a_rowmap.extent(0) - 1;
     typedef Kokkos::RangePolicy<execution_space, ordinal_type> range_type;
+    typedef typename Kokkos::TeamPolicy<execution_space> TeamPol;
+    typedef typename TeamPol::member_type member_type;
+    if(!addHandle->is_input_sorted())
+    {
+      CheckSortedFunctor<size_type, member_type, alno_row_view_t_, alno_nnz_view_t_> aSorted(a_rowmap, a_entries);
+      int isSorted = 1;
+      Kokkos::parallel_reduce(TeamPol(nrows, 1), aSorted, isSorted);
+      if(isSorted)
+      {
+        CheckSortedFunctor<size_type, member_type, blno_row_view_t_, blno_nnz_view_t_> bSorted(b_rowmap, b_entries);
+        Kokkos::parallel_reduce(TeamPol(nrows, 1), bSorted, isSorted);
+      }
+      if(isSorted)
+      {
+        addHandle->set_input_sorted(true);
+      }
+    }
     if(addHandle->is_input_sorted())
     {
       clno_row_view_t_ c_rowcounts("C row counts", nrows);
@@ -469,15 +514,20 @@ namespace Experimental {
       clno_nnz_view_t_ c_entries_uncompressed("C entries uncompressed", c_nnz_upperbound);
       clno_nnz_view_t_ ab_perm("A and B permuted entry indices", c_nnz_upperbound);
       //compute the unmerged sum
-      UnmergedSumFunctor<size_type, ordinal_type, alno_row_view_t_, blno_row_view_t_, clno_row_view_t_,
+      UnmergedSumFunctor<size_type, ordinal_type, member_type, alno_row_view_t_, blno_row_view_t_, clno_row_view_t_,
                          alno_nnz_view_t_, blno_nnz_view_t_, clno_nnz_view_t_> unmergedSum(
                          a_rowmap, a_entries, b_rowmap, b_entries, c_rowmap_upperbound, c_entries_uncompressed, ab_perm);
-      Kokkos::parallel_for(range_type(0, nrows), unmergedSum);
+      Kokkos::parallel_for(TeamPol(nrows, 1), unmergedSum);
       execution_space::fence();
       //sort the unmerged sum
-      SortEntriesFunctor<size_type, clno_row_view_t_, clno_nnz_view_t_>
+      SortEntriesFunctor<size_type, clno_row_view_t_, clno_nnz_view_t_, member_type>
         sortEntries(c_rowmap_upperbound, c_entries_uncompressed, ab_perm);
-      Kokkos::parallel_for(range_type(0, nrows), sortEntries);
+      Kokkos::parallel_for(TeamPol(nrows, 1),
+        [&] (member_type mem)
+        {
+          sortEntries(mem);
+        });
+      //Kokkos::parallel_for(range_type(0, nrows), sortEntries);
       execution_space::fence();
       clno_nnz_view_t_ a_pos("A entry positions", a_entries.extent(0));
       clno_nnz_view_t_ b_pos("B entry positions", b_entries.extent(0));
@@ -594,7 +644,7 @@ namespace Experimental {
     const BscalarT beta;
   };
 
-  template<typename size_type,
+  template<typename size_type, typename member_type,
            typename ArowptrsT, typename BrowptrsT, typename CrowptrsT,
            typename AcolindsT, typename BcolindsT, typename CcolindsT,
            typename AvaluesT, typename BvaluesT, typename CvaluesT,
@@ -620,25 +670,27 @@ namespace Experimental {
       Apos(Apos_),
       Bpos(Bpos_)
     {}
-    KOKKOS_INLINE_FUNCTION void operator()(const size_type i) const
+    KOKKOS_INLINE_FUNCTION void operator()(member_type mem) const
     {
+      size_type i = mem.league_rank();
       size_type CrowStart = Crowptrs(i);
       size_type ArowStart = Arowptrs(i);
       size_type ArowEnd = Arowptrs(i + 1);
       size_type BrowStart = Browptrs(i);
       size_type BrowEnd = Browptrs(i + 1);
       //add in A entries, while setting C colinds
-      for(size_type j = ArowStart; j < ArowEnd; j++)
-      {
-        Cvalues(CrowStart + Apos(j)) += alpha * Avalues(j);
-        Ccolinds(CrowStart + Apos(j)) = Acolinds(j);
-      }
-      //add in B entries, while setting C colinds
-      for(size_type j = BrowStart; j < BrowEnd; j++)
-      {
-        Cvalues(CrowStart + Bpos(j)) += beta * Bvalues(j);
-        Ccolinds(CrowStart + Bpos(j)) = Bcolinds(j);
-      }
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(mem, ArowEnd - ArowStart),
+        [&](size_t j)
+        {
+          Cvalues(CrowStart + Apos(ArowStart + j)) += alpha * Avalues(ArowStart + j);
+          Ccolinds(CrowStart + Apos(ArowStart + j)) = Acolinds(ArowStart + j);
+        });
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(mem, BrowEnd - BrowStart),
+        [&](size_t j)
+        {
+          Cvalues(CrowStart + Bpos(BrowStart + j)) += beta * Bvalues(BrowStart + j);
+          Ccolinds(CrowStart + Bpos(BrowStart + j)) = Bcolinds(BrowStart + j);
+        });
     }
     const ArowptrsT Arowptrs;
     const BrowptrsT Browptrs;
@@ -713,6 +765,8 @@ namespace Experimental {
     static_assert(std::is_same<typename cscalar_nnz_view_t_::non_const_value_type, typename cscalar_nnz_view_t_::value_type>::value,
         "add_symbolic: C scalar type must not be const");
     typedef Kokkos::RangePolicy<execution_space, size_type> range_type;
+    typedef Kokkos::TeamPolicy<execution_space> TeamPol;
+    typedef typename TeamPol::member_type member_type;
     auto addHandle = kernel_handle->get_spadd_handle();
     auto nrows = a_rowmap.extent(0) - 1;
     if(addHandle->is_input_sorted())
@@ -728,17 +782,18 @@ namespace Experimental {
     else
     {
       //use a_pos and b_pos (set in the handle by symbolic) to quickly compute C entries and values
-      UnsortedNumericSumFunctor<size_type, alno_row_view_t_, blno_row_view_t_, clno_row_view_t_,
+      UnsortedNumericSumFunctor<size_type, member_type,
+                                           alno_row_view_t_, blno_row_view_t_, clno_row_view_t_,
                                            alno_nnz_view_t_, blno_nnz_view_t_, clno_nnz_view_t_,
                                            ascalar_nnz_view_t_, bscalar_nnz_view_t_, cscalar_nnz_view_t_,
                                            ascalar_t_, bscalar_t_>
         unsortedNumeric(a_rowmap, b_rowmap, c_rowmap, a_entries, b_entries, c_entries, a_values, b_values, c_values, alpha, beta, addHandle->get_a_pos(), addHandle->get_b_pos());
-      Kokkos::parallel_for(range_type(0, nrows), unsortedNumeric);
+      Kokkos::parallel_for(TeamPol(nrows, 1), unsortedNumeric);
       execution_space::fence();
     }
     addHandle->set_call_numeric();
   }
-}
+;}
 }
 
 #undef SAME_TYPE

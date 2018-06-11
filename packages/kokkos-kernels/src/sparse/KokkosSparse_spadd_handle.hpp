@@ -143,6 +143,7 @@ public:
   }
 
   //setters
+  void set_input_sorted(bool sorted) {input_sorted = sorted;}
   void set_call_symbolic(bool call = true){this->called_symbolic = call;}
   void set_call_numeric(bool call = true){this->called_numeric = call;}
 

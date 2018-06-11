@@ -64,6 +64,9 @@
 #include <cmath>
 #include <algorithm>
 #include <unordered_set>
+#include <iostream>
+#include <vector>
+#include <fstream>
 #include "mkl.h"
 
 namespace Tpetra
@@ -71,13 +74,14 @@ namespace Tpetra
 namespace AddProfiling
 {
 
+using Tpetra::MatrixMarket::Reader;
 using Teuchos::RCP;
 using Teuchos::rcp;
 using Teuchos::Comm;
 
-#define NUM_ROWS 100000
+#define NUM_ROWS 10000
 #define NNZ_PER_ROW 30
-#define TRIALS 5
+#define TRIALS 20
 
 //Produce a random matrix with given nnz per global row
 template<typename SC, typename LO, typename GO, typename NT>
@@ -142,21 +146,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_AddProfiling, different_col_maps, SC, L
   std::cout << "sorted (kernel): addition took on avg " << (tkernel / TRIALS) << "s.\n";
 }
 
-TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_AddProfiling, SIAM, SC, LO, GO, NT)
+template<typename SC, typename LO, typename GO, typename NT>
+void testMatrix(std::string testDir, std::string csvFile, int trials)
 {
-  if(std::is_same<NT, Kokkos::Compat::KokkosSerialWrapperNode>::value)
-    return;
-  typedef Tpetra::CrsMatrix<SC, LO, GO, NT> crs_matrix_type;
-  typedef Tpetra::Map<LO, GO, NT> map_type;
-  {
-    //not actually using comm/map for anything, except to force Tpetra
-    //to initialize Kokkos properly
-    RCP<const Comm<int> > comm = DefaultPlatform::getDefaultPlatform().getComm();
-    if(comm->getRank() == 0)
-      std::cout << "Running sorted add test on " << comm->getSize() << " MPI ranks.\n";
-    rcp(new map_type(NUM_ROWS, 0, comm));
-  }
-  std::cout << "Node type: " << typeid(NT).name() << '\n';
+  //within directory, all test mats have the same filename
+  typedef CrsMatrix<SC, LO, GO, NT> crs_matrix_type;
   typedef typename crs_matrix_type::impl_scalar_type ISC;
   typedef typename crs_matrix_type::local_matrix_type KCRS;
   typedef typename NT::device_type device_type;
@@ -168,62 +162,42 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_AddProfiling, SIAM, SC, LO, GO, NT)
   typedef typename Kokkos::View<const GO*, device_type> local_map_type;
   typedef typename Kokkos::View<GO*, device_type> global_col_inds_array;
   typedef KokkosKernels::Experimental::KokkosKernelsHandle<typename col_inds_array::size_type, LO, ISC, execution_space, memory_space, memory_space> KKH;
-  row_ptrs_array Arowptrs("A rowptrs", NUM_ROWS + 1);
-  row_ptrs_array Browptrs("B rowptrs", NUM_ROWS + 1);
-  row_ptrs_array Crowptrs("C rowptrs", NUM_ROWS + 1);
-  for(int i = 0; i <= NUM_ROWS; i++)
+  RCP<const Comm<int> > comm = DefaultPlatform::getDefaultPlatform().getComm();
+  if(comm->getSize() != 1 && comm->getRank() == 0)
   {
-    Arowptrs(i) = i * NNZ_PER_ROW;
-    Browptrs(i) = i * NNZ_PER_ROW;
+    std::cout << "\n\n\n\n***** ONLY RUN THIS TEST WITH 1 MPI RANK!!!!! *****\n\n\n\n";
+    exit(1);
   }
-  values_array Avalues("A values", NUM_ROWS * NNZ_PER_ROW);
-  values_array Bvalues("B values", NUM_ROWS * NNZ_PER_ROW);
-  for(int i = 0; i < NUM_ROWS * NNZ_PER_ROW; i++)
+  std::string pFile = testDir + "/P_1.m";
+  std::string ptentFile = testDir + "/Ptent_1.m";
+  std::cout << "\nLoading matrix \"" << pFile << "\"...";
+  auto tpetraP = Reader<crs_matrix_type>::readSparseFile(pFile, comm, true);
+  std::cout << "done.\n";
+  std::cout << "Loading matrix \"" << ptentFile << "\"...";
+  auto tpetraPtent = Reader<crs_matrix_type>::readSparseFile(ptentFile, comm, true);
+  std::cout << "done.\n";
+  KCRS P = tpetraP->getLocalMatrix();
+  KCRS Ptent = tpetraPtent->getLocalMatrix();
+  MKL_INT nrows = P.numRows();
+  std::cout << "Adding matrices with " << nrows << " rows and " << P.values.dimension_0() / nrows << " nnz/row.\n";
+  std::vector<double> kkSymbolic;
+  std::vector<double> kkNumeric;
+  std::vector<double> mklTimes;
+  Kokkos::Impl::Timer timer;
+  std::cout << "Running KK addition " << trials << " times...";
+  for(int i = 0; i < trials; i++)
   {
-    Avalues(i) = 10 * (double(rand()) / RAND_MAX);
-    Bvalues(i) = 10 * (double(rand()) / RAND_MAX);
-  }
-  col_inds_array Acolinds("A colinds", NUM_ROWS * NNZ_PER_ROW);
-  col_inds_array Bcolinds("B colinds", NUM_ROWS * NNZ_PER_ROW);
-  std::vector<LO> randColinds(NUM_ROWS);
-  for(int i = 0; i < NUM_ROWS; i++)
-  {
-    //want randomized colinds with no duplicates
-    std::set<LO> taken;
-    for(int j = 0; j < NNZ_PER_ROW; j++)
-    {
-      LO next;
-      do
-      {
-        next = rand() % NUM_ROWS;
-      }
-      while(taken.find(next) != taken.end());
-      Acolinds(i * NNZ_PER_ROW + j) = next;
-      taken.insert(next);
-    }
-    taken.clear();
-    for(int j = 0; j < NNZ_PER_ROW; j++)
-    {
-      LO next;
-      do
-      {
-        next = rand() % NUM_ROWS;
-      }
-      while(taken.find(next) != taken.end());
-      Bcolinds(i * NNZ_PER_ROW + j) = next;
-      taken.insert(next);
-    }
-  }
-  Kokkos::Impl::Timer addTimer;
-  for(int i = 0; i < TRIALS; i++)
-  {
+    timer.reset();
     KKH handle;
     handle.create_spadd_handle(false);
+    row_ptrs_array Crowptrs("Crowptrs", nrows + 1);
     KokkosSparse::Experimental::spadd_symbolic <KKH,
       typename row_ptrs_array::const_type, typename col_inds_array::const_type,
       typename row_ptrs_array::const_type, typename col_inds_array::const_type,
       row_ptrs_array, col_inds_array>
-        (&handle, Arowptrs, Acolinds, Browptrs, Bcolinds, Crowptrs);
+        (&handle, P.graph.row_map, P.graph.entries, Ptent.graph.row_map, Ptent.graph.entries, Crowptrs);
+    kkSymbolic.push_back(timer.seconds());
+    timer.reset();
     values_array Cvalues("C values", handle.get_spadd_handle()->get_max_result_nnz());
     col_inds_array Ccolinds("C colinds", handle.get_spadd_handle()->get_max_result_nnz());
     KokkosSparse::Experimental::spadd_numeric<KKH,
@@ -231,43 +205,76 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_AddProfiling, SIAM, SC, LO, GO, NT)
       typename row_ptrs_array::const_type, typename col_inds_array::const_type, ISC, typename values_array::const_type,
       row_ptrs_array, col_inds_array, values_array>
     (&handle,
-        Arowptrs, Acolinds, Avalues, 1,
-        Browptrs, Bcolinds, Bvalues, 1,
+        P.graph.row_map, P.graph.entries, P.values, 1,
+        Ptent.graph.row_map, Ptent.graph.entries, Ptent.values, 1,
         Crowptrs, Ccolinds, Cvalues);
+    kkNumeric.push_back(timer.seconds());
   }
-  double kkTime = addTimer.seconds();
-  //copy to MKL-compatible format
-  sparse_matrix_t AMKL;
-  sparse_matrix_t BMKL;
-  sparse_matrix_t CMKL;
-  int* arowptrsInt = new int[NUM_ROWS + 1];
-  int* browptrsInt = new int[NUM_ROWS + 1];
-  for(int i = 0; i < NUM_ROWS + 1; i++)
+  std::cout << "done.\n";
+  MKL_INT* rowptrsIntP = new MKL_INT[nrows + 1];
+  MKL_INT* rowptrsIntPtent = new MKL_INT[nrows + 1];
+  for(int i = 0; i <= nrows; i++)
   {
-    arowptrsInt[i] = Arowptrs(i);
-    browptrsInt[i] = Browptrs(i);
+    rowptrsIntP[i] = P.graph.row_map(i);
+    rowptrsIntPtent[i] = Ptent.graph.row_map(i);
   }
-  mkl_sparse_d_create_csr(&AMKL, SPARSE_INDEX_BASE_ZERO, NUM_ROWS, NUM_ROWS, arowptrsInt, arowptrsInt + 1, Acolinds.data(), Avalues.data());
-  mkl_sparse_d_create_csr(&BMKL, SPARSE_INDEX_BASE_ZERO, NUM_ROWS, NUM_ROWS, browptrsInt, browptrsInt + 1, Bcolinds.data(), Bvalues.data());
-  addTimer.reset();
-  for(int i = 0; i < TRIALS; i++)
+  std::cout << "Running MKL addition " << trials << " times...";
+  for(int i = 0; i < trials; i++)
   {
-  /*
-    const int mklSortMode = 3;      //sort while adding
-    const char mklTransMode = 'N';  //no transpose
-    const int mklSymbolic = 1;
-    const int mklNumeric = 2;
-    mkl_dcsradd(&mklTransMode, &mklSymbolic, &mklSortMode, NUM_ROWS, NUM_ROWS, , MKL_INT *ja , MKL_INT *ia , const double *beta , double *b , MKL_INT *jb , MKL_INT *ib , double *c , MKL_INT *jc , MKL_INT *ic , const MKL_INT *nzmax , MKL_INT *info );
-    */
-    mkl_sparse_d_add(SPARSE_OPERATION_NON_TRANSPOSE, AMKL, 1, BMKL, &CMKL);
+    timer.reset();
+    sparse_matrix_t PMKL;
+    sparse_matrix_t PtentMKL;
+    mkl_sparse_d_create_csr(&PMKL, SPARSE_INDEX_BASE_ZERO, nrows, nrows, rowptrsIntP, rowptrsIntP + 1, P.graph.entries.data(), P.values.data());
+    mkl_sparse_d_create_csr(&PtentMKL, SPARSE_INDEX_BASE_ZERO, nrows, nrows, rowptrsIntPtent, rowptrsIntPtent+ 1, Ptent.graph.entries.data(), Ptent.values.data());
+    sparse_matrix_t CMKL;
+    if(SPARSE_STATUS_SUCCESS != mkl_sparse_d_add(SPARSE_OPERATION_NON_TRANSPOSE, PMKL, 1, PtentMKL, &CMKL))
+    {
+      std::cout << "mkl_sparse_d_add() encountered error!\n";
+      exit(1);
+    }
+    //extract CRS arrays of C
+    auto zeroIndexing = SPARSE_INDEX_BASE_ZERO;
+    MKL_INT* rowsStart = NULL;
+    MKL_INT* rowsEnd = NULL;
+    MKL_INT* colinds = NULL;
+    double* vals = NULL;
+    if(SPARSE_STATUS_SUCCESS != mkl_sparse_d_export_csr(CMKL, &zeroIndexing, &nrows, &nrows, &rowsStart, &rowsEnd, &colinds, &vals))
+    {
+      std::cout << "mkl_sparse_d_export_csr() encountered error!\n";
+      exit(1);
+    }
     //don't leak the memory allocated for C each trial
+    //mkl_sparse_destroy(PMKL);
+    //mkl_sparse_destroy(PtentMKL);
     mkl_sparse_destroy(CMKL);
+    mklTimes.push_back(timer.seconds());
   }
-  double mklTime = addTimer.seconds();
-  delete[] arowptrsInt;
-  delete[] browptrsInt;
-  std::cout << "KK addition took on avg:  " << (kkTime/ TRIALS) << " s.\n";
-  std::cout << "MKL addition took on avg: " << (mklTime / TRIALS) << " s.\n";
+  std::cout << "done.\n";
+  delete[] rowptrsIntP;
+  delete[] rowptrsIntPtent;
+  std::cout << "Writing output data to \"" << csvFile << "\"...";
+  std::ofstream csv(csvFile.c_str());
+  //Write out two columns with the data points
+  csv << "KK_Symbolic, KK_Numeric, MKL\n";
+  for(int i = 0; i < trials; i++)
+  {
+    csv << kkSymbolic[i] << ", " << kkNumeric[i] << ", " << mklTimes[i] << '\n';
+  }
+  csv.close();
+  std::cout << "done.\n";
+}
+
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_AddProfiling, SIAM, SC, LO, GO, NT)
+{
+  if(std::is_same<NT, Kokkos::Compat::KokkosSerialWrapperNode>::value)
+    return;
+  if(std::is_same<GO, long long>::value)
+    return;
+  int threads = atoi(getenv("OMP_NUM_THREADS"));
+  testMatrix<SC, LO, GO, NT>("/home/bmkelle/TestMatrices/Brick3D_25", "Brick25_T" + std::to_string(threads) + ".csv", 1000);
+  testMatrix<SC, LO, GO, NT>("/home/bmkelle/TestMatrices/Brick3D_50", "Brick50_T" + std::to_string(threads) + ".csv", 500);
+  testMatrix<SC, LO, GO, NT>("/home/bmkelle/TestMatrices/Brick3D_100", "Brick100_T" + std::to_string(threads) + ".csv", 80);
+  testMatrix<SC, LO, GO, NT>("/home/bmkelle/TestMatrices/Brick3D_200", "Brick200_T" + std::to_string(threads) + ".csv", 10);
 }
 
 #define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, LO, GO, NT )			\
