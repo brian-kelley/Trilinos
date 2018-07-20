@@ -72,11 +72,6 @@ namespace MueLu {
                   memory_space>& aggStatView, LO& numNonAggregatedNodes, Kokkos::View<LO*,
                   typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type::device_type::
                   memory_space>& colorsDevice, LO& numColors) const {
-    if(numNonAggregatedNodes == 0)
-    {
-      //no non-aggregated nodes, so this phase has nothing to do
-      return;
-    }
     if(params.get<bool>("aggregation: deterministic"))
     {
       BuildAggregatesDeterministic(params, graph, aggregates, aggStatView, numNonAggregatedNodes, colorsDevice, numColors);
