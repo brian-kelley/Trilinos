@@ -264,11 +264,14 @@ namespace MueLu {
 
     for (size_t a = 0; a < algos_.size(); a++) {
       std::string phase = algos_[a]->description();
+      auto phaseTimer = Teuchos::TimeMonitor::getNewCounter("MueLu " + phase + (pL.get<bool>("aggregation: deterministic") ? " Deterministic" : " Non-deterministic"));
       SubFactoryMonitor sfm(*this, "Algo \"" + phase + "\"", currentLevel);
 
       int oldRank = algos_[a]->SetProcRankVerbose(this->GetProcRankVerbose());
+      phaseTimer->start();
       algos_[a]->BuildAggregates(pL, *graph, *aggregates, aggStatView, numNonAggregatedNodes,
                                  colorsDevice, numColors);
+      phaseTimer->stop();
       algos_[a]->SetProcRankVerbose(oldRank);
 
       if (IsPrint(Statistics1)) {
