@@ -267,6 +267,8 @@ Relaxation<MatrixType>::getValidParameters () const
     pl->set ("relaxation: sweeps", numSweeps, "Number of relaxation sweeps",
              rcp_const_cast<const PEV> (numSweepsValidator));
 
+    pl->set ("relaxation: gauss-seidel cluster size", 1);
+
     const scalar_type dampingFactor = STS::one ();
     pl->set ("relaxation: damping factor", dampingFactor);
 
@@ -338,6 +340,7 @@ void Relaxation<MatrixType>::setParametersImpl (Teuchos::ParameterList& pl)
   const bool checkDiagEntries = pl.get<bool> ("relaxation: check diagonal entries");
   const bool is_matrix_structurally_symmetric = pl.get<bool> ("relaxation: symmetric matrix structure");
   const bool ifpack2_dump_matrix = pl.get<bool> ("relaxation: ifpack2 dump matrix");
+  const int gsClusterSize = pl.get<int> ("relaxation: gauss-seidel cluster size");
 
   Teuchos::ArrayRCP<local_ordinal_type> localSmoothingIndices = pl.get<Teuchos::ArrayRCP<local_ordinal_type> >("relaxation: local smoothing indices");
 
@@ -356,6 +359,7 @@ void Relaxation<MatrixType>::setParametersImpl (Teuchos::ParameterList& pl)
   is_matrix_structurally_symmetric_ = is_matrix_structurally_symmetric;
   ifpack2_dump_matrix_ = ifpack2_dump_matrix;
   localSmoothingIndices_ = localSmoothingIndices;
+  gsClusterSize_         = gsClusterSize;
 }
 
 
@@ -491,6 +495,7 @@ apply (const Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal
   using Teuchos::RCP;
   using Teuchos::rcp;
   using Teuchos::rcpFromRef;
+  using Teuchos::TimeMonitor;
   typedef Tpetra::MultiVector<scalar_type, local_ordinal_type,
                               global_ordinal_type, node_type> MV;
   TEUCHOS_TEST_FOR_EXCEPTION(
@@ -513,6 +518,9 @@ apply (const Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal
     beta != STS::zero (), std::logic_error,
     "Ifpack2::Relaxation::apply: beta = " << beta << " != 0 case not "
     "implemented.");
+
+  RCP<TimeMonitor> bmkTimer = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("BMK: GS/SGS apply")));
+  std::cout << "Applying MT G-S.\n";
 
   const std::string timerName ("Ifpack2::Relaxation::apply");
   Teuchos::RCP<Teuchos::Time> timer = Teuchos::TimeMonitor::lookupCounter (timerName);
@@ -606,6 +614,8 @@ applyMat (const Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordi
 template<class MatrixType>
 void Relaxation<MatrixType>::initialize ()
 {
+  using Teuchos::RCP;
+  using Teuchos::TimeMonitor;
   TEUCHOS_TEST_FOR_EXCEPTION
     (A_.is_null (), std::runtime_error, "Ifpack2::Relaxation::initialize: "
      "The input matrix A is null.  Please call setMatrix() with a nonnull "
@@ -648,25 +658,35 @@ void Relaxation<MatrixType>::initialize ()
         crs_writer.writeSparseFile(file_name, rcp_crs_mat);
       }
 
-      this->mtKernelHandle_ = Teuchos::rcp (new mt_kernel_handle_type ());
-      if (mtKernelHandle_->get_gs_handle () == NULL) {
+    this->mtKernelHandle_ = Teuchos::rcp (new mt_kernel_handle_type ());
+    if (mtKernelHandle_->get_gs_handle () == NULL) {
+      if(this->gsClusterSize_ > 1)
+      {
+        std::cout << "Creating a MT G-S handle with cluster size of " << this->gsClusterSize_ << '\n';
+        mtKernelHandle_->create_gs_handle (this->gsClusterSize_);
+      }
+      else
+      {
         mtKernelHandle_->create_gs_handle ();
       }
-      local_matrix_type kcsr = crsMat->getLocalMatrix ();
-
-      bool is_symmetric = (PrecType_ == Ifpack2::Details::MTSGS);
-      is_symmetric = is_symmetric || is_matrix_structurally_symmetric_;
-
-      using KokkosSparse::Experimental::gauss_seidel_symbolic;
-      gauss_seidel_symbolic<mt_kernel_handle_type,
-                            lno_row_view_t,
-                            lno_nonzero_view_t> (mtKernelHandle_.getRawPtr (),
-                                                 A_->getNodeNumRows (),
-                                                 A_->getNodeNumCols (),
-                                                 kcsr.graph.row_map,
-                                                 kcsr.graph.entries,
-                                                 is_symmetric);
     }
+    local_matrix_type kcsr = crsMat->getLocalMatrix ();
+
+    bool is_symmetric = (PrecType_ == Ifpack2::Details::MTSGS);
+    is_symmetric = is_symmetric || is_matrix_structurally_symmetric_;
+
+    RCP<Teuchos::TimeMonitor> bmkTimer = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("BMK: MT GS/SGS symbolic setup (clusters)")));
+
+    using KokkosSparse::Experimental::gauss_seidel_symbolic;
+    gauss_seidel_symbolic<mt_kernel_handle_type,
+      lno_row_view_t,
+      lno_nonzero_view_t> (mtKernelHandle_.getRawPtr (),
+                           A_->getNodeNumRows (),
+                           A_->getNodeNumCols (),
+                           kcsr.graph.row_map,
+                           kcsr.graph.entries,
+                           is_symmetric);
+  }
 
   } // end TimeMonitor scope
 
@@ -896,6 +916,7 @@ void Relaxation<MatrixType>::compute ()
   using Teuchos::REDUCE_SUM;
   using Teuchos::rcp_dynamic_cast;
   using Teuchos::reduceAll;
+  using Teuchos::TimeMonitor;
   typedef Tpetra::Vector<scalar_type, local_ordinal_type,
                          global_ordinal_type, node_type> vector_type;
   typedef typename vector_type::device_type device_type;
@@ -1238,6 +1259,8 @@ void Relaxation<MatrixType>::compute ()
          "Multithreaded Gauss-Seidel methods currently only work when the input "
          "matrix is a Tpetra::CrsMatrix.");
       local_matrix_type kcsr = crsMat->getLocalMatrix ();
+
+      RCP<Teuchos::TimeMonitor> bmkTimer = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("BMK: MT GS/SGS numeric setup")));
 
       const bool is_symmetric = (PrecType_ == Ifpack2::Details::MTSGS);
       using KokkosSparse::Experimental::gauss_seidel_numeric;

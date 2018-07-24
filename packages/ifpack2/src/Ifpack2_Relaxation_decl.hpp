@@ -812,6 +812,8 @@ private:
   size_t globalNumZeroDiagEntries_;
   //! Global number of negative (real part) diagonal entries detected by compute().
   size_t globalNumNegDiagEntries_;
+
+  int gsClusterSize_;
   /// \brief Absolute two-norm difference between computed and actual inverse diagonal.
   ///
   /// "Actual inverse diagonal" means the result of 1/diagonal,
