@@ -53,10 +53,19 @@
 
 #include "Ifpack2_Details_Chebyshev_decl.hpp"
 #include "Kokkos_ArithTraits.hpp"
+#include "Kokkos_FusedFunctor.hpp"
 #include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_oblackholestream.hpp"
 #include <cmath>
 #include <iostream>
+
+//Comment out to use original, separate kernels
+#define USE_FUSED_KERNELS
+
+#ifdef USE_FUSED_KERNELS
+//need internal KokkosBlas functors
+#include "KokkosBlas1_axpby_impl.hpp"
+#endif
 
 namespace Ifpack2 {
 namespace Details {
@@ -1315,6 +1324,37 @@ ifpackApplyImpl (const op_type& A,
           << " - \\|D\\|_{\\infty} = " << D_->normInf () << endl;
   }
 
+#ifdef USE_FUSED_KERNELS
+  typedef typename MV::dual_view_type::t_dev device_t;
+  typedef typename device_t::memory_space memory_space;
+  typedef typename device_t::execution_space exec_space;
+  typedef decltype(X.template getLocalView<device_t>()) VecView;
+  typedef typename VecView::size_type size_type;
+  typedef Kokkos::RangePolicy<exec_space, size_type> RangePol;
+  typedef typename Kokkos::Details::ArithTraits<ScalarType>::val_type ImplScalar;
+  typedef typename KokkosBlas::Impl::Axpby_Generic<
+    ImplScalar, VecView, ImplScalar, VecView, size_type> AxpbyFunctor;
+  //Sync input vectors if necessary (only need to check once)
+  if(B.template need_sync<memory_space> ())
+    B.template sync<memory_space> ();
+  if (! zeroStartingSolution_) {
+    computeResidual (V1, B, A, X); // V1 = B - A*X
+    if (debug) {
+      *out_ << " - \\|B - A*X\\|_{\\infty} = " << maxNormInf (V1) << endl;
+    }
+    W.elementWiseMultiply (one/theta, D_inv, V1, STS::zero());
+    X.update (one, W, one); // X = X + W
+
+    //create functors to do solve and update, then fuse them
+
+  }
+  else {
+    //solve (W, one/theta, D_inv, B); // W = (1/theta)*D_inv*B
+    W.elementWiseMultiply(one/theta, D_inv, B, STS::zero();
+
+    Tpetra::deep_copy (X, W); // X = 0 + W
+  }
+#else
   // Special case for the first iteration.
   if (! zeroStartingSolution_) {
     computeResidual (V1, B, A, X); // V1 = B - A*X
@@ -1335,6 +1375,7 @@ ifpackApplyImpl (const op_type& A,
     }
     Tpetra::deep_copy (X, W); // X = 0 + W
   }
+#endif
   if (debug) {
     *out_ << " - \\|X\\|_{\\infty} = " << maxNormInf (X) << endl;
   }
@@ -1376,6 +1417,9 @@ ifpackApplyImpl (const op_type& A,
       *out_ << " - \\|X\\|_{\\infty} = " << maxNormInf (X) << endl;
     }
   }
+  #ifdef USE_FUSED_KERNELS
+  X.template modify<dev_memory_space> ();
+  #endif
 }
 
 template<class ScalarType, class MV>
