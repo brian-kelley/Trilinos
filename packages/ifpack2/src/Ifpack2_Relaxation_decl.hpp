@@ -785,7 +785,6 @@ private:
   //!Whether to write the given input file
   bool ifpack2_dump_matrix_;
 
-
   //! If \c true, the preconditioner has been initialized successfully.
   bool isInitialized_;
   //! If \c true, the preconditioner has been computed successfully.

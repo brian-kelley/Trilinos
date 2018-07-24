@@ -53,7 +53,10 @@
 #include <cstdlib>
 #include <sstream>
 #include "KokkosSparse_gauss_seidel.hpp"
-
+#include "Ifpack2_Details_FusedFunctor.hpp"
+//Need the internal KokkosBlas functors to do fused functor Jacobi
+#include "KokkosBlas1_axpby_mv_impl.hpp"
+#include "KokkosBlas1_mult_impl.hpp"
 
 // mfh 28 Mar 2013: Uncomment out these three lines to compute
 // statistics on diagonal entries in compute().
@@ -1297,13 +1300,48 @@ ApplyInverseJacobi (const Tpetra::MultiVector<scalar_type,local_ordinal_type,glo
 
   // Allocate a multivector if the cached one isn't perfect
   updateCachedMultiVector(Y.getMap(),as<size_t>(numVectors));
+  typedef Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type> MV;
+  typedef Tpetra::Vector<scalar_type,local_ordinal_type,global_ordinal_type,node_type> Vector;
+  typedef typename MV::dual_view_type::t_dev::device_type device_t;
+  typedef typename device_t::memory_space memory_space;
+  typedef typename device_t::execution_space exec_space;
+  typedef typename MV::dual_view_type::t_dev MultivecView;
+  typedef decltype(Kokkos::subview(X.template getLocalView<device_t>(), Kokkos::ALL(), 0)) VecView;
+  typedef typename VecView::size_type size_type;
+  typedef Kokkos::RangePolicy<exec_space, size_type> RangePol;
+  typedef typename Kokkos::Details::ArithTraits<scalar_type> STraits;
+  typedef typename STraits::val_type ImplScalar;
 
-  for (int j = startSweep; j < NumSweeps_; ++j) {
+  typedef typename KokkosBlas::Impl::MV_MultFunctor<
+    MultivecView, VecView, MultivecView, 2, 0, size_type> MultFunctorT;
+  typedef typename KokkosBlas::Impl::Axpby_MV_Functor<
+    VecView, MultivecView, VecView, MultivecView, 1, -1, size_type> UpdateFunctorT;
+  auto one = STraits::one();
+  //Create dummy scalars for Axpby functor
+  //(we are using the specialized case "y := x - y" so the dummy coefficients are never used)
+  VecView dummyCoefficients("Dummy axpby_mv coefficients", X.getNumVectors());
+  //Get kokkos views of diag, x, y and cachedMV
+  //All are 2D except diag which is 1D
+  if(Diagonal_->template need_sync<memory_space> ())
+    const_cast<Vector&>(*Diagonal_).template sync<memory_space> ();
+  if(X.template need_sync<memory_space> ())
+    const_cast<MV&>(X).template sync<memory_space> ();
+  auto Diag_view = Kokkos::subview(Diagonal_->template getLocalView<device_t>(), Kokkos::ALL(), 0);
+  auto X_view = X.template getLocalView<device_t>();
+  auto Y_view = Y.template getLocalView<device_t>();
+  auto cachedMV_view = cachedMV_->template getLocalView<device_t>();
+  for (int j = startSweep; j < NumSweeps_; ++j)
+  {
     // Each iteration: Y = Y + \omega D^{-1} (X - A*Y)
     applyMat (Y, *cachedMV_);
-    cachedMV_->update (STS::one (), X, -STS::one ());
-    Y.elementWiseMultiply (DampingFactor_, *Diagonal_, *cachedMV_, STS::one ());
+    if(cachedMV_->template need_sync<memory_space> ())
+      const_cast<MV&>(*cachedMV_).template sync<memory_space> ();
+    Kokkos::parallel_for(RangePol(0, X_view.extent(0)),
+        Details::fuseFunctors<RangePol>()(
+          UpdateFunctorT(X_view, cachedMV_view, dummyCoefficients, dummyCoefficients),
+          MultFunctorT(one, Y_view, DampingFactor_, Diag_view, cachedMV_view)));
   }
+  Y.template modify<memory_space> ();
 
   // For each column of output, for each pass over the matrix:
   //

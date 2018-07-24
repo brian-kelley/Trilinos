@@ -56,7 +56,13 @@
 #include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_oblackholestream.hpp"
 #include <cmath>
+#include <utility>
 #include <iostream>
+
+#include "Ifpack2_Details_FusedFunctor.hpp"
+//need some internal KokkosBlas functors
+#include "KokkosBlas1_axpby_mv_impl.hpp"
+#include "KokkosBlas1_mult_impl.hpp"
 
 namespace Ifpack2 {
 namespace Details {
@@ -1315,25 +1321,59 @@ ifpackApplyImpl (const op_type& A,
           << " - \\|D\\|_{\\infty} = " << D_->normInf () << endl;
   }
 
-  // Special case for the first iteration.
+  typedef typename MV::dual_view_type::t_dev::device_type device_t;
+  typedef typename device_t::memory_space memory_space;
+  typedef typename device_t::execution_space exec_space;
+  typedef typename MV::dual_view_type::t_dev MultivecView;
+  typedef decltype(Kokkos::subview(X.template getLocalView<device_t>(), Kokkos::ALL(), 0)) VecView;
+  typedef typename VecView::size_type size_type;
+  typedef Kokkos::RangePolicy<exec_space, size_type> RangePol;
+  typedef typename Kokkos::Details::ArithTraits<ScalarType> STraits;
+  typedef typename STraits::val_type ImplScalar;
+  //Solve functors used to do element-wise multiply between a multivector and a single vector,
+  //overwriting entries (KokkosBlas specializes for this case)
+  //
+  //InitialSolveFunctor used only by first iteration and overwrites W
+  //GeneralSolveFunctor used in all other iterations and updates W
+  typedef typename KokkosBlas::Impl::MV_MultFunctor<
+    MultivecView, VecView, MultivecView, 2, 0, size_type> InitialSolveFunctorT;
+  typedef typename KokkosBlas::Impl::MV_MultFunctor<
+    MultivecView, VecView, MultivecView, 2, 2, size_type> GeneralSolveFunctorT;
+  //UpdateFunctorT used to compute x = x + w efficiently
+  typedef typename KokkosBlas::Impl::Axpby_MV_Functor<
+    VecView, MultivecView, VecView, MultivecView, 1, 1, size_type> UpdateFunctorT;
+  //CopyFunctorT used to do x = w efficiently
+  typedef typename KokkosBlas::Impl::Axpby_MV_Functor<
+    VecView, MultivecView, VecView, MultivecView, 1, 0, size_type> CopyFunctorT;
+  VecView dummyCoefficients("Dummy axpby_mv coefficients", X.getNumVectors());
+  auto Dinv_view = Kokkos::subview(D_inv.template getLocalView<device_t>(), Kokkos::ALL(), 0);
+  auto V1_view = V1.template getLocalView<device_t>();
+  auto X_view = X.template getLocalView<device_t>();
+  auto W_view = W.template getLocalView<device_t>();
+  //Sync input vectors if necessary (only need to check once)
+  if(B.template need_sync<memory_space> ())
+    const_cast<MV&>(B).template sync<memory_space> ();
+  //All except Dinv_view are 2D (MultivecView)
+  auto B_view = B.template getLocalView<device_t>();
+  ImplScalar zero = STraits::zero();
+  ImplScalar oneIS = STraits::one();
+  ImplScalar oneOverTheta(oneIS / theta);
   if (! zeroStartingSolution_) {
     computeResidual (V1, B, A, X); // V1 = B - A*X
     if (debug) {
       *out_ << " - \\|B - A*X\\|_{\\infty} = " << maxNormInf (V1) << endl;
     }
-
-    solve (W, one/theta, D_inv, V1); // W = (1/theta)*D_inv*(B-A*X)
-    if (debug) {
-      *out_ << " - \\|W\\|_{\\infty} = " << maxNormInf (W) << endl;
-    }
-    X.update (one, W, one); // X = X + W
+    //create KokkosBlas functors to do solve and update, fuse and execute them
+    Kokkos::parallel_for(RangePol(0, X_view.extent(0)),
+        fuseFunctors<RangePol>()(
+          InitialSolveFunctorT(zero, W_view, oneOverTheta, Dinv_view, V1_view),
+          UpdateFunctorT(W_view, X_view, dummyCoefficients, dummyCoefficients)));
   }
   else {
-    solve (W, one/theta, D_inv, B); // W = (1/theta)*D_inv*B
-    if (debug) {
-      *out_ << " - \\|W\\|_{\\infty} = " << maxNormInf (W) << endl;
-    }
-    Tpetra::deep_copy (X, W); // X = 0 + W
+    Kokkos::parallel_for(RangePol(0, X_view.extent(0)),
+        fuseFunctors<RangePol>()(
+          InitialSolveFunctorT(zero, W_view, oneOverTheta, Dinv_view, B_view),
+          CopyFunctorT(W_view, X_view, dummyCoefficients, dummyCoefficients)));
   }
   if (debug) {
     *out_ << " - \\|X\\|_{\\infty} = " << maxNormInf (X) << endl;
@@ -1353,6 +1393,7 @@ ifpackApplyImpl (const op_type& A,
     }
 
     computeResidual (V1, B, A, X); // V1 = B - A*X
+
     if (debug) {
       *out_ << " - \\|B - A*X\\|_{\\infty} = " << maxNormInf (V1) << endl;
     }
@@ -1366,16 +1407,21 @@ ifpackApplyImpl (const op_type& A,
       *out_ << " - dtemp1 = " << dtemp1 << endl
             << " - dtemp2 = " << dtemp2 << endl;
     }
-
-
-    W.elementWiseMultiply (dtemp2, D_inv, V1, dtemp1);
-    X.update (one, W, one);
+    
+    //need V1 up-to-date on device 
+    if(V1.template need_sync<memory_space>())
+      const_cast<MV&>(V1).template sync<memory_space>();
+    Kokkos::parallel_for(RangePol(0, X_view.extent(0)),
+        fuseFunctors<RangePol>()(
+          GeneralSolveFunctorT(dtemp1, W_view, dtemp2, Dinv_view, V1_view),
+          UpdateFunctorT(W_view, X_view, dummyCoefficients, dummyCoefficients)));
 
     if (debug) {
       *out_ << " - \\|W\\|_{\\infty} = " << maxNormInf (W) << endl;
       *out_ << " - \\|X\\|_{\\infty} = " << maxNormInf (X) << endl;
     }
   }
+  X.template modify<memory_space> ();
 }
 
 template<class ScalarType, class MV>
