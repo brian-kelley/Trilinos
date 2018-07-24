@@ -55,6 +55,7 @@
 #include <iostream>
 #include <complex>
 #include "KokkosSparse_gauss_seidel.hpp"
+#include "KokkosSparse_rcm_impl.hpp"
 
 #ifndef kokkos_complex_double
 #define kokkos_complex_double Kokkos::complex<double>
@@ -248,11 +249,235 @@ void test_gauss_seidel(lno_t numRows, size_type nnz, lno_t bandwidth, lno_t row_
   //device::execution_space::finalize();
 }
 
+template <typename scalar_t, typename lno_t, typename offset_t, typename device>
+void test_rcm_perf(std::string matrixPath)
+{
+  using namespace Test;
+  typedef typename KokkosSparse::CrsMatrix<scalar_t, lno_t, device, void, offset_t> crsMat_t;
+  typedef typename crsMat_t::StaticCrsGraphType graph_t;
+  typedef typename crsMat_t::values_type::non_const_type scalar_view_t;
+  typedef typename graph_t::row_map_type::non_const_type lno_view_t;
+  typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;
+  typedef typename lno_view_t::size_type size_type;
+  typedef KokkosKernelsHandle
+      <offset_t, lno_t, scalar_t,
+      typename device::execution_space, typename device::memory_space,typename device::memory_space> KernelHandle;
+  KernelHandle kh;
+  srand(245);
+  lno_view_t Arowmap("A rowmap", 0);
+  lno_nnz_view_t Aentries("A entries", 0);
+  scalar_view_t Avalues("A values", 0);
+  lno_t numRows = 0;
+  offset_t nnz = 0;
+  {
+    offset_t* rowmap = nullptr;
+    lno_t* entries = nullptr;
+    scalar_t* values = nullptr;
+    KokkosKernels::Impl::read_mtx<lno_t, offset_t, scalar_t>(matrixPath.c_str(), &numRows, &nnz, &rowmap, &entries, &values, false, false, false);
+    //now that values have been read in, copy them to the actual views
+    Kokkos::resize(Arowmap, numRows + 1);
+    Kokkos::resize(Aentries, nnz);
+    Kokkos::resize(Avalues, nnz);
+    auto Arowmap_host = Kokkos::create_mirror_view(Arowmap);
+    auto Aentries_host = Kokkos::create_mirror_view(Aentries);
+    auto Avalues_host = Kokkos::create_mirror_view(Avalues);
+    memcpy(Arowmap_host.data(), rowmap, (numRows + 1) * sizeof(offset_t));
+    memcpy(Aentries_host.data(), entries, nnz * sizeof(lno_t));
+    memcpy(Avalues_host.data(), values, nnz * sizeof(scalar_t));
+    Kokkos::deep_copy(Arowmap, Arowmap_host);
+    Kokkos::deep_copy(Aentries, Aentries_host);
+    Kokkos::deep_copy(Avalues, Avalues_host);
+    free(rowmap);
+    free(entries);
+    free(values);
+  }
+  Kokkos::Impl::Timer timer;
+  int trials = 20;
+  for(int i = 0; i < trials; i++)
+  {
+    KokkosSparse::Impl::RCM<KernelHandle, lno_view_t, lno_nnz_view_t> rcm(&kh, numRows, Arowmap, Aentries);
+    rcm.rcm();
+  }
+  std::cout << "RCM (" << trials << " trials, " << numRows << " rows) took " << timer.seconds() / trials << " s (avg)\n";
+}
+
+template <typename scalar_t, typename lno_t, typename offset_t, typename device>
+void test_gc_crash(std::string graphPath)
+{
+  typedef typename KokkosSparse::CrsMatrix<scalar_t, lno_t, device, void, offset_t> crsMat_t;
+  typedef typename crsMat_t::StaticCrsGraphType graph_t;
+  typedef typename crsMat_t::values_type::non_const_type scalar_view_t;
+  typedef typename graph_t::row_map_type::non_const_type lno_view_t;
+  typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;
+  typedef typename lno_view_t::size_type size_type;
+  lno_t nrows;
+  offset_t numEntries; 
+  offset_t* xadjRaw;
+  lno_t* adjRaw;
+  scalar_t* scalarRaw;
+  KokkosKernels::Impl::read_graph_crs<lno_t, offset_t, scalar_t>
+    (&nrows, &numEntries, &xadjRaw, &adjRaw, &scalarRaw, graphPath.c_str());
+  lno_view_t xadj("xadj", nrows + 1);
+  for(size_type i = 0; i < nrows + 1; i++)
+    xadj(i) = xadjRaw[i];
+  lno_view_t adj("adj", numEntries);
+  for(size_type i = 0; i < numEntries; i++)
+    adj(i) = adjRaw[i];
+  std::cout << "Read in CRS graph with " << nrows << " rows and " << numEntries << " entries.\n";
+  typedef KokkosKernelsHandle
+      <offset_t, lno_t, scalar_t,
+      typename device::execution_space, typename device::memory_space,typename device::memory_space> KernelHandle;
+  KernelHandle kh;
+  kh.create_graph_coloring_handle();
+  std::cout << "Calling graph color kernel on cluster test graph..." << std::endl;
+  KokkosGraph::Experimental::graph_color_symbolic(&kh, nrows, nrows, xadj, adj, false); 
+  auto coloringHandle = kh.get_graph_coloring_handle();
+  auto clusterColors = coloringHandle->get_vertex_colors();
+  auto numClusterColors = coloringHandle->get_num_colors();
+  std::cout << "Success, used " << numClusterColors << " colors." << std::endl;
+}
+
+
+template <typename scalar_t, typename lno_t, typename offset_t, typename device>
+void test_rcm(lno_t numRows, offset_t nnz, offset_t bandwidth)
+{
+  using namespace Test;
+  srand(245);
+  typedef typename KokkosSparse::CrsMatrix<scalar_t, lno_t, device, void, offset_t> crsMat_t;
+  typedef typename crsMat_t::StaticCrsGraphType graph_t;
+  typedef typename graph_t::row_map_type::non_const_type lno_view_t;
+  typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;
+  typedef typename lno_view_t::size_type size_type;
+  //typedef typename graph_t::entries_type::non_const_type   color_view_t;
+  typedef KokkosKernelsHandle
+      <offset_t, lno_t, scalar_t,
+      typename device::execution_space, typename device::memory_space,typename device::memory_space> KernelHandle;
+
+  //std::cout << "building RCM test matrix with " << numRows << " rows.\n";
+  crsMat_t A = genSymmetricMatrix<crsMat_t, scalar_t, lno_t, device, offset_t>(numRows, nnz, bandwidth, true);
+
+  lno_view_t Arowmap("asdf", numRows + 1);
+  nnz = A.graph.row_map(numRows);
+  lno_nnz_view_t Aentries("asdf", nnz);
+  lno_nnz_view_t Avalues("asdf", nnz);
+  Kokkos::deep_copy(Arowmap, A.graph.row_map);
+  //std::cout << "Aentries dim: " << Aentries.dimension_0() << '\n';
+  //std::cout << "A.graph.entries dim: " << A.graph.entries.dimension_0() << '\n';
+  for(offset_t i = 0; i < nnz; i++)
+  {
+    Aentries(i) = A.graph.entries(i);
+    Avalues(i) = A.values(i);
+  }
+  Kokkos::deep_copy(Aentries, A.graph.entries);
+  Kokkos::deep_copy(Avalues, A.values);
+
+  KernelHandle kh;
+  kh.create_gs_handle(GS_DEFAULT);
+
+  typedef KokkosSparse::Impl::RCM<KernelHandle, decltype(Arowmap), decltype(Aentries)> rcm_t;
+  rcm_t rcm(&kh, numRows, Arowmap, Aentries);
+  /*&
+  std::cout << "Matrix for RCM testing (raw CRS)\n";
+  for(lno_t i = 0; i < numRows; i++)
+  {
+    std::cout << "Row " << i << ": ";
+    for(offset_t j = Arowmap(i); j < Arowmap(i + 1); j++)
+    {
+      std::cout << Aentries(j) << ' ';
+    }
+    std::cout << '\n';
+  }
+  std::cout << '\n';
+  */
+  //rcmOrder(i) = the timestamp of node i
+  auto rcmOrder = rcm.rcm();
+  //perm(i) = the node with timestamp i
+  /*
+  std::cout << "RCM row list that was returned:\n";
+  for(size_type i = 0; i < rcmOrder.dimension_0(); i++)
+  {
+    std::cout << rcmOrder(i) << ' ';
+  }
+  std::cout << '\n';
+  */
+  /*
+  std::cout << "Permutation array:\n";
+  for(size_type i = 0; i < perm.dimension_0(); i++)
+  {
+    std::cout << perm(i) << ' ';
+  }
+  std::cout << '\n';
+  */
+  //make sure that perm is in fact a permuation matrix (contains each row exactly once)
+  std::set<lno_t> rowSet;
+  for(lno_t i = 0; i < numRows; i++)
+    rowSet.insert(rcmOrder(i));
+  if((lno_t) rowSet.size() != numRows)
+  {
+    std::cout << "Only got back " << rowSet.size() << " unique row IDs.\n";
+    return;
+  }
+  //make a new CRS graph based on permuting the rows and columns of mat
+  lno_view_t Browmap("rcm perm rowmap", numRows + 1);
+  lno_nnz_view_t Bentries("rcm perm entries", nnz);
+  //permute rows (compute row counts, then prefix sum, then copy in entries)
+  for(lno_t i = 0; i < numRows; i++)
+  {
+    //row i of B is row perm(i) of A
+    Browmap(rcmOrder(i)) = Arowmap(i + 1) - Arowmap(i);
+  }
+  size_t total = 0;
+  for(lno_t i = 0; i <= numRows; i++)
+  {
+    size_t temp = 0;
+    if(i != numRows)
+      temp = Browmap(i);
+    Browmap(i) = total;
+    total += temp;
+  }
+  for(lno_t i = 0; i < numRows; i++)
+  {
+    //Copy entries in row i of A into row rcmOrder(i) of B,
+    //converting columns too
+    for(offset_t j = 0; j < Arowmap(i + 1) - Arowmap(i); j++)
+    {
+      auto Acol = Aentries(Arowmap(i) + j);
+      Bentries(Browmap(rcmOrder(i)) + j) = rcmOrder(Acol);
+    }
+  }
+  //Print sparsity pattern of B
+  /*
+  std::cout << "A (RCM-reordered):\n\n";
+  for(lno_t i = 0; i < numRows; i++)
+  {
+    std::vector<char> line(numRows, ' ');
+    for(offset_t j = Browmap(i); j < Browmap(i + 1); j++)
+      line[Bentries(j)] = '*';
+    for(lno_t j = 0; j < numRows; j++)
+      std::cout << line[j];
+    std::cout << '\n';
+  }
+  std::cout << '\n';
+  std::cout << "Change in average bandwidth: " << rcm.find_average_bandwidth(Arowmap, Aentries) << " -> " << rcm.find_average_bandwidth(Browmap, Bentries) << '\n';
+  */
+}
 
 
 #define EXECUTE_TEST(SCALAR, ORDINAL, OFFSET, DEVICE) \
 TEST_F( TestCategory, sparse ## _ ## gauss_seidel ## _ ## SCALAR ## _ ## ORDINAL ## _ ## OFFSET ## _ ## DEVICE ) { \
   test_gauss_seidel<SCALAR,ORDINAL,OFFSET,DEVICE>(10000, 10000 * 30, 200, 10); \
+} \
+TEST_F( TestCategory, sparse ## _ ## rcm ## _ ## SCALAR ## _ ## ORDINAL ## _ ## OFFSET ## _ ## DEVICE ) { \
+  test_rcm<SCALAR,ORDINAL,OFFSET,DEVICE>(100, 100, 100); \
+} \
+TEST_F( TestCategory, sparse ## _ ## cluster_convergence ## _ ## SCALAR ## _ ## ORDINAL ## _ ## OFFSET ## _ ## DEVICE ) { \
+  test_cluster_convergence<SCALAR,ORDINAL,OFFSET,DEVICE>("/ascldap/users/bmkelle/msc04515.mtx"); \
+} \
+TEST_F( TestCategory, sparse ## _ ## rcm_perf ## _ ## SCALAR ## _ ## ORDINAL ## _ ## OFFSET ## _ ## DEVICE ) { \
+  test_rcm_perf<SCALAR,ORDINAL,OFFSET,DEVICE>("/ascldap/users/bmkelle/inline_1.mtx"); \
+} \
+TEST_F( TestCategory, sparse ## _ ## gc_crash ## _ ## SCALAR ## _ ## ORDINAL ## _ ## OFFSET ## _ ## DEVICE ) { \
+  test_gc_crash<SCALAR,ORDINAL,OFFSET,DEVICE>("debugGraph.txt"); \
 }
 
 
