@@ -496,6 +496,9 @@ private:
   //! Whether to print copious debug output.
   bool debug_;
 
+  //! Whether to use fused functors in apply
+  bool useFusedFunctors_;
+
   //@}
   //! \name Computational helper methods
   //@{
