@@ -53,18 +53,20 @@
 
 #include "Ifpack2_Details_Chebyshev_decl.hpp"
 #include "Kokkos_ArithTraits.hpp"
-#include "Kokkos_FusedFunctor.hpp"
 #include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_oblackholestream.hpp"
 #include <cmath>
+#include <utility>
 #include <iostream>
 
 //Comment out to use original, separate kernels
 #define USE_FUSED_KERNELS
 
 #ifdef USE_FUSED_KERNELS
-//need internal KokkosBlas functors
-#include "KokkosBlas1_axpby_impl.hpp"
+#include "Kokkos_FusedFunctor.hpp"
+//need some internal KokkosBlas functors
+#include "KokkosBlas1_axpby_mv_impl.hpp"
+#include "KokkosBlas1_mult_impl.hpp"
 #endif
 
 namespace Ifpack2 {
@@ -1325,50 +1327,59 @@ ifpackApplyImpl (const op_type& A,
   }
 
 #ifdef USE_FUSED_KERNELS
-  typedef typename MV::dual_view_type::t_dev device_t;
+  typedef typename MV::dual_view_type::t_dev::device_type device_t;
   typedef typename device_t::memory_space memory_space;
   typedef typename device_t::execution_space exec_space;
-  typedef decltype(X.template getLocalView<device_t>()) VecView;
+  typedef typename MV::dual_view_type::t_dev MultivecView;
+  typedef decltype(Kokkos::subview(X.template getLocalView<device_t>(), Kokkos::ALL(), 0)) VecView;
   typedef typename VecView::size_type size_type;
   typedef Kokkos::RangePolicy<exec_space, size_type> RangePol;
   typedef typename Kokkos::Details::ArithTraits<ScalarType> STraits;
   typedef typename STraits::val_type ImplScalar;
-  //  
-  typedef typename KokkosBlas::Impl::Axpby_Functor<
-    ImplScalar, VecView, ImplScalar, VecView, 2, 2, size_type> AxpbyGeneral;
-  typedef typename KokkosBlas::Impl::Axpby_Functor<
-    ImplScalar, VecView, ImplScalar, VecView, 1, 1, size_type> AxpbyUpdate;
+  //Solve functors used to do element-wise multiply between a multivector and a single vector,
+  //overwriting entries (KokkosBlas specializes for this case)
+  //
+  //InitialSolveFunctor used only by first iteration and overwrites W
+  //GeneralSolveFunctor used in all other iterations and updates W
+  typedef typename KokkosBlas::Impl::MV_MultFunctor<
+    MultivecView, VecView, MultivecView, 2, 0, size_type> InitialSolveFunctorT;
+  typedef typename KokkosBlas::Impl::MV_MultFunctor<
+    MultivecView, VecView, MultivecView, 2, 2, size_type> GeneralSolveFunctorT;
+  //UpdateFunctorT used to compute x = x + w efficiently
+  typedef typename KokkosBlas::Impl::Axpby_MV_Functor<
+    VecView, MultivecView, VecView, MultivecView, 1, 1, size_type> UpdateFunctorT;
+  //CopyFunctorT used to do x = w efficiently
+  typedef typename KokkosBlas::Impl::Axpby_MV_Functor<
+    VecView, MultivecView, VecView, MultivecView, 1, 0, size_type> CopyFunctorT;
   //Sync input vectors if necessary (only need to check once)
   if(B.template need_sync<memory_space> ())
-    B.template sync<memory_space> ();
+    const_cast<MV&>(B).template sync<memory_space> ();
+  //All except Dinv_view are 2D (MultivecView)
+  auto Dinv_view = Kokkos::subview(D_inv.template getLocalView<device_t>(), Kokkos::ALL(), 0);
+  auto V1_view = V1.template getLocalView<device_t>();
+  auto X_view = X.template getLocalView<device_t>();
+  auto W_view = W.template getLocalView<device_t>();
+  auto B_view = B.template getLocalView<device_t>();
+  ImplScalar zero = STraits::zero();
+  ImplScalar oneIS = STraits::one();
+  ImplScalar oneOverTheta(oneIS / theta);
+  VecView dummyCoefficients("Dummy axpby_mv coefficients", X.getNumVectors());
   if (! zeroStartingSolution_) {
     computeResidual (V1, B, A, X); // V1 = B - A*X
     if (debug) {
       *out_ << " - \\|B - A*X\\|_{\\infty} = " << maxNormInf (V1) << endl;
     }
-    W.elementWiseMultiply (one/theta, D_inv, V1, STS::zero());
-    X.update (one, W, one); // X = X + W
-
-    //create functors to do solve and update, then fuse them into one
-    VecView Dinv_view = D_inv.template getLocalView<device_t>();
-    VecView V1_view = V1.template getLocalView<device_t>();
-    VecView X_view = X.template getLocalView<device_t>();
-    VecView W_view = W.template getLocalView<device_t>();
-    ImplScalar zero = STraits::zero();
-    ImplScalar one = STraits::one();
-    ImplScalar oneOverTheta(one / theta);
-  typedef typename Kokkos::Details::ArithTraits<ScalarType>::val_type ImplScalar;
-    AxpbyGeneral solveFunctor(
-
-  Axpby_Functor (const XV& x, const YV& y,
-                   const AV& a, const BV& b,
-                   const SizeType startingColumn) :
+    //create KokkosBlas functors to do solve and update, fuse and execute them
+    Kokkos::parallel_for(RangePol(0, X_view.extent(0)),
+        Kokkos::fuseFunctors<RangePol>()(
+          InitialSolveFunctorT(zero, W_view, oneOverTheta, Dinv_view, V1_view),
+          UpdateFunctorT(W_view, X_view, dummyCoefficients, dummyCoefficients)));
   }
   else {
-    //solve (W, one/theta, D_inv, B); // W = (1/theta)*D_inv*B
-    W.elementWiseMultiply(one/theta, D_inv, B, STS::zero();
-
-    Tpetra::deep_copy (X, W); // X = 0 + W
+    Kokkos::parallel_for(RangePol(0, X_view.extent(0)),
+        Kokkos::fuseFunctors<RangePol>()(
+          InitialSolveFunctorT(zero, W_view, oneOverTheta, Dinv_view, B_view),
+          CopyFunctorT(W_view, X_view, dummyCoefficients, dummyCoefficients)));
   }
 #else
   // Special case for the first iteration.
@@ -1410,6 +1421,7 @@ ifpackApplyImpl (const op_type& A,
     }
 
     computeResidual (V1, B, A, X); // V1 = B - A*X
+
     if (debug) {
       *out_ << " - \\|B - A*X\\|_{\\infty} = " << maxNormInf (V1) << endl;
     }
@@ -1423,10 +1435,20 @@ ifpackApplyImpl (const op_type& A,
       *out_ << " - dtemp1 = " << dtemp1 << endl
             << " - dtemp2 = " << dtemp2 << endl;
     }
+    
+#ifdef USE_FUSED_KERNELS
+    //need V1 up-to-date on device 
+    if(V1.template need_sync<memory_space>())
+      const_cast<MV&>(V1).template sync<memory_space>();
 
-
+    Kokkos::parallel_for(RangePol(0, X_view.extent(0)),
+        Kokkos::fuseFunctors<RangePol>()(
+          GeneralSolveFunctorT(dtemp1, W_view, dtemp2, Dinv_view, V1_view),
+          UpdateFunctorT(W_view, X_view, dummyCoefficients, dummyCoefficients)));
+#else
     W.elementWiseMultiply (dtemp2, D_inv, V1, dtemp1);
     X.update (one, W, one);
+#endif
 
     if (debug) {
       *out_ << " - \\|W\\|_{\\infty} = " << maxNormInf (W) << endl;
@@ -1434,7 +1456,7 @@ ifpackApplyImpl (const op_type& A,
     }
   }
   #ifdef USE_FUSED_KERNELS
-  X.template modify<dev_memory_space> ();
+  X.template modify<memory_space> ();
   #endif
 }
 

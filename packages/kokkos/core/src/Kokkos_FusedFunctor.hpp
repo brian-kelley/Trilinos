@@ -19,7 +19,7 @@ namespace Kokkos
   struct FusedFunctor<Policy>
   {
     typedef typename Policy::member_type member_type;
-    KOKKOS_INLINE_FUNCTION void operator()(const member_type&) {}
+    KOKKOS_INLINE_FUNCTION void operator()(const member_type) const {}
   };
 
   //Specialization that executes 1 functor and then 0 or more others
@@ -28,13 +28,24 @@ namespace Kokkos
   : public FusedFunctor<Policy, TailFunctors...>
   {
     typedef FusedFunctor<Policy, TailFunctors...> Parent;
-    FusedFunctor(HeadFunctor& head_, TailFunctors...tail) : Parent(tail), head(head_) {}
-    KOKKOS_INLINE_FUNCTION void operator()(const typename Parent::member_type& i)
+    FusedFunctor(HeadFunctor& head_, TailFunctors...tail) : Parent(tail...), head(head_) {}
+
+    KOKKOS_INLINE_FUNCTION void operator()(const typename Parent::member_type i) const
     {
       head(i);
       Parent::operator()(i);
     }
     HeadFunctor head;
+  };
+
+  template<typename Policy>
+  struct fuseFunctors
+  {
+    template<typename...Args>
+    FusedFunctor<Policy, Args...> operator()(Args...args)
+    {
+      return FusedFunctor<Policy, Args...>(args...);
+    };
   };
 }
 
