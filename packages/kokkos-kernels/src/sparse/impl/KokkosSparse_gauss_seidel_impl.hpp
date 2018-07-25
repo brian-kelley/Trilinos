@@ -49,8 +49,43 @@
 #include <Kokkos_MemoryTraits.hpp>
 #include "KokkosGraph_graph_color.hpp"
 #include "KokkosKernels_Uniform_Initialized_MemoryPool.hpp"
+#include "KokkosKernels_BitUtils.hpp"
+#include "KokkosSparse_rcm_impl.hpp"
+#include <dirent.h> //BMK: DEBUGGING
+#include <set> //BMK: DEBUGGING
 #ifndef _KOKKOSGSIMP_HPP
 #define _KOKKOSGSIMP_HPP
+
+template<typename Rowmap, typename Entries, typename nnz_lno_t, typename row_lno_t>
+void lazyGraphDebug(Rowmap rowmap, Entries entries, std::string fname)
+{
+  auto numRows = rowmap.dimension_0() - 1;
+  auto numEntries = rowmap(numRows);
+  /*
+  bool writeGraph = true;
+  {
+    DIR* d = opendir(".");
+    while(auto entry = readdir(d))
+    {
+      if(strcmp(fname.c_str(), entry->d_name) == 0)
+      {
+        //graphFile already exists
+        writeGraph = false;
+        break;
+      }
+    }
+    closedir(d);
+  }
+  if(writeGraph)
+  */
+  {
+    std::cout << "Writing graph with " << numRows << " rows to " << fname << " for debugging.\n";
+    double* dummyScalar = (double*) malloc(numEntries * sizeof(double));
+    KokkosKernels::Impl::write_graph_crs<nnz_lno_t, row_lno_t, double>
+      (numRows, numEntries, rowmap.data(), entries.data(), dummyScalar, fname.c_str());
+    free(dummyScalar);
+  }
+}
 
 namespace KokkosSparse{
 
@@ -602,7 +637,9 @@ namespace KokkosSparse{
 #ifdef KOKKOSSPARSE_IMPL_TIME_REVERSE
         Kokkos::Impl::Timer timer;
 #endif
-        auto gsHandle = this->handle->get_gs_handle();
+        auto gsHandler = this->handle->get_gs_handle();
+        typename HandleType::GraphColoringHandleType::color_view_t colors;
+        color_t numColors;
         if(gsHandler->get_algorithm_type() != GS_CLUSTER)
         {
           std::cout << "NOT using GS_CLUSTER." << std::endl;
@@ -611,6 +648,7 @@ namespace KokkosSparse{
             if (gchandle->get_coloring_algo_type() == KokkosGraph::COLORING_EB){
 
               gchandle->symmetrize_and_calculate_lower_diagonal_edge_list(num_rows, xadj, adj);
+              lazyGraphDebug<decltype(xadj), decltype(adj), nnz_lno_t, row_lno_t>(xadj, adj, "AsymmetricEBGraph.txt");
               KokkosGraph::Experimental::graph_color_symbolic <HandleType, const_lno_row_view_t, const_lno_nnz_view_t>
                 (this->handle, num_rows, num_rows, xadj , adj);
             }
@@ -622,12 +660,16 @@ namespace KokkosSparse{
                   row_lno_temp_work_view_t, nnz_lno_temp_work_view_t,
                   MyExecSpace>
                 (num_rows, xadj, adj, tmp_xadj, tmp_adj );
+          lazyGraphDebug<decltype(xadj), decltype(adj), nnz_lno_t, row_lno_t>(xadj, adj, "SymmetrizedGraph.txt");
               KokkosGraph::Experimental::graph_color_symbolic <HandleType, row_lno_temp_work_view_t, nnz_lno_temp_work_view_t> (this->handle, num_rows, num_rows, tmp_xadj , tmp_adj);
             }
           }
           else {
+        lazyGraphDebug<decltype(xadj), decltype(adj), nnz_lno_t, row_lno_t>(xadj, adj, "AlreadySymmetricGraph.txt");
             KokkosGraph::Experimental::graph_color_symbolic <HandleType, const_lno_row_view_t, const_lno_nnz_view_t> (this->handle, num_rows, num_rows, xadj , adj);
           }
+          colors =  gchandle->get_vertex_colors();
+          numColors = gchandle->get_num_colors();
         }
         else
         {
@@ -644,13 +686,10 @@ namespace KokkosSparse{
           colors = initialize_symbolic_cluster<rowmap_t, colind_t>(tmp_xadj, tmp_adj, numColors);
           std::cout << "Expected (max) degree of parallelism in GS apply: " << (double) num_rows / numColors << std::endl;
         }
-        color_t numColors = gchandle->get_num_colors();
 #ifdef KOKKOSSPARSE_IMPL_TIME_REVERSE
         std::cout << "COLORING_TIME:" << timer.seconds() << std::endl;
 #endif
 
-
-        typename HandleType::GraphColoringHandleType::color_view_t colors =  gchandle->get_vertex_colors();
 #if KOKKOSSPARSE_IMPL_RUNSEQUENTIAL
         numColors = num_rows;
         KokkosKernels::Impl::print_1Dview(colors);
@@ -776,7 +815,6 @@ namespace KokkosSparse{
         timer.reset();
 #endif
 
-        typename HandleType::GaussSeidelHandleType *gsHandler = this->handle->get_gs_handle();
         nnz_lno_t block_size = this->handle->get_gs_handle()->get_block_size();
 
         //MD: if block size is larger than 1;

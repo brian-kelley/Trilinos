@@ -249,6 +249,227 @@ void test_gauss_seidel(lno_t numRows, size_type nnz, lno_t bandwidth, lno_t row_
   //device::execution_space::finalize();
 }
 
+//Generate a symmetric, diagonally dominant matrix for testing RCM
+template<typename crsMat_t, typename scalar_t, typename lno_t, typename device, typename size_type>
+crsMat_t genSymmetricMatrix(lno_t numRows, lno_t randNNZ, lno_t bandwidth, bool isGraphConnected)
+{
+  typedef typename crsMat_t::StaticCrsGraphType graph_t;
+  typedef typename graph_t::row_map_type::non_const_type rowmap_view;
+  typedef typename graph_t::entries_type::non_const_type colinds_view;
+  typedef typename crsMat_t::values_type::non_const_type scalar_view;
+  std::vector<bool> dense(numRows * numRows, false);
+  auto addBand = [&](int n)
+  {
+    for(int i = 0; i < numRows; i++)
+    {
+      if(i + n < numRows)
+      {
+        dense[i + n + i * numRows] = true;
+        dense[i + (i + n) * numRows] = true;
+      }
+      if(i - n >= 0)
+      {
+        dense[i - n + i * numRows] = true;
+        dense[i + (i - n) * numRows] = true;
+      }
+    }
+  };
+  //add diagonal and another band
+  addBand(0);
+  //add random edges
+  for(lno_t i = 0; i < randNNZ; i++)
+  {
+    int row = rand() % numRows;
+    int col = rand() % numRows;
+    dense[row + col * numRows] = true;
+    dense[col + row * numRows] = true;
+  }
+  if(isGraphConnected)
+  {
+    //Add a minimum set of edges to make graph connected
+    std::set<lno_t> connected;
+    for(lno_t i = 0; i < numRows; i++)
+    {
+      if(dense[i])
+        connected.insert(i);
+    }
+    while((lno_t) connected.size() < numRows)
+    {
+      lno_t toConnect = 0;
+      for(; toConnect < numRows; toConnect++)
+      {
+        if(connected.find(toConnect) == connected.end())
+        {
+          break;
+        }
+      }
+      size_t index = connected.size() - 1 - rand() % connected.size();
+      lno_t inGraph;
+      for(auto c : connected)
+      {
+        if(index == 0)
+        {
+          inGraph = c;
+          break;
+        }
+        index--;
+      }
+      dense[toConnect + inGraph * numRows] = true;
+      dense[inGraph + toConnect * numRows] = true;
+      for(lno_t i = 0; i < numRows; i++)
+      {
+        if(dense[toConnect + i * numRows])
+          connected.insert(i);
+      }
+    }
+  }
+  /*
+  std::cout << "Graph for testing RCM:\n";
+  for(int i = 0; i < numRows; i++)
+  {
+    for(int j = 0; j < numRows; j++)
+    {
+      if(dense[i * numRows + j])
+        std::cout << '*';
+      else
+        std::cout << ' ';
+    }
+    std::cout << '\n';
+  }
+  std::cout << '\n';
+  */
+  size_t nnz = std::count_if(dense.begin(), dense.end(), [](bool v) {return v;});
+  rowmap_view Arowmap("asdf", numRows + 1);
+  colinds_view Acolinds("asdf", nnz);
+  scalar_view Avalues("asdf", nnz);
+  size_t total = 0;
+  for(lno_t i = 0; i < numRows; i++)
+  {
+    Arowmap(i) = total;
+    for(lno_t j = 0; j < numRows; j++)
+    {
+      if(dense[i * numRows + j])
+      {
+        Acolinds(total) = j;
+        if(i == j)
+          Avalues(total) = 1000;
+        else
+          Avalues(total) = 1;
+        total++;
+      }
+    }
+  }
+  Arowmap(numRows) = total;
+  //std::cout << "Actual NNZ in matrix: " << total << '\n';
+  //std::cout << "But, allocated space for : " << Avalues.dimension_0() << '\n';
+  graph_t Agraph(Acolinds, Arowmap);
+  return crsMat_t("RCM test matrix", numRows, Avalues, Agraph);
+}
+
+template<typename Vector>
+double norm2(Vector& v)
+{
+  double sqSum = 0;
+  for(size_t i = 0; i < v.dimension_0(); i++)
+  {
+    sqSum += v(i) * v(i);
+  }
+  return sqrt(sqSum);
+}
+
+template <typename scalar_t, typename lno_t, typename offset_t, typename device>
+void test_cluster_convergence(std::string matrixPath)
+{
+  using namespace Test;
+  typedef typename KokkosSparse::CrsMatrix<scalar_t, lno_t, device, void, offset_t> crsMat_t;
+  typedef typename crsMat_t::StaticCrsGraphType graph_t;
+  typedef typename crsMat_t::values_type::non_const_type scalar_view_t;
+  typedef typename graph_t::row_map_type::non_const_type lno_view_t;
+  typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;
+  typedef typename lno_view_t::size_type size_type;
+  typedef KokkosKernelsHandle
+      <offset_t, lno_t, scalar_t,
+      typename device::execution_space, typename device::memory_space,typename device::memory_space> KernelHandle;
+  srand(245);
+  lno_view_t Arowmap("A rowmap", 0);
+  lno_nnz_view_t Aentries("A entries", 0);
+  scalar_view_t Avalues("A values", 0);
+  lno_t numRows = 0;
+  offset_t nnz = 0;
+  std::ofstream output("cluster_convergence.txt");
+  output << "Loading matrix \"" << matrixPath << "...";
+  {
+    offset_t* rowmap = nullptr;
+    lno_t* entries = nullptr;
+    scalar_t* values = nullptr;
+    KokkosKernels::Impl::read_mtx<lno_t, offset_t, scalar_t>(matrixPath.c_str(), &numRows, &nnz, &rowmap, &entries, &values, false, false, false);
+    output << "done.\n";
+    output << "Loaded matrix with " << numRows << " rows and " << nnz << " entries.\n";
+    //now that values have been read in, copy them to the actual views
+    Kokkos::resize(Arowmap, numRows + 1);
+    Kokkos::resize(Aentries, nnz);
+    Kokkos::resize(Avalues, nnz);
+    auto Arowmap_host = Kokkos::create_mirror_view(Arowmap);
+    auto Aentries_host = Kokkos::create_mirror_view(Aentries);
+    auto Avalues_host = Kokkos::create_mirror_view(Avalues);
+    memcpy(Arowmap_host.data(), rowmap, (numRows + 1) * sizeof(offset_t));
+    memcpy(Aentries_host.data(), entries, nnz * sizeof(lno_t));
+    memcpy(Avalues_host.data(), values, nnz * sizeof(scalar_t));
+    Kokkos::deep_copy(Arowmap, Arowmap_host);
+    Kokkos::deep_copy(Aentries, Aentries_host);
+    Kokkos::deep_copy(Avalues, Avalues_host);
+    free(rowmap);
+    free(entries);
+    free(values);
+  }
+  crsMat_t A("A", numRows, numRows, nnz, Avalues, Arowmap, Aentries);
+  //create a randomized RHS vector (b)
+  scalar_view_t b("b", numRows);
+  for(lno_t i = 0; i < numRows; i++)
+  {
+    b(i) = (double) rand() / RAND_MAX;
+  }
+  //create solution vector (x), zero initial guess
+  //try a bunch of powers of 2 for cluster sizes
+  std::vector<lno_t> clusterSizes;
+  for(size_type i = 1; i <= 8192; i <<= 1)
+    clusterSizes.push_back(i);
+  const int niters = 10;
+  double bnorm = norm2(b);
+  std::cout << "Norm of b: " << bnorm << '\n';
+  for(size_t test = 0; test < clusterSizes.size(); test++)
+  {
+    auto clusterSize = clusterSizes[test];
+    output << "Testing cluster size = " << clusterSize << '\n';
+    //starting solution is zero vector
+    scalar_view_t x("x", numRows);
+    KernelHandle kh;
+    kh.create_gs_handle(clusterSize);
+    //only need to do G-S setup (symbolic/numeric) once
+    Kokkos::Impl::Timer timer;
+    KokkosSparse::Experimental::gauss_seidel_symbolic<KernelHandle, lno_view_t, lno_nnz_view_t>
+      (&kh, numRows, numRows, Arowmap, Aentries, true);
+    KokkosSparse::Experimental::gauss_seidel_numeric<KernelHandle, lno_view_t, lno_nnz_view_t, scalar_view_t>
+      (&kh, numRows, numRows, Arowmap, Aentries, Avalues, true);
+    output << "Cluster size " << clusterSize << " setup time: " << timer.seconds() << " s\n";
+    timer.reset();
+    KokkosSparse::Experimental::symmetric_gauss_seidel_apply
+      <KernelHandle, lno_view_t, lno_nnz_view_t, scalar_view_t, scalar_view_t, scalar_view_t>
+      (&kh, numRows, numRows, Arowmap, Aentries, Avalues, x, b, false, true, niters);
+    output << "Cluster size " << clusterSize << " apply time: " << timer.seconds() << " s\n";
+    scalar_view_t res("Ax-b", numRows);
+    Kokkos::deep_copy(res, b);
+    scalar_t alpha = 1;
+    scalar_t beta = -1;
+    KokkosSparse::spmv<scalar_t, crsMat_t, scalar_view_t, scalar_t, scalar_view_t>
+      ("N", alpha, A, x, beta, res, KokkosSparse::RANK_ONE());
+    scalar_t norm = norm2(res);
+    output << "Cluster size " << clusterSize << " norm after " << niters << " sweeps: " << norm << '\n';
+    output << "Cluster size " << clusterSize << " proportion of residual eliminated: " << 1.0 - (norm / bnorm) << std::endl;
+  }
+  output.close();
+}
+
 template <typename scalar_t, typename lno_t, typename offset_t, typename device>
 void test_rcm_perf(std::string matrixPath)
 {
