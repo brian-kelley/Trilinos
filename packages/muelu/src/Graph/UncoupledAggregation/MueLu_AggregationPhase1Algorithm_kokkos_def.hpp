@@ -99,11 +99,17 @@ namespace MueLu {
     if(algorithm == Algorithm::Distance2)
     {
       if(params.get<bool>("aggregation: deterministic"))
-        BuildAggregatesDistance2(graph, aggregates, aggStatView, numNonAggregatedNodes,
-            maxNodesPerAggregate, colorsDevice, numColors);
-      else
+      {
+        std::cout << "Building deterministic D2 aggregates (phase 1)\n";
         BuildAggregatesDeterministic(graph, aggregates, aggStatView, numNonAggregatedNodes,
             maxNodesPerAggregate, colorsDevice, numColors);
+      }
+      else
+      {
+        std::cout << "Building nondeterministic D2 aggregates (phase 1)\n";
+        BuildAggregatesDistance2(graph, aggregates, aggStatView, numNonAggregatedNodes,
+            maxNodesPerAggregate, colorsDevice, numColors);
+      }
     }
     else
     {

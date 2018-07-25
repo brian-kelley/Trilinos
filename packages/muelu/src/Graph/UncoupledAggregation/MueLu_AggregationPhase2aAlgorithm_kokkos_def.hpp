@@ -74,9 +74,11 @@ namespace MueLu {
   {
     if(params.get<bool>("aggregation: deterministic"))
     {
+      std::cout << "Building deterministic D2 aggregates (phase 2A)\n";
       BuildAggregatesDeterministic(params, graph, aggregates, aggStatView, numNonAggregatedNodes, colorsDevice, numColors);
       return;
     }
+    std::cout << "Building nondeterministic D2 aggregates (phase 2A)\n";
     typedef typename MueLu::LWGraph_kokkos<LO, GO, Node>::local_graph_type graph_t;
     typedef typename graph_t::device_type::execution_space execution_space;
     typedef typename graph_t::device_type::memory_space memory_space;
