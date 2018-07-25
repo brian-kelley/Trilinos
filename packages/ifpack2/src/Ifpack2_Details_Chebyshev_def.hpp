@@ -1331,9 +1331,13 @@ ifpackApplyImpl (const op_type& A,
   typedef decltype(X.template getLocalView<device_t>()) VecView;
   typedef typename VecView::size_type size_type;
   typedef Kokkos::RangePolicy<exec_space, size_type> RangePol;
-  typedef typename Kokkos::Details::ArithTraits<ScalarType>::val_type ImplScalar;
-  typedef typename KokkosBlas::Impl::Axpby_Generic<
-    ImplScalar, VecView, ImplScalar, VecView, size_type> AxpbyFunctor;
+  typedef typename Kokkos::Details::ArithTraits<ScalarType> STraits;
+  typedef typename STraits::val_type ImplScalar;
+  //  
+  typedef typename KokkosBlas::Impl::Axpby_Functor<
+    ImplScalar, VecView, ImplScalar, VecView, 2, 2, size_type> AxpbyGeneral;
+  typedef typename KokkosBlas::Impl::Axpby_Functor<
+    ImplScalar, VecView, ImplScalar, VecView, 1, 1, size_type> AxpbyUpdate;
   //Sync input vectors if necessary (only need to check once)
   if(B.template need_sync<memory_space> ())
     B.template sync<memory_space> ();
@@ -1345,8 +1349,20 @@ ifpackApplyImpl (const op_type& A,
     W.elementWiseMultiply (one/theta, D_inv, V1, STS::zero());
     X.update (one, W, one); // X = X + W
 
-    //create functors to do solve and update, then fuse them
+    //create functors to do solve and update, then fuse them into one
+    VecView Dinv_view = D_inv.template getLocalView<device_t>();
+    VecView V1_view = V1.template getLocalView<device_t>();
+    VecView X_view = X.template getLocalView<device_t>();
+    VecView W_view = W.template getLocalView<device_t>();
+    ImplScalar zero = STraits::zero();
+    ImplScalar one = STraits::one();
+    ImplScalar oneOverTheta(one / theta);
+  typedef typename Kokkos::Details::ArithTraits<ScalarType>::val_type ImplScalar;
+    AxpbyGeneral solveFunctor(
 
+  Axpby_Functor (const XV& x, const YV& y,
+                   const AV& a, const BV& b,
+                   const SizeType startingColumn) :
   }
   else {
     //solve (W, one/theta, D_inv, B); // W = (1/theta)*D_inv*B
