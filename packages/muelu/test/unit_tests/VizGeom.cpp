@@ -111,7 +111,7 @@ namespace MueLuTests {
     size_t root;
     for(size_t i = 0; i < pts.size(); i++)
     {
-      if(ag.isRoot_[i])
+      if(ag.roots_.find(i) != ag.roots_.end())
       {
         numRoots++;
         root = i;

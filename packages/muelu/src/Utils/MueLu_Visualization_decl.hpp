@@ -305,7 +305,6 @@ namespace VizHelpers {
 #ifdef HAVE_MUELU_CGAL
       void cgalConvexHulls2D();
       void cgalConvexHulls3D();
-      void cgalAlphaHulls2D();
       void cgalAlphaHulls3D();
 #endif
       struct Triangle

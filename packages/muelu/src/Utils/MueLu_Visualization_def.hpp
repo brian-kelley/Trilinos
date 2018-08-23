@@ -62,13 +62,12 @@
 #ifdef HAVE_MUELU_CGAL
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
-#include <CGAL/Alpha_shape_2.h>
 #include <CGAL/Alpha_shape_3.h>
-#include <CGAL/Delaunay_triangulation_2.h>
 #include <CGAL/Delaunay_triangulation_3.h>
 #include <CGAL/Triangulation_data_structure_3.h>
-#include <CGAL/convex_hull_2.h>
 #include <CGAL/convex_hull_3.h>
+#include <CGAL/Delaunay_triangulation_2.h>
+#include <CGAL/convex_hull_2.h>
 #endif
 
 namespace MueLu {
@@ -282,7 +281,9 @@ namespace VizHelpers {
     std::cout << "In AggGeometry ctor for CVF, have P = " << P.get() << '\n';
     using std::vector;
     using Teuchos::RCP;
+    using Teuchos::Array;
     using Teuchos::ArrayRCP;
+    using Teuchos::ArrayView;
     bubbles_ = !ptent;
     map_ = map;
     //use P (possibly including non-local entries)
@@ -366,10 +367,10 @@ namespace VizHelpers {
     }
     else  //smoothed P
     {
-      std::cout << "Using P (smooth).\n";
+      std::cout << "Using P (smoothed/overlapping, will visualize as transparent bubbles).\n";
       //aggs can overlap and locally owned vertices can be included in off-process aggregates
       //such vert-agg pairs must be communicated to the process owning the aggregate
-      //use the VertexData struct to communicate each vertex <-> agg pair
+      //use the VertexData struct to communicate each vertex <-> agg pair, with coordinates
       struct VertexData
       {
         VertexData() {}
@@ -391,7 +392,6 @@ namespace VizHelpers {
       int nprocs = comm->getSize();
       //Temporary but easy to work with representation of all local aggregates and the global rows they contain
       vector<std::set<GlobalOrdinal>> aggMembers(numLocalAggs_);
-      std::cout << "Getting agg members...\n";
       //First, get all local vert-agg pairs as VertexData
       vector<VertexData> localVerts;
       {
@@ -418,58 +418,82 @@ namespace VizHelpers {
           std::cout << asdf << ' ';
         std::cout << '\n';
       }
-      std::cout << "Finding VertexData that need to be communicated...\n";
-      //next, get VertexData for owned rows in non-owned aggregates
-      vector<VertexData> ghost;
-      for(int i = 0; i < nprocs; i++)
+      if(P->isGloballyIndexed())
       {
-        //find all local nonzeros that are in aggregates owned by proc i
-        vector<VertexData> toSend;
-        if(i != rank)
+        std::cout << "Finding VertexData that need to be communicated...\n";
+        //next, get VertexData for owned rows in non-owned aggregates
+        vector<VertexData> ghost;
+        auto maxRowEntries = P->getGlobalMaxNumRowEntries();
+        for(int i = 0; i < nprocs; i++)
         {
-          //all VertexData to send from proc rank to proc i
-          for(size_t row = 0; row < rowMap->getGlobalNumElements(); row++)
-          { 
-            Teuchos::ArrayView<const GlobalOrdinal> indices;
-            Teuchos::ArrayView<const Scalar> values;
-            P->getGlobalRowView(row, indices, values);
-            //for each entry, ask the col map whether the column is owned
-            for(size_t entry = 0; entry < indices.size(); entry++)
+          //find all local nonzeros that are in aggregates owned by proc i
+          vector<VertexData> toSend;
+          if(i != rank)
+          {
+            //all VertexData to send from proc rank to proc i
+            for(LocalOrdinal localRow = 0; localRow < rowMap->getGlobalNumElements(); localRow++)
             {
-              if(colMap->isNodeGlobalElement(indices[entry]))
+              GlobalOrdinal globalRow = rowMap->getGlobalElement(localRow);
+              Teuchos::Array<const GlobalOrdinal> indicesArray(maxRowEntries);
+              Teuchos::Array<const Scalar> valuesArray(maxRowEntries);
+              //get views for those arrays
+              auto indices = indicesArray();
+              auto values = valuesArray();
+              P->getGlobalRowView(globalRow, indices, values);
+              //get global aggs that include globalRow (agg is global column divided by colsPerNode)
+              Teuchos::Array<GlobalOrdinal> aggs;
+              Teuchos::Array<GlobalOrdinal> uniqueIndices;
+              for(size_t j = 0; j < indices.size(); j++)
               {
-                //record this vertex-aggregate pair
-                GlobalOrdinal thisAgg = entry / colsPerNode;
-                GlobalOrdinal thisVert = rowMap->getGlobalElement(row / dofsPerNode);
-                toSend.emplace_back(thisAgg, thisVert, xCoord(thisVert), yCoord(thisVert), zCoord(thisVert));
+                auto thisAgg = indices[j] / colsPerNode;
+                if(aggs.size() == 0 || aggs.back() != thisAgg)
+                {
+                  aggs.push_back(thisAgg);
+                  uniqueIndices.push_back(indices[j]);
+                }
+              }
+              if(aggs.size())
+              {
+                //for each entry, ask the col map whether proc i owns the entry
+                Teuchos::Array<int> owningNodes(maxRowEntries);
+                //get the owning procs for each unique index
+                colMap->getRemoteIndexList(uniqueIndices, owningNodes());
+                for(size_t j = 0; j < aggs.size(); j++)
+                {
+                  if(owningNodes[j] == i)
+                  {
+                    //process i owns node indices[j], so will send this vertex-aggregate pair to i
+                    toSend.emplace_back(aggs[j], globalRow, xCoord(localRow), yCoord(localRow), zCoord(localRow));
+                  }
+                }
               }
             }
-          }
-          //now, gather all toSend arrays to proc i from all other procs
-          vector<int> sendCounts(nprocs);
-          vector<int> localSendCounts(nprocs, 0);
-          localSendCounts[rank] = toSend.size();
-          Teuchos::reduceAll<int, int>(*comm, Teuchos::REDUCE_MAX, nprocs, &localSendCounts[0], &sendCounts[0]);
-          //locally get recvDispls as prefix sum from sendCounts
-          vector<int> recvDispls(nprocs, 0);
-          int runningTotal = 0;
-          for(int j = 0; j < nprocs; j++)
-          {
-            recvDispls[j] = runningTotal;
-            runningTotal += sendCounts[j];
-          }
-          //note: in the next few lines, ghost should only be modified on process i
-          //running total is now the total number of VertexData to receive on proc i
-          if(i == rank)
-            ghost.resize(runningTotal);
-          comm->gather(toSend.size() * sizeof(VertexData), &toSend[0], &ghost[0], &sendCounts[0], &recvDispls[0], i, *comm);
-          if(i == rank)
-          {
-            //add ghosts' positions and agg info
-            for(VertexData& it : ghost)
+            //now, gather all toSend arrays to proc i from all other procs
+            vector<int> sendCounts(nprocs);
+            vector<int> localSendCounts(nprocs, 0);
+            localSendCounts[rank] = toSend.size();
+            Teuchos::reduceAll<int, int>(*comm, Teuchos::REDUCE_MAX, nprocs, &localSendCounts[0], &sendCounts[0]);
+            //locally get recvDispls as prefix sum from sendCounts
+            vector<int> recvDispls(nprocs, 0);
+            int runningTotal = 0;
+            for(int j = 0; j < nprocs; j++)
             {
-              verts_[it.vertex] = Vec3(it.x, it.y, it.z);
-              aggMembers[it.agg].insert(it.vertex);
+              recvDispls[j] = runningTotal;
+              runningTotal += sendCounts[j];
+            }
+            //note: in the next few lines, ghost should only be modified on process i
+            //running total is now the total number of VertexData to receive on proc i
+            if(i == rank)
+              ghost.resize(runningTotal);
+            Teuchos::gatherv<int, VertexData>(&toSend[0], toSend.size(), &ghost[0], &sendCounts[0], &recvDispls[0], i, *comm);
+            if(i == rank)
+            {
+              //add ghosts' positions and agg info
+              for(VertexData& it : ghost)
+              {
+                verts_[it.vertex] = Vec3(it.x, it.y, it.z);
+                aggMembers[it.agg].insert(it.vertex);
+              }
             }
           }
         }
@@ -569,7 +593,7 @@ namespace VizHelpers {
     else if(style == "Alpha Hulls")
     {
       if(dims_ == 2)
-        cgalAlphaHulls2D();
+        cgalConvexHulls2D();
       else
         cgalAlphaHulls3D();
     }
@@ -1227,6 +1251,7 @@ namespace VizHelpers {
     }
   }
 
+/*
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   cgalAlphaHulls2D()
@@ -1335,6 +1360,7 @@ namespace VizHelpers {
       geomSizes_.push_back(polyVerts.size());
     }
   }
+  */
 
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggGeometry<Scalar, LocalOrdinal, GlobalOrdinal, Node>::

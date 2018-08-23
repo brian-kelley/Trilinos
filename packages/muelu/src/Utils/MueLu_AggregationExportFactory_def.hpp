@@ -73,15 +73,6 @@
 #include <stdexcept>
 #include <cstdio>
 #include <cmath>
-//For alpha hulls (is optional feature requiring a third-party library)
-#ifdef HAVE_MUELU_CGAL //Include all headers needed for both 2D and 3D fixed-alpha alpha shapes
-#include "CGAL/Exact_predicates_inexact_constructions_kernel.h"
-#include "CGAL/Delaunay_triangulation_2.h"
-#include "CGAL/Delaunay_triangulation_3.h"
-#include "CGAL/Alpha_shape_2.h"
-#include "CGAL/Fixed_alpha_shape_3.h"
-#include "CGAL/algorithm.h"
-#endif
 
 namespace MueLu {
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
