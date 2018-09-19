@@ -1108,7 +1108,7 @@ namespace MueLu {
       aggExport->SetParameterList(aggExportParams);
       aggExport->SetFactory("DofsPerNode", manager.GetFactory("DofsPerNode"));
 
-      if (!RAP.is_null())
+      if (!RAP.is_null()) {
         RAP->AddTransferFactory(aggExport);
       }
       else if (MUELU_TEST_PARAM_2LIST(paramList, defaultList, "coarsening: export visualization data", bool, true)) {
@@ -1134,8 +1134,10 @@ namespace MueLu {
         RAP->AddTransferFactory(coarseExport);
       }
       manager.SetFactory("A", RAP);
-    else
+    }
+    else {
       manager.SetFactory("A", RAPs);
+    }
 
     MUELU_SET_VAR_2LIST(paramList, defaultList, "reuse: type",      std::string, reuseType);
     MUELU_SET_VAR_2LIST(paramList, defaultList, "sa: use filtered matrix", bool, useFiltering);

@@ -191,7 +191,6 @@ namespace MueLu {
       }
     }
     GetOStream(Runtime0) << "AggregationExportFactory: DofsPerNode: " << DofsPerNode << std::endl;
-    RCP<LocalOrdinalVector> vertex2AggId_vector = aggregates->GetVertex2AggId();
     RCP<LocalOrdinalVector> procWinner_vector   = aggregates->GetProcWinner();
     ArrayRCP<LocalOrdinal>  vertex2AggId        = aggregates->GetVertex2AggId()->getDataNonConst(0);
     ArrayRCP<LocalOrdinal>  procWinner          = aggregates->GetProcWinner()->getDataNonConst(0);
