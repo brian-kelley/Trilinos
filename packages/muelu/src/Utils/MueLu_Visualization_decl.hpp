@@ -61,6 +61,8 @@
 
 #include <list>
 
+#define bmk cout
+
 namespace MueLu {
 namespace VizHelpers {
   //Geometry utility classes (used in convex hull algorithm)
@@ -254,7 +256,7 @@ namespace VizHelpers {
       AggGeometry(const Teuchos::RCP<Matrix>& P, const Teuchos::RCP<const Map>& map, const Teuchos::RCP<const Teuchos::Comm<int>>& comm,
           const Teuchos::RCP<CoordArray>& coords, LocalOrdinal dofsPerNode, LocalOrdinal colsPerNode, bool ptent);
 
-      //! Constructor used to create a single artificial aggregate (for testing)
+      //! Constructor used to create a single artificial aggregate (for testing only)
       AggGeometry(std::vector<Vec3>& coords, int dims);
 
       //! Generate the geometry. style is the "visualization: agg style" parameter value, and doesn't need to be valid.

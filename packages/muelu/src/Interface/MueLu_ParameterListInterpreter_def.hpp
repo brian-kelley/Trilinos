@@ -63,7 +63,6 @@
 #include "MueLu_BrickAggregationFactory.hpp"
 #include "MueLu_CoalesceDropFactory.hpp"
 #include "MueLu_CoarseMapFactory.hpp"
-#include "MueLu_CoarseningVisualizationFactory.hpp"
 #include "MueLu_ConstraintFactory.hpp"
 #include "MueLu_CoordinatesTransferFactory.hpp"
 #include "MueLu_CoupledAggregationFactory.hpp"
@@ -1107,37 +1106,41 @@ namespace MueLu {
       MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "aggregation: output file: build colormap",        bool, aggExportParams);
       aggExport->SetParameterList(aggExportParams);
       aggExport->SetFactory("DofsPerNode", manager.GetFactory("DofsPerNode"));
-
-      if (!RAP.is_null()) {
+      if (!RAP.is_null())
         RAP->AddTransferFactory(aggExport);
+      else
+        RAPs->AddTransferFactory(aggExport);
+    }
+    else if (MUELU_TEST_PARAM_2LIST(paramList, defaultList, "coarsening: export visualization data", bool, true)) {
+      typedef CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> CVF;
+      RCP<CVF> coarseExport = rcp(new CVF());
+      ParameterList coarseExportParams;
+      MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output filename",             std::string, coarseExportParams);
+      MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: agg style",      std::string, coarseExportParams);
+      MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: iter",                   int, coarseExportParams);
+      MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: time step",              int, coarseExportParams);
+      MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: fine graph edges",      bool, coarseExportParams);
+      MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: coarse graph edges",    bool, coarseExportParams);
+      MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: build colormap",        bool, coarseExportParams);
+      if(manager.GetFactory("P").get())
+      {
+        coarseExport->SetFactory("P", manager.GetFactory("P"));
       }
-      else if (MUELU_TEST_PARAM_2LIST(paramList, defaultList, "coarsening: export visualization data", bool, true)) {
-        typedef CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> CVF;
-        RCP<CVF> coarseExport = rcp(new CVF());
-        ParameterList coarseExportParams;
-        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output filename",             std::string, coarseExportParams);
-        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: agg style",      std::string, coarseExportParams);
-        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: iter",                   int, coarseExportParams);
-        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: time step",              int, coarseExportParams);
-        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: fine graph edges",      bool, coarseExportParams);
-        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: coarse graph edges",    bool, coarseExportParams);
-        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "coarsening: output file: build colormap",        bool, coarseExportParams);
-        if(manager.GetFactory("P").get())
-        {
-          coarseExport->SetFactory("P", manager.GetFactory("P"));
-        }
-        else
-        {
-          coarseExport->SetFactory("Ptent", manager.GetFactory("Ptent"));
-        }
-        coarseExport->SetParameterList(coarseExportParams);
+      else
+      {
+        coarseExport->SetFactory("Ptent", manager.GetFactory("Ptent"));
+      }
+      coarseExport->SetParameterList(coarseExportParams);
+      if (!RAP.is_null())
         RAP->AddTransferFactory(coarseExport);
-      }
+      else
+        RAPs->AddTransferFactory(coarseExport);
+    }
+
+    if (!RAP.is_null())
       manager.SetFactory("A", RAP);
-    }
-    else {
+    else
       manager.SetFactory("A", RAPs);
-    }
 
     MUELU_SET_VAR_2LIST(paramList, defaultList, "reuse: type",      std::string, reuseType);
     MUELU_SET_VAR_2LIST(paramList, defaultList, "sa: use filtered matrix", bool, useFiltering);

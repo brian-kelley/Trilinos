@@ -299,7 +299,7 @@ namespace MueLu {
         GetOStream(Warnings0) << "   Warning: Unrecognized agg style.\nPossible values are Point Cloud, Jacks, Convex Hulls.\nDefaulted to Point Cloud." << std::endl;
 #endif
       }
-      //write agg geom
+      //write aggregates geometry
       vtk.writeAggGeom(aggGeom);
       //do fine and coarse edges, if requested
       if(doFineGraphEdges)

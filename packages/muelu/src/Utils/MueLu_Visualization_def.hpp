@@ -70,6 +70,8 @@
 #include <CGAL/convex_hull_2.h>
 #endif
 
+using std::cout;
+
 namespace MueLu {
 namespace VizHelpers {
 
@@ -388,8 +390,6 @@ namespace VizHelpers {
         double y;
         double z;
       };
-      int rank = comm->getRank();
-      int nprocs = comm->getSize();
       //Temporary but easy to work with representation of all local aggregates and the global rows they contain
       vector<std::set<GlobalOrdinal>> aggMembers(numLocalAggs_);
       //First, get all local vert-agg pairs as VertexData
@@ -406,96 +406,135 @@ namespace VizHelpers {
           for(auto c = indices.begin(); c != indices.end(); ++c)
           {
             auto agg = *c / colsPerNode;
+            auto globRow = rowMap->getGlobalElement(row / dofsPerNode);
             if(agg >= 0 && agg < numLocalAggs_)
-              aggMembers[agg].insert(rowMap->getGlobalElement(row / dofsPerNode));
+              aggMembers[agg].insert(globRow);
+            //also need to retrieve local coordinate
+            verts_[globRow] = Vec3(xCoord(*c), yCoord(*c), zCoord(*c));
           }
         }
       }
       for(int i = 0; i < numLocalAggs_; i++)
       {
-        std::cout << "(local) verts in (local) agg " << i << ": ";
+        bmk << "(local) verts in (local) agg " << i << ": ";
         for(auto asdf : aggMembers[i])
-          std::cout << asdf << ' ';
-        std::cout << '\n';
+          bmk << asdf << ' ';
+        bmk << '\n';
       }
-      if(P->isGloballyIndexed())
+      if(rowMap->isDistributed())
       {
-        std::cout << "Finding VertexData that need to be communicated...\n";
+        if(rank_ == 0)
+        {
+          bmk << "Finding VertexData that need to be communicated...\n";
+        }
         //next, get VertexData for owned rows in non-owned aggregates
-        vector<VertexData> ghost;
-        auto maxRowEntries = P->getGlobalMaxNumRowEntries();
-        for(int i = 0; i < nprocs; i++)
+        for(int i = 0; i < nprocs_; i++)
         {
           //find all local nonzeros that are in aggregates owned by proc i
           vector<VertexData> toSend;
-          if(i != rank)
+          if(i != rank_)
           {
-            //all VertexData to send from proc rank to proc i
-            for(LocalOrdinal localRow = 0; localRow < rowMap->getGlobalNumElements(); localRow++)
+            //all VertexData to send from proc rank_ to proc i
+            for(LocalOrdinal localRow = 0; localRow < rowMap->getNodeNumElements(); localRow++)
             {
               GlobalOrdinal globalRow = rowMap->getGlobalElement(localRow);
-              Teuchos::Array<const GlobalOrdinal> indicesArray(maxRowEntries);
-              Teuchos::Array<const Scalar> valuesArray(maxRowEntries);
+              auto numLocalEntries = P->getNumEntriesInLocalRow(localRow);
+              Array<const LocalOrdinal> indices(numLocalEntries);
+              //note: don't actually care about matrix values but need the array to call getLocalRowView
+              Array<const Scalar> values(numLocalEntries);
               //get views for those arrays
-              auto indices = indicesArray();
-              auto values = valuesArray();
-              P->getGlobalRowView(globalRow, indices, values);
-              //get global aggs that include globalRow (agg is global column divided by colsPerNode)
-              Teuchos::Array<GlobalOrdinal> aggs;
-              Teuchos::Array<GlobalOrdinal> uniqueIndices;
-              for(size_t j = 0; j < indices.size(); j++)
+              auto indsView = indices();
+              auto valsView = values();
+              P->getLocalRowView(localRow, indsView, valsView);
+              //convert local columns to global
+              Array<GlobalOrdinal> globalCols(numLocalEntries);
+              for(size_t j = 0; j < numLocalEntries; j++)
               {
-                auto thisAgg = indices[j] / colsPerNode;
+                globalCols[j] = colMap->getGlobalElement(indices[j]);
+              }
+              //get global aggs that include globalRow (agg is global column divided by colsPerNode)
+              Array<GlobalOrdinal> aggs;
+              Array<GlobalOrdinal> uniqueIndices;
+              for(size_t j = 0; j < numLocalEntries; j++)
+              {
+                auto thisAgg = globalCols[j] / colsPerNode;
                 if(aggs.size() == 0 || aggs.back() != thisAgg)
                 {
                   aggs.push_back(thisAgg);
-                  uniqueIndices.push_back(indices[j]);
+                  uniqueIndices.push_back(globalCols[j]);
                 }
               }
               if(aggs.size())
               {
                 //for each entry, ask the col map whether proc i owns the entry
-                Teuchos::Array<int> owningNodes(maxRowEntries);
+                Array<int> owningNodes(numLocalEntries);
                 //get the owning procs for each unique index
                 colMap->getRemoteIndexList(uniqueIndices, owningNodes());
                 for(size_t j = 0; j < aggs.size(); j++)
                 {
                   if(owningNodes[j] == i)
                   {
+                    bmk << "Proc " << rank_ << " must communicate row " << globalRow << " as being in global agg " << aggs[j] << '\n';
                     //process i owns node indices[j], so will send this vertex-aggregate pair to i
                     toSend.emplace_back(aggs[j], globalRow, xCoord(localRow), yCoord(localRow), zCoord(localRow));
                   }
                 }
               }
             }
-            //now, gather all toSend arrays to proc i from all other procs
-            vector<int> sendCounts(nprocs);
-            vector<int> localSendCounts(nprocs, 0);
-            localSendCounts[rank] = toSend.size();
-            Teuchos::reduceAll<int, int>(*comm, Teuchos::REDUCE_MAX, nprocs, &localSendCounts[0], &sendCounts[0]);
-            //locally get recvDispls as prefix sum from sendCounts
-            vector<int> recvDispls(nprocs, 0);
-            int runningTotal = 0;
-            for(int j = 0; j < nprocs; j++)
+          }
+          comm->barrier();
+          //now, get the largest number of vertices being sent to proc i
+          vector<int> thisToSend(nprocs_, 0);
+          thisToSend[rank_] = toSend.size();
+          vector<int> numToReceive(nprocs_, 0);
+          bmk << "About to reduce (" << rank_ << ")...\n";
+          Teuchos::reduce<int, int>(thisToSend.data(), numToReceive.data(), nprocs_, Teuchos::REDUCE_MAX, i, *comm);
+          bmk << "Reduced (" << rank_ << ").\n";
+          //proc i knows how many VertexData to get from each process
+          //DEBUGGING
+          if(rank_ == i)
+          {
+            bmk << "Numbers of VertexData being received from each proc: ";
+            for(int j = 0; j < nprocs_; j++)
             {
-              recvDispls[j] = runningTotal;
-              runningTotal += sendCounts[j];
+              bmk << numToReceive[j] << ' ';
             }
-            //note: in the next few lines, ghost should only be modified on process i
-            //running total is now the total number of VertexData to receive on proc i
-            if(i == rank)
-              ghost.resize(runningTotal);
-            Teuchos::gatherv<int, VertexData>(&toSend[0], toSend.size(), &ghost[0], &sendCounts[0], &recvDispls[0], i, *comm);
-            if(i == rank)
+            bmk << '\n';
+          }
+          //END DEBUGGING
+          if(rank_ == i)
+          {
+            vector<int> receiveOffsets(nprocs_);
+            int total = 0;
+            for(int j = 0; j < nprocs_; j++)
             {
-              //add ghosts' positions and agg info
-              for(VertexData& it : ghost)
-              {
-                verts_[it.vertex] = Vec3(it.x, it.y, it.z);
-                aggMembers[it.agg].insert(it.vertex);
-              }
+              receiveOffsets[j] = total;
+              total += numToReceive[j];
+            }
+            //allocate a single buffer to receive VertexData, from one process at a time
+            Array<char> recvBuffer(total * sizeof(VertexData));
+            //issue all async receive requests at once
+            Array<RCP<Teuchos::CommRequest<int>>> requests;
+            for(int from = 0; from < nprocs_; from++)
+            {
+              if(from == i)
+                continue;
+              requests.push_back(comm->ireceive(from, numToReceive[from] * sizeof(VertexData), 
+            }
+            comm->waitAll(requests);
+            for(int j = 0; j < total; j++)
+            {
+              VertexData& v = recvBuffer[j];
+              verts_[v.vertex] = Vec3(v.x, v.y, v.z);
+              aggMembers[v.agg].insert(v.vertex);
             }
           }
+          else
+          {
+            //async send to proc i, then wait
+            auto req = comm->isend(toSend.size() * sizeof(VertexData), (char*) toSend.data(), i);
+          }
+          comm->barrier();
         }
       }
       //now that aggMembers is fully populated with both local and nonlocal entries, populate aggVerts_ and aggOffsets_
@@ -1838,6 +1877,8 @@ namespace VizHelpers {
       Teuchos::RCP<const Map> fineMap, Teuchos::RCP<const Map> coarseMap, std::string factoryPrefix)
   {
     baseName_    = pL.get<std::string>(factoryPrefix + ": output filename");
+    bmk << "Factory prefix is \"" << factoryPrefix << "\"\n";
+    bmk << "Full output filename template is \"" << baseName_ << "\"\n";
     int iter = 0;
     int timeStep = 0;
     //iter and time step are deprecated parameters, and are not set
@@ -1915,7 +1956,7 @@ namespace VizHelpers {
   {
     //note: makeUnique modifies ag.geomVerts_ in place, but OK because it won't be used again
     auto uniqueVerts = getUniqueAggGeom(ag.geomVerts_);
-    std::ofstream fout(getAggFilename(rank_));
+    std::ofstream fout(ag.bubbles_ ? getBubbleFilename(rank_) : getAggFilename(rank_));
     writeOpening(fout, uniqueVerts.size(), ag.geomSizes_.size());
     writeAggNodes(fout, uniqueVerts);
     writeAggData(fout, uniqueVerts, ag.firstAgg_);
@@ -2252,13 +2293,25 @@ namespace VizHelpers {
       //decide whether PVTU is required
       int numGeoms = 0;
       if(didAggs_)
+      {
+        cout << "Did aggregates.\n";
         numGeoms++;
+      }
       if(didBubbles_)
+      {
+        cout << "Did bubbles.\n";
         numGeoms++;
+      }
       if(didFineEdges_)
+      {
+        cout << "Did fine edges.\n";
         numGeoms++;
+      }
       if(didCoarseEdges_)
+      {
+        cout << "Did coarse edges.\n";
         numGeoms++;
+      }
       numGeoms *= nprocs_;
       if(numGeoms <= 1)
       {
