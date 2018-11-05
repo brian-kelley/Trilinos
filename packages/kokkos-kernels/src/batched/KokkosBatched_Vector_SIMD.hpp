@@ -75,6 +75,7 @@ namespace KokkosBatched {
       }
       template<typename ArgValueType>
       KOKKOS_INLINE_FUNCTION Vector(const Vector<SIMD<ArgValueType>,vector_length> &b) {
+        static_assert(std::is_convertible<value_type,ArgValueType>::value, "input type is not convertible");
 #if defined( KOKKOS_ENABLE_PRAGMA_IVDEP )
 #pragma ivdep
 #endif
@@ -170,6 +171,7 @@ namespace KokkosBatched {
 
       template<typename ArgValueType>
       KOKKOS_INLINE_FUNCTION Vector(const Vector<SIMD<ArgValueType>,vector_length> &b) {
+        static_assert(std::is_convertible<value_type,ArgValueType>::value, "input type is not convertible");
 	auto dd = reinterpret_cast<value_type*>(&_data);
 	auto bb = reinterpret_cast<ArgValueType*>(&b._data);
 #if defined( KOKKOS_ENABLE_PRAGMA_IVDEP )
@@ -260,6 +262,7 @@ namespace KokkosBatched {
 //       }
       template<typename ArgValueType>
       KOKKOS_INLINE_FUNCTION Vector(const Vector<SIMD<ArgValueType>,vector_length> &b) {
+        static_assert(std::is_convertible<value_type,ArgValueType>::value, "input type is not convertible");
 	auto dd = reinterpret_cast<value_type*>(&_data);
 	auto bb = reinterpret_cast<ArgValueType*>(&b._data);
 #if defined( KOKKOS_ENABLE_PRAGMA_IVDEP )
@@ -350,6 +353,7 @@ namespace KokkosBatched {
       }
       template<typename ArgValueType>
       KOKKOS_INLINE_FUNCTION Vector(const Vector<SIMD<ArgValueType>,vector_length> &b) {
+        static_assert(std::is_convertible<value_type,ArgValueType>::value, "input type is not convertible");
 	auto dd = reinterpret_cast<value_type*>(&_data);
 	auto bb = reinterpret_cast<ArgValueType*>(&b._data);
 #if defined( KOKKOS_ENABLE_PRAGMA_IVDEP )
@@ -445,6 +449,7 @@ namespace KokkosBatched {
       }
       template<typename ArgValueType>
       KOKKOS_INLINE_FUNCTION Vector(const Vector<SIMD<ArgValueType>,vector_length> &b) {
+        static_assert(std::is_convertible<value_type,ArgValueType>::value, "input type is not convertible");
 	auto dd = reinterpret_cast<value_type*>(&_data);
 	auto bb = reinterpret_cast<value_type*>(&b._data);
 #if defined( KOKKOS_ENABLE_PRAGMA_IVDEP )
