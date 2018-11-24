@@ -282,10 +282,12 @@ namespace VizHelpers {
   {
     std::cout << "In AggGeometry ctor for CVF, have P = " << P.get() << '\n';
     using std::vector;
+    using std::set;
     using Teuchos::RCP;
     using Teuchos::Array;
     using Teuchos::ArrayRCP;
     using Teuchos::ArrayView;
+    using Teuchos::rcp_dynamic_cast;
     bubbles_ = !ptent;
     map_ = map;
     //use P (possibly including non-local entries)
@@ -421,75 +423,97 @@ namespace VizHelpers {
           bmk << asdf << ' ';
         bmk << '\n';
       }
-      if(rowMap->isDistributed())
+      if(rank_ == 0)
       {
+        bmk << "Dofs/node is " << dofsPerNode << " and cols/node is " << colsPerNode << '\n';
+      }
+#ifdef HAVE_MPI
+      if(rowMap->isDistributed() && dynamic_cast<const Teuchos::MpiComm<int>*>(comm.get()))
+      {
+        RCP<const Teuchos::OpaqueWrapper<MPI_Comm>> rawMpiComm = rcp_dynamic_cast<const Teuchos::MpiComm<int>>(comm)->getRawMpiComm();
         if(rank_ == 0)
         {
           bmk << "Finding VertexData that need to be communicated...\n";
+        }
+        //first, get a global column (aggregate) to rank mapping on every process
+        auto globalCols = colMap->getGlobalNumElements();
+        vector<int> gcolToRank(globalCols, 0);
+        {
+          vector<int> gcolToRankLocal(globalCols, 0);
+          //populate the local entries
+          auto ownedGIDs = colMap->getNodeElementList();
+          for(auto g : ownedGIDs)
+          {
+            gcolToRankLocal[g] = rank_;
+          }
+          MPI_Allreduce(gcolToRankLocal.data(), gcolToRank.data(), globalCols, MPI_INT, MPI_MAX, *rawMpiComm);
+        }
+        if(rank_ == 0)
+        {
+          bmk << "Owning ranks of each global col:\n";
+          for(int i = 0; i < globalCols; i++)
+          {
+            bmk << gcolToRank[i] << ' ';
+            if(i % 20 == 19)
+              bmk << '\n';
+          }
+          bmk << '\n';
         }
         //next, get VertexData for owned rows in non-owned aggregates
         for(int i = 0; i < nprocs_; i++)
         {
           //find all local nonzeros that are in aggregates owned by proc i
           vector<VertexData> toSend;
-          if(i != rank_)
+          //the set of global aggregate IDs containing current node (group of dofsPerNode rows) in loop
+          //all rows in a DOF have the same coordinates and "node" ID
+          set<GlobalOrdinal> dofAggs;
+          for(LocalOrdinal localRow = 0; localRow < rowMap->getNodeNumElements() * dofsPerNode; localRow++)
           {
-            //all VertexData to send from proc rank_ to proc i
-            for(LocalOrdinal localRow = 0; localRow < rowMap->getNodeNumElements(); localRow++)
+            if(localRow % dofsPerNode == 0)
+              dofAggs.clear();
+            GlobalOrdinal globalRow = rowMap->getGlobalElement(localRow);
+            GlobalOrdinal globalNode = globalRow / dofsPerNode;
+            auto numEntries = P->getNumEntriesInLocalRow(localRow);
+            Array<const GlobalOrdinal> indices(numEntries);
+            //note: don't actually care about matrix values but need the array to call getLocalRowView
+            Array<const Scalar> values(numEntries);
+            //get views for those arrays
+            auto indsView = indices();
+            auto valsView = values();
+            P->getGlobalRowView(globalRow, indsView, valsView);
+            //convert local columns to global
+            vector<GlobalOrdinal> globalCols;
+            for(size_t j = 0; j < numEntries; j++)
             {
-              GlobalOrdinal globalRow = rowMap->getGlobalElement(localRow);
-              auto numLocalEntries = P->getNumEntriesInLocalRow(localRow);
-              Array<const LocalOrdinal> indices(numLocalEntries);
-              //note: don't actually care about matrix values but need the array to call getLocalRowView
-              Array<const Scalar> values(numLocalEntries);
-              //get views for those arrays
-              auto indsView = indices();
-              auto valsView = values();
-              P->getLocalRowView(localRow, indsView, valsView);
-              //convert local columns to global
-              Array<GlobalOrdinal> globalCols(numLocalEntries);
-              for(size_t j = 0; j < numLocalEntries; j++)
+              globalCols[j] = colMap->getGlobalElement(indices[j]);
+            }
+            //get global aggs that include globalRow (agg is global column divided by colsPerNode)
+            vector<GlobalOrdinal> aggs;
+            for(size_t j = 0; j < globalCols.size(); j++)
+            {
+              auto thisAgg = globalCols[j] / colsPerNode;
+              if(dofAggs.find(thisAgg) == dofAggs.end())
               {
-                globalCols[j] = colMap->getGlobalElement(indices[j]);
+                aggs.push_back(thisAgg);
+                dofAggs.insert(thisAgg);
               }
-              //get global aggs that include globalRow (agg is global column divided by colsPerNode)
-              Array<GlobalOrdinal> aggs;
-              Array<GlobalOrdinal> uniqueIndices;
-              for(size_t j = 0; j < numLocalEntries; j++)
+            }
+            for(auto agg : aggs)
+            {
+              if(gcolToRank[agg] == i && rank_ != i)
               {
-                auto thisAgg = globalCols[j] / colsPerNode;
-                if(aggs.size() == 0 || aggs.back() != thisAgg)
-                {
-                  aggs.push_back(thisAgg);
-                  uniqueIndices.push_back(globalCols[j]);
-                }
-              }
-              if(aggs.size())
-              {
-                //for each entry, ask the col map whether proc i owns the entry
-                Array<int> owningNodes(numLocalEntries);
-                //get the owning procs for each unique index
-                colMap->getRemoteIndexList(uniqueIndices, owningNodes());
-                for(size_t j = 0; j < aggs.size(); j++)
-                {
-                  if(owningNodes[j] == i)
-                  {
-                    bmk << "Proc " << rank_ << " must communicate row " << globalRow << " as being in global agg " << aggs[j] << '\n';
-                    //process i owns node indices[j], so will send this vertex-aggregate pair to i
-                    toSend.emplace_back(aggs[j], globalRow, xCoord(localRow), yCoord(localRow), zCoord(localRow));
-                  }
-                }
+                //bmk << "Proc " << rank_ << " must communicate row " << globalRow << " as being in global agg " << aggs[j] << '\n';
+                //process i owns node indices[j], so will send this vertex-aggregate pair to i
+                toSend.emplace_back(agg, globalNode, xCoord(localRow), yCoord(localRow), zCoord(localRow));
               }
             }
           }
-          comm->barrier();
-          //now, get the largest number of vertices being sent to proc i
-          vector<int> thisToSend(nprocs_, 0);
-          thisToSend[rank_] = toSend.size();
+          //numToReceive is significant only on proc i
           vector<int> numToReceive(nprocs_, 0);
-          bmk << "About to reduce (" << rank_ << ")...\n";
-          Teuchos::reduce<int, int>(thisToSend.data(), numToReceive.data(), nprocs_, Teuchos::REDUCE_MAX, i, *comm);
-          bmk << "Reduced (" << rank_ << ").\n";
+          {
+            int localSend = toSend.size();
+            MPI_Gather(&localSend, 1, MPI_INT, numToReceive.data(), nprocs_, MPI_INT, i, *rawMpiComm);
+          }
           //proc i knows how many VertexData to get from each process
           //DEBUGGING
           if(rank_ == i)
@@ -501,42 +525,35 @@ namespace VizHelpers {
             }
             bmk << '\n';
           }
-          //END DEBUGGING
+          vector<int> recvDispls(nprocs_);
+          vector<VertexData> received;
           if(rank_ == i)
           {
-            vector<int> receiveOffsets(nprocs_);
-            int total = 0;
+            int accum = 0;
             for(int j = 0; j < nprocs_; j++)
             {
-              receiveOffsets[j] = total;
-              total += numToReceive[j];
+              numToReceive[j] *= sizeof(VertexData);
+              recvDispls[j] = accum;
+              accum += numToReceive[j];
             }
-            //allocate a single buffer to receive VertexData, from one process at a time
-            Array<char> recvBuffer(total * sizeof(VertexData));
-            //issue all async receive requests at once
-            Array<RCP<Teuchos::CommRequest<int>>> requests;
-            for(int from = 0; from < nprocs_; from++)
+            received.resize(accum);
+          }
+          //Now, gather vertex data to proc i using gatherv
+          MPI_Gatherv(toSend.data(), toSend.size() * sizeof(VertexData), MPI_UNSIGNED_CHAR,
+              received.data(), numToReceive.data(), recvDispls.data(), MPI_UNSIGNED_CHAR,
+              i, *rawMpiComm);
+          if(rank_ == i)
+          {
+            for(auto& v : received)
             {
-              if(from == i)
-                continue;
-              requests.push_back(comm->ireceive(from, numToReceive[from] * sizeof(VertexData), 
-            }
-            comm->waitAll(requests);
-            for(int j = 0; j < total; j++)
-            {
-              VertexData& v = recvBuffer[j];
               verts_[v.vertex] = Vec3(v.x, v.y, v.z);
               aggMembers[v.agg].insert(v.vertex);
             }
           }
-          else
-          {
-            //async send to proc i, then wait
-            auto req = comm->isend(toSend.size() * sizeof(VertexData), (char*) toSend.data(), i);
-          }
-          comm->barrier();
+          MPI_Barrier(*rawMpiComm);
         }
       }
+#endif
       //now that aggMembers is fully populated with both local and nonlocal entries, populate aggVerts_ and aggOffsets_
       GlobalOrdinal totalAggVerts = 0;
       aggOffsets_.resize(numLocalAggs_ + 1);
