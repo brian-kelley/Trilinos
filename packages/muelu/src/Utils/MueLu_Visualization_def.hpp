@@ -472,7 +472,6 @@ namespace VizHelpers {
       {
         bmk << "Dofs/node is " << dofsPerNode << " and cols/node is " << colsPerNode << '\n';
       }
-      /*
 #ifdef HAVE_MPI
       if(rowMap->isDistributed() && dynamic_cast<const Teuchos::MpiComm<int>*>(comm.get()))
       {
@@ -490,6 +489,30 @@ namespace VizHelpers {
           MPI_Allreduce(localOwned.data(), aggOwners.data(),
               globalCols, MPI_INT, MPI_MAX, *rawMpiComm);
         }
+        //DEBUG
+        /*
+        {
+          std::set<GlobalOrdinal> myAggs;
+          for(size_t i = 0; i < globalCols; i++)
+          {
+            if(aggOwners[i] == rank_)
+              myAggs.insert(i);
+          }
+          for(int i = 0; i < nprocs_; i++)
+          {
+            if(rank_ == i)
+            {
+              cout << "Proc " << i << " owns aggs: ";
+              for(auto v : myAggs)
+              {
+                cout << v << ' ';
+              }
+              cout << '\n';
+            }
+            comm->barrier();
+          }
+        }
+        */
         //go through each proc, and gather global agg-vert pairs
         for(int owner = 0; owner < nprocs_; owner++)
         {
@@ -499,11 +522,11 @@ namespace VizHelpers {
             //find off-process entries
             if(P->isLocallyIndexed())
             {
-              cout << "Locally indexed; doing local->global translation\n";
               auto nrows = P->getNodeNumRows();
               for(LocalOrdinal lnode = 0;
                   lnode < nrows / dofsPerNode; lnode++)
               {
+                auto gnode = rowMap->getGlobalElement(lnode);
                 //the set of global aggregates (owned by owner)
                 //containing lnode (from rank_)
                 set<GlobalOrdinal> aggs;
@@ -511,26 +534,26 @@ namespace VizHelpers {
                     lrow < (lnode + 1) * dofsPerNode; lrow++)
                 {
                   //find the entries on owner
-                  auto grow = rowMap->getGlobalElement(lrow);
-                  auto n = P->getNumEntriesInLocalRow(lrow);
-                  Array<const LocalOrdinal> entries(n);
-                  Array<const Scalar> values(n);
-                  auto entriesView = entries();
-                  auto valuesView = values();
-                  P->getLocalRowView(lrow, entriesView, valuesView);
+                  ArrayView<const LocalOrdinal> indices;
+                  ArrayView<const Scalar> values;
+                  P->getLocalRowView(lrow, indices, values);
+                  //find the set of aggregates owned by owner
+                  //which contain global node gnode
+                  auto n = indices.size();
                   for(LocalOrdinal i = 0; i < n; i++)
                   {
-                    auto agg = entriesView[i] / colsPerNode;
-                    if(aggOwners[agg] == owner)
+                    auto localAgg = indices[i] / colsPerNode;
+                    auto globalAgg = colMap->getGlobalElement(localAgg);
+                    if(aggOwners[globalAgg] == owner)
                     {
-                      aggs.insert(agg);
+                      aggs.insert(globalAgg);
                     }
                   }
                 }
                 for(auto agg : aggs)
                 {
-                  cout << "  Agg " << agg << " contains row " << lnode << " on proc " << rank_ << '\n';
-                  localData.emplace_back(agg, lnode,
+                  //cout << "  Agg " << agg << " contains row " << lnode << " on proc " << rank_ << '\n';
+                  localData.emplace_back(agg, gnode,
                       xCoord(lnode), yCoord(lnode), zCoord(lnode));
                 }
               }
@@ -599,6 +622,7 @@ namespace VizHelpers {
               receiveDispls.data(), MPI_BYTE, owner, *rawMpiComm);
           if(rank_ == owner)
           {
+            cout << "Gathered " << gathered.size() << " off-process entries to proc " << rank_ << '\n';
             for(auto& v : gathered)
             {
               verts_[v.vertex] = Vec3(v.x, v.y, v.z);
@@ -608,7 +632,6 @@ namespace VizHelpers {
         }
       }
 #endif
-    */
       //now that aggMembers is fully populated with both local and nonlocal entries, populate aggVerts_ and aggOffsets_
       GlobalOrdinal totalAggVerts = 0;
       aggOffsets_.resize(numLocalAggs_ + 1);
