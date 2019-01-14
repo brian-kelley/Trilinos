@@ -361,7 +361,7 @@ crsMat_t genSymmetricMatrix(lno_t numRows, lno_t randNNZ, lno_t bandwidth, bool 
   }
   Arowmap(numRows) = total;
   //std::cout << "Actual NNZ in matrix: " << total << '\n';
-  //std::cout << "But, allocated space for : " << Avalues.dimension_0() << '\n';
+  //std::cout << "But, allocated space for : " << Avalues.extent(0) << '\n';
   graph_t Agraph(Acolinds, Arowmap);
   return crsMat_t("RCM test matrix", numRows, Avalues, Agraph);
 }
@@ -370,7 +370,7 @@ template<typename Vector>
 double norm2(Vector& v)
 {
   double sqSum = 0;
-  for(size_t i = 0; i < v.dimension_0(); i++)
+  for(size_t i = 0; i < v.extent(0); i++)
   {
     sqSum += v(i) * v(i);
   }
@@ -396,32 +396,46 @@ void test_cluster_convergence(std::string matrixPath)
   scalar_view_t Avalues("A values", 0);
   lno_t numRows = 0;
   offset_t nnz = 0;
-  std::ofstream output("cluster_convergence.txt");
+  std::ofstream output("cluster_convergence" + std::to_string(getpid() % 100) + ".txt");
   output << "Loading matrix \"" << matrixPath << "...";
+  output.flush();
+  Kokkos::Impl::Timer loadTimer;
   {
     offset_t* rowmap = nullptr;
     lno_t* entries = nullptr;
     scalar_t* values = nullptr;
     KokkosKernels::Impl::read_mtx<lno_t, offset_t, scalar_t>(matrixPath.c_str(), &numRows, &nnz, &rowmap, &entries, &values, false, false, false);
     output << "done.\n";
+    output.flush();
     output << "Loaded matrix with " << numRows << " rows and " << nnz << " entries.\n";
+    output.flush();
     //now that values have been read in, copy them to the actual views
     Kokkos::resize(Arowmap, numRows + 1);
     Kokkos::resize(Aentries, nnz);
     Kokkos::resize(Avalues, nnz);
-    auto Arowmap_host = Kokkos::create_mirror_view(Arowmap);
-    auto Aentries_host = Kokkos::create_mirror_view(Aentries);
-    auto Avalues_host = Kokkos::create_mirror_view(Avalues);
-    memcpy(Arowmap_host.data(), rowmap, (numRows + 1) * sizeof(offset_t));
-    memcpy(Aentries_host.data(), entries, nnz * sizeof(lno_t));
-    memcpy(Avalues_host.data(), values, nnz * sizeof(scalar_t));
-    Kokkos::deep_copy(Arowmap, Arowmap_host);
-    Kokkos::deep_copy(Aentries, Aentries_host);
-    Kokkos::deep_copy(Avalues, Avalues_host);
+    /*
+       auto Arowmap_host = Kokkos::create_mirror_view(Arowmap);
+       auto Aentries_host = Kokkos::create_mirror_view(Aentries);
+       auto Avalues_host = Kokkos::create_mirror_view(Avalues);
+       */
+    for(size_t i = 0; i < numRows + 1; i++)
+      Arowmap(i) = rowmap[i];
+    for(size_t i = 0; i < nnz; i++)
+    {
+      Aentries(i) = entries[i];
+      Avalues(i) = values[i];
+    }
+    /*
+       Kokkos::deep_copy(Arowmap, Arowmap_host);
+       Kokkos::deep_copy(Aentries, Aentries_host);
+       Kokkos::deep_copy(Avalues, Avalues_host);
+       */
     free(rowmap);
     free(entries);
     free(values);
   }
+  output << "Loading matrix took " << loadTimer.seconds() << '\n';
+  output.flush();
   crsMat_t A("A", numRows, numRows, nnz, Avalues, Arowmap, Aentries);
   //create a randomized RHS vector (b)
   scalar_view_t b("b", numRows);
@@ -434,9 +448,9 @@ void test_cluster_convergence(std::string matrixPath)
   std::vector<lno_t> clusterSizes;
   for(size_type i = 1; i <= 8192; i <<= 1)
     clusterSizes.push_back(i);
-  const int niters = 10;
+  const int niters = 100;
   double bnorm = norm2(b);
-  std::cout << "Norm of b: " << bnorm << '\n';
+  output << "Norm of b: " << bnorm << '\n';
   for(size_t test = 0; test < clusterSizes.size(); test++)
   {
     auto clusterSize = clusterSizes[test];
@@ -447,11 +461,16 @@ void test_cluster_convergence(std::string matrixPath)
     kh.create_gs_handle(clusterSize);
     //only need to do G-S setup (symbolic/numeric) once
     Kokkos::Impl::Timer timer;
+    output << "Symbolic setup...";
+    output.flush();
     KokkosSparse::Experimental::gauss_seidel_symbolic<KernelHandle, lno_view_t, lno_nnz_view_t>
       (&kh, numRows, numRows, Arowmap, Aentries, true);
+    output << "\nNumeric setup...";
+    output.flush();
     KokkosSparse::Experimental::gauss_seidel_numeric<KernelHandle, lno_view_t, lno_nnz_view_t, scalar_view_t>
       (&kh, numRows, numRows, Arowmap, Aentries, Avalues, true);
-    output << "Cluster size " << clusterSize << " setup time: " << timer.seconds() << " s\n";
+    output.flush();
+    output << "\nCluster size " << clusterSize << " setup time: " << timer.seconds() << " s\n";
     timer.reset();
     KokkosSparse::Experimental::symmetric_gauss_seidel_apply
       <KernelHandle, lno_view_t, lno_nnz_view_t, scalar_view_t, scalar_view_t, scalar_view_t>
@@ -465,7 +484,7 @@ void test_cluster_convergence(std::string matrixPath)
       ("N", alpha, A, x, beta, res, KokkosSparse::RANK_ONE());
     scalar_t norm = norm2(res);
     output << "Cluster size " << clusterSize << " norm after " << niters << " sweeps: " << norm << '\n';
-    output << "Cluster size " << clusterSize << " proportion of residual eliminated: " << 1.0 - (norm / bnorm) << std::endl;
+    output << "Cluster size " << clusterSize << " proportion of residual remaining: " << (norm / bnorm) << std::endl;
   }
   output.close();
 }
@@ -582,8 +601,8 @@ void test_rcm(lno_t numRows, offset_t nnz, offset_t bandwidth)
   lno_nnz_view_t Aentries("asdf", nnz);
   lno_nnz_view_t Avalues("asdf", nnz);
   Kokkos::deep_copy(Arowmap, A.graph.row_map);
-  //std::cout << "Aentries dim: " << Aentries.dimension_0() << '\n';
-  //std::cout << "A.graph.entries dim: " << A.graph.entries.dimension_0() << '\n';
+  //std::cout << "Aentries dim: " << Aentries.extent(0) << '\n';
+  //std::cout << "A.graph.entries dim: " << A.graph.entries.extent(0) << '\n';
   for(offset_t i = 0; i < nnz; i++)
   {
     Aentries(i) = A.graph.entries(i);
@@ -615,7 +634,7 @@ void test_rcm(lno_t numRows, offset_t nnz, offset_t bandwidth)
   //perm(i) = the node with timestamp i
   /*
   std::cout << "RCM row list that was returned:\n";
-  for(size_type i = 0; i < rcmOrder.dimension_0(); i++)
+  for(size_type i = 0; i < rcmOrder.extent(0); i++)
   {
     std::cout << rcmOrder(i) << ' ';
   }
@@ -623,7 +642,7 @@ void test_rcm(lno_t numRows, offset_t nnz, offset_t bandwidth)
   */
   /*
   std::cout << "Permutation array:\n";
-  for(size_type i = 0; i < perm.dimension_0(); i++)
+  for(size_type i = 0; i < perm.extent(0); i++)
   {
     std::cout << perm(i) << ' ';
   }
@@ -683,6 +702,9 @@ void test_rcm(lno_t numRows, offset_t nnz, offset_t bandwidth)
   */
 }
 
+//  test_cluster_convergence<SCALAR,ORDINAL,OFFSET,DEVICE>("/ascldap/users/bmkelle/TestMatrices/StocF-1465/StocF-1465.mtx"); \
+//test_cluster_convergence<SCALAR,ORDINAL,OFFSET,DEVICE>("/ascldap/users/bmkelle/msc04515.mtx"); \
+
 
 #define EXECUTE_TEST(SCALAR, ORDINAL, OFFSET, DEVICE) \
 TEST_F( TestCategory, sparse ## _ ## gauss_seidel ## _ ## SCALAR ## _ ## ORDINAL ## _ ## OFFSET ## _ ## DEVICE ) { \
@@ -692,7 +714,7 @@ TEST_F( TestCategory, sparse ## _ ## rcm ## _ ## SCALAR ## _ ## ORDINAL ## _ ## 
   test_rcm<SCALAR,ORDINAL,OFFSET,DEVICE>(100, 100, 100); \
 } \
 TEST_F( TestCategory, sparse ## _ ## cluster_convergence ## _ ## SCALAR ## _ ## ORDINAL ## _ ## OFFSET ## _ ## DEVICE ) { \
-  test_cluster_convergence<SCALAR,ORDINAL,OFFSET,DEVICE>("/ascldap/users/bmkelle/msc04515.mtx"); \
+  test_cluster_convergence<SCALAR,ORDINAL,OFFSET,DEVICE>("/ascldap/users/bmkelle/TestMatrices/StocF-1465/StocF-1465.mtx"); \
 } \
 TEST_F( TestCategory, sparse ## _ ## rcm_perf ## _ ## SCALAR ## _ ## ORDINAL ## _ ## OFFSET ## _ ## DEVICE ) { \
   test_rcm_perf<SCALAR,ORDINAL,OFFSET,DEVICE>("/ascldap/users/bmkelle/inline_1.mtx"); \
