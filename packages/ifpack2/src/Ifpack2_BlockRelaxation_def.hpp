@@ -156,6 +156,7 @@ getValidParameters () const
                                    typename MatrixType::global_ordinal_type,
                                    typename MatrixType::node_type> > dummy;
   validParams->set("partitioner: coordinates",dummy);
+  validParams->set("partitioner: decouple lines", false);
 
   return validParams;
 }

@@ -443,17 +443,31 @@ namespace MueLu {
         myparamList.set("partitioner: map",TVertLineIdSmoo);
         myparamList.set("partitioner: local parts",maxPart+1);
       } else {
+        LO numParts = maxPart + 1;
         // we assume a constant number of DOFs per node
         size_t numDofsPerNode = numLocalRows / TVertLineIdSmoo.size();
-
+        bool decouple = false;
+        if(myparamList.isParameter("partitioner: decouple lines"))
+          decouple = myparamList.get<bool>("partitioner: decouple lines");
         // Create a new Teuchos::ArrayRCP<LO> of size numLocalRows and fill it with the corresponding information
         Teuchos::ArrayRCP<LO> partitionerMap(numLocalRows, Teuchos::OrdinalTraits<LocalOrdinal>::invalid());
-        for (size_t blockRow = 0; blockRow < Teuchos::as<size_t>(TVertLineIdSmoo.size()); ++blockRow)
-          for (size_t dof = 0; dof < numDofsPerNode; dof++)
-            partitionerMap[blockRow * numDofsPerNode + dof] = TVertLineIdSmoo[blockRow];
+        if(decouple)
+        {
+          for (size_t blockRow = 0; blockRow < Teuchos::as<size_t>(TVertLineIdSmoo.size()); ++blockRow)
+            for (size_t dof = 0; dof < numDofsPerNode; dof++)
+              partitionerMap[blockRow * numDofsPerNode + dof] = TVertLineIdSmoo[blockRow] * numDofsPerNode + dof;
+          //have multiplied number of partitions by numDofsPerNode
+          numParts *= numDofsPerNode;
+        }
+        else
+        {
+          for (size_t blockRow = 0; blockRow < Teuchos::as<size_t>(TVertLineIdSmoo.size()); ++blockRow)
+            for (size_t dof = 0; dof < numDofsPerNode; dof++)
+              partitionerMap[blockRow * numDofsPerNode + dof] = TVertLineIdSmoo[blockRow];
+        }
         myparamList.set("partitioner: type","user");
         myparamList.set("partitioner: map",partitionerMap);
-        myparamList.set("partitioner: local parts",maxPart + 1);
+        myparamList.set("partitioner: local parts", numParts);
       }
 
       if (type_ == "LINESMOOTHING_BANDED_RELAXATION" ||
