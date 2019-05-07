@@ -133,6 +133,7 @@ template<class CrsMatrix, class Vector>
 result_struct
 cg_solve (Teuchos::RCP<CrsMatrix> A, Teuchos::RCP<Vector> b, Teuchos::RCP<Vector> x, int myproc, double tolerance, int max_iter)
 {
+  Kokkos::Profiling::pushRegion("CGSolve");
   static_assert (std::is_same<typename CrsMatrix::scalar_type, typename Vector::scalar_type>::value,
                  "The CrsMatrix and Vector template parameters must have the same scalar_type.");
 
@@ -188,6 +189,7 @@ cg_solve (Teuchos::RCP<CrsMatrix> A, Teuchos::RCP<Vector> b, Teuchos::RCP<Vector
   magnitude_type brkdown_tol = std::numeric_limits<magnitude_type>::epsilon();
   LO k;
   for(k=1; k <= max_iter && normr > tolerance; ++k) {
+    Kokkos::Profiling::pushRegion("CGSolve::Iteration");
     if (k == 1) {
       p->update(1.0,*r,0.0);
       addtime += timer.seconds(); timer.reset();
@@ -225,13 +227,13 @@ cg_solve (Teuchos::RCP<CrsMatrix> A, Teuchos::RCP<Vector> b, Teuchos::RCP<Vector
     x->update(alpha,*p,1.0);
     r->update(-alpha,*Ap,1.0);
     addtime += timer.seconds(); timer.reset();
-
+    Kokkos::Profiling::popRegion();
   }
   rtrans = r->dot(*r);
 
   normr = std::sqrt(rtrans);
 
-
+  Kokkos::Profiling::popRegion();
   return result_struct(addtime,dottime,matvectime,k-1,normr);
 }
 

@@ -11,13 +11,15 @@ APPEND_GLOB(SOURCES ${DIR}/*.cpp)
 # Otherwise, it does not use anything else in KokkosCore directly.
 #
 IF (Tpetra_INST_DOUBLE)
-  # This test makes sense only for Scalar == double
-  TRIBITS_ADD_EXECUTABLE(
-    Performance-CGSolve
-    SOURCES
-      ${SOURCES}
-    COMM mpi
-  )
+    MESSAGE(STATUS "Tpetra: Performance-CGSolve test ENABLED")
+
+    # This test makes sense only for Scalar == double
+    TRIBITS_ADD_EXECUTABLE( Performance-CGSolve
+                            SOURCES ${SOURCES}
+                            COMM mpi
+    )
+ELSE()
+    MESSAGE(STATUS "Tpetra: Performance-CGSolve test NOT ENABLED")
 ENDIF()
 
 #TRIBITS_COPY_FILES_TO_BINARY_DIR(CopyXmlForTpetraPerfCgSolve
