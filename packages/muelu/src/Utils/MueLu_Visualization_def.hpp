@@ -395,6 +395,17 @@ namespace VizHelpers {
         double y;
         double z;
       };
+      //Populate firstAgg_: wheter locally or globally indexed,
+      //this is the smallest global agg ID owned by this proc
+      firstAgg_ = colMap->getMinGlobalIndex();
+      for(int i = 0; i < nprocs_; i++)
+      {
+        if(rank_ == i)
+        {
+          cout << "First global agg on proc " << i << " is " << firstAgg_ << '\n';
+        }
+        comm->barrier();
+      }
       //Temporary but easy to work with representation of all local aggregates and the global rows they contain
       vector<std::set<GlobalOrdinal>> aggMembers(numLocalAggs_);
       //First, get all local vert-agg pairs as VertexData
@@ -442,7 +453,6 @@ namespace VizHelpers {
       }
       else
       {
-        size_t localAggStart = colMap->getMinGlobalIndex();
         for(GlobalOrdinal row = rowMap->getMinGlobalIndex();
             row < rowMap->getMaxGlobalIndex(); row++)
         {
@@ -453,7 +463,7 @@ namespace VizHelpers {
           for(size_t i = 0; i < indices.size(); i++)
           {
             auto globalAgg = indices[i] / colsPerNode;
-            aggMembers[globalAgg - localAggStart].insert(row);
+            aggMembers[globalAgg - firstAgg_].insert(row);
             //also need to retrieve (local) node coordinates
             verts_[row] = Vec3(xCoord(row), yCoord(row), zCoord(row));
           }
@@ -626,7 +636,10 @@ namespace VizHelpers {
             for(auto& v : gathered)
             {
               verts_[v.vertex] = Vec3(v.x, v.y, v.z);
-              aggMembers[v.agg].insert(v.vertex);
+              //adjust the global aggregate to the range on owner
+              cout << "Note: proc " << rank_ << " received a vertex " << v.vertex << " in global aggregate " << v.agg << '\n';
+              cout << "Attempting to move agg ID back into local space [0, " << numLocalAggs_ << ") by subtracting " << firstAgg_ << '\n';
+              aggMembers[v.agg - firstAgg_].insert(v.vertex);
             }
           }
         }
