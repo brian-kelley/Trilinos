@@ -17,9 +17,65 @@ IF (Tpetra_INST_DOUBLE)
     TRIBITS_ADD_EXECUTABLE( Performance-CGSolve
                             SOURCES ${SOURCES}
                             COMM mpi
+                            CATEGORIES BASIC PERFORMANCE
     )
-ELSE()
-    MESSAGE(STATUS "Tpetra: Performance-CGSolve test NOT ENABLED")
+
+    TRIBITS_ADD_TEST(
+      Performance-CGSolve
+      NAME Performance_StrongScaling_CGSolve
+      ARGS "--size=200"
+      COMM mpi
+      NUM_MPI_PROCS 1
+      STANDARD_PASS_OUTPUT
+      RUN_SERIAL
+      CATEGORIES PERFORMANCE
+    )
+
+    TRIBITS_ADD_TEST(
+      Performance-CGSolve
+      NAME Performance_StrongScaling_CGSolve
+      ARGS "--size=200"
+      COMM mpi
+      NUM_MPI_PROCS 4
+      STANDARD_PASS_OUTPUT
+      RUN_SERIAL
+      CATEGORIES PERFORMANCE
+    )
+
+    TRIBITS_ADD_TEST(
+      Performance-CGSolve
+      NAME Performance_StrongScaling_CGSolve
+      ARGS "--size=200"
+      COMM mpi
+      NUM_MPI_PROCS 9
+      STANDARD_PASS_OUTPUT
+      RUN_SERIAL
+      CATEGORIES PERFORMANCE
+    )
+
+    TRIBITS_ADD_TEST(
+
+      Performance-CGSolve
+      NAME Performance_StrongScaling_CGSolve
+      ARGS "--size=200"
+      COMM mpi
+      NUM_MPI_PROCS 16
+      STANDARD_PASS_OUTPUT
+      RUN_SERIAL
+      CATEGORIES PERFORMANCE
+    )
+
+    TRIBITS_ADD_TEST(
+      Performance-CGSolve
+      NAME Performance_StrongScaling_CGSolve
+      ARGS "--size=200"
+      COMM mpi
+      NUM_MPI_PROCS 25
+      STANDARD_PASS_OUTPUT
+      RUN_SERIAL
+      CATEGORIES PERFORMANCE
+    )
+
 ENDIF()
 
 #TRIBITS_COPY_FILES_TO_BINARY_DIR(CopyXmlForTpetraPerfCgSolve
