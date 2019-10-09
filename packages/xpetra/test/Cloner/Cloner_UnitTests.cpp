@@ -116,7 +116,6 @@ namespace {
   // UNIT TESTS
   //
 
-  /*
   //BMK 10-2019: clone() for Tpetra Maps is deprecated
   //TODO: implement clone() that doesn't rely on any deprecated
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Cloner, MapCloneTpetra, LO, GO, N2 )
@@ -144,8 +143,8 @@ namespace {
     TEST_EQUALITY_CONST(map1->isSameAs(*map1b),     true);
 #endif
   }
-  */
 
+  //BMK: this test just checked that clone() on a map throws if lib = Epetra.
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Cloner, MapCloneEpetra, LO, GO, N2 )
   {
 #ifdef HAVE_XPETRA_EPETRA
