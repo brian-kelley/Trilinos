@@ -90,39 +90,19 @@ dot (const XVector& x, const YVector& y)
     typename YVector::device_type,
     Kokkos::MemoryTraits<Kokkos::Unmanaged> > YVector_Internal;
 
-  using dot_type =
-    typename Kokkos::Details::InnerProductSpaceTraits<
-      typename XVector::non_const_value_type>::dot_type;
-  // Some platforms, such as Mac Clang, seem to get poor accuracy with
-  // float and complex<float>.  Work around some Trilinos test
-  // failures by using a higher-precision type for intermediate dot
-  // product sums.
-  constexpr bool is_complex_float =
-    std::is_same<dot_type, Kokkos::complex<float>>::value;
-  constexpr bool is_real_float = std::is_same<dot_type, float>::value;
-  using result_type = typename std::conditional<is_complex_float,
-    Kokkos::complex<double>,
-    typename std::conditional<is_real_float,
-      double,
-      dot_type
-      >::type
-    >::type;
-  using RVector_Internal = Kokkos::View<result_type,
+  typedef Kokkos::View<typename XVector::non_const_value_type,
     Kokkos::LayoutLeft,
     Kokkos::HostSpace,
-    Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+    Kokkos::MemoryTraits<Kokkos::Unmanaged> > RVector_Internal;
 
-  result_type result {};
+  typename XVector::non_const_value_type result = 0;
   RVector_Internal R = RVector_Internal(&result);
   XVector_Internal X = x;
   YVector_Internal Y = y;
 
   Impl::Dot<RVector_Internal,XVector_Internal,YVector_Internal>::dot (R,X,Y);
   Kokkos::fence();
-  // mfh 22 Jan 2020: We need the line below because
-  // Kokkos::complex<T> lacks a constructor that takes a
-  // Kokkos::complex<U> with U != T.
-  return Kokkos::Details::CastPossiblyComplex<dot_type, result_type>::cast(result);
+  return result;
 }
 
 /// \brief Compute the column-wise dot products of two multivectors.
