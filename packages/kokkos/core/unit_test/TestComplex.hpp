@@ -163,8 +163,10 @@ struct TestComplexBasicMath {
     ASSERT_FLOAT_EQ(h_results(2).real(), r.real());
     ASSERT_FLOAT_EQ(h_results(2).imag(), r.imag());
     r = a / b;
+#ifndef KOKKOS_WORKAROUND_OPENMPTARGET_CLANG
     ASSERT_FLOAT_EQ(h_results(3).real(), r.real());
     ASSERT_FLOAT_EQ(h_results(3).imag(), r.imag());
+#endif
     r = d + a;
     ASSERT_FLOAT_EQ(h_results(4).real(), r.real());
     ASSERT_FLOAT_EQ(h_results(4).imag(), r.imag());
@@ -211,8 +213,10 @@ struct TestComplexBasicMath {
     ASSERT_FLOAT_EQ(h_results(18).real(), r.real());
     ASSERT_FLOAT_EQ(h_results(18).imag(), r.imag());
     r = c / a;
+#ifndef KOKKOS_WORKAROUND_OPENMPTARGET_CLANG
     ASSERT_FLOAT_EQ(h_results(19).real(), r.real());
     ASSERT_FLOAT_EQ(h_results(19).imag(), r.imag());
+#endif
 
     r = a;
     /* r = a+e; */ ASSERT_FLOAT_EQ(h_results(20).real(), r.real() + e);
@@ -354,5 +358,42 @@ TEST(TEST_CATEGORY, complex_special_funtions) {
 }
 
 TEST(TEST_CATEGORY, complex_io) { testComplexIO(); }
+
+TEST(TEST_CATEGORY, complex_trivially_copyable) {
+  using RealType = double;
+
+  // Kokkos::complex<RealType> is trivially copyable when RealType is
+  // trivially copyable
+  // Simply disable the check for IBM's XL compiler since we can't reliably
+  // check for a version that defines relevant functions.
+#if !defined(__ibmxl__)
+  // clang claims compatibility with gcc 4.2.1 but all versions tested know
+  // about std::is_trivially_copyable.
+#if !defined(__clang__)
+#define KOKKOS_COMPILER_GNU_VERSION \
+  __GNUC__ * 100 + __GNUC_MINOR__ * 10 + __GNUC_PATCHLEVEL__
+#endif
+#if KOKKOS_COMPILER_GNU_VERSION == 0 || KOKKOS_COMPILER_GNU_VERSION > 500
+  ASSERT_TRUE(std::is_trivially_copyable<Kokkos::complex<RealType>>::value ||
+              !std::is_trivially_copyable<RealType>::value);
+#elif KOKKOS_COMPILER_GNU_VERSION > 480
+  ASSERT_TRUE(
+      (std::has_trivial_copy_constructor<Kokkos::complex<RealType>>::value &&
+       std::has_trivial_copy_assign<Kokkos::complex<RealType>>::value &&
+       std::is_trivially_destructible<Kokkos::complex<RealType>>::value) ||
+      !(std::has_trivial_copy_constructor<RealType>::value &&
+        std::has_trivial_copy_assign<RealType>::value &&
+        std::is_trivially_destructible<RealType>::value));
+#else
+  ASSERT_TRUE(
+      (std::has_trivial_copy_constructor<Kokkos::complex<RealType>>::value &&
+       std::has_trivial_copy_assign<Kokkos::complex<RealType>>::value &&
+       std::has_trivial_destructor<Kokkos::complex<RealType>>::value) ||
+      !(std::has_trivial_copy_constructor<RealType>::value &&
+        std::has_trivial_copy_assign<RealType>::value &&
+        std::has_trivial_destructor<RealType>::value));
+#endif
+#endif
+}
 
 }  // namespace Test
