@@ -24,7 +24,7 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 
 // Epetra = on, Tpetra = off
 #if defined(HAVE_XPETRA_EPETRA) && !defined(HAVE_XPETRA_TPETRA)
-  XPETRA_ETI_GROUP(double,int,int,EpetraNode)
+  XPETRA_ETI_GROUP(double,EpetraNode)
 #endif
 
 // Epetra = on, Tpetra = on
@@ -32,7 +32,7 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
   TPETRA_INSTANTIATE_MULTIVECTOR(XPETRA_ETI_GROUP)
 #if ((defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_OPENMP) || !defined(HAVE_TPETRA_INST_INT_INT))) || \
     (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
-  XPETRA_ETI_GROUP(double,int,int,EpetraNode)
+  XPETRA_ETI_GROUP(double,EpetraNode)
 # endif
 
 #endif

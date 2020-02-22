@@ -64,10 +64,10 @@
 #endif
 
 #if   (defined(HAVE_MUELU_EPETRA) &&  defined(EPETRA_HAVE_OMP) && (!defined(HAVE_MUELU_TPETRA) || !defined(HAVE_TPETRA_INST_OPENMP) || !defined(HAVE_TPETRA_INST_INT_INT)))
-  // Epetra is enabled with OpenMP node, but Tpetra is a) not enabled, or b) is not instantiated on OpenMP, or c) is not instantiated on OpenMP with <double,int,int>
+  // Epetra is enabled with OpenMP node, but Tpetra is a) not enabled, or b) is not instantiated on OpenMP, or c) is not instantiated on OpenMP with <double>
   typedef Kokkos::Compat::KokkosOpenMPWrapperNode EpetraNode;
 #elif (defined(HAVE_MUELU_EPETRA) && !defined(EPETRA_HAVE_OMP) && (!defined(HAVE_MUELU_TPETRA) || !defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT)))
-  // Epetra is enabled with Serial node, but Tpetra is a) not enabled, or b) is not instantiated on Serial, or c) is not instantiated on Serial with <double,int,int>
+  // Epetra is enabled with Serial node, but Tpetra is a) not enabled, or b) is not instantiated on Serial, or c) is not instantiated on Serial with <double>
   typedef Kokkos::Compat::KokkosSerialWrapperNode EpetraNode;
 #endif
 
@@ -82,7 +82,7 @@
 //    (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
 @MueLu_ETI_EpetraGuards@
 
-  template class @CLASS_NAME@<int,int,EpetraNode>;
+  template class @CLASS_NAME@<EpetraNode>;
 
 @MueLu_ETI_EpetraGuards_END@
 

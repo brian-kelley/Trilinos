@@ -24,7 +24,7 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 
 // Epetra = on, Tpetra = off
 #if defined(HAVE_MUELU_EPETRA) && !defined(HAVE_MUELU_TPETRA)
-  MUELU_ETI_GROUP_EPETRA(double,int,int,EpetraNode)
+  MUELU_ETI_GROUP_EPETRA(double,EpetraNode)
 #endif
 
 
@@ -34,7 +34,7 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
   TPETRA_INSTANTIATE_SLGN_NO_ORDINAL_SCALAR(MUELU_ETI_GROUP_TPETRA)
 #if ((defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_OPENMP) || !defined(HAVE_TPETRA_INST_INT_INT))) || \
     (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
-  MUELU_ETI_GROUP_EPETRA(double,int,int,EpetraNode)
+  MUELU_ETI_GROUP_EPETRA(double,EpetraNode)
 # endif
 
 #endif

@@ -64,10 +64,10 @@
 #endif
 
 #if   (defined(HAVE_XPETRA_EPETRA) &&  defined(EPETRA_HAVE_OMP) && (!defined(HAVE_XPETRA_TPETRA) || !defined(HAVE_TPETRA_INST_OPENMP) || !defined(HAVE_TPETRA_INST_INT_INT)))
-  // Epetra is enabled with OpenMP node, but Tpetra is a) not enabled, or b) is not instantiated on OpenMP, or c) is not instantiated on OpenMP with <double,int,int>
+  // Epetra is enabled with OpenMP node, but Tpetra is a) not enabled, or b) is not instantiated on OpenMP, or c) is not instantiated on OpenMP with <double>
   typedef Kokkos::Compat::KokkosOpenMPWrapperNode EpetraNode;
 #elif (defined(HAVE_XPETRA_EPETRA) && !defined(EPETRA_HAVE_OMP) && (!defined(HAVE_XPETRA_TPETRA) || !defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT)))
-  // Epetra is enabled with Serial node, but Tpetra is a) not enabled, or b) is not instantiated on Serial, or c) is not instantiated on Serial with <double,int,int>
+  // Epetra is enabled with Serial node, but Tpetra is a) not enabled, or b) is not instantiated on Serial, or c) is not instantiated on Serial with <double>
   typedef Kokkos::Compat::KokkosSerialWrapperNode EpetraNode;
 #endif
 
@@ -83,11 +83,11 @@
 @Xpetra_ETI_EpetraGuards@
 
 #ifndef XPETRA_EPETRA_NO_32BIT_GLOBAL_INDICES
-  template class @CLASS_NAME@<double,int,int,EpetraNode>
+  template class @CLASS_NAME@<double,EpetraNode>
 #endif
 
 #ifndef XPETRA_EPETRA_NO_64BIT_GLOBAL_INDICES
-  template class @CLASS_NAME@<double,int,long long,EpetraNode>
+  template class @CLASS_NAME@<double,EpetraNode>
 #endif
 
 @Xpetra_ETI_EpetraGuards_END@
