@@ -72,12 +72,12 @@ namespace Impl {
 ///
 /// mfh 12 Mar 2016: Tpetra::CrsGraph::getLocalDiagOffsets returns
 /// offsets as size_t.  However, see Github Issue #213.
-template<class LO,
-         class GO,
-         class DeviceType,
+template<class DeviceType,
          class DiagOffsetType = size_t>
 class GetGraphDiagOffsets {
 public:
+  using LO = Details::DefaultTypes::local_ordinal_type;
+  using GO = Details::DefaultTypes::global_ordinal_type;
   typedef typename DeviceType::device_type device_type;
   typedef DiagOffsetType diag_offset_type;
   typedef ::Kokkos::View<diag_offset_type*,

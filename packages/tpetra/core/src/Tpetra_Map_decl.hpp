@@ -543,18 +543,18 @@ namespace Tpetra {
     Map ();
 
     //! Copy constructor (shallow copy).
-    Map (const Map<local_ordinal_type, global_ordinal_type, node_type>&) = default;
+    Map (const Map<node_type>&) = default;
 
     //! Move constructor (shallow move).
-    Map (Map<local_ordinal_type, global_ordinal_type, node_type>&&) = default;
+    Map (Map<node_type>&&) = default;
 
     //! Copy assigment (shallow copy).
     Map&
-    operator= (const Map<local_ordinal_type, global_ordinal_type, node_type>&) = default;
+    operator= (const Map<node_type>&) = default;
 
     //! Move assigment (shallow move).
     Map&
-    operator= (Map<local_ordinal_type, global_ordinal_type, node_type>&&) = default;
+    operator= (Map<node_type>&&) = default;
 
     /// \brief Destructor (virtual for memory safety of derived classes).
     ///
