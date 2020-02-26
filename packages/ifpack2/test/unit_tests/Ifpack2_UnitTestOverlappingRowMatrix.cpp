@@ -216,8 +216,10 @@ void reducedMatvec(const OverlappedMatrixClass & A,
                    const int overlapLevel,
                    MultiVectorClass & Y) {
   using crs_matrix_type = Tpetra::CrsMatrix<typename OverlappedMatrixClass::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typename OverlappedMatrixClass::local_ordinal_type,
     typename OverlappedMatrixClass::global_ordinal_type,
+#endif
     typename OverlappedMatrixClass::node_type>;
 
   // Assumes that X & Y are sufficiently overlapped for this to work
@@ -257,7 +259,11 @@ void reducedMatvec(const OverlappedMatrixClass & A,
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, Test0, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, Test0, Scalar)
+#endif
 {
   out << "Ifpack2::OverlappingRowMatrix unit test" << endl;
   Teuchos::OSTab tab0 (out);
@@ -265,12 +271,21 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, Test0, Scalar, LO
 #ifndef HAVE_IFPACK2_XPETRA
   out << "This test requires building with Xpetra enabled." << endl;
 #else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node>       CrsType;
   typedef Tpetra::RowMatrix<Scalar,LO,GO,Node>       row_matrix_type;
   typedef Xpetra::TpetraCrsMatrix<Scalar,LO,GO,Node> XCrsType;
   typedef Xpetra::Map<LO,GO,Node>                    XMapType;
   typedef Xpetra::MultiVector<Scalar,LO,GO,Node>     XMVectorType;
   typedef Tpetra::Vector<Scalar,LO,GO,Node>          VectorType;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node>       CrsType;
+  typedef Tpetra::RowMatrix<Scalar,Node>       row_matrix_type;
+  typedef Xpetra::TpetraCrsMatrix<Scalar,Node> XCrsType;
+  typedef Xpetra::Map<Node>                    XMapType;
+  typedef Xpetra::MultiVector<Scalar,Node>     XMVectorType;
+  typedef Tpetra::Vector<Scalar,Node>          VectorType;
+#endif
 
   int lclSuccess = 1;
   int gblSuccess = 1;
@@ -414,7 +429,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, Test0, Scalar, LO
 #endif // HAVE_IFPACK2_XPETRA
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, getLocalDiag, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, getLocalDiag, Scalar)
+#endif
 {
   typedef Scalar scalar_type;
   typedef LO local_ordinal_type;
@@ -566,23 +585,41 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, getLocalDiag, Sca
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, reducedMatvec, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, reducedMatvec, Scalar)
+#endif
 {
   using SC = Scalar;
   using LO = LocalOrdinal;
   using GO = GlobalOrdinal;
   using NO = Tpetra::Map<>::node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO,GO,NO>;
   using row_matrix_type =  Tpetra::RowMatrix<SC,LO,GO,NO>;
   using MV = Tpetra::MultiVector<SC,LO,GO,NO>;
+#else
+  using map_type = Tpetra::Map<NO>;
+  using row_matrix_type =  Tpetra::RowMatrix<SC,NO>;
+  using MV = Tpetra::MultiVector<SC,NO>;
+#endif
   using Teuchos::RCP;
   Tpetra::global_size_t num_rows_per_proc = 5;
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > rowmap = tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
+#else
+  const RCP<const Tpetra::Map<Node> > rowmap = tif_utest::create_tpetra_map<Node>(num_rows_per_proc);
+#endif
   // Only run on > 1 core
   if(rowmap->getComm()->getSize() == 1) return;  
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > A = tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rowmap);
+#else
+  RCP<const Tpetra::CrsMatrix<Scalar,Node> > A = tif_utest::create_test_matrix<Scalar,Node>(rowmap);
+#endif
 
   // This needs to be one less than the number of matvecs we test
   int overlapLevel = 2;
@@ -642,9 +679,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2OverlappingRowMatrix, reducedMatvec, Sc
 
 
 #define UNIT_TEST_GROUP_SCALAR_ORDINAL( Scalar, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2OverlappingRowMatrix, Test0, Scalar, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2OverlappingRowMatrix, getLocalDiag, Scalar, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2OverlappingRowMatrix, reducedMatvec, Scalar, LO, GO ) 
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2OverlappingRowMatrix, Test0, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2OverlappingRowMatrix, getLocalDiag, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2OverlappingRowMatrix, reducedMatvec, Scalar ) 
+#endif
 
 // mfh 26 Aug 2015: Ifpack2::OverlappingRowMatrix was only getting
 // tested for Scalar = double, LocalOrdinal = int, GlobalOrdinal =

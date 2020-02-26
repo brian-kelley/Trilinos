@@ -72,25 +72,57 @@ public:
 
 namespace Impl {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 std::pair<typename LocalRowOffsetsResult<NT>::offsets_type, size_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowCounts (const RowGraph<LO, GO, NT>& G);
+#else
+localRowCounts (const RowGraph<NT>& G);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 LocalRowOffsetsResult<NT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowOffsetsFromRowGraph (const RowGraph<LO, GO, NT>& G);
+#else
+localRowOffsetsFromRowGraph (const RowGraph<NT>& G);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 LocalRowOffsetsResult<NT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowOffsetsFromFillCompleteCrsGraph (const CrsGraph<LO, GO, NT>& G);
+#else
+localRowOffsetsFromFillCompleteCrsGraph (const CrsGraph<NT>& G);
+#endif
 
 } // namespace Impl
 
 /// \brief Get local row offsets ("ptr", in compressed sparse row
 ///   terms) for the given graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 LocalRowOffsetsResult<NT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowOffsets (const RowGraph<LO, GO, NT>& G);
+#else
+localRowOffsets (const RowGraph<NT>& G);
+#endif
 
 } // namespace Details
 } // namespace Tpetra

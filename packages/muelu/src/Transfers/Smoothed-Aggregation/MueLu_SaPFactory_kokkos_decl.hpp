@@ -94,12 +94,25 @@ namespace MueLu {
     | P       | SaPFactory_kokkos   | Smoothed prolongator
 
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class SaPFactory_kokkos;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   class SaPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType> > : public PFactory {
+#else
+  template <class Scalar, class DeviceType>
+  class SaPFactory_kokkos<Scalar, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType> > : public PFactory {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef LocalOrdinal                                        local_ordinal_type;
     typedef GlobalOrdinal                                       global_ordinal_type;
     typedef typename DeviceType::execution_space                execution_space;

@@ -343,7 +343,11 @@ namespace { // (anonymous)
 
     {
       const char countTypeName[] = "int";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       testComputeOffsetsTmpl<int, int, DeviceType> (success, out,
+#else
+      testComputeOffsetsTmpl<DeviceType> (success, out,
+#endif
                                                     "int",
                                                     countTypeName, debug);
       if (! success) {

@@ -123,7 +123,11 @@ namespace MueLuTests {
 #if defined(HAVE_MUELU_EPETRA) && defined(HAVE_MUELU_IFPACK)
 #if defined(HAVE_MUELU_SERIAL)
       ifpackList.set("relaxation: type", "symmetric Gauss-Seidel");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       smooProto = MueLu::GetIfpackSmoother<SC,LO,GO,NO>("point relaxation stand-alone", ifpackList);
+#else
+      smooProto = MueLu::GetIfpackSmoother<SC,NO>("point relaxation stand-alone", ifpackList);
+#endif
 #else
       throw(MueLu::Exceptions::RuntimeError("gimmeGaussSeidelProto: IfpackSmoother only available with SerialNode."));
 #endif
@@ -149,7 +153,11 @@ namespace MueLuTests {
       if (rank == 0) std::cout << "CoarseGrid: AMESOS" << std::endl;
       Teuchos::ParameterList amesosList;
       amesosList.set("PrintTiming",true);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       coarseProto = MueLu::GetAmesosSmoother<SC,LO,GO,NO>("Amesos_Klu", amesosList);
+#else
+      coarseProto = MueLu::GetAmesosSmoother<SC,NO>("Amesos_Klu", amesosList);
+#endif
 #else
       throw(MueLu::Exceptions::RuntimeError("gimmeGaussSeidelProto: AmesosSmoother only available with SerialNode."));
 #endif
@@ -312,7 +320,11 @@ int main(int argc, char *argv[]) {
     if (comm->getRank() == 0)
       std::cout << "||NS|| = " << norms[0] << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::Hierarchy<SC,LO,GO,NO> > H = rcp( new Hierarchy() );
+#else
+    RCP<MueLu::Hierarchy<SC,NO> > H = rcp( new Hierarchy() );
+#endif
     H->SetDefaultVerbLevel(MueLu::Extreme);
     H->IsPreconditioner(false);
 

@@ -54,8 +54,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> ToggleCoordinatesTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> ToggleCoordinatesTransferFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("Chosen P", Teuchos::null, "Name of TogglePFactory this ToggleCoordinatesTransferFactory is connected to. Parameter provides information which execution path (prolongator) has been chosen.");
@@ -63,8 +68,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ToggleCoordinatesTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& /* fineLevel */, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ToggleCoordinatesTransferFactory<Scalar, Node>::DeclareInput(Level& /* fineLevel */, Level& coarseLevel) const {
+#endif
     const ParameterList& pL = GetParameterList();
     TEUCHOS_TEST_FOR_EXCEPTION(!pL.isParameter("Chosen P"), Exceptions::RuntimeError, "MueLu::ToggleCoordinatesTransferFactory::DeclareInput: You have to set the 'Chosen P' parameter to a factory name of type TogglePFactory. The ToggleCoordinatesTransferFactory must be used together with a TogglePFactory!");
     Input(coarseLevel,"Chosen P");
@@ -75,11 +85,20 @@ namespace MueLu {
     hasDeclaredInput_ = true;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ToggleCoordinatesTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & /* fineLevel */, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ToggleCoordinatesTransferFactory<Scalar, Node>::Build(Level & /* fineLevel */, Level &coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Coordinate transfer toggle", coarseLevel);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> xdMV;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> xdMV;
+#endif
 
     TEUCHOS_TEST_FOR_EXCEPTION(coordFacts_.size() != 2, Exceptions::RuntimeError, "MueLu::TogglePFactory::Build: ToggleCoordinatesTransferFactory needs two different transfer operator strategies for toggling.");
 
@@ -110,8 +129,13 @@ namespace MueLu {
     //TODO: exception if coarseCoords == Teuchos::null
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ToggleCoordinatesTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddCoordTransferFactory(const RCP<const FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void ToggleCoordinatesTransferFactory<Scalar, Node>::AddCoordTransferFactory(const RCP<const FactoryBase>& factory) {
+#endif
     // check if it's a TwoLevelFactoryBase based transfer factory
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::rcp_dynamic_cast<const TwoLevelFactoryBase>(factory) == Teuchos::null, Exceptions::BadCast,
                                "MueLu::ToggleCoordinatesTransferFactory::AddCoordTransferFactory: Transfer factory is not derived from TwoLevelFactoryBase. Make sure you provide the factory which generates the coarse coordinates. Usually this is a coordinate transfer factory."

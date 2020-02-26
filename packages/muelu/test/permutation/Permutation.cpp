@@ -76,18 +76,32 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   Teuchos::RCP<const Epetra_CrsMatrix> GetEpetraMatrix(std::string name, const Teuchos::RCP<MueLu::Level> level, const Teuchos::RCP<MueLu::Factory>& fct) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > result = level->Get<Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > >(name, fct.get());
     Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node> > crsres = Teuchos::rcp_dynamic_cast<Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(result);
     Teuchos::RCP<Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > crsmat = crsres->getCrsMatrix();
+#else
+    Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > result = level->Get<Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > >(name, fct.get());
+    Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar,Node> > crsres = Teuchos::rcp_dynamic_cast<Xpetra::CrsMatrixWrap<Scalar,Node> >(result);
+    Teuchos::RCP<Xpetra::CrsMatrix<Scalar,Node> > crsmat = crsres->getCrsMatrix();
+#endif
     Teuchos::RCP<Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node> > epcrsmat = Teuchos::rcp_dynamic_cast<Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node> >(crsmat);
     Teuchos::RCP<const Epetra_CrsMatrix> epres = epcrsmat->getEpetra_CrsMatrix();
     return epres;
   }
 
   // run tests with "Algebraic" permutation strategy and nDofsPerNode = 1
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool runPermutationTest(const std::string input_filename, const std::string expected_filename, const Teuchos::RCP<const Teuchos::Comm<int> >& comm) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -130,7 +144,11 @@ namespace MueLuTests {
     Finest->Set("A", A);
 
     // permute full matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<PermutationFactory> PermFact = Teuchos::rcp(new MueLu::PermutationFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>());
+#else
+    Teuchos::RCP<PermutationFactory> PermFact = Teuchos::rcp(new MueLu::PermutationFactory<Scalar,Node>());
+#endif
     PermFact->SetParameter("PermutationStrategy",Teuchos::ParameterEntry(std::string("Algebraic")));
     //PermFact->SetParameter("PermutationStrategy",Teuchos::ParameterEntry(std::string("Local")));
     PermFact->SetParameter("PermutationRowMapName",Teuchos::ParameterEntry(std::string("")));
@@ -160,7 +178,11 @@ namespace MueLuTests {
     //std::cout << "Q^T" << *GetEpetraMatrix("permQT", Finest, PermFact) << std::endl;
     //std::cout << "permA" <<  *GetEpetraMatrix("A", Finest, PermFact) << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Epetra_CrsMatrix> epResult = GetEpetraMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>("A", Finest, PermFact);
+#else
+    Teuchos::RCP<const Epetra_CrsMatrix> epResult = GetEpetraMatrix<Scalar,Node>("A", Finest, PermFact);
+#endif
     //std::cout << *epResult << std::endl;
 
     if(epExpected != Teuchos::null) {
@@ -187,7 +209,11 @@ namespace MueLuTests {
   }
 
   // run tests with "Local" permutation strategy and nDofsPerNode = 3
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool runPermutationTest2(const std::string input_filename, const std::string expected_filename, const Teuchos::RCP<const Teuchos::Comm<int> >& comm) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -230,7 +256,11 @@ namespace MueLuTests {
     Finest->Set("A", A);
 
     // permute full matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<PermutationFactory> PermFact = Teuchos::rcp(new MueLu::PermutationFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>());
+#else
+    Teuchos::RCP<PermutationFactory> PermFact = Teuchos::rcp(new MueLu::PermutationFactory<Scalar,Node>());
+#endif
     PermFact->SetParameter("PermutationStrategy",Teuchos::ParameterEntry(std::string("Local")));
     PermFact->SetParameter("PermutationRowMapName",Teuchos::ParameterEntry(std::string("")));
     PermFact->SetFactory("PermutationRowMapFactory", Teuchos::null);
@@ -259,7 +289,11 @@ namespace MueLuTests {
     //std::cout << "Q^T" << *GetEpetraMatrix("permQT", Finest, PermFact) << std::endl;
     //std::cout << "permA" <<  *GetEpetraMatrix("A", Finest, PermFact) << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Epetra_CrsMatrix> epResult = GetEpetraMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>("A", Finest, PermFact);
+#else
+    Teuchos::RCP<const Epetra_CrsMatrix> epResult = GetEpetraMatrix<Scalar,Node>("A", Finest, PermFact);
+#endif
     //std::cout << *epResult << std::endl;
 
     if(epExpected != Teuchos::null) {
@@ -289,7 +323,11 @@ namespace MueLuTests {
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -304,13 +342,23 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
   bool bSuccess = true;
 #ifndef HAVE_MUELU_INST_COMPLEX_INT_INT
   //runPermutationTest(MatrixFileName, ExpectedFileName, comm)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if(runPermutationTest<Scalar,LocalOrdinal,GlobalOrdinal,Node>("test1.txt", "exp1.txt", comm) == false) bSuccess = false;
   if(runPermutationTest<Scalar,LocalOrdinal,GlobalOrdinal,Node>("test2.txt", "exp2.txt", comm) == false) bSuccess = false;
   if(runPermutationTest<Scalar,LocalOrdinal,GlobalOrdinal,Node>("test3.txt", "exp3.txt", comm) == false) bSuccess = false;
+#else
+  if(runPermutationTest<Scalar,Node>("test1.txt", "exp1.txt", comm) == false) bSuccess = false;
+  if(runPermutationTest<Scalar,Node>("test2.txt", "exp2.txt", comm) == false) bSuccess = false;
+  if(runPermutationTest<Scalar,Node>("test3.txt", "exp3.txt", comm) == false) bSuccess = false;
+#endif
 
   // the following tests work only on 1 or 2 processors
   if(numProcs == 1 || numProcs == 2) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     if(runPermutationTest2<Scalar,LocalOrdinal,GlobalOrdinal,Node>("test4.txt", "exp4.txt", comm) == false) bSuccess = false;
+#else
+    if(runPermutationTest2<Scalar,Node>("test4.txt", "exp4.txt", comm) == false) bSuccess = false;
+#endif
     // test seems to be ok, but matrix addition is not working
     // has wrong entries on the diagonal on proc1... -> wrong handling of index base?
     //if(runPermutationTest2("test5.txt", "exp5.txt" /*"exp5.txt"*/, comm) == false) bSuccess = false;
@@ -346,7 +394,11 @@ int main(int argc, char* argv[]) {
 
   if (lib == Xpetra::UseEpetra) {
 #ifdef HAVE_MUELU_EPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return main_<double,int,int,Xpetra::EpetraNode>(clp, lib, argc, argv);
+#else
+    return main_<double,Xpetra::EpetraNode>(clp, lib, argc, argv);
+#endif
 #else
     throw MueLu::Exceptions::RuntimeError("Epetra is not available");
 #endif

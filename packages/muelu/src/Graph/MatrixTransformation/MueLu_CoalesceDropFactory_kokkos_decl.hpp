@@ -124,12 +124,25 @@ namespace MueLu {
     on HyperGraph partitioning without coordinate information) where one has
     not access to a "Graph" or "Coordinates" variable.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   class CoalesceDropFactory_kokkos;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   class CoalesceDropFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType> > : public SingleLevelFactoryBase {
+#else
+  template<class Scalar, class DeviceType>
+  class CoalesceDropFactory_kokkos<Scalar, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType> > : public SingleLevelFactoryBase {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     using local_ordinal_type  = LocalOrdinal;
     using global_ordinal_type = GlobalOrdinal;
     using execution_space     = typename DeviceType::execution_space;

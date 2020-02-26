@@ -77,21 +77,45 @@ namespace Xpetra {
   @brief Concrete implementation of Xpetra::Matrix.
 */
 template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal,
           class GlobalOrdinal,
+#endif
           class Node = KokkosClassic::DefaultNode::DefaultNodeType>
 class CrsMatrixWrap :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   public Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>
+#else
+  public Matrix<Scalar,Node>
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> Map;
   typedef Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> CrsMatrix;
   typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix;
   typedef Xpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node> CrsGraph;
-#ifdef HAVE_XPETRA_TPETRA
-  typedef Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> TpetraCrsMatrix;
+#else
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::CrsMatrix<Scalar, Node> CrsMatrix;
+  typedef Xpetra::Matrix<Scalar, Node> Matrix;
+  typedef Xpetra::CrsGraph<Node> CrsGraph;
 #endif
+#ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  typedef Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> TpetraCrsMatrix;
+#else
+  typedef Xpetra::TpetraCrsMatrix<Scalar, Node> TpetraCrsMatrix;
+#endif
+#endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::CrsMatrixFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> CrsMatrixFactory;
   typedef Xpetra::MatrixView<Scalar, LocalOrdinal, GlobalOrdinal, Node> MatrixView;
+#else
+  typedef Xpetra::CrsMatrixFactory<Scalar, Node> CrsMatrixFactory;
+  typedef Xpetra::MatrixView<Scalar, Node> MatrixView;
+#endif
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA
     typedef typename CrsMatrix::local_matrix_type local_matrix_type;
@@ -334,22 +358,38 @@ public:
   //! \brief Get a copy of the diagonal entries owned by this node, with local row idices.
   /*! Returns a distributed Vector object partitioned according to this matrix's row map, containing the
     the zero and non-zero diagonals owned by this node. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void getLocalDiagCopy(Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &diag) const;
+#else
+  void getLocalDiagCopy(Xpetra::Vector<Scalar,Node> &diag) const;
+#endif
 
   //! Get offsets of the diagonal entries in the matrix.
   void getLocalDiagOffsets(Teuchos::ArrayRCP<size_t> &offsets) const;
 
   //! Get a copy of the diagonal entries owned by this node, with local row indices, using row offsets.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void getLocalDiagCopy(Xpetra::Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &diag, const Teuchos::ArrayView<const size_t> &offsets) const;
+#else
+  void getLocalDiagCopy(Xpetra::Vector< Scalar, Node > &diag, const Teuchos::ArrayView<const size_t> &offsets) const;
+#endif
 
   //! Get Frobenius norm of the matrix
   typename ScalarTraits<Scalar>::magnitudeType getFrobeniusNorm() const;
 
   //! Left scale matrix using the given vector entries
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void leftScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x);
+#else
+  void leftScale (const Vector<Scalar, Node>& x);
+#endif
 
   //! Right scale matrix using the given vector entries
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void rightScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x);
+#else
+  void rightScale (const Vector<Scalar, Node>& x);
+#endif
 
   //! Returns true if globalConstants have been computed; false otherwise
   bool haveGlobalConstants() const;
@@ -383,19 +423,32 @@ public:
   /*! Performs \f$Y = \alpha A^{\textrm{mode}} X + \beta Y\f$, with one special exceptions:
     - if <tt>beta == 0</tt>, apply() overwrites \c Y, so that any values in \c Y (including NaNs) are ignored.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void apply(const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X,
                    Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y,
+#else
+  virtual void apply(const Xpetra::MultiVector<Scalar,Node>& X,
+                   Xpetra::MultiVector<Scalar,Node>& Y,
+#endif
                    Teuchos::ETransp mode = Teuchos::NO_TRANS,
                    Scalar alpha = ScalarTraits<Scalar>::one(),
                    Scalar beta = ScalarTraits<Scalar>::zero()) const;
 
   //! \brief Returns the Map associated with the domain of this operator.
   //! This will be <tt>null</tt> until fillComplete() is called.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const;
+#else
+  RCP<const Xpetra::Map<Node> > getDomainMap() const;
+#endif
 
   //! Returns the Map associated with the domain of this operator.
   //! This will be <tt>null</tt> until fillComplete() is called.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const;
+#else
+  RCP<const Xpetra::Map<Node> > getRangeMap() const;
+#endif
 
   //! \brief Returns the Map that describes the column distribution in this matrix.
   //! This might be <tt>null</tt> until fillComplete() is called.
@@ -412,23 +465,43 @@ public:
   //{@
 
   //! Access function for the Tpetra::Map this DistObject was constructed with.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Teuchos::RCP< const Xpetra::Map< LocalOrdinal, GlobalOrdinal, Node > > getMap() const;
+#else
+  const Teuchos::RCP< const Xpetra::Map<Node > > getMap() const;
+#endif
 
   //! Import.
   void doImport(const Matrix &source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const Xpetra::Import< LocalOrdinal, GlobalOrdinal, Node > &importer, CombineMode CM);
+#else
+                const Xpetra::Import<Node > &importer, CombineMode CM);
+#endif
 
   //! Export.
   void doExport(const Matrix &dest,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const Xpetra::Import< LocalOrdinal, GlobalOrdinal, Node >& importer, CombineMode CM);
+#else
+                const Xpetra::Import<Node >& importer, CombineMode CM);
+#endif
 
   //! Import (using an Exporter).
   void doImport(const Matrix &source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const Xpetra::Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM);
+#else
+                const Xpetra::Export<Node >& exporter, CombineMode CM);
+#endif
 
   //! Export (using an Importer).
   void doExport(const Matrix &dest,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const Xpetra::Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM);
+#else
+                const Xpetra::Export<Node >& exporter, CombineMode CM);
+#endif
 
   // @}
 
@@ -471,9 +544,15 @@ public:
 
 
   //! Compute a residual R = B - (*this) * X
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void residual(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & X,
                 const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & B,
                 MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & R) const;
+#else
+  void residual(const MultiVector< Scalar, Node > & X,
+                const MultiVector< Scalar, Node > & B,
+                MultiVector< Scalar, Node > & R) const;
+#endif
   
 
   //@}

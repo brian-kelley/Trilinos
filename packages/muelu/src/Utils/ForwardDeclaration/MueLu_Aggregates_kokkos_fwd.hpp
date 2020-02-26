@@ -50,7 +50,11 @@
 #if defined(HAVE_MUELU_KOKKOS_REFACTOR)
 
 namespace MueLu {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   class Aggregates_kokkos;
 }
 

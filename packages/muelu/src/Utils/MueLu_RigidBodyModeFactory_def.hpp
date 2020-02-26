@@ -56,11 +56,21 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RigidBodyModeFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~RigidBodyModeFactory() {}
+#else
+  template <class Scalar, class Node>
+  RigidBodyModeFactory<Scalar, Node>::~RigidBodyModeFactory() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RigidBodyModeFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RigidBodyModeFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     if (currentLevel.IsAvailable(nspName_, NoFactory::get()) == false && currentLevel.GetLevelID() == 0) {
       Input(currentLevel, "A");
       //Input(currentLevel,"Coordinates");
@@ -70,8 +80,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RigidBodyModeFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RigidBodyModeFactory<Scalar, Node>::Build(Level &currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Rigid body mode factory", currentLevel);
     RCP<MultiVector> nullspace;
     if (currentLevel.GetLevelID() == 0) {

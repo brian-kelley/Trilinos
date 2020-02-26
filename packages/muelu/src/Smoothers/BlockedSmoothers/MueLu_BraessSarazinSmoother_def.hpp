@@ -79,8 +79,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BraessSarazinSmoother()
+#else
+  template <class Scalar, class Node>
+  BraessSarazinSmoother<Scalar, Node>::BraessSarazinSmoother()
+#endif
     : type_("Braess Sarazin"), A_(null)
   {
     //Factory::SetParameter("Sweeps", ParameterEntry(sweeps));
@@ -111,18 +116,33 @@ namespace MueLu {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~BraessSarazinSmoother() {}
+#else
+  template <class Scalar, class Node>
+  BraessSarazinSmoother<Scalar, Node>::~BraessSarazinSmoother() {}
+#endif
 
   //! Add a factory manager at a specific position
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager, int pos) {
+#else
+  template <class Scalar, class Node>
+  void BraessSarazinSmoother<Scalar, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager, int pos) {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(pos != 0, Exceptions::RuntimeError, "MueLu::BraessSarazinSmoother::AddFactoryManager: parameter \'pos\' must be zero! error.");
     FactManager_ = FactManager;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> BraessSarazinSmoother<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     SC one = Teuchos::ScalarTraits<SC>::one();
@@ -139,8 +159,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void BraessSarazinSmoother<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     this->Input(currentLevel, "A");
 
     TEUCHOS_TEST_FOR_EXCEPTION(FactManager_.is_null(), Exceptions::RuntimeError,
@@ -164,8 +189,13 @@ namespace MueLu {
   // - set the blocks
   // - create and set the inverse of the diagonal of F
   // - set the smoother for the Schur Complement
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(Level& currentLevel) {
+#else
+  template <class Scalar, class Node>
+  void BraessSarazinSmoother<Scalar, Node>::Setup(Level& currentLevel) {
+#endif
     FactoryMonitor m(*this, "Setup Smoother", currentLevel);
 
     if (SmootherPrototype::IsSetup() == true)
@@ -236,8 +266,13 @@ namespace MueLu {
     SmootherPrototype::IsSetup(true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Apply(MultiVector& X, const MultiVector& B, bool InitialGuessIsZero) const {
+#else
+  template <class Scalar, class Node>
+  void BraessSarazinSmoother<Scalar, Node>::Apply(MultiVector& X, const MultiVector& B, bool InitialGuessIsZero) const {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(SmootherPrototype::IsSetup() == false, Exceptions::RuntimeError,
                                "MueLu::BraessSarazinSmoother::Apply(): Setup() has not been called");
 
@@ -287,7 +322,11 @@ namespace MueLu {
     bB = Teuchos::rcp_dynamic_cast<const BlockedMultiVector>(rcpB);
 
     // check the type of operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > rbA = Teuchos::rcp_dynamic_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(bA);
+#else
+    RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > rbA = Teuchos::rcp_dynamic_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(bA);
+#endif
     if(rbA.is_null() == false) {
       // A is a ReorderedBlockedCrsMatrix
       Teuchos::RCP<const Xpetra::BlockReorderManager > brm = rbA->getBlockReorderManager();
@@ -400,14 +439,25 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Copy () const {
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::SmootherPrototype<Scalar, Node> >
+  BraessSarazinSmoother<Scalar, Node>::Copy () const {
+#endif
     return rcp (new BraessSarazinSmoother (*this));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  std::string BraessSarazinSmoother<Scalar, Node>::
+#endif
   description () const {
     std::ostringstream out;
     out << SmootherPrototype::description();
@@ -415,8 +465,13 @@ namespace MueLu {
     return out.str();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void BraessSarazinSmoother<Scalar, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#endif
     MUELU_DESCRIBE;
 
     if (verbLevel & Parameters0) {
@@ -428,8 +483,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t BraessSarazinSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNodeSmootherComplexity() const {
+#else
+  template <class Scalar, class Node>
+  size_t BraessSarazinSmoother<Scalar, Node>::getNodeSmootherComplexity() const {
+#endif
     // FIXME: This is a placeholder
     return Teuchos::OrdinalTraits<size_t>::invalid();
   }

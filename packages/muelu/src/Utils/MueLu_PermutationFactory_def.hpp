@@ -79,15 +79,30 @@
 #undef DEBUG_OUTPUT
 
 namespace MueLu {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 PermutationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::PermutationFactory()
+#else
+template <class Scalar, class Node>
+PermutationFactory<Scalar, Node>::PermutationFactory()
+#endif
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 PermutationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~PermutationFactory() {}
+#else
+template <class Scalar, class Node>
+PermutationFactory<Scalar, Node>::~PermutationFactory() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const ParameterList> PermutationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+template <class Scalar, class Node>
+RCP<const ParameterList> PermutationFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
   RCP<ParameterList> validParamList = rcp(new ParameterList());
 
   validParamList->set< RCP<const FactoryBase> >("A", Teuchos::null, "Generating factory of the matrix A to be permuted.");
@@ -100,8 +115,13 @@ RCP<const ParameterList> PermutationFactory<Scalar, LocalOrdinal, GlobalOrdinal,
   return validParamList;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void PermutationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+template <class Scalar, class Node>
+void PermutationFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
   Input(currentLevel, "A");
 
   const ParameterList & pL = GetParameterList();
@@ -113,8 +133,13 @@ void PermutationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void PermutationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & currentLevel) const {
+#else
+template <class Scalar, class Node>
+void PermutationFactory<Scalar, Node>::Build(Level & currentLevel) const {
+#endif
   FactoryMonitor m(*this, "Permutation Factory ", currentLevel);
 
   Teuchos::RCP<Matrix> A = Get< Teuchos::RCP<Matrix> > (currentLevel, "A");

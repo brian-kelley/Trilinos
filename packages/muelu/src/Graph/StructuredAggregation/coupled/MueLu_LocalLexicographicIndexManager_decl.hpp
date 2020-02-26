@@ -79,13 +79,22 @@ namespace MueLu {
     correspond to nodes. While not strictly necessary, it might be convenient.
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   class LocalLexicographicIndexManager : public IndexManager<LocalOrdinal, GlobalOrdinal, Node> {
+#else
+  template <class Node>
+  class LocalLexicographicIndexManager : public IndexManager<Node> {
+#endif
 #undef MUELU_LOCALLEXICOGRAPHICINDEXMANAGER_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     LocalLexicographicIndexManager() = default;
 
     LocalLexicographicIndexManager(const RCP<const Teuchos::Comm<int> > comm, const bool coupled,

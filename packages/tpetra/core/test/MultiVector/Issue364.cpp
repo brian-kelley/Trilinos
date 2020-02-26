@@ -168,8 +168,13 @@ namespace { // (anonymous)
     using Scalar = typename Tpetra::MultiVector<>::scalar_type;
     using LO = typename Tpetra::MultiVector<>::local_ordinal_type;
     using GO = typename Tpetra::MultiVector<>::global_ordinal_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Tpetra::Map<LO, GO, Node>;
     using MV = Tpetra::MultiVector<Scalar, LO, GO, Node>;
+#else
+    using map_type = Tpetra::Map<Node>;
+    using MV = Tpetra::MultiVector<Scalar, Node>;
+#endif
     using IST = typename MV::impl_scalar_type;
 
     const IST ONE = Kokkos::Details::ArithTraits<IST>::one ();
@@ -396,8 +401,13 @@ namespace { // (anonymous)
     typedef typename Tpetra::MultiVector<>::global_ordinal_type GO;
     typedef typename Tpetra::MultiVector<>::device_type DT;
     typedef typename DT::memory_space dev_memory_space;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, Node> map_type;
     typedef Tpetra::MultiVector<Scalar, LO, GO, Node> MV;
+#else
+    typedef Tpetra::Map<Node> map_type;
+    typedef Tpetra::MultiVector<Scalar, Node> MV;
+#endif
     typedef typename MV::impl_scalar_type IST;
     typedef typename Kokkos::View<IST**, DT>::HostMirror::memory_space
       host_memory_space;

@@ -162,15 +162,24 @@
 namespace Xpetra {
   namespace UnitTestHelpers {
     //! Non-member function to create a (potentially) non-uniform, contiguous Map with a user-specified node.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LocalOrdinal, class GlobalOrdinal, class Node>
       Teuchos::RCP< const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+    template <class Node>
+      Teuchos::RCP< const Xpetra::Map<Node> >
+#endif
       createContigMapWithNode(Xpetra::UnderlyingLib lib,
 			      Xpetra::global_size_t numElements,
 			      size_t localNumElements,
 			      const Teuchos::RCP< const Teuchos::Comm< int > > &comm,
 			      const Teuchos::RCP< Node > & /* node */ = Teuchos::null) {
       XPETRA_MONITOR("Xpetra::UnitTestHelpers::createContigMap");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return Xpetra::MapFactory<LocalOrdinal,GlobalOrdinal,Node>::Build(lib, numElements, localNumElements, 0, comm);
+#else
+      return Xpetra::MapFactory<Node>::Build(lib, numElements, localNumElements, 0, comm);
+#endif
     }
   }
 }

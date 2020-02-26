@@ -69,11 +69,22 @@ namespace Details {
 // KOKKOS_FUNCTION here, because those attempt to mark the functions
 // they modify as CUDA device functions.  This functor is ONLY for
 // non-CUDA execution spaces!
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class GetLocalDiagCopyWithoutOffsetsNotFillCompleteFunctor {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::RowMatrix<SC, LO, GO, NT> row_matrix_type;
   typedef ::Tpetra::Vector<SC, LO, GO, NT> vec_type;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  typedef ::Tpetra::RowMatrix<SC, NT> row_matrix_type;
+  typedef ::Tpetra::Vector<SC, NT> vec_type;
+#endif
 
   typedef typename vec_type::impl_scalar_type IST;
   // The output Vector determines the execution space.
@@ -88,8 +99,13 @@ private:
   {
     using Teuchos::RCP;
     using Teuchos::rcp_dynamic_cast;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, NT> crs_graph_type;
     typedef Tpetra::RowGraph<LO, GO, NT> row_graph_type;
+#else
+    typedef Tpetra::CrsGraph<NT> crs_graph_type;
+    typedef Tpetra::RowGraph<NT> row_graph_type;
+#endif
 
     // We conservatively assume not sorted.  RowGraph lacks an
     // "isSorted" predicate, so we can't know for sure unless the cast
@@ -187,18 +203,31 @@ private:
 };
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 getLocalDiagCopyWithoutOffsetsNotFillComplete ( ::Tpetra::Vector<SC, LO, GO, NT>& diag,
                                                 const ::Tpetra::RowMatrix<SC, LO, GO, NT>& A,
+#else
+getLocalDiagCopyWithoutOffsetsNotFillComplete ( ::Tpetra::Vector<SC, NT>& diag,
+                                                const ::Tpetra::RowMatrix<SC, NT>& A,
+#endif
                                                 const bool debug)
 {
   using ::Tpetra::Details::gathervPrint;
   using Teuchos::outArg;
   using Teuchos::REDUCE_MIN;
   using Teuchos::reduceAll;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef GetLocalDiagCopyWithoutOffsetsNotFillCompleteFunctor<SC,
     LO, GO, NT> functor_type;
+#else
+  typedef GetLocalDiagCopyWithoutOffsetsNotFillCompleteFunctor<SC, NT> functor_type;
+#endif
 
   // The functor's constructor does error checking and executes the
   // thread-parallel kernel.
@@ -266,11 +295,21 @@ getLocalDiagCopyWithoutOffsetsNotFillComplete ( ::Tpetra::Vector<SC, LO, GO, NT>
 // Explicit template instantiation macro for
 // getLocalDiagCopyWithoutOffsetsNotFillComplete.  NOT FOR USERS!!!
 // Must be used inside the Tpetra namespace.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DETAILS_GETDIAGCOPYWITHOUTOFFSETS_INSTANT( SCALAR, LO, GO, NODE ) \
+#else
+#define TPETRA_DETAILS_GETDIAGCOPYWITHOUTOFFSETS_INSTANT( SCALAR, NODE ) \
+#endif
   template LO \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::getLocalDiagCopyWithoutOffsetsNotFillComplete< SCALAR, LO, GO, NODE > \
     ( ::Tpetra::Vector< SCALAR, LO, GO, NODE >& diag, \
       const ::Tpetra::RowMatrix< SCALAR, LO, GO, NODE >& A, \
+#else
+  Details::getLocalDiagCopyWithoutOffsetsNotFillComplete< SCALAR, NODE > \
+    ( ::Tpetra::Vector< SCALAR, NODE >& diag, \
+      const ::Tpetra::RowMatrix< SCALAR, NODE >& A, \
+#endif
       const bool debug);
 
 #endif // TPETRA_DETAILS_GETDIAGCOPYWITHOUTOFFSETS_DEF_HPP

@@ -767,10 +767,15 @@ public:
    *
    * Note that the boundary padding is always included in the map
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template< class LocalOrdinal  = TpetraLOType,
             class GlobalOrdinal = TpetraGOType,
             class Node          = TpetraNodeType>
   Teuchos::RCP< const Tpetra::Map< LocalOrdinal, GlobalOrdinal, Node > >
+#else
+  template<class Node          = TpetraNodeType>
+  Teuchos::RCP< const Tpetra::Map<Node > >
+#endif
   getTpetraMap(bool withCommPad=true) const;
 
   /** \brief Return an RCP to a Tpetra::Map that represents the
@@ -785,10 +790,15 @@ public:
    *
    * Note that the boundary padding is always included in the map
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template< class LocalOrdinal  = TpetraLOType,
             class GlobalOrdinal = TpetraGOType,
             class Node          = TpetraNodeType >
   Teuchos::RCP< const Tpetra::Map< LocalOrdinal, GlobalOrdinal, Node > >
+#else
+  template<class Node          = TpetraNodeType >
+  Teuchos::RCP< const Tpetra::Map<Node > >
+#endif
   getTpetraAxisMap(int axis,
                    bool withCommPad=true) const;
 
@@ -1131,10 +1141,15 @@ getGlobalDims() const
 
 #ifdef HAVE_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class LocalOrdinal,
           class GlobalOrdinal,
           class Node >
 Teuchos::RCP< const Tpetra::Map< LocalOrdinal, GlobalOrdinal, Node > >
+#else
+template<class Node >
+Teuchos::RCP< const Tpetra::Map<Node > >
+#endif
 MDMap::getTpetraMap(bool withCommPad) const
 {
   if (withCommPad)
@@ -1168,9 +1183,13 @@ MDMap::getTpetraMap(bool withCommPad) const
     Teuchos::RCP< const Teuchos::Comm< int > > teuchosComm =
       _mdComm->getTeuchosComm();
     return
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::rcp(new Tpetra::Map< LocalOrdinal,
                                     GlobalOrdinal,
                                     Node >(Teuchos::OrdinalTraits< Tpetra::global_size_t >::invalid(),
+#else
+      Teuchos::rcp(new Tpetra::Map<Node >(Teuchos::OrdinalTraits< Tpetra::global_size_t >::invalid(),
+#endif
                                            myElements(),
                                            0,
                                            teuchosComm));
@@ -1216,9 +1235,13 @@ MDMap::getTpetraMap(bool withCommPad) const
     Teuchos::RCP< const Teuchos::Comm< int > > teuchosComm =
       _mdComm->getTeuchosComm();
     return
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::rcp(new Tpetra::Map< LocalOrdinal,
                                     GlobalOrdinal,
                                     Node >(Teuchos::OrdinalTraits< Tpetra::global_size_t>::invalid(),
+#else
+      Teuchos::rcp(new Tpetra::Map<Node >(Teuchos::OrdinalTraits< Tpetra::global_size_t>::invalid(),
+#endif
                                            myElements(),
                                            0,
                                            teuchosComm));
@@ -1230,10 +1253,15 @@ MDMap::getTpetraMap(bool withCommPad) const
 
 #ifdef HAVE_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class LocalOrdinal,
           class GlobalOrdinal,
           class Node >
 Teuchos::RCP< const Tpetra::Map< LocalOrdinal, GlobalOrdinal, Node > >
+#else
+template<class Node >
+Teuchos::RCP< const Tpetra::Map<Node > >
+#endif
 MDMap::
 getTpetraAxisMap(int axis,
                  bool withCommPad) const
@@ -1252,9 +1280,13 @@ getTpetraAxisMap(int axis,
   if (withCommPad && (getCommIndex(axis) != 0)) start -= _pad[axis][0];
   for (LocalOrdinal i = 0; i < elements.size(); ++i)
     elements[i] = i + start;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Teuchos::rcp(new Tpetra::Map< LocalOrdinal,
                                        GlobalOrdinal,
                                        Node >(Teuchos::OrdinalTraits< Tpetra::global_size_t>::invalid(),
+#else
+  return Teuchos::rcp(new Tpetra::Map<Node >(Teuchos::OrdinalTraits< Tpetra::global_size_t>::invalid(),
+#endif
                                               elements,
                                               0,
                                               teuchosComm));

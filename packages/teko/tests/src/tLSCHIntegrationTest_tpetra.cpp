@@ -176,8 +176,13 @@ bool tLSCHIntegrationTest_tpetra::test_hScaling(int verbosity,std::ostream & os)
    ss << "prec = " << Teuchos::describe(*prec,Teuchos::VERB_EXTREME) << std::endl;
 
    // construct a couple of vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(2,0,GetComm_tpetra()));
    Tpetra::Vector<ST,LO,GO,NT> ea(map),eb(map);
+#else
+   const RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(2,0,GetComm_tpetra()));
+   Tpetra::Vector<ST,NT> ea(map),eb(map);
+#endif
    const RCP<const Thyra::MultiVectorBase<ST> > x = BlockVector(ea,eb,prec->domain());
    const RCP<Thyra::MultiVectorBase<ST> > y = Thyra::createMembers(prec->range(),1); 
    ea.replaceGlobalValue(0,1.0);

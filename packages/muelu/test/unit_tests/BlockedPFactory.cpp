@@ -73,10 +73,17 @@ namespace MueLuTests {
   // helper function
   // note: we assume "domainmap" to be linear starting with GIDs from domainmap->getMinAllGlobalIndex() to
   //       domainmap->getMaxAllGlobalIndex() and build a quadratic triangular matrix with the stencil (b,a,c)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal, GlobalOrdinal, Node> >
   GenerateProblemMatrix(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > rangemap,
                         const Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > domainmap,
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar, Node> >
+  GenerateProblemMatrix(const Teuchos::RCP<const Xpetra::Map<Node> > rangemap,
+                        const Teuchos::RCP<const Xpetra::Map<Node> > domainmap,
+#endif
                         Scalar a = 2.0, Scalar b = -1.0, Scalar c = -1.0) {
 #include "MueLu_UseShortNames.hpp"
     Teuchos::RCP<CrsMatrixWrap> mtx = Galeri::Xpetra::MatrixTraits<Map,CrsMatrixWrap>::Build(rangemap, 3);
@@ -135,7 +142,11 @@ namespace MueLuTests {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedPFactory, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedPFactory, Constructor, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -174,15 +185,30 @@ namespace MueLuTests {
     std::vector<Teuchos::RCP<const Map> > maps;
     maps.push_back(map1); maps.push_back(map2);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::MapExtractor<Scalar, LO, GO, Node> > mapExtractor = Xpetra::MapExtractorFactory<Scalar,LO,GO,Node>::Build(bigMap, maps);
+#else
+    Teuchos::RCP<const Xpetra::MapExtractor<Scalar, Node> > mapExtractor = Xpetra::MapExtractorFactory<Scalar,Node>::Build(bigMap, maps);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<CrsMatrixWrap> Op11 = GenerateProblemMatrix<Scalar,LO,GO,Node>(map1,map1,2,-1,-1);
     RCP<CrsMatrixWrap> Op12 = GenerateProblemMatrix<Scalar,LO,GO,Node>(map1,map2,1, 0, 0);
     RCP<CrsMatrixWrap> Op21 = GenerateProblemMatrix<Scalar,LO,GO,Node>(map2,map1,1, 0, 0);
     RCP<CrsMatrixWrap> Op22 = GenerateProblemMatrix<Scalar,LO,GO,Node>(map2,map2,3,-2,-1);
+#else
+    RCP<CrsMatrixWrap> Op11 = GenerateProblemMatrix<Scalar,Node>(map1,map1,2,-1,-1);
+    RCP<CrsMatrixWrap> Op12 = GenerateProblemMatrix<Scalar,Node>(map1,map2,1, 0, 0);
+    RCP<CrsMatrixWrap> Op21 = GenerateProblemMatrix<Scalar,Node>(map2,map1,1, 0, 0);
+    RCP<CrsMatrixWrap> Op22 = GenerateProblemMatrix<Scalar,Node>(map2,map2,3,-2,-1);
+#endif
 
     // build blocked operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp = Teuchos::rcp(new Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node>(mapExtractor,mapExtractor,10));
+#else
+    Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp = Teuchos::rcp(new Xpetra::BlockedCrsMatrix<Scalar,Node>(mapExtractor,mapExtractor,10));
+#endif
 
     bOp->setMatrix(0,0,Op11);
     bOp->setMatrix(0,1,Op12);
@@ -260,7 +286,11 @@ namespace MueLuTests {
     RCP<Matrix> P = levelTwo->Get<RCP<Matrix> >("P",PFact.get());
     TEST_EQUALITY(P!=Teuchos::null,true);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bP = Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> >(P);
+#else
+    RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bP = Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar,Node> >(P);
+#endif
     TEST_EQUALITY(bP!=Teuchos::null,true);
 
     TEST_EQUALITY(bP->Rows(),2);
@@ -277,8 +307,13 @@ namespace MueLuTests {
     TEST_EQUALITY(rones->normInf(),2.0);
   } //Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedPFactory, Constructor, SC, LO, GO, Node) \
+#else
+#  define MUELU_ETI_GROUP(SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedPFactory, Constructor, SC, Node) \
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

@@ -28,9 +28,17 @@
 /// MultiVecTraits and OperatorTraits specializations already
 /// implemented.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class SolverInput {
 private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType mag_type;
 
 public:
@@ -49,9 +57,17 @@ public:
 /// "Aggregation" here just means reporting a single group of metrics.
 /// For example, for two solves, we report the max of the two
 /// iteration counts, and the max of the two residual norms.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class SolverOutput {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType mag_type;
 
 private:
@@ -87,7 +103,11 @@ public:
   /// the same matrix, but different right-hand sides.  Combining is
   /// associative and commutative.
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   combine (const SolverOutput<SC, LO, GO, NT>& src)
+#else
+  combine (const SolverOutput<SC, NT>& src)
+#endif
   {
     // max of the residuals and iteration counts
     relResid = relResid > src.relResid ? relResid : src.relResid;
@@ -98,10 +118,18 @@ public:
   }
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 std::ostream&
 operator<< (std::ostream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const SolverOutput<SC, LO, GO, NT>& so)
+#else
+            const SolverOutput<SC, NT>& so)
+#endif
 {
   using std::endl;
 
@@ -121,16 +149,31 @@ operator<< (std::ostream& out,
 /// right-hand sides is the max of the residuals and iteration counts,
 /// and the AND of the "did it converge" Boolean values.
 template<class SC = Tpetra::Operator<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LO = typename Tpetra::Operator<SC>::local_ordinal_type,
          class GO = typename Tpetra::Operator<SC, LO>::global_ordinal_type,
          class NT = typename Tpetra::Operator<SC, LO, GO>::node_type>
+#else
+         class NT = typename Tpetra::Operator<SC>::node_type>
+#endif
 class CG {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Operator<SC, LO, GO, NT> op_type;
   typedef Tpetra::MultiVector<SC, LO, GO, NT> mv_type;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::Operator<SC, NT> op_type;
+  typedef Tpetra::MultiVector<SC, NT> mv_type;
+#endif
 
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;
+#else
+  typedef Tpetra::Vector<SC, NT> vec_type;
+#endif
   typedef Teuchos::ScalarTraits<SC> STS;
   typedef typename STS::magnitudeType mag_type;
   typedef Teuchos::ScalarTraits<mag_type> STM;
@@ -305,7 +348,11 @@ private:
 
 public:
   //! Solve the linear system(s) AX=B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   SolverOutput<SC, LO, GO, NT>
+#else
+  SolverOutput<SC, NT>
+#endif
   solve (mv_type& X, const mv_type& B)
   {
     using Teuchos::FancyOStream;
@@ -338,7 +385,11 @@ public:
 
 private:
   //! Solve the linear system(s) AX=B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   SolverOutput<SC, LO, GO, NT>
+#else
+  SolverOutput<SC, NT>
+#endif
   solveImpl (Teuchos::FancyOStream* outPtr, mv_type& X, const mv_type& B)
   {
     using Teuchos::RCP;
@@ -352,11 +403,19 @@ private:
     norms.sync_host ();
     auto norms_h = norms.view_host ();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     SolverInput<SC, LO, GO, NT> input;
+#else
+    SolverInput<SC, NT> input;
+#endif
     input.tol = tol_;
     input.maxNumIters = maxNumIters_;
     input.needToScale = needToScale_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     SolverOutput<SC, LO, GO, NT> allOutput;
+#else
+    SolverOutput<SC, NT> allOutput;
+#endif
 
     for (size_t j = 0; j < numVecs; ++j) {
       if (outPtr != NULL) {
@@ -366,7 +425,11 @@ private:
       RCP<vec_type> R_j = R.getVectorNonConst (j);
       RCP<vec_type> X_j = X.getVectorNonConst (j);
       input.r_norm_orig = norms_h(j);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       SolverOutput<SC, LO, GO, NT> curOutput;
+#else
+      SolverOutput<SC, NT> curOutput;
+#endif
       solveOneVec (outPtr, curOutput, *X_j, *R_j, *A_, input);
       allOutput.combine (curOutput);
       if (outPtr != NULL) {
@@ -378,7 +441,11 @@ private:
 
   static mag_type
   getConvergenceMetric (const mag_type r_norm_new,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         const SolverInput<SC, LO, GO, NT>& input)
+#else
+                        const SolverInput<SC, NT>& input)
+#endif
   {
     if (input.needToScale) {
       return input.r_norm_orig == STM::zero () ?
@@ -392,11 +459,19 @@ private:
 
   static void
   solveOneVec (Teuchos::FancyOStream* outPtr,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                SolverOutput<SC, LO, GO, NT>& output,
+#else
+               SolverOutput<SC, NT>& output,
+#endif
                vec_type& X, // in/out
                vec_type& R, // in/out
                const op_type& A,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                const SolverInput<SC, LO, GO, NT>& input)
+#else
+               const SolverInput<SC, NT>& input)
+#endif
   {
     using std::endl;
 
@@ -550,17 +625,38 @@ public:
   }
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class CgWrapper<SC,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 Tpetra::MultiVector<SC, LO, GO, NT>,
                 Tpetra::Operator<SC, LO, GO, NT> > :
+#else
+                Tpetra::MultiVector<SC, NT>,
+                Tpetra::Operator<SC, NT> > :
+#endif
   public Belos::SolverManager<SC,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                               Tpetra::MultiVector<SC, LO, GO, NT>,
                               Tpetra::Operator<SC, LO, GO, NT> >
+#else
+                              Tpetra::MultiVector<SC, NT>,
+                              Tpetra::Operator<SC, NT> >
+#endif
 {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<SC, LO, GO, NT> MV;
   typedef Tpetra::Operator<SC, LO, GO, NT> OP;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::MultiVector<SC, NT> MV;
+  typedef Tpetra::Operator<SC, NT> OP;
+#endif
   typedef Belos::LinearProblem<SC, MV, OP> belos_problem_type;
 
   virtual ~CgWrapper () {}
@@ -641,7 +737,11 @@ public:
       (X.is_null (), std::runtime_error, "The linear problem's left-hand "
        "side(s) X has/have not yet been set.  Please call setProblem with "
        "a nonnull argument before calling this method.");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     SolverOutput<SC, LO, GO, NT> result = solver_.solve (*X, *B);
+#else
+    SolverOutput<SC, NT> result = solver_.solve (*X, *B);
+#endif
     lastSolverOutput_ = result;
     return result.converged ? Belos::Converged : Belos::Unconverged;
   }
@@ -651,9 +751,17 @@ public:
   }
 
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef SolverOutput<SC, LO, GO, NT> output_type;
+#else
+  typedef SolverOutput<SC, NT> output_type;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CG<SC, LO, GO, NT> solver_;
+#else
+  CG<SC, NT> solver_;
+#endif
   //! Output of the last solve.
   ///
   /// This does not include the solution (multi)vector, just things
@@ -666,16 +774,29 @@ private:
 
 
 template<class SC = Tpetra::Operator<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LO = typename Tpetra::Operator<SC>::local_ordinal_type,
          class GO = typename Tpetra::Operator<SC, LO>::global_ordinal_type,
          class NT = typename Tpetra::Operator<SC, LO, GO>::node_type>
 class TestDiagonalOperator : public Tpetra::Operator<SC, LO, GO, NT> {
+#else
+         class NT = typename Tpetra::Operator<SC>::node_type>
+class TestDiagonalOperator : public Tpetra::Operator<SC, NT> {
+#endif
 private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   typedef typename NT::device_type device_type;
 
 public:
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType mag_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
 
   TestDiagonalOperator (const Teuchos::RCP<const map_type>& map,
                         const mag_type minSingularValue) :
@@ -713,14 +834,23 @@ public:
   }
 
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   apply (const Tpetra::MultiVector<SC, LO, GO, NT>& X,
          Tpetra::MultiVector<SC, LO, GO, NT>& Y,
+#else
+  apply (const Tpetra::MultiVector<SC, NT>& X,
+         Tpetra::MultiVector<SC, NT>& Y,
+#endif
          Teuchos::ETransp mode = Teuchos::NO_TRANS,
          SC alpha = Teuchos::ScalarTraits<SC>::one (),
          SC beta = Teuchos::ScalarTraits<SC>::zero ()) const
   {
     using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<SC, LO, GO, NT> MV;
+#else
+    typedef Tpetra::MultiVector<SC, NT> MV;
+#endif
     typedef typename MV::impl_scalar_type ISC;
 
     TEUCHOS_TEST_FOR_EXCEPTION

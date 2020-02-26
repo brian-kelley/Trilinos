@@ -75,7 +75,11 @@ namespace { // (anonymous)
 #endif
 
   using map_type = Tpetra::Map<LO, GO>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using vec_type = Tpetra::Vector<GO, LO, GO>;
+#else
+  using vec_type = Tpetra::Vector<GO>;
+#endif
   using export_type = Tpetra::Export<LO, GO>;
 
   Teuchos::RCP<const map_type>

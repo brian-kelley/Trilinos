@@ -48,10 +48,19 @@
 
 #include "Ifpack2_Factory.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar,class LocalOrdinal,class GlobalOrdinal,class Node>
 Teuchos::RCP<Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+template<class Scalar,class Node>
+Teuchos::RCP<Tpetra::Operator<Scalar,Node> >
+#endif
 build_precond (Teuchos::ParameterList& test_params,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                const Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& A)
+#else
+               const Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,Node> >& A)
+#endif
 {
   using Teuchos::FancyOStream;
   using Teuchos::getFancyOStream;
@@ -60,7 +69,11 @@ build_precond (Teuchos::ParameterList& test_params,
   using Teuchos::rcpFromRef;
   using std::cout;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
+#else
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+#endif
   Teuchos::Time timer_init("init");
   Teuchos::Time timer("precond");
   Teuchos::Time timer2("precond_reuse");
@@ -68,7 +81,11 @@ build_precond (Teuchos::ParameterList& test_params,
 
   RCP<FancyOStream> out = getFancyOStream (rcpFromRef (cout));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tprec;
+#else
+  typedef Ifpack2::Preconditioner<Scalar,Node> Tprec;
+#endif
   Teuchos::RCP<Tprec> prec;
   Ifpack2::Factory factory;
 

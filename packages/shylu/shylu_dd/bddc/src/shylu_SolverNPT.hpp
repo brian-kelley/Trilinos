@@ -54,7 +54,11 @@
 namespace bddc {
   
 template <class SX, class SM, class LO, class GO> class SolverNPT : 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   public SolverBase<SX,SM,LO,GO>
+#else
+  public SolverBase<SX,SM>
+#endif
 {
 public:
   SolverNPT(LO numRows,
@@ -62,7 +66,11 @@ public:
 	    LO* columns,
 	    SX* values,
 	    Teuchos::ParameterList & Parameters) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   SolverBase<SX,SM,LO,GO>(numRows, rowBegin, columns, values, Parameters)
+#else
+  SolverBase<SX,SM>(numRows, rowBegin, columns, values, Parameters)
+#endif
   {
     // NPT solver parameters
     std::vector<int> iparamsNPT(3);
@@ -75,7 +83,11 @@ public:
     if (astring == "HTS") iparamsNPT[npt::NPT_SOLVE_INDEX] = 
 			    npt::NPT_HTS_SOLVER;
     else iparamsNPT[npt::NPT_SOLVE_INDEX] = npt::NPT_NPT_SOLVER;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     m_solverNPT = new npt::SolverNPT<SX, SM, LO, GO>(iparamsNPT);
+#else
+    m_solverNPT = new npt::SolverNPT<SX, SM>(iparamsNPT);
+#endif
   }
 
   ~SolverNPT()
@@ -119,7 +131,11 @@ public:
  private: // functions
 
  private: // data
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   npt::SolverNPT<SX, SM, LO, GO>* m_solverNPT;
+#else
+  npt::SolverNPT<SX, SM>* m_solverNPT;
+#endif
 
  };
   

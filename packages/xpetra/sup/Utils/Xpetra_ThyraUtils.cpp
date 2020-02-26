@@ -76,7 +76,11 @@ namespace Xpetra {
     // Note: Epetra is enabled
 #if ((defined(EPETRA_HAVE_OMP)  && defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_INT) && defined(HAVE_TPETRA_INST_DOUBLE)) || \
      (!defined(EPETRA_HAVE_OMP) && defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_INT) && defined(HAVE_TPETRA_INST_DOUBLE)))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > tpetraMat = Teuchos::rcp_dynamic_cast<Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(Ablock_wrap->getCrsMatrix());
+#else
+    Teuchos::RCP<Xpetra::TpetraCrsMatrix<Scalar, Node> > tpetraMat = Teuchos::rcp_dynamic_cast<Xpetra::TpetraCrsMatrix<Scalar, Node> >(Ablock_wrap->getCrsMatrix());
+#endif
     if(tpetraMat!=Teuchos::null) bTpetra = true;
 #else
     bTpetra = false;
@@ -111,16 +115,28 @@ namespace Xpetra {
             // If it is a single block operator, unwrap it
             Teuchos::RCP<CrsMatrixWrap> xpwrap = Teuchos::rcp_dynamic_cast<CrsMatrixWrap>(xpblock->getCrsMatrix());
             TEUCHOS_TEST_FOR_EXCEPT(xpwrap.is_null() == true);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             thBlock = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyra(xpwrap->getCrsMatrix());
+#else
+            thBlock = Xpetra::ThyraUtils<Scalar,Node>::toThyra(xpwrap->getCrsMatrix());
+#endif
           } else {
             // recursive call for general blocked operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             thBlock = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyra(xpblock);
+#else
+            thBlock = Xpetra::ThyraUtils<Scalar,Node>::toThyra(xpblock);
+#endif
           }
         } else {
           // check whether it is a CRSMatrix object
           Teuchos::RCP<CrsMatrixWrap> xpwrap = Teuchos::rcp_dynamic_cast<CrsMatrixWrap>(xpmat);
           TEUCHOS_TEST_FOR_EXCEPT(xpwrap.is_null() == true);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           thBlock = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyra(xpwrap->getCrsMatrix());
+#else
+          thBlock = Xpetra::ThyraUtils<Scalar,Node>::toThyra(xpwrap->getCrsMatrix());
+#endif
         }
 
         blockMat->setBlock(r,c,thBlock);
@@ -152,7 +168,11 @@ namespace Xpetra {
     // Note: Epetra is enabled
 #if ((defined(EPETRA_HAVE_OMP)  && defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_LONG_LONG) && defined(HAVE_TPETRA_INST_DOUBLE)) || \
      (!defined(EPETRA_HAVE_OMP) && defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_LONG_LONG) && defined(HAVE_TPETRA_INST_DOUBLE)))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > tpetraMat = Teuchos::rcp_dynamic_cast<Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(Ablock_wrap->getCrsMatrix());
+#else
+    Teuchos::RCP<Xpetra::TpetraCrsMatrix<Scalar, Node> > tpetraMat = Teuchos::rcp_dynamic_cast<Xpetra::TpetraCrsMatrix<Scalar, Node> >(Ablock_wrap->getCrsMatrix());
+#endif
     if(tpetraMat!=Teuchos::null) bTpetra = true;
 #else
     bTpetra = false;
@@ -187,16 +207,28 @@ namespace Xpetra {
             // If it is a single block operator, unwrap it
             Teuchos::RCP<CrsMatrixWrap> xpwrap = Teuchos::rcp_dynamic_cast<CrsMatrixWrap>(xpblock->getCrsMatrix());
             TEUCHOS_TEST_FOR_EXCEPT(xpwrap.is_null() == true);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             thBlock = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyra(xpwrap->getCrsMatrix());
+#else
+            thBlock = Xpetra::ThyraUtils<Scalar,Node>::toThyra(xpwrap->getCrsMatrix());
+#endif
           } else {
             // recursive call for general blocked operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             thBlock = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyra(xpblock);
+#else
+            thBlock = Xpetra::ThyraUtils<Scalar,Node>::toThyra(xpblock);
+#endif
           }
         } else {
           // check whether it is a CRSMatrix object
           Teuchos::RCP<CrsMatrixWrap> xpwrap = Teuchos::rcp_dynamic_cast<CrsMatrixWrap>(xpmat);
           TEUCHOS_TEST_FOR_EXCEPT(xpwrap.is_null() == true);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           thBlock = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyra(xpwrap->getCrsMatrix());
+#else
+          thBlock = Xpetra::ThyraUtils<Scalar,Node>::toThyra(xpwrap->getCrsMatrix());
+#endif
         }
 
         blockMat->setBlock(r,c,thBlock);

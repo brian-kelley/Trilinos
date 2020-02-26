@@ -66,11 +66,19 @@ namespace MueLu {
     For more details, see the comments for the ArbitrateAndCommunicate methods.
   */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
            class Node = DefaultNode>
+#else
+  template<class Node = DefaultNode>
+#endif
   class CoupledAggregationCommHelper : public BaseClass {
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef double Scalar; // Scalar type only used for weight: always a double.
 #undef MUELU_COUPLEDAGGREGATIONCOMMHELPER_SHORT
 #include "MueLu_UseShortNames.hpp"

@@ -79,12 +79,20 @@ namespace MueLu {
     spaces and it also provides utilites for coarsening.
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   class IndexManager_kokkos : public BaseClass {
 #undef MUELU_INDEXMANAGER_KOKKOS_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef typename Node::execution_space execution_space;
     typedef typename execution_space::memory_space memory_space;
     typedef typename Kokkos::View<int[3], memory_space> intTupleView;

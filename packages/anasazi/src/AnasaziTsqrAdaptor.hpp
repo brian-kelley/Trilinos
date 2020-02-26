@@ -56,8 +56,10 @@ namespace Anasazi {
   {
   public:
     typedef TSQR::Trilinos::TsqrAdaptor< typename MultiVectorType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 					 typename MultiVectorType::local_ordinal_type,
 					 typename MultiVectorType::global_ordinal_type,
+#endif
 					 typename MultiVectorType::node_type > adaptor_type;
   };
 

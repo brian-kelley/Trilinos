@@ -63,12 +63,20 @@ namespace { // (anonymous)
   // that with the Teuchos unit test framework, only Process 0 prints
   // to the output stream 'out', and therefore only Process 0 can
   // trigger failure.)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Kokkos_DualView, DegenerateSubview, S, LO, GO, NODE)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Kokkos_DualView, DegenerateSubview, S,NODE)
+#endif
   {
     using Kokkos::ALL;
     using Kokkos::subview;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<S, LO, GO, NODE> MV;
+#else
+    typedef Tpetra::MultiVector<S, NODE> MV;
+#endif
     typedef typename MV::dual_view_type dual_view_type;
     typedef typename dual_view_type::size_type size_type;
 
@@ -195,8 +203,13 @@ namespace { // (anonymous)
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Kokkos_DualView, DegenerateSubview, SCALAR, LO, GO, NODE)
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Kokkos_DualView, DegenerateSubview, SCALAR,NODE)
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

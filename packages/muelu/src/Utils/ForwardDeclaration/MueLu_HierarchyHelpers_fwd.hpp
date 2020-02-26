@@ -47,10 +47,18 @@
 #define MUELU_HIERARCHYHELPERS_FWD_HPP
 
 namespace MueLu {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class TopRAPFactory;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class TopSmootherFactory;
 }
 

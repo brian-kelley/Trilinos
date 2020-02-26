@@ -57,16 +57,32 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 class crsMatrix_Swap_Tester
 {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     using comm_type                = Teuchos::RCP<const Teuchos::Comm<int>>;                          // The comm type
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using graph_type               = Tpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node>;             // Tpetra CrsGraph type
+#else
+    using graph_type               = Tpetra::CrsGraph<Node>;             // Tpetra CrsGraph type
+#endif
     using pair_owner_type          = std::pair<GlobalOrdinal, int>;                                   // For row owners, pairs are (rowid, comm rank)
     using vec_owners_type          = std::vector<pair_owner_type>;                                    // For vectors of owners
     using tuple_weighted_edge_type = std::tuple<GlobalOrdinal, GlobalOrdinal, Scalar>;                // Weighted edges (u,v,w)
     using vec_weighted_edge_type   = std::vector<tuple_weighted_edge_type>;                           // Vector of weighted edges
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using matrix_type              = Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>;    // Tpetra CrsMatrix type
+#else
+    using matrix_type              = Tpetra::CrsMatrix<Scalar, Node>;    // Tpetra CrsMatrix type
+#endif
 
   public:
     void execute(Teuchos::FancyOStream& out, bool& success)
@@ -301,7 +317,11 @@ class crsMatrix_Swap_Tester
     // gbl_num_columns: Max # of columns in the matrix-representation of the graph.
     //                  This should be >= the highest value of v from all edges (u,v) in edges.
     //                  Note: u and v are 0-indexed, so if the highest v is 11, then this should be 12.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Tpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node>>
+#else
+    Teuchos::RCP<Tpetra::CrsGraph<Node>>
+#endif
     generate_crsgraph(Teuchos::RCP<const Teuchos::Comm<int>>&                              comm,
                       const std::vector<std::tuple<GlobalOrdinal, GlobalOrdinal, Scalar>>& gbl_wgt_edges,
                       const std::vector<std::pair<GlobalOrdinal, int>>&                    gbl_row_owners,
@@ -311,7 +331,11 @@ class crsMatrix_Swap_Tester
         using Teuchos::Comm;
         using Teuchos::RCP;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using map_type             = Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node>;          // Tpetra Map type
+#else
+        using map_type             = Tpetra::Map<Node>;          // Tpetra Map type
+#endif
         using map_rows_type        = std::map<GlobalOrdinal, int>;                            // map rows to pid's
         using vec_go_type          = std::vector<GlobalOrdinal>;                              // vector of GlobalOrdinals
         using map_row_to_cols_type = std::map<GlobalOrdinal, vec_go_type>;                    // Map rows to columns
@@ -457,9 +481,17 @@ class crsMatrix_Swap_Tester
     // gbl_num_columns: Max # of columns in the matrix-representation of the graph.
     //                  This should be >= the highest value of v from all edges (u,v) in edges.
     //                  Note: u and v are 0-indexed, so if the highest v is 11, then this should be 12.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
+#else
+    Teuchos::RCP<Tpetra::CrsMatrix<Scalar, Node>>
+#endif
     generate_crsmatrix(Teuchos::RCP<const Teuchos::Comm<int>>&                                  comm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        const Teuchos::RCP<Tpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node>>& graph,
+#else
+                       const Teuchos::RCP<Tpetra::CrsGraph<Node>>& graph,
+#endif
                        const std::vector<std::tuple<GlobalOrdinal, GlobalOrdinal, Scalar>>&     gbl_wgt_edges,
                        const std::vector<std::pair<GlobalOrdinal, int>>&                        gbl_row_owners,
                        const size_t                                                             gbl_num_columns,
@@ -468,7 +500,11 @@ class crsMatrix_Swap_Tester
         using Teuchos::Comm;
         using Teuchos::RCP;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using map_type             = Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node>;                    // Tpetra Map type
+#else
+        using map_type             = Tpetra::Map<Node>;                    // Tpetra Map type
+#endif
         using map_rows_type        = std::map<GlobalOrdinal, int>;                                      // map rows to pid's
         using vec_go_type          = std::vector<GlobalOrdinal>;                                        // vector of GlobalOrdinals
         using map_row_to_cols_type = std::map<GlobalOrdinal, vec_go_type>;                              // Map rows to columns
@@ -624,7 +660,11 @@ class crsMatrix_Swap_Tester
 
     void print_crsmatrix(const Teuchos::RCP<const Teuchos::Comm<int>>&                        comm,
                          Teuchos::FancyOStream&                                               out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          const Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>&  m,
+#else
+                         const Tpetra::CrsMatrix<Scalar, Node>&  m,
+#endif
                          const std::string                                                    label)
     {
         using Teuchos::Comm;
@@ -654,8 +694,13 @@ class crsMatrix_Swap_Tester
 
     bool compare_crsmatrix(const Teuchos::RCP<const Teuchos::Comm<int>>&  comm,
                            Teuchos::FancyOStream&                         out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                            const Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& matrix1,
                            const Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& matrix2)
+#else
+                           const Tpetra::CrsMatrix<Scalar, Node>& matrix1,
+                           const Tpetra::CrsMatrix<Scalar, Node>& matrix2)
+#endif
     {
         using Teuchos::Comm;
 
@@ -832,7 +877,11 @@ TEUCHOS_STATIC_SETUP()
 //
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsGraph, Swap, LO, GO, Scalar, Node)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     auto crsMatrixTester = Tpetra::crsMatrix_Swap_Tester<Scalar, LO, GO, Node>();
+#else
+    auto crsMatrixTester = Tpetra::crsMatrix_Swap_Tester<Scalar, Node>();
+#endif
     crsMatrixTester.execute(out, success);
 }
 
@@ -846,7 +895,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsGraph, Swap, LO, GO, Scalar, Node)
 // Tests to build and run in both debug and release modes.  We will
 // instantiate them over all enabled local ordinal (LO), global
 // ordinal (GO), and Kokkos Node (NODE) types.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_DEBUG_AND_RELEASE(SCALAR, LO, GO, NODE) \
+#else
+#define UNIT_TEST_GROUP_DEBUG_AND_RELEASE(SCALAR, NODE) \
+#endif
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsGraph, Swap, LO, GO, SCALAR, NODE)
 
 TPETRA_ETI_MANGLING_TYPEDEFS()

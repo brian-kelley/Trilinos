@@ -120,6 +120,7 @@ protected:
   using LO = local_ordinal_type;
   using GO = global_ordinal_type;
   using NO = node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using import_type = Tpetra::Import<LO, GO, NO>;
   using mv_type = Tpetra::MultiVector<SC, LO, GO, NO>;
   using vector_type = Tpetra::Vector<SC, LO, GO, NO>;
@@ -127,6 +128,15 @@ protected:
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NO>;
   using block_crs_matrix_type = Tpetra::BlockCrsMatrix<SC, LO, GO, NO>;
   using row_matrix_type = Tpetra::RowMatrix<SC, LO, GO, NO>;
+#else
+  using import_type = Tpetra::Import<NO>;
+  using mv_type = Tpetra::MultiVector<SC, NO>;
+  using vector_type = Tpetra::Vector<SC, NO>;
+  using map_type = Tpetra::Map<NO>;
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NO>;
+  using block_crs_matrix_type = Tpetra::BlockCrsMatrix<SC, NO>;
+  using row_matrix_type = Tpetra::RowMatrix<SC, NO>;
+#endif
 
   static_assert(std::is_same<MatrixType, row_matrix_type>::value,
                 "Ifpack2::Container: Please use MatrixType = Tpetra::RowMatrix.");
@@ -325,7 +335,11 @@ protected:
 
 namespace Details
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   struct StridedRowView;
 }
 
@@ -349,7 +363,11 @@ protected:
   using LO = typename Container<MatrixType>::local_ordinal_type;
   using GO = typename Container<MatrixType>::global_ordinal_type;
   using NO = typename Container<MatrixType>::node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using StridedRowView = Details::StridedRowView<SC, LO, GO, NO>;
+#else
+  using StridedRowView = Details::StridedRowView<SC, NO>;
+#endif
   using typename Container<MatrixType>::import_type;
   using typename Container<MatrixType>::row_matrix_type;
   using typename Container<MatrixType>::crs_matrix_type;
@@ -362,7 +380,11 @@ protected:
   using LSC = LocalScalarType;
   using LISC = typename Kokkos::Details::ArithTraits<LSC>::val_type;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using local_mv_type = Tpetra::MultiVector<LSC, LO, GO, NO>;
+#else
+  using local_mv_type = Tpetra::MultiVector<LSC, NO>;
+#endif
 
   using typename Container<MatrixType>::HostView;
   using HostViewLocal = typename local_mv_type::dual_view_type::t_host;
@@ -382,7 +404,11 @@ protected:
   LO translateRowToCol(LO row);
 
   //! View a row of the input matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::StridedRowView<SC, LO, GO, NO> getInputRowView(LO row) const;
+#else
+  Details::StridedRowView<SC, NO> getInputRowView(LO row) const;
+#endif
 
   /// \brief Extract the submatrices identified by the local indices set by the constructor. BlockMatrix may be any type that
   /// supports direct entry access: `Scalar& operator()(size_t row, size_t col)`.
@@ -529,9 +555,17 @@ namespace Details {
   /// Supports rows within the nodes of a BlockCrsMatrix (point indexing).
   /// Use of getLocalRowCopy
   /// This is required for extracting diagonal blocks, and decoupling DOFs.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+  template<typename Scalar, typename Node>
+#endif
   struct StridedRowView
   {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     using SC = Scalar;
     using LO = LocalOrdinal;
     //! Constructor for row views (preferred)

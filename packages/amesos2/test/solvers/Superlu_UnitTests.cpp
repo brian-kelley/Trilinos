@@ -143,7 +143,11 @@ namespace {
    * UNIT TESTS
    */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, Initialization, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, Initialization, SCALAR )
+#endif
   {
     /* Test correct initialization of the Solver instance
      *
@@ -152,8 +156,13 @@ namespace {
      * - Correct typedefs ( using Amesos2::is_same<> )
      */
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
     typedef Superlu<MAT,MV> SOLVER;
 
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
@@ -162,7 +171,11 @@ namespace {
     const size_t rank     = comm->getRank();
     // create a Map
     const size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,Node> > map = rcp( new Map<LO,GO,Node>(INVALID,numLocal,0,comm) );
+#else
+    RCP<Map<Node> > map = rcp( new Map<Node>(INVALID,numLocal,0,comm) );
+#endif
     RCP<MAT> eye = rcp( new MAT(map,1) );
     GO base = numLocal*rank;
     for( size_t i = 0; i < numLocal; ++i ){
@@ -197,11 +210,20 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, SymbolicFactorization, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, SymbolicFactorization, SCALAR )
+#endif
   {
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
 
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
     RCP<const Comm<int> > comm = getDefaultComm();
@@ -209,7 +231,11 @@ namespace {
     const size_t rank     = comm->getRank();
     // create a Map
     const size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,Node> > map = rcp( new Map<LO,GO,Node>(INVALID,numLocal,0,comm) );
+#else
+    RCP<Map<Node> > map = rcp( new Map<Node>(INVALID,numLocal,0,comm) );
+#endif
     RCP<MAT> eye = rcp( new MAT(map,1) );
     GO base = numLocal*rank;
     for( size_t i = 0; i < numLocal; ++i ){
@@ -231,11 +257,20 @@ namespace {
     solver->symbolicFactorization();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, NumericFactorization, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, NumericFactorization, SCALAR )
+#endif
   {
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
 
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
     RCP<const Comm<int> > comm = getDefaultComm();
@@ -243,7 +278,11 @@ namespace {
     const size_t rank     = comm->getRank();
     // create a Map
     const size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,Node> > map = rcp( new Map<LO,GO,Node>(INVALID,numLocal,0,comm) );
+#else
+    RCP<Map<Node> > map = rcp( new Map<Node>(INVALID,numLocal,0,comm) );
+#endif
     RCP<MAT> eye = rcp( new MAT(map,1) );
     GO base = numLocal*rank;
     for( size_t i = 0; i < numLocal; ++i ){
@@ -267,11 +306,23 @@ namespace {
     // Good way to check the factors L and U?  Probs not, since they are private members
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, Solve, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, Solve, SCALAR )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+#endif
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     const size_t numVecs = 7;
 
@@ -284,8 +335,13 @@ namespace {
 
     out << "Done reading file" << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > dmnmap = A->getDomainMap();
     RCP<const Map<LO,GO,Node> > rngmap = A->getRangeMap();
+#else
+    RCP<const Map<Node> > dmnmap = A->getDomainMap();
+    RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
     RCP<MV> X = rcp(new MV(dmnmap,numVecs));
     RCP<MV> B = rcp(new MV(rngmap,numVecs));
@@ -323,11 +379,23 @@ namespace {
     TEST_COMPARE_FLOATING_ARRAYS( xhatnorms, xnorms, 0.005 );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, SolveTrans, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, SolveTrans, SCALAR )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+#endif
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     const size_t numVecs = 7;
 
@@ -336,8 +404,13 @@ namespace {
     RCP<MAT> A =
       Tpetra::MatrixMarket::Reader<MAT>::readSparseFile("../matrices/amesos2_test_mat1.mtx",comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > dmnmap = A->getDomainMap();
     RCP<const Map<LO,GO,Node> > rngmap = A->getRangeMap();
+#else
+    RCP<const Map<Node> > dmnmap = A->getDomainMap();
+    RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
     RCP<MV> X = rcp(new MV(rngmap,numVecs));
     RCP<MV> B = rcp(new MV(dmnmap,numVecs));
@@ -371,11 +444,23 @@ namespace {
     TEST_COMPARE_FLOATING_ARRAYS( xhatnorms, xnorms, 0.005 );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, NonContgGID, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, NonContgGID, SCALAR )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+#endif
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
 
     using Tpetra::global_size_t;
@@ -537,20 +622,37 @@ namespace {
    * Unit Tests for Complex data types
    */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, ComplexSolve, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, ComplexSolve, SCALAR )
+#endif
   {
     typedef std::complex<SCALAR> cmplx;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<cmplx,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<cmplx,Node> MAT;
+#endif
     typedef ScalarTraits<cmplx> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<cmplx,LO,GO,Node> MV;
+#else
+    typedef MultiVector<cmplx,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
 
     RCP<MAT> A =
       Tpetra::MatrixMarket::Reader<MAT>::readSparseFile("../matrices/amesos2_test_mat4.mtx",comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > dmnmap = A->getDomainMap();
     RCP<const Map<LO,GO,Node> > rngmap = A->getRangeMap();
+#else
+    RCP<const Map<Node> > dmnmap = A->getDomainMap();
+    RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
     // Create the know-solution vector
     std::map<GO,cmplx> xValues;
@@ -604,12 +706,24 @@ namespace {
     TEST_COMPARE_FLOATING_ARRAYS( xhatnorms, xnorms, 0.005 );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, ComplexSolve2, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, ComplexSolve2, SCALAR )
+#endif
   {
     typedef std::complex<SCALAR> cmplx;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<cmplx,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<cmplx,Node> MAT;
+#endif
     typedef ScalarTraits<cmplx> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<cmplx,LO,GO,Node> MV;
+#else
+    typedef MultiVector<cmplx,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     const size_t numVecs = 7;
 
@@ -618,8 +732,13 @@ namespace {
     RCP<MAT> A =
       Tpetra::MatrixMarket::Reader<MAT>::readSparseFile("../matrices/amesos2_test_mat2.mtx",comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > dmnmap = A->getDomainMap();
     RCP<const Map<LO,GO,Node> > rngmap = A->getRangeMap();
+#else
+    RCP<const Map<Node> > dmnmap = A->getDomainMap();
+    RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
     RCP<MV> X = rcp(new MV(dmnmap,numVecs));
     RCP<MV> B = rcp(new MV(rngmap,numVecs));
@@ -649,12 +768,24 @@ namespace {
     TEST_COMPARE_FLOATING_ARRAYS( xhatnorms, xnorms, 0.005 );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, ComplexSolve2Trans, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Superlu, ComplexSolve2Trans, SCALAR )
+#endif
   {
     typedef std::complex<SCALAR> cmplx;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<cmplx,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<cmplx,Node> MAT;
+#endif
     typedef ScalarTraits<cmplx> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<cmplx,LO,GO,Node> MV;
+#else
+    typedef MultiVector<cmplx,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     const size_t numVecs = 7;
 
@@ -663,8 +794,13 @@ namespace {
     RCP<MAT> A =
       Tpetra::MatrixMarket::Reader<MAT>::readSparseFile("../matrices/amesos2_test_mat3.mtx",comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > dmnmap = A->getDomainMap();
     RCP<const Map<LO,GO,Node> > rngmap = A->getRangeMap();
+#else
+    RCP<const Map<Node> > dmnmap = A->getDomainMap();
+    RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
     RCP<MV> X = rcp(new MV(dmnmap,numVecs));
     RCP<MV> B = rcp(new MV(rngmap,numVecs));
@@ -708,8 +844,13 @@ namespace {
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, Initialization, Complex##SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, SymbolicFactorization, Complex##SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, NumericFactorization, Complex##SCALAR, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, ComplexSolve, SCALAR, LO, GO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, ComplexSolve2, SCALAR, LO, GO)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, ComplexSolve, SCALAR) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, ComplexSolve2, SCALAR)
+#endif
 
 #  ifdef HAVE_TPETRA_INST_COMPLEX_FLOAT
 #  define UNIT_TEST_GROUP_ORDINAL_COMPLEX_FLOAT(LO, GO) \
@@ -748,12 +889,21 @@ namespace {
   // #define FAST_DEVELOPMENT_UNIT_TEST_BUILD
 
 #define UNIT_TEST_GROUP_ORDINAL_SCALAR( LO, GO, SCALAR )                \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, Initialization, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, SymbolicFactorization, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, NumericFactorization, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, Solve, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, SolveTrans, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, NonContgGID, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, Initialization, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, SymbolicFactorization, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, NumericFactorization, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, Solve, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, SolveTrans, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Superlu, NonContgGID, SCALAR )
+#endif
 
 
 #define UNIT_TEST_GROUP_ORDINAL( ORDINAL )              \

@@ -50,8 +50,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     DDInterface<SC,LO,GO,NO>::DDInterface(UN dimension,
+#else
+    template <class SC,class NO>
+    DDInterface<SC,NO>::DDInterface(UN dimension,
+#endif
                                           UN dofsPerNode,
                                           ConstXMapPtr localToGlobalMap,
                                           Verbosity verbosity,
@@ -79,14 +84,24 @@ namespace FROSch {
         identifyLocalComponents(componentsSubdomains,componentsSubdomainsUnique);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     DDInterface<SC,LO,GO,NO>::~DDInterface()
+#else
+    template <class SC,class NO>
+    DDInterface<SC,NO>::~DDInterface()
+#endif
     {
 
     } // Do we need sth here?
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::resetGlobalDofs(ConstXMapPtrVecPtr dofsMaps)
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::resetGlobalDofs(ConstXMapPtrVecPtr dofsMaps)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(resetGlobalDofsTime,"DDInterface::resetGlobalDofs");
         //if (Verbose_ && Verbosity_==All) std::cout << "FROSch::DDInterface : Resetting Global IDs" << std::endl;
@@ -138,8 +153,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::removeDirichletNodes(GOVecView dirichletBoundaryDofs)
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::removeDirichletNodes(GOVecView dirichletBoundaryDofs)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(removeDirichletNodesTime,"DDInterface::removeDirichletNodes");
         //if (Verbose_ && Verbosity_==All) std::cout << "FROSch::DDInterface : Removing Dirichlet Nodes from the domain decomposition interface" << std::endl;
@@ -155,8 +175,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::divideUnconnectedEntities(ConstXMatrixPtr matrix)
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::divideUnconnectedEntities(ConstXMatrixPtr matrix)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(divideUnconnectedEntitiesTime,"DDInterface::divideUnconnectedEntities");
         //if (Verbose_ && Verbosity_==All) std::cout << "FROSch::DDInterface : Decomposing unconnected interface components" << std::endl;
@@ -167,7 +192,11 @@ namespace FROSch {
                 indicesGammaDofs[Interface_->getEntity(0)->getGammaDofID(i,k)] = Interface_->getEntity(0)->getGlobalDofID(i,k);
             }
         }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         XMapPtr map = MapFactory<LO,GO,NO>::Build(matrix->getRowMap()->lib(),-1,indicesGammaDofs(),0,MpiComm_);
+#else
+        XMapPtr map = MapFactory<NO>::Build(matrix->getRowMap()->lib(),-1,indicesGammaDofs(),0,MpiComm_);
+#endif
         matrix = FROSch::ExtractLocalSubdomainMatrix(matrix.getConst(),map.getConst(),ScalarTraits<SC>::one());
 
         // Operate on hierarchy
@@ -197,8 +226,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::flagEntities(ConstXMultiVectorPtr nodeList)
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::flagEntities(ConstXMultiVectorPtr nodeList)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(flagEntitiesTime,"DDInterface::flagEntities");
         for (UN l=0; l<EntitySetVector_.size(); l++) {
@@ -213,8 +247,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::removeEmptyEntities()
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::removeEmptyEntities()
+#endif
     {
         FROSCH_TIMER_START_LEVELID(removeEmptyEntitiesTime,"DDInterface::removeEmptyEntities");
         //if (Verbose_ && Verbosity_==All) std::cout << "FROSch::DDInterface : Removing empty interface components" << std::endl;
@@ -225,18 +264,31 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::sortVerticesEdgesFaces(ConstXMultiVectorPtr nodeList)
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::sortVerticesEdgesFaces(ConstXMultiVectorPtr nodeList)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(sortVerticesEdgesFacesTime,"DDInterface::sortVerticesEdgesFaces");
         //if (Verbose_ && Verbosity_==All) std::cout << "FROSch::DDInterface : Sorting interface components" << std::endl;
 
         // Clear EntitySets if non-empty
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         if (Vertices_->getNumEntities()>0) Vertices_.reset(new EntitySet<SC,LO,GO,NO>(VertexType));
         if (ShortEdges_->getNumEntities()>0) ShortEdges_.reset(new EntitySet<SC,LO,GO,NO>(EdgeType));
         if (StraightEdges_->getNumEntities()>0) StraightEdges_.reset(new EntitySet<SC,LO,GO,NO>(EdgeType));
         if (Edges_->getNumEntities()>0) Edges_.reset(new EntitySet<SC,LO,GO,NO>(EdgeType));
         if (Faces_->getNumEntities()>0) Faces_.reset(new EntitySet<SC,LO,GO,NO>(FaceType));
+#else
+        if (Vertices_->getNumEntities()>0) Vertices_.reset(new EntitySet<SC,NO>(VertexType));
+        if (ShortEdges_->getNumEntities()>0) ShortEdges_.reset(new EntitySet<SC,NO>(EdgeType));
+        if (StraightEdges_->getNumEntities()>0) StraightEdges_.reset(new EntitySet<SC,NO>(EdgeType));
+        if (Edges_->getNumEntities()>0) Edges_.reset(new EntitySet<SC,NO>(EdgeType));
+        if (Faces_->getNumEntities()>0) Faces_.reset(new EntitySet<SC,NO>(FaceType));
+#endif
         
         flagEntities(nodeList);
 
@@ -305,8 +357,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::buildEntityMaps(bool buildVerticesMap,
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::buildEntityMaps(bool buildVerticesMap,
+#endif
                                                   bool buildShortEdgesMap,
                                                   bool buildStraightEdgesMap,
                                                   bool buildEdgesMap,
@@ -485,8 +542,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::buildEntityHierarchy()
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::buildEntityHierarchy()
+#endif
     {
         FROSCH_TIMER_START_LEVELID(buildEntityHierarchyTime,"DDInterface::buildEntityHierarchy");
         //if (Verbose_ && Verbosity_==All) std::cout << "FROSch::DDInterface : Building hierarchy of interface components" << std::endl;
@@ -516,8 +578,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::computeDistancesToRoots(UN dimension,
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::computeDistancesToRoots(UN dimension,
+#endif
                                                           ConstXMultiVectorPtr &nodeList,
                                                           DistanceFunction distanceFunction)
     {
@@ -530,8 +597,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::identifyConnectivityEntities(UNVecPtr multiplicities,
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::identifyConnectivityEntities(UNVecPtr multiplicities,
+#endif
                                                                EntityFlagVecPtr flags)
     {
         FROSCH_TIMER_START_LEVELID(identifyConnectivityEntitiesTime,"DDInterface::identifyConnectivityEntities");
@@ -558,98 +630,178 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::UN DDInterface<SC,LO,GO,NO>::getDimension() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::UN DDInterface<SC,NO>::getDimension() const
+#endif
     {
         return Dimension_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::UN DDInterface<SC,LO,GO,NO>::getDofsPerNode() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::UN DDInterface<SC,NO>::getDofsPerNode() const
+#endif
     {
         return DofsPerNode_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     LO DDInterface<SC,LO,GO,NO>::getNumMyNodes() const
+#else
+    template <class SC,class NO>
+    LO DDInterface<SC,NO>::getNumMyNodes() const
+#endif
     {
         return NumMyNodes_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getVertices() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getVertices() const
+#endif
     {
         return Vertices_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getShortEdges() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getShortEdges() const
+#endif
     {
         return ShortEdges_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getStraightEdges() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getStraightEdges() const
+#endif
     {
         return StraightEdges_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getEdges() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getEdges() const
+#endif
     {
         return Edges_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getFaces() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getFaces() const
+#endif
     {
         return Faces_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getInterface() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getInterface() const
+#endif
     {
         return Interface_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getInterior() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getInterior() const
+#endif
     {
         return Interior_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getRoots() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getRoots() const
+#endif
     {
         return Roots_;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getLeafs() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getLeafs() const
+#endif
     {
         return Leafs_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetPtrConstVecPtr & DDInterface<SC,LO,GO,NO>::getEntitySetVector() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetPtrConstVecPtr & DDInterface<SC,NO>::getEntitySetVector() const
+#endif
     {
         return EntitySetVector_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::EntitySetConstPtr & DDInterface<SC,LO,GO,NO>::getConnectivityEntities() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::EntitySetConstPtr & DDInterface<SC,NO>::getConnectivityEntities() const
+#endif
     {
         return ConnectivityEntities_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename DDInterface<SC,LO,GO,NO>::ConstXMapPtr DDInterface<SC,LO,GO,NO>::getNodesMap() const
+#else
+    template <class SC,class NO>
+    typename DDInterface<SC,NO>::ConstXMapPtr DDInterface<SC,NO>::getNodesMap() const
+#endif
     {
         return NodesMap_.getConst();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::communicateLocalComponents(IntVecVecPtr &componentsSubdomains,
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::communicateLocalComponents(IntVecVecPtr &componentsSubdomains,
+#endif
                                                              IntVecVec &componentsSubdomainsUnique,
                                                              CommunicationStrategy commStrategy)
     {
@@ -665,22 +817,37 @@ namespace FROSch {
         switch (commStrategy) {
             case CommCrsMatrix:
                 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     UniqueNodesMap_ = BuildUniqueMap<LO,GO,NO>(NodesMap_);
                     RCP<Matrix<SC,LO,GO,NO> > commMat = MatrixFactory<SC,LO,GO,NO>::Build(NodesMap_,10);
                     RCP<Matrix<SC,LO,GO,NO> > commMatTmp = MatrixFactory<SC,LO,GO,NO>::Build(UniqueNodesMap_,10);
                     XExportPtr commExporter = ExportFactory<LO,GO,NO>::Build(NodesMap_,UniqueNodesMap_);
+#else
+                    UniqueNodesMap_ = BuildUniqueMap<NO>(NodesMap_);
+                    RCP<Matrix<SC,NO> > commMat = MatrixFactory<SC,NO>::Build(NodesMap_,10);
+                    RCP<Matrix<SC,NO> > commMatTmp = MatrixFactory<SC,NO>::Build(UniqueNodesMap_,10);
+                    XExportPtr commExporter = ExportFactory<NO>::Build(NodesMap_,UniqueNodesMap_);
+#endif
 
                     Array<SC> one(1,ScalarTraits<SC>::one());
                     Array<GO> myPID(1,MpiComm_->getRank());
                     for (int i=0; i<NumMyNodes_; i++) {
                         commMat->insertGlobalValues(NodesMap_->getGlobalElement(i),myPID(),one());
                     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     XMapPtr domainMap = MapFactory<LO,GO,NO>::Build(NodesMap_->lib(),-1,myPID(),0,NodesMap_->getComm());
+#else
+                    XMapPtr domainMap = MapFactory<NO>::Build(NodesMap_->lib(),-1,myPID(),0,NodesMap_->getComm());
+#endif
 
                     commMat->fillComplete(domainMap,NodesMap_);
                     commMatTmp->doExport(*commMat,*commExporter,INSERT);
                     commMatTmp->fillComplete(domainMap,UniqueNodesMap_);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     commMat = MatrixFactory<SC,LO,GO,NO>::Build(NodesMap_,LO(0));
+#else
+                    commMat = MatrixFactory<SC,NO>::Build(NodesMap_,LO(0));
+#endif
                     commMat->doImport(*commMatTmp,*commExporter,INSERT);
 
                     componentsSubdomains = IntVecVecPtr(NumMyNodes_);
@@ -699,22 +866,40 @@ namespace FROSch {
 
             case CommCrsGraph:
                 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     UniqueNodesMap_ = BuildUniqueMap<LO,GO,NO>(NodesMap_);
+#else
+                    UniqueNodesMap_ = BuildUniqueMap<NO>(NodesMap_);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     XCrsGraphPtr commGraph = CrsGraphFactory<LO,GO,NO>::Build(NodesMap_,10); // AH 08/07/2019: Can we put 1 instead of 10 here?
                     XCrsGraphPtr commGraphTmp = CrsGraphFactory<LO,GO,NO>::Build(UniqueNodesMap_,10); // We assume that any node is part of no more than 10 subdomains
                     XExportPtr commExporter = ExportFactory<LO,GO,NO>::Build(NodesMap_,UniqueNodesMap_);
+#else
+                    XCrsGraphPtr commGraph = CrsGraphFactory<NO>::Build(NodesMap_,10); // AH 08/07/2019: Can we put 1 instead of 10 here?
+                    XCrsGraphPtr commGraphTmp = CrsGraphFactory<NO>::Build(UniqueNodesMap_,10); // We assume that any node is part of no more than 10 subdomains
+                    XExportPtr commExporter = ExportFactory<NO>::Build(NodesMap_,UniqueNodesMap_);
+#endif
 
                     Array<GO> myPID(1,MpiComm_->getRank());
                     for (int i=0; i<NumMyNodes_; i++) {
                         commGraph->insertGlobalIndices(NodesMap_->getGlobalElement(i),myPID());
                     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     XMapPtr domainMap = MapFactory<LO,GO,NO>::Build(NodesMap_->lib(),-1,myPID(),0,NodesMap_->getComm());
+#else
+                    XMapPtr domainMap = MapFactory<NO>::Build(NodesMap_->lib(),-1,myPID(),0,NodesMap_->getComm());
+#endif
 
                     commGraph->fillComplete(domainMap,NodesMap_); // AH 08/07/2019: Can we remove some fillComplete?
                     commGraphTmp->doExport(*commGraph,*commExporter,INSERT);
                     commGraphTmp->fillComplete(domainMap,UniqueNodesMap_);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     commGraph = CrsGraphFactory<LO,GO,NO>::Build(NodesMap_);
+#else
+                    commGraph = CrsGraphFactory<NO>::Build(NodesMap_);
+#endif
                     commGraph->doImport(*commGraphTmp,*commExporter,INSERT);
 
                     componentsSubdomains = IntVecVecPtr(NumMyNodes_);
@@ -732,8 +917,13 @@ namespace FROSch {
 
             case CreateOneToOneMap:
                 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     RCP<LowerPIDTieBreak<LO,GO,NO> > lowerPIDTieBreak(new LowerPIDTieBreak<LO,GO,NO>(MpiComm_,NodesMap_,Dimension_,LevelID_));
                     UniqueNodesMap_ = BuildUniqueMap<LO,GO,NO>(NodesMap_,true,lowerPIDTieBreak);
+#else
+                    RCP<LowerPIDTieBreak<NO> > lowerPIDTieBreak(new LowerPIDTieBreak<NO>(MpiComm_,NodesMap_,Dimension_,LevelID_));
+                    UniqueNodesMap_ = BuildUniqueMap<NO>(NodesMap_,true,lowerPIDTieBreak);
+#endif
                     lowerPIDTieBreak->sendDataToOriginalMap();
                     componentsSubdomains = lowerPIDTieBreak->getComponents();
                 }
@@ -756,8 +946,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int DDInterface<SC,LO,GO,NO>::identifyLocalComponents(IntVecVecPtr &componentsSubdomains,
+#else
+    template <class SC,class NO>
+    int DDInterface<SC,NO>::identifyLocalComponents(IntVecVecPtr &componentsSubdomains,
+#endif
                                                           IntVecVec &componentsSubdomainsUnique)
     {
         FROSCH_TIMER_START_LEVELID(identifyLocalComponentsTime,"DDInterface::identifyLocalComponents");
@@ -774,7 +969,11 @@ namespace FROSch {
         }
         EntitySetVector_ = EntitySetPtrVecPtr(maxMultiplicity+1);
         for (UN i=0; i<maxMultiplicity+1; i++) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             EntitySetVector_[i].reset(new EntitySet<SC,LO,GO,NO>(DefaultType));
+#else
+            EntitySetVector_[i].reset(new EntitySet<SC,NO>(DefaultType));
+#endif
         }
 
         typename IntVecVec::iterator classIterator;
@@ -786,8 +985,13 @@ namespace FROSch {
 
         LO tmp1 = 0; // The interface and interior have multiplicity 0 in our construction
         int *tmp2 = NULL;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<InterfaceEntity<SC,LO,GO,NO> > interior(new InterfaceEntity<SC,LO,GO,NO>(InteriorType,DofsPerNode_,tmp1,tmp2));
         RCP<InterfaceEntity<SC,LO,GO,NO> > interface(new InterfaceEntity<SC,LO,GO,NO>(InterfaceType,DofsPerNode_,tmp1,tmp2));
+#else
+        RCP<InterfaceEntity<SC,NO> > interior(new InterfaceEntity<SC,NO>(InteriorType,DofsPerNode_,tmp1,tmp2));
+        RCP<InterfaceEntity<SC,NO> > interface(new InterfaceEntity<SC,NO>(InterfaceType,DofsPerNode_,tmp1,tmp2));
+#endif
         for (LO i=0; i<NumMyNodes_; i++) {
             if (componentsMultiplicity[localComponentIndices[i]] == 1) {
                 LO nodeIDI = interior->getNumNodes();
@@ -826,7 +1030,11 @@ namespace FROSch {
 
         for (UN i=0; i<componentsSubdomainsUnique.size(); i++) {
             FROSCH_ASSERT(componentsMultiplicity[i]>0,"FROSch::DDInterface : ERROR: There cannot be any component with multiplicity 0.");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             RCP<InterfaceEntity<SC,LO,GO,NO> > tmpEntity(new InterfaceEntity<SC,LO,GO,NO>(VertexType,DofsPerNode_,componentsMultiplicity[i],&(componentsSubdomainsUnique[i][0])));
+#else
+            RCP<InterfaceEntity<SC,NO> > tmpEntity(new InterfaceEntity<SC,NO>(VertexType,DofsPerNode_,componentsMultiplicity[i],&(componentsSubdomainsUnique[i][0])));
+#endif
             LO nodeIDGamma;
             LO nodeIDLocal;
             GO nodeIDGlobal;

@@ -138,9 +138,17 @@ namespace Belos {
   /// \tparam LO Same as template parameter 2 of Tpetra::MultiVector.
   /// \tparam GO Same as template parameter 3 of Tpetra::MultiVector.
   /// \tparam Node Same as template parameter 4 of Tpetra::MultiVector.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   class MultiVecTraits<Scalar, ::Tpetra::MultiVector<Scalar,LO,GO,Node> > {
     typedef ::Tpetra::MultiVector<Scalar, LO, GO, Node> MV;
+#else
+  template<class Scalar, class Node>
+  class MultiVecTraits<Scalar, ::Tpetra::MultiVector<Scalar,Node> > {
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+    typedef ::Tpetra::MultiVector<Scalar, Node> MV;
+#endif
   public:
     /// \brief Create a new MultiVector with \c numVecs columns.
     ///
@@ -703,7 +711,11 @@ namespace Belos {
 #ifdef HAVE_BELOS_TSQR
     /// \typedef tsqr_adaptor_type
     /// \brief TsqrAdaptor specialization for Tpetra::MultiVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef ::Tpetra::TsqrAdaptor< ::Tpetra::MultiVector<Scalar, LO, GO, Node> > tsqr_adaptor_type;
+#else
+    typedef ::Tpetra::TsqrAdaptor< ::Tpetra::MultiVector<Scalar, Node> > tsqr_adaptor_type;
+#endif
 #endif // HAVE_BELOS_TSQR
   };
 

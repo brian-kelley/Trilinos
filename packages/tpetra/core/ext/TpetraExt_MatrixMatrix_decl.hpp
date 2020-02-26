@@ -91,15 +91,29 @@ namespace MatrixMatrix {
 ///   defaults to true.  If false, C will <i>not</i> be fill complete
 ///   on output.
 template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal,
           class GlobalOrdinal,
+#endif
           class Node>
 void Multiply(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+  const CrsMatrix<Scalar, Node>& A,
+#endif
   bool transposeA,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+  const CrsMatrix<Scalar, Node>& B,
+#endif
   bool transposeB,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
+#else
+  CrsMatrix<Scalar, Node>& C,
+#endif
   bool call_FillComplete_on_result = true,
   const std::string& label = std::string(),
   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
@@ -118,14 +132,24 @@ void Multiply(
 
      */
 template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal,
           class GlobalOrdinal,
+#endif
           class Node>
 void Add(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+  const CrsMatrix<Scalar, Node>& A,
+#endif
   bool transposeA,
   Scalar scalarA,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+  CrsMatrix<Scalar, Node>& B,
+#endif
   Scalar scalarB );
 
 /// \brief Compute the sparse matrix sum <tt>C = scalarA * Op(A) +
@@ -158,18 +182,34 @@ void Add(
 /// See the documentation of RowMatrix::add for a more detailed
 /// discussion of the optional parameters.
 template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal,
           class GlobalOrdinal,
+#endif
           class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+Teuchos::RCP<CrsMatrix<Scalar, Node> >
+#endif
 add (const Scalar& alpha,
      const bool transposeA,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+     const CrsMatrix<Scalar, Node>& A,
+#endif
      const Scalar& beta,
      const bool transposeB,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
      const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& domainMap = Teuchos::null,
      const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& rangeMap  = Teuchos::null,
+#else
+     const CrsMatrix<Scalar, Node>& B,
+     const Teuchos::RCP<const Map<Node> >& domainMap = Teuchos::null,
+     const Teuchos::RCP<const Map<Node> >& rangeMap  = Teuchos::null,
+#endif
      const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
 
@@ -209,19 +249,32 @@ add (const Scalar& alpha,
 /// See the documentation of RowMatrix::add for a more detailed
 /// discussion of the optional parameters.
 template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal,
           class GlobalOrdinal,
+#endif
           class Node>
 void
 add (const Scalar& alpha,
      const bool transposeA,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+     const CrsMatrix<Scalar, Node>& A,
+#endif
      const Scalar& beta,
      const bool transposeB,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
      CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & C,
      const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& domainMap = Teuchos::null,
      const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& rangeMap  = Teuchos::null,
+#else
+     const CrsMatrix<Scalar, Node>& B,
+     CrsMatrix<Scalar, Node> & C,
+     const Teuchos::RCP<const Map<Node> >& domainMap = Teuchos::null,
+     const Teuchos::RCP<const Map<Node> >& rangeMap  = Teuchos::null,
+#endif
      const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
 
@@ -255,17 +308,31 @@ add (const Scalar& alpha,
 ///   see) if you want matrix-matrix add to return a new instance of
 ///   CrsMatrix.
 template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal,
           class GlobalOrdinal,
+#endif
           class Node>
 void Add(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+  const CrsMatrix<Scalar, Node>& A,
+#endif
   bool transposeA,
   Scalar scalarA,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+  const CrsMatrix<Scalar, Node>& B,
+#endif
   bool transposeB,
   Scalar scalarB,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > C);
+#else
+  Teuchos::RCP<CrsMatrix<Scalar, Node> > C);
+#endif
 
 
   /** Given CrsMatrix objects A, B and C, and Vector Dinv, form the product C = (I-omega * Dinv A)*B
@@ -290,14 +357,23 @@ void Add(
            trivial to know which maps to use for the domain- and range-maps.)
   */
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   void Jacobi(Scalar omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> & Dinv,
               const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
               const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
               CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
+#else
+              const Vector<Scalar, Node> & Dinv,
+              const CrsMatrix<Scalar, Node>& A,
+              const CrsMatrix<Scalar, Node>& B,
+              CrsMatrix<Scalar, Node>& C,
+#endif
               bool call_FillComplete_on_result = true,
                    const std::string& label = std::string(),
               const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
@@ -308,36 +384,60 @@ namespace MMdetails{
 
   // Matrix multiplication functions
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
 void mult_AT_B_newmatrix(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
   const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
+#else
+  const CrsMatrix<Scalar, Node>& A,
+  const CrsMatrix<Scalar, Node>& B,
+  CrsMatrix<Scalar, Node>& C,
+#endif
   const std::string& label = std::string(),
   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
 void mult_A_B(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
   CrsWrapper<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
+#else
+  CrsMatrixStruct<Scalar, Node>& Aview,
+  CrsMatrixStruct<Scalar, Node>& Bview,
+  CrsWrapper<Scalar, Node>& C,
+#endif
   const std::string& label = std::string(),
   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
 void mult_A_B_newmatrix(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
+#else
+  CrsMatrixStruct<Scalar, Node>& Aview,
+  CrsMatrixStruct<Scalar, Node>& Bview,
+  CrsMatrix<Scalar, Node>& C,
+#endif
   const std::string& label = std::string(),
   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
@@ -345,13 +445,21 @@ void mult_A_B_newmatrix(
 
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
 void mult_A_B_reuse(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
+#else
+  CrsMatrixStruct<Scalar, Node>& Aview,
+  CrsMatrixStruct<Scalar, Node>& Bview,
+  CrsMatrix<Scalar, Node>& C,
+#endif
   const std::string& label = std::string(),
   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
@@ -360,52 +468,85 @@ void mult_A_B_reuse(
 
   // Matrix jacobi functions
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
 void jacobi_A_B_newmatrix(
   Scalar omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> & Dinv,
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
+#else
+  const Vector<Scalar, Node> & Dinv,
+  CrsMatrixStruct<Scalar, Node>& Aview,
+  CrsMatrixStruct<Scalar, Node>& Bview,
+  CrsMatrix<Scalar, Node>& C,
+#endif
   const std::string & label = std::string(),
   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
 void jacobi_A_B_reuse(
   Scalar omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> & Dinv,
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
+#else
+  const Vector<Scalar, Node> & Dinv,
+  CrsMatrixStruct<Scalar, Node>& Aview,
+  CrsMatrixStruct<Scalar, Node>& Bview,
+  CrsMatrix<Scalar, Node>& C,
+#endif
   const std::string & label = std::string(),
   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
   // Other functions
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
 void import_and_extract_views(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& M,
   Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > targetMap,
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Mview,
   Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal, Node> > prototypeImporter = Teuchos::null,
+#else
+  const CrsMatrix<Scalar, Node>& M,
+  Teuchos::RCP<const Map<Node> > targetMap,
+  CrsMatrixStruct<Scalar, Node>& Mview,
+  Teuchos::RCP<const Import<Node> > prototypeImporter = Teuchos::null,
+#endif
   bool userAssertsThereAreNoRemotes = false,
   const std::string& label = std::string(),
   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
 void setMaxNumEntriesPerRow(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Mview);
+#else
+  CrsMatrixStruct<Scalar, Node>& Mview);
+#endif
 
 
   // MMM Kernel wrappers struct
@@ -416,25 +557,45 @@ void setMaxNumEntriesPerRow(
 	   class Node,
            class LocalOrdinalViewType>
   struct KernelWrappers {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static inline void mult_A_B_newmatrix_kernel_wrapper(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
 							 CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
+#else
+    static inline void mult_A_B_newmatrix_kernel_wrapper(CrsMatrixStruct<Scalar, Node>& Aview,
+							 CrsMatrixStruct<Scalar, Node>& Bview,
+#endif
 							 const LocalOrdinalViewType & Acol2Brow,
 							 const LocalOrdinalViewType & Acol2Irow,
 							 const LocalOrdinalViewType & Bcol2Ccol,
 							 const LocalOrdinalViewType & Icol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 							 CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
 							 Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Cimport,
+#else
+							 CrsMatrix<Scalar, Node>& C,
+							 Teuchos::RCP<const Import<Node> > Cimport,
+#endif
                                                          const std::string& label = std::string(),
 							 const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static inline void mult_A_B_reuse_kernel_wrapper(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                                      CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
+#else
+    static inline void mult_A_B_reuse_kernel_wrapper(CrsMatrixStruct<Scalar, Node>& Aview,
+                                                     CrsMatrixStruct<Scalar, Node>& Bview,
+#endif
                                                      const LocalOrdinalViewType & Acol2Brow,
                                                      const LocalOrdinalViewType & Acol2Irow,
                                                      const LocalOrdinalViewType & Bcol2Ccol,
                                                      const LocalOrdinalViewType & Icol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                      CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
                                                      Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Cimport,
+#else
+                                                     CrsMatrix<Scalar, Node>& C,
+                                                     Teuchos::RCP<const Import<Node> > Cimport,
+#endif
                                                      const std::string& label = std::string(),
                                                      const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
   };
@@ -449,28 +610,50 @@ void setMaxNumEntriesPerRow(
            class LocalOrdinalViewType>
   struct KernelWrappers2 {
     static inline void jacobi_A_B_newmatrix_kernel_wrapper(Scalar omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                            const Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & Dinv,
                                                            CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                                            CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
+#else
+                                                           const Vector<Scalar,Node> & Dinv,
+                                                           CrsMatrixStruct<Scalar, Node>& Aview,
+                                                           CrsMatrixStruct<Scalar, Node>& Bview,
+#endif
                                                            const LocalOrdinalViewType & Acol2Brow,
                                                            const LocalOrdinalViewType & Acol2Irow,
                                                            const LocalOrdinalViewType & Bcol2Ccol,
                                                            const LocalOrdinalViewType & Icol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                            CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
                                                            Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Cimport,
+#else
+                                                           CrsMatrix<Scalar, Node>& C,
+                                                           Teuchos::RCP<const Import<Node> > Cimport,
+#endif
                                                            const std::string& label = std::string(),
                                                            const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
     static inline void jacobi_A_B_reuse_kernel_wrapper(Scalar omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                        const Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & Dinv,
                                                        CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                                        CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
+#else
+                                                       const Vector<Scalar,Node> & Dinv,
+                                                       CrsMatrixStruct<Scalar, Node>& Aview,
+                                                       CrsMatrixStruct<Scalar, Node>& Bview,
+#endif
                                                        const LocalOrdinalViewType & Acol2Brow,
                                                        const LocalOrdinalViewType & Acol2Irow,
                                                            const LocalOrdinalViewType & Bcol2Ccol,
                                                        const LocalOrdinalViewType & Icol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                        CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
                                                        Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Cimport,
+#else
+                                                       CrsMatrix<Scalar, Node>& C,
+                                                       Teuchos::RCP<const Import<Node> > Cimport,
+#endif
                                                        const std::string& label = std::string(),
                                                        const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
   };
@@ -484,59 +667,107 @@ void setMaxNumEntriesPerRow(
 	   class Node,
            class LocalOrdinalViewType>
   struct KernelWrappers3 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static inline void mult_R_A_P_newmatrix_kernel_wrapper(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Rview,
                                                            CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                                            CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Pview,
+#else
+    static inline void mult_R_A_P_newmatrix_kernel_wrapper(CrsMatrixStruct<Scalar, Node>& Rview,
+                                                           CrsMatrixStruct<Scalar, Node>& Aview,
+                                                           CrsMatrixStruct<Scalar, Node>& Pview,
+#endif
                                                            const LocalOrdinalViewType & Acol2Prow,
                                                            const LocalOrdinalViewType & Acol2PIrow,
                                                            const LocalOrdinalViewType & Pcol2Ccol,
                                                            const LocalOrdinalViewType & PIcol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                            CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
                                                            Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Acimport,
+#else
+                                                           CrsMatrix<Scalar, Node>& Ac,
+                                                           Teuchos::RCP<const Import<Node> > Acimport,
+#endif
                                                            const std::string& label = std::string(),
                                                            const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static inline void mult_R_A_P_reuse_kernel_wrapper(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Rview,
                                                            CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                                            CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Pview,
+#else
+    static inline void mult_R_A_P_reuse_kernel_wrapper(CrsMatrixStruct<Scalar, Node>& Rview,
+                                                           CrsMatrixStruct<Scalar, Node>& Aview,
+                                                           CrsMatrixStruct<Scalar, Node>& Pview,
+#endif
                                                            const LocalOrdinalViewType & Acol2Prow,
                                                            const LocalOrdinalViewType & Acol2PIrow,
                                                            const LocalOrdinalViewType & Pcol2Ccol,
                                                            const LocalOrdinalViewType & PIcol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                            CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
                                                            Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Acimport,
+#else
+                                                           CrsMatrix<Scalar, Node>& Ac,
+                                                           Teuchos::RCP<const Import<Node> > Acimport,
+#endif
                                                            const std::string& label = std::string(),
                                                            const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static inline void mult_PT_A_P_newmatrix_kernel_wrapper(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                                            CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Pview,
+#else
+    static inline void mult_PT_A_P_newmatrix_kernel_wrapper(CrsMatrixStruct<Scalar, Node>& Aview,
+                                                           CrsMatrixStruct<Scalar, Node>& Pview,
+#endif
                                                            const LocalOrdinalViewType & Acol2Prow,
                                                            const LocalOrdinalViewType & Acol2PIrow,
                                                            const LocalOrdinalViewType & Pcol2Ccol,
                                                            const LocalOrdinalViewType & PIcol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                            CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
                                                            Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Acimport,
+#else
+                                                           CrsMatrix<Scalar, Node>& Ac,
+                                                           Teuchos::RCP<const Import<Node> > Acimport,
+#endif
                                                            const std::string& label = std::string(),
                                                            const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static inline void mult_PT_A_P_reuse_kernel_wrapper(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                                            CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Pview,
+#else
+    static inline void mult_PT_A_P_reuse_kernel_wrapper(CrsMatrixStruct<Scalar, Node>& Aview,
+                                                           CrsMatrixStruct<Scalar, Node>& Pview,
+#endif
                                                            const LocalOrdinalViewType & Acol2Prow,
                                                            const LocalOrdinalViewType & Acol2PIrow,
                                                            const LocalOrdinalViewType & Pcol2Ccol,
                                                            const LocalOrdinalViewType & PIcol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                            CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
                                                            Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Acimport,
+#else
+                                                           CrsMatrix<Scalar, Node>& Ac,
+                                                           Teuchos::RCP<const Import<Node> > Acimport,
+#endif
                                                            const std::string& label = std::string(),
                                                            const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
   };
 
   // This only merges matrices that look like B & Bimport, aka, they have no overlapping rows
   template<class Scalar,class LocalOrdinal,class GlobalOrdinal,class Node, class LocalOrdinalViewType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   inline const typename Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::local_matrix_type 
   merge_matrices(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                  CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
+#else
+  inline const typename Tpetra::CrsMatrix<Scalar,Node>::local_matrix_type 
+  merge_matrices(CrsMatrixStruct<Scalar, Node>& Aview,
+                 CrsMatrixStruct<Scalar, Node>& Bview,
+#endif
                  const LocalOrdinalViewType & Acol2Brow,
                  const LocalOrdinalViewType & Acol2Irow,
                  const LocalOrdinalViewType & Bcol2Ccol,
@@ -549,11 +780,22 @@ void setMaxNumEntriesPerRow(
 template<class CrsMatrixType>
 size_t C_estimate_nnz(CrsMatrixType & A, CrsMatrixType &B);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template<typename Scalar, typename Node>
+#endif
 struct AddKernels
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> crs_matrix_type;
   typedef Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
+#else
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+  typedef Tpetra::Map<Node> map_type;
+#endif
   typedef typename Node::device_type device_type;
   typedef typename device_type::execution_space execution_space;
   typedef typename execution_space::memory_space memory_space;

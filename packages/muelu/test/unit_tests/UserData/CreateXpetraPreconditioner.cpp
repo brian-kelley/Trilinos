@@ -77,7 +77,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(UserData, CreateXpetraPreconditioner, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(UserData, CreateXpetraPreconditioner, Scalar, Node)
+#endif
   {
 #include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -100,7 +104,11 @@ namespace MueLuTests {
     typedef typename Teuchos::ScalarTraits<SC>::magnitudeType magnitude_type;
 
     // Matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix>     Op  = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(nx * comm->getSize(), lib);
+#else
+    RCP<Matrix>     Op  = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(nx * comm->getSize(), lib);
+#endif
     RCP<const Map > map = Op->getRowMap();
 
     // Normalized RHS
@@ -118,7 +126,11 @@ namespace MueLuTests {
     Teuchos::ParameterList galeriList;
     galeriList.set("nx", nx);
     RCP<MultiVector> coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("1D", Op->getRowMap(), galeriList);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MultiVector> nullspace   = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(Op->getDomainMap(), 1);
+#else
+    RCP<MultiVector> nullspace   = Xpetra::MultiVectorFactory<SC,NO>::Build(Op->getDomainMap(), 1);
+#endif
     nullspace->putScalar(Teuchos::ScalarTraits<SC>::one());
 
     // Add sublist "user data" to MueLu's parameter list
@@ -148,7 +160,11 @@ namespace MueLuTests {
     myArrayLO[4] = 3;
     userParamList.set<Array<LO> >("Array<LO> myArray<LO>", myArrayLO);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> xH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(Op, *inParamList);
+#else
+    RCP<Hierarchy> xH = MueLu::CreateXpetraPreconditioner<SC,NO>(Op, *inParamList);
+#endif
 
     // Extract variables on level 0 and check that they are unchanged.
     RCP<MueLu::Level> level0 = xH->GetLevel();
@@ -188,8 +204,13 @@ namespace MueLuTests {
     TEST_EQUALITY(result, true);
   } //CreatePreconditioner
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(Scalar,LocalOrdinal,GlobalOrdinal,Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(UserData,CreateXpetraPreconditioner,Scalar,LocalOrdinal,GlobalOrdinal,Node)
+#else
+#define MUELU_ETI_GROUP(Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(UserData,CreateXpetraPreconditioner,Scalar,Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

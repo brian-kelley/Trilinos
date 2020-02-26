@@ -55,12 +55,22 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 MergedBlockedMatrixFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MergedBlockedMatrixFactory()
+#else
+template <class Scalar, class Node>
+MergedBlockedMatrixFactory<Scalar, Node>::MergedBlockedMatrixFactory()
+#endif
 { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const ParameterList> MergedBlockedMatrixFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+template <class Scalar, class Node>
+RCP<const ParameterList> MergedBlockedMatrixFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
   RCP<ParameterList> validParamList = rcp(new ParameterList());
 
   validParamList->set< RCP<const FactoryBase> >("A", MueLu::NoFactory::getRCP()/*Teuchos::null*/, "Generating factory of the matrix A used for building SchurComplement (must be a 2x2 blocked operator, default = MueLu::NoFactory::getRCP())");
@@ -69,13 +79,23 @@ RCP<const ParameterList> MergedBlockedMatrixFactory<Scalar, LocalOrdinal, Global
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MergedBlockedMatrixFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+template <class Scalar, class Node>
+void MergedBlockedMatrixFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
   Input(currentLevel, "A");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MergedBlockedMatrixFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & currentLevel) const
+#else
+template <class Scalar, class Node>
+void MergedBlockedMatrixFactory<Scalar, Node>::Build(Level & currentLevel) const
+#endif
 {
   FactoryMonitor  m(*this, "MergedBlockedMatrix", currentLevel);
   Teuchos::RCP<Matrix> A = Get<RCP<Matrix> >(currentLevel, "A");

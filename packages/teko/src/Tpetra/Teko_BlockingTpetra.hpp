@@ -65,8 +65,13 @@ namespace Teko {
 namespace TpetraHelpers {
 namespace Blocking {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef std::pair<Teuchos::RCP<Tpetra::Map<LO,GO,NT> >,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > MapPair;
 typedef std::pair<Teuchos::RCP<Tpetra::Import<LO,GO,NT> >,Teuchos::RCP<Tpetra::Export<LO,GO,NT> > > ImExPair;
+#else
+typedef std::pair<Teuchos::RCP<Tpetra::Map<NT> >,Teuchos::RCP<Tpetra::Map<NT> > > MapPair;
+typedef std::pair<Teuchos::RCP<Tpetra::Import<NT> >,Teuchos::RCP<Tpetra::Export<NT> > > ImExPair;
+#endif
 
 /** Build maps to make other conversions. This function builds a map 
   * using a vector of global ids local to this processor.  It also builds
@@ -92,7 +97,11 @@ const MapPair buildSubMap(const std::vector< GO > & gid, const Teuchos::Comm<int
   *
   * \returns A pair containing pointers to the Import/Export objects.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const ImExPair buildExportImport(const Tpetra::Map<LO,GO,NT> & baseMap,const MapPair & maps);
+#else
+const ImExPair buildExportImport(const Tpetra::Map<NT> & baseMap,const MapPair & maps);
+#endif
 
 /** Copy the contents of many sub vectors (created from a contigous sub maps) to a single global
   * vector. This should have the map used to create the Export/Import objects in the <code>buildExportImport</code>
@@ -103,8 +112,13 @@ const ImExPair buildExportImport(const Tpetra::Map<LO,GO,NT> & baseMap,const Map
   * \param[in] many Sub-vectors created by <code>buildSubVectors</code> used to fill <code>one</code>.
   * \param[in] subExport A list of export objects to use in copying.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void many2one(Tpetra::MultiVector<ST,LO,GO,NT> & one, const std::vector<Teuchos::RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > > & many,
                                         const std::vector<Teuchos::RCP<Tpetra::Export<LO,GO,NT> > > & subExport);
+#else
+void many2one(Tpetra::MultiVector<ST,NT> & one, const std::vector<Teuchos::RCP<const Tpetra::MultiVector<ST,NT> > > & many,
+                                        const std::vector<Teuchos::RCP<Tpetra::Export<NT> > > & subExport);
+#endif
 
 /** Copy the contents of a global vector into many sub-vectors created by <code>buildSubVectors</code>.
   *
@@ -112,8 +126,13 @@ void many2one(Tpetra::MultiVector<ST,LO,GO,NT> & one, const std::vector<Teuchos:
   * \param[in] single The source vector.
   * \param[in] subImport A list of import objects to use in copying.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void one2many(std::vector<Teuchos::RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > & many, const Tpetra::MultiVector<ST,LO,GO,NT> & single,
                                                             const std::vector<Teuchos::RCP<Tpetra::Import<LO,GO,NT> > > & subImport);
+#else
+void one2many(std::vector<Teuchos::RCP<Tpetra::MultiVector<ST,NT> > > & many, const Tpetra::MultiVector<ST,NT> & single,
+                                                            const std::vector<Teuchos::RCP<Tpetra::Import<NT> > > & subImport);
+#endif
 
 /** Using a list of map pairs created by <code>buildSubMap</code>, buidl the corresponding
   * multi-vector objects.
@@ -123,14 +142,22 @@ void one2many(std::vector<Teuchos::RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > & ma
   * \param[in] count Number of multivectors to build.
   */
 void buildSubVectors(const std::vector<MapPair> & maps,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      std::vector<Teuchos::RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > & vectors,int count);
+#else
+                     std::vector<Teuchos::RCP<Tpetra::MultiVector<ST,NT> > > & vectors,int count);
+#endif
 
 /** This function will return an IntVector that is constructed with a column map.
   * The vector will be filled with -1 if there is not a corresponding entry in the
   * sub-block row map. The other columns will be filled with the contiguous row map
   * values.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::Vector<GO,LO,GO,NT> > getSubBlockColumnGIDs(const Tpetra::CrsMatrix<ST,LO,GO,NT> & A,const MapPair & mapPair);
+#else
+Teuchos::RCP<Tpetra::Vector<GO,NT> > getSubBlockColumnGIDs(const Tpetra::CrsMatrix<ST,NT> & A,const MapPair & mapPair);
+#endif
 
 /** Extract the (i,j) sub block described by a vector of map pair objects from
   * a CRS matrix. The first of map in the ith pair describes the rows to be extracted,
@@ -145,7 +172,11 @@ Teuchos::RCP<Tpetra::Vector<GO,LO,GO,NT> > getSubBlockColumnGIDs(const Tpetra::C
   * \returns A CRS matrix containing a subset of the rows and columns as described
   *          by the vector of maps.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > buildSubBlock(int i,int j,const Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> >& A,const std::vector<MapPair> & subMaps);
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST,NT> > buildSubBlock(int i,int j,const Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> >& A,const std::vector<MapPair> & subMaps);
+#endif
 
 /** Extract the (i,j) sub block described by a vector of map pair objects from
   * a CRS matrix. The first of map in the ith pair describes the rows to be extracted,
@@ -160,7 +191,11 @@ Teuchos::RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > buildSubBlock(int i,int j,const Te
   * \param[in,out] mat Destination matrix with a fixed nonzero pattern. Most likely
   *                    this operator would come from the <code>buildSubBlock</code> routine.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void rebuildSubBlock(int i,int j,const Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> >& A,const std::vector<MapPair> & subMaps,Tpetra::CrsMatrix<ST,LO,GO,NT> & mat);
+#else
+void rebuildSubBlock(int i,int j,const Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> >& A,const std::vector<MapPair> & subMaps,Tpetra::CrsMatrix<ST,NT> & mat);
+#endif
 
 } // end Blocking
 } // end Epetra

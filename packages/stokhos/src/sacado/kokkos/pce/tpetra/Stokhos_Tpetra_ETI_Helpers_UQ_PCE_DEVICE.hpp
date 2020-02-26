@@ -43,29 +43,55 @@
 #include "Stokhos_Tpetra_UQ_PCE.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define INSTANTIATE_UQ_PCE_STORAGE(INSTMACRO, STORAGE, LO, GO, N)      \
   INSTMACRO( Sacado::UQ::PCE<STORAGE>, LO, GO, N )
+#else
+#define INSTANTIATE_UQ_PCE_STORAGE(INSTMACRO, STORAGE, N)      \
+  INSTMACRO( Sacado::UQ::PCE<STORAGE>,N )
+#endif
 
 #define INSTANTIATE_UQ_PCE_STORAGE_SD(INSTMACRO, STORAGE, N)      \
   INSTMACRO( Sacado::UQ::PCE<STORAGE>, N )
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define INSTANTIATE_UQ_PCE_DS_SLD(INSTMACRO, S, L, D, LO, GO, N)       \
+#else
+#define INSTANTIATE_UQ_PCE_DS_SLD(INSTMACRO, S, L, D,N)       \
+#endif
   typedef Stokhos::DynamicStorage<L,S,D::execution_space> DS_ ## L ## _ ## S ## _ ## _ ## D; \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   INSTANTIATE_UQ_PCE_STORAGE(INSTMACRO, DS_ ## L ## _ ## S ## _ ## _ ## D, LO, GO, N)
+#else
+  INSTANTIATE_UQ_PCE_STORAGE(INSTMACRO, DS_ ## L ## _ ## S ## _ ## _ ## D,N)
+#endif
 
 #define INSTANTIATE_UQ_PCE_DS_SLD_SD(INSTMACRO, S, L, D, N)       \
   typedef Stokhos::DynamicStorage<L,S,D::execution_space> DS_ ## L ## _ ## S ## _ ## _ ## D ## _2; \
   INSTANTIATE_UQ_PCE_STORAGE_SD(INSTMACRO, DS_ ## L ## _ ## S ## _ ## _ ## D ## _2, N)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define INSTANTIATE_UQ_PCE_S_D(INSTMACRO, D, LO, GO, N) \
   INSTANTIATE_UQ_PCE_DS_SLD(INSTMACRO, double, int, D, LO, GO, N)
+#else
+#define INSTANTIATE_UQ_PCE_S_D(INSTMACRO, D, N) \
+  INSTANTIATE_UQ_PCE_DS_SLD(INSTMACRO, double, int, D,N)
+#endif
 
 #define INSTANTIATE_UQ_PCE_S_D_SD(INSTMACRO, D, N) \
   INSTANTIATE_UQ_PCE_DS_SLD_SD(INSTMACRO, double, int, D, N)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define INSTANTIATE_UQ_PCE_S(INSTMACRO, LO, GO, N) \
+#else
+#define INSTANTIATE_UQ_PCE_S(INSTMACRO,N) \
+#endif
   typedef Stokhos::DeviceForNode2<N>::type DFN_ ## LO ## _ ## GO ## _ ## N; \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   INSTANTIATE_UQ_PCE_S_D(INSTMACRO, DFN_ ## LO ## _ ## GO ## _ ## N, LO, GO, N)
+#else
+  INSTANTIATE_UQ_PCE_S_D(INSTMACRO, DFN_ ## LO ## _ ## GO ## _ ## N,N)
+#endif
 
 #if @IS_DEVICE_NODE@
 
@@ -84,8 +110,13 @@
 
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define INSTANTIATE_UQ_PCE(INSTMACRO, LO, GO, N) \
   INSTANTIATE_UQ_PCE_S(INSTMACRO, LO, GO, N)
+#else
+#define INSTANTIATE_UQ_PCE(INSTMACRO,N) \
+  INSTANTIATE_UQ_PCE_S(INSTMACRO,N)
+#endif
 
 #define INSTANTIATE_UQ_PCE_SD(INSTMACRO, N) \
   INSTANTIATE_UQ_PCE_S_SD(INSTMACRO, N)

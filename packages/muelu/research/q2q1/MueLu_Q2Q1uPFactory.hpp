@@ -105,11 +105,17 @@ namespace MueLu {
 
 
   template <class Scalar        = MueLu::DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal  = MueLu::DefaultLocalOrdinal,
             class GlobalOrdinal = MueLu::DefaultGlobalOrdinal,
+#endif
             class Node          = MueLu::DefaultNode>
   class Q2Q1uPFactory : public PFactory {
 #include "MueLu_UseShortNames.hpp"
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef MyCptList_<LocalOrdinal> MyCptList;
 
   private:
@@ -529,8 +535,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> Q2Q1uPFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A",                          null, "Generating factory of the matrix A");
@@ -550,8 +561,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#endif
     Input(fineLevel, "A");
 
     const ParameterList& pL = GetParameterList();
@@ -570,13 +586,23 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     return BuildP(fineLevel, coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
 
     typedef Teuchos::ScalarTraits<SC> STS;
@@ -676,7 +702,11 @@ namespace MueLu {
 
       // Amalgmate the velocity coordinates
       // NOTE: This assumes that the original coords vector contains duplicated (x NDim) degrees of freedom
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<MultiVector> amalgCoords = Xpetra::MultiVectorFactory<SC,LO,GO,Node>::Build(nodeMap, NDim);
+#else
+      RCP<MultiVector> amalgCoords = Xpetra::MultiVectorFactory<SC,Node>::Build(nodeMap, NDim);
+#endif
 
       for (int j = 0; j < NDim; j++) {
         ArrayRCP<SC> coordView      = coords     ->getDataNonConst(j);
@@ -803,8 +833,13 @@ namespace MueLu {
     } else {
       Set(coarseLevel, "CoordinatesVelocity", coarseCoords);
       // FIXME: why does coarse pattern matrix look like?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Matrix> AP  = Xpetra::MatrixMatrix<SC,LO,GO,NO>::Multiply(*AForPat, false, *P, false, GetOStream(Statistics2), true, true);
       RCP<Matrix> RAP = Xpetra::MatrixMatrix<SC,LO,GO,NO>::Multiply(*P,       true, *AP, false, GetOStream(Statistics2), true, true);
+#else
+      RCP<Matrix> AP  = Xpetra::MatrixMatrix<SC,NO>::Multiply(*AForPat, false, *P, false, GetOStream(Statistics2), true, true);
+      RCP<Matrix> RAP = Xpetra::MatrixMatrix<SC,NO>::Multiply(*P,       true, *AP, false, GetOStream(Statistics2), true, true);
+#endif
       Set(coarseLevel, "AForPat", RAP);
     }
     Set(coarseLevel, "Nullspace",   coarseNullspace);
@@ -890,8 +925,13 @@ namespace MueLu {
   // malloc(). I doubt that these are a big problem, but one could allocate
   // some workspaces ahead of time to avoid the constant malloc/free cycle in
   // CompDistances().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::
+#endif
   FindDist4Cpts(const Matrix& A, const MultiVector& coords, const Array<LO>& userCpts, std::vector<char>& status, MyCptList& myCpts, int levelID) const {
     int    NDim    = coords.getNumVectors();
     size_t numRows = A.getNodeNumRows();
@@ -1304,8 +1344,13 @@ namespace MueLu {
   // possible new CPOINT as well as the orientation of the new possible CPOINT
   // with respect to k's current CPOINTs. Generally, points which are on the
   // opposite side of k' current CPOINTs are favored.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::
+#endif
   PhaseTwoPattern(const Matrix& A, const MultiVector& coords, const std::vector<char>& status, MyCptList& myCpts) const {
     GetOStream(Runtime0) << "Starting phase 2" << std::endl;
 
@@ -1464,8 +1509,13 @@ namespace MueLu {
   // addition, however, we look to see if a possible mid-point is "close" or
   // not to an already computed mid-point. If it is NOT too close, then this
   // possible mid-point is declared to be an actual mid-point.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::
+#endif
   FindMidPoints(const Matrix& A, const MultiVector& coords, Array<LO>& Cptlist, const MyCptList& myCpts) const {
     int    NDim    = coords.getNumVectors();
     size_t numRows = A.getNodeNumRows();
@@ -1699,8 +1749,13 @@ namespace MueLu {
   }
 
   // Convert information in Cptlist, myCpts into a sparsity pattern matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::
+#endif
   CptDepends2Pattern(const Matrix& A, const MyCptList& myCpts, RCP<Matrix>& P, LocalOrdinal offset) const {
     RCP<const Map> rowMap = A.getRowMap();
     size_t numRows = myCpts.getNodeNumRows();
@@ -1764,8 +1819,13 @@ namespace MueLu {
   }
 
   // Compute all points which are within a distance 1-4 from StartPt
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::
+#endif
   CompDistances(const Matrix& A, LO start, int numDist, std::vector<LO>& dist1, std::vector<LO>& dist2, std::vector<LO>& dist3, std::vector<LO>& dist4) const {
     TEUCHOS_TEST_FOR_EXCEPTION(numDist < 1 || numDist > 4, Exceptions::InvalidArgument, "CompDistances() cannot compute " << numDist << " distances");
 
@@ -1799,8 +1859,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::
+#endif
   CreateCrsPointers(const Matrix& A, ArrayRCP<const size_t>& ia, ArrayRCP<const LO>& ja) const {
     RCP<const CrsMatrixWrap> Awrap = rcp_dynamic_cast<const CrsMatrixWrap>(rcpFromRef(A));
     TEUCHOS_TEST_FOR_EXCEPTION(Awrap.is_null(), Exceptions::RuntimeError, "A is not of CrsMatrixWrap type");
@@ -1811,8 +1876,13 @@ namespace MueLu {
 
   const std::string OUTPUT_DIR = "status/";
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::
+#endif
   DumpStatus(const std::string& filename, const std::vector<char>& status, int NDim, bool isAmalgamated) const {
     const std::string dirName = OUTPUT_DIR;
 
@@ -1826,8 +1896,13 @@ namespace MueLu {
       ofs << status[i] << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1uPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void Q2Q1uPFactory<Scalar, Node>::
+#endif
   DumpCoords(const std::string& filename, const MultiVector& coords) const {
     const std::string dirName = OUTPUT_DIR;
 

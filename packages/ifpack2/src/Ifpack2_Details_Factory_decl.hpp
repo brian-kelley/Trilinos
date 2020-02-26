@@ -49,11 +49,22 @@
 namespace Ifpack2 {
 namespace Details {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class Factory {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<SC, LO, GO, NT> row_matrix_type;
   typedef ::Ifpack2::Preconditioner<SC, LO, GO, NT> prec_type;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::RowMatrix<SC, NT> row_matrix_type;
+  typedef ::Ifpack2::Preconditioner<SC, NT> prec_type;
+#endif
 
   /// \brief Create an instance of Ifpack2::Preconditioner given the
   ///   string name of the preconditioner type.

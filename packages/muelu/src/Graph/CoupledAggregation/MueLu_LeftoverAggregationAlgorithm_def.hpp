@@ -61,14 +61,24 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   LeftoverAggregationAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::LeftoverAggregationAlgorithm():
+#else
+  template <class Node>
+  LeftoverAggregationAlgorithm<Node>::LeftoverAggregationAlgorithm():
+#endif
     phase3AggCreation_(.5),
     minNodesPerAggregate_(1)
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LeftoverAggregationAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::AggregateLeftovers(GraphBase const &graph, Aggregates &aggregates) const {
+#else
+  template <class Node>
+  void LeftoverAggregationAlgorithm<Node>::AggregateLeftovers(GraphBase const &graph, Aggregates &aggregates) const {
+#endif
     Monitor m(*this, "AggregateLeftovers");
 
     my_size_t nVertices = graph.GetNodeNumVertices();
@@ -81,10 +91,18 @@ namespace MueLu {
     const RCP<const Map> nonUniqueMap = aggregates.GetMap(); //column map of underlying graph
     const RCP<const Map> uniqueMap    = graph.GetDomainMap();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MueLu::CoupledAggregationCommHelper<LO,GO,NO> myWidget(uniqueMap, nonUniqueMap);
+#else
+    MueLu::CoupledAggregationCommHelper<NO> myWidget(uniqueMap, nonUniqueMap);
+#endif
 
     //TODO JJH We want to skip this call
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<double,LO,GO,NO> > distWeights = Xpetra::VectorFactory<double,LO,GO,NO>::Build(nonUniqueMap);
+#else
+    RCP<Xpetra::Vector<double,NO> > distWeights = Xpetra::VectorFactory<double,NO>::Build(nonUniqueMap);
+#endif
 
     // Aggregated vertices not "definitively" assigned to processors are
     // arbitrated by ArbitrateAndCommunicate(). There is some
@@ -228,10 +246,18 @@ namespace MueLu {
     //         std::cout << "exp_nrows=" << exp_nRows << " (nVertices= " << nVertices << ", numGhost=" << graph.GetNodeNumGhost() << ")" << std::endl;
     //         std::cout << "nonUniqueMap=" << nonUniqueMap->getNodeNumElements() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<double,LO,GO,NO> > temp_ = Xpetra::VectorFactory<double,LO,GO,NO> ::Build(nonUniqueMap,false); //no need to zero out vector in ctor
+#else
+    RCP<Xpetra::Vector<double,NO> > temp_ = Xpetra::VectorFactory<double,NO> ::Build(nonUniqueMap,false); //no need to zero out vector in ctor
+#endif
     temp_->putScalar(1.);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<double,LO,GO,NO> > tempOutput_ = Xpetra::VectorFactory<double,LO,GO,NO> ::Build(nonUniqueMap);
+#else
+    RCP<Xpetra::Vector<double,NO> > tempOutput_ = Xpetra::VectorFactory<double,NO> ::Build(nonUniqueMap);
+#endif
 
     myWidget.NonUnique2NonUnique(*temp_, *tempOutput_, Xpetra::ADD);
 
@@ -671,8 +697,13 @@ namespace MueLu {
 
   } //AggregateLeftovers
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LeftoverAggregationAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::RootCandidates(my_size_t nVertices,
+#else
+  template <class Node>
+  void LeftoverAggregationAlgorithm<Node>::RootCandidates(my_size_t nVertices,
+#endif
   ArrayView<const LO> & vertex2AggId, GraphBase const &graph,
                       ArrayRCP<LO> &candidates, my_size_t &nCandidates, global_size_t &nCandidatesGlobal) const
   {
@@ -698,9 +729,15 @@ namespace MueLu {
 
   } //RootCandidates
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   int LeftoverAggregationAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::RemoveSmallAggs(Aggregates& aggregates, int min_size,
                       RCP<Xpetra::Vector<double,LO,GO,NO> > & distWeights, const MueLu::CoupledAggregationCommHelper<LO,GO,NO> & myWidget) const {
+#else
+  template <class Node>
+  int LeftoverAggregationAlgorithm<Node>::RemoveSmallAggs(Aggregates& aggregates, int min_size,
+                      RCP<Xpetra::Vector<double,NO> > & distWeights, const MueLu::CoupledAggregationCommHelper<NO> & myWidget) const {
+#endif
     int myPid = aggregates.GetMap()->getComm()->getRank();
 
     LO nAggregates = aggregates.GetNumAggregates();

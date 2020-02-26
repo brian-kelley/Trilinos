@@ -60,10 +60,21 @@ class XpetraSolverFactory : public Impl::SolverFactoryParent<Scalar, MV, OP>
 
 namespace Impl {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 class SolverFactorySelector<SC,::Xpetra::MultiVector<SC, LO, GO, NT>,::Belos::OperatorT<Xpetra::MultiVector<SC, LO, GO, NT>>> {
+#else
+template<class SC, class NT>
+class SolverFactorySelector<SC,::Xpetra::MultiVector<SC, NT>,::Belos::OperatorT<Xpetra::MultiVector<SC, NT>>> {
+#endif
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef XpetraSolverFactory<SC,::Xpetra::MultiVector<SC, LO, GO, NT>,::Belos::OperatorT<Xpetra::MultiVector<SC, LO, GO, NT>>> type;
+#else
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+    typedef XpetraSolverFactory<SC,::Xpetra::MultiVector<SC, NT>,::Belos::OperatorT<Xpetra::MultiVector<SC, NT>>> type;
+#endif
 };
 
 } // namespace Impl

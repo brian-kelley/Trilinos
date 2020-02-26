@@ -72,7 +72,11 @@ namespace Piro {
  *  \ingroup Piro_Thyra_solver_grp
  * */
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal = default_lo, typename GlobalOrdinal = default_go, 
+#else
+template <typename Scalar, 
+#endif
           typename Node = KokkosClassic::DefaultNode::DefaultNodeType>
 #else
 template <typename Scalar>
@@ -188,9 +192,17 @@ private:
 
 /** \brief Non-member constructor function */
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal = default_lo, typename GlobalOrdinal = default_go,
+#else
+template <typename Scalar,
+#endif
           typename Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+Teuchos::RCP<RythmosSolver<Scalar, Node> >
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<RythmosSolver<Scalar> >

@@ -393,9 +393,13 @@ Relaxation<MatrixType>::getMatrix () const {
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 Relaxation<MatrixType>::getDomainMap () const {
   TEUCHOS_TEST_FOR_EXCEPTION(
     A_.is_null (), std::runtime_error, "Ifpack2::Relaxation::getDomainMap: "
@@ -406,9 +410,13 @@ Relaxation<MatrixType>::getDomainMap () const {
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 Relaxation<MatrixType>::getRangeMap () const {
   TEUCHOS_TEST_FOR_EXCEPTION(
     A_.is_null (), std::runtime_error, "Ifpack2::Relaxation::getRangeMap: "
@@ -1934,7 +1942,11 @@ MTGaussSeidel (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_o
     return;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> MV;
+#else
+  typedef typename Tpetra::MultiVector<Scalar, Node> MV;
+#endif
   typedef typename crs_matrix_type::import_type import_type;
   typedef typename crs_matrix_type::export_type export_type;
   typedef typename crs_matrix_type::map_type map_type;
@@ -2762,7 +2774,12 @@ describe (Teuchos::FancyOStream &out,
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_RELAXATION_INSTANT(S,LO,GO,N)                            \
   template class Ifpack2::Relaxation< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_RELAXATION_INSTANT(S,N)                            \
+  template class Ifpack2::Relaxation< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif // IFPACK2_RELAXATION_DEF_HPP

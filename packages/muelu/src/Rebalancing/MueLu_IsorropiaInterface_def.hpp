@@ -43,8 +43,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> IsorropiaInterface<LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Node>
+ RCP<const ParameterList> IsorropiaInterface<Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A",                    Teuchos::null, "Factory of the matrix A");
@@ -55,17 +60,31 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void IsorropiaInterface<LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level & currentLevel) const {
+#else
+  template <class Node>
+  void IsorropiaInterface<Node>::DeclareInput(Level & currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "number of partitions");
     Input(currentLevel, "UnAmalgamationInfo");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void IsorropiaInterface<LocalOrdinal, GlobalOrdinal, Node>::Build(Level& level) const {
+#else
+  template <class Node>
+  void IsorropiaInterface<Node>::Build(Level& level) const {
+#endif
     FactoryMonitor m(*this, "Build", level);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::BlockedMap<LocalOrdinal, GlobalOrdinal, Node>  BlockMap;
+#else
+    typedef Xpetra::BlockedMap<Node>  BlockMap;
+#endif
 
     RCP<Matrix> A                  = Get< RCP<Matrix> >(level, "A");
     RCP<AmalgamationInfo> amalInfo = Get< RCP<AmalgamationInfo> >(level, "UnAmalgamationInfo");
@@ -76,7 +95,11 @@ namespace MueLu {
 
     if (numParts == 1 || numParts == -1) {
       // Running on one processor, so decomposition is the trivial one, all zeros.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO, LO, GO, NO> > decomposition = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(rowMap, true);
+#else
+      RCP<Xpetra::Vector<GO, NO> > decomposition = Xpetra::VectorFactory<GO, NO>::Build(rowMap, true);
+#endif
       Set(level, "AmalgamatedPartition", decomposition);
       return;
     }
@@ -203,7 +226,11 @@ namespace MueLu {
 
       TEUCHOS_TEST_FOR_EXCEPTION(size != Teuchos::as<int>(nodeMap->getNodeNumElements()), Exceptions::RuntimeError, "length of array returned from extractPartsView does not match local length of rowMap");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO, LO, GO, NO> > decomposition = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(nodeMap, false);
+#else
+      RCP<Xpetra::Vector<GO, NO> > decomposition = Xpetra::VectorFactory<GO, NO>::Build(nodeMap, false);
+#endif
       ArrayRCP<GO> decompEntries = decomposition->getDataNonConst(0);
 
       // fill vector with amalgamated information about partitioning
@@ -218,7 +245,11 @@ namespace MueLu {
 
 #ifdef HAVE_MUELU_TPETRA
 #ifdef HAVE_MUELU_INST_DOUBLE_INT_INT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< Xpetra::TpetraCrsGraph<LO, GO, Node> > tpCrsGraph = Teuchos::rcp_dynamic_cast<Xpetra::TpetraCrsGraph<LO, GO, Node> >(crsGraph);
+#else
+    RCP< Xpetra::TpetraCrsGraph<Node> > tpCrsGraph = Teuchos::rcp_dynamic_cast<Xpetra::TpetraCrsGraph<Node> >(crsGraph);
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(tpCrsGraph != Teuchos::null, Exceptions::RuntimeError, "Tpetra is not supported with Isorropia.");
 #else
     TEUCHOS_TEST_FOR_EXCEPTION(false, Exceptions::RuntimeError, "Isorropia is an interface to Zoltan which only has support for LO=GO=int and SC=double.");
@@ -229,7 +260,11 @@ namespace MueLu {
 
 
     // Running on one processor, so decomposition is the trivial one, all zeros.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GO, LO, GO, NO> > decomposition = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(rowMap, true);
+#else
+    RCP<Xpetra::Vector<GO, NO> > decomposition = Xpetra::VectorFactory<GO, NO>::Build(rowMap, true);
+#endif
     Set(level, "AmalgamatedPartition", decomposition);
 
 #endif // HAVE_MPI

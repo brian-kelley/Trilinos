@@ -51,12 +51,21 @@
 namespace BelosTpetra {
 namespace Impl {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void register_GmresSingleReduce_tmpl (const bool verbose)
 {
   using ::Belos::Impl::registerSolverSubclassForTypes;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
   using OP = ::Tpetra::Operator<SC, LO, GO, NT>;
+#else
+  using MV = ::Tpetra::MultiVector<SC, NT>;
+  using OP = ::Tpetra::Operator<SC, NT>;
+#endif
   using solver_type = GmresSingleReduceSolverManager<SC, MV, OP>;
 
   if (verbose) {
@@ -78,7 +87,11 @@ void register_GmresSingleReduce (const bool verbose)
 #ifdef BELOS_TPETRA_REGISTER_GMRES_SINGLE_REDUCE
 #  undef BELOS_TPETRA_REGISTER_GMRES_SINGLE_REDUCE
 #endif // BELOS_TPETRA_REGISTER_GMRES_SINGLE_REDUCE
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define BELOS_TPETRA_REGISTER_GMRES_SINGLE_REDUCE( SC, LO, GO, NT ) register_GmresSingleReduce_tmpl<SC, LO, GO, NT> (verbose);
+#else
+#define BELOS_TPETRA_REGISTER_GMRES_SINGLE_REDUCE( SC, NT ) register_GmresSingleReduce_tmpl<SC, NT> (verbose);
+#endif
 
   TPETRA_INSTANTIATE_SLGN_NO_ORDINAL_SCALAR( BELOS_TPETRA_REGISTER_GMRES_SINGLE_REDUCE )
 

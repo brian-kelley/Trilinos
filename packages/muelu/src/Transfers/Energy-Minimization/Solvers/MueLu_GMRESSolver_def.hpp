@@ -61,13 +61,23 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   GMRESSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GMRESSolver(size_t Its)
+#else
+  template <class Scalar, class Node>
+  GMRESSolver<Scalar, Node>::GMRESSolver(size_t Its)
+#endif
   : nIts_(Its)
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GMRESSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::givapp(Scalar* c, Scalar* s, Scalar* v, int k) const {
+#else
+  template <class Scalar, class Node>
+  void GMRESSolver<Scalar, Node>::givapp(Scalar* c, Scalar* s, Scalar* v, int k) const {
+#endif
     for (int i = 0; i < k; i++) {
       SC w1 = c[i]*v[i] - s[i]*v[i+1];
       SC w2 = s[i]*v[i] + c[i]*v[i+1];
@@ -76,8 +86,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GMRESSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Iterate(const Matrix& Aref, const Constraint& C, const Matrix& P0, RCP<Matrix>& finalP) const {
+#else
+  template <class Scalar, class Node>
+  void GMRESSolver<Scalar, Node>::Iterate(const Matrix& Aref, const Constraint& C, const Matrix& P0, RCP<Matrix>& finalP) const {
+#endif
     PrintMonitor m(*this, "GMRES iterations");
 
     finalP = MatrixFactory2::BuildCopy(rcpFromRef(P0));

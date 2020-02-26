@@ -61,20 +61,36 @@ namespace Tpetra {
 // \brief Sparse matrix that presents a row-oriented interface that lets
 //        users read or modify entries.
 template<class Scalar        = ::Tpetra::Details::DefaultTypes::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal  = ::Tpetra::Details::DefaultTypes::local_ordinal_type,
          class GlobalOrdinal = ::Tpetra::Details::DefaultTypes::global_ordinal_type,
+#endif
          class Node          = ::Tpetra::Details::DefaultTypes::node_type>
 class FECrsMatrix :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+    public CrsMatrix<Scalar, Node>
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   friend class CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+#else
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+  friend class CrsMatrix<Scalar, Node>;
+#endif
 public:
     //! @name Typedefs
     //@{
 
     /// \brief This class' first template parameter; the type of each
     ///        entry in the matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::scalar_type scalar_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::scalar_type scalar_type;
+#endif
 
     /// \brief The type used internally in place of \c Scalar.
     ///
@@ -85,54 +101,114 @@ public:
     /// internally with the (usually) bitwise identical type
     /// Kokkos::complex<T>.  The latter is the \c impl_scalar_type
     /// corresponding to \c Scalar = std::complex.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::impl_scalar_type impl_scalar_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::impl_scalar_type impl_scalar_type;
+#endif
 
     //! This class' second template parameter; the type of local indices.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_ordinal_type local_ordinal_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::local_ordinal_type local_ordinal_type;
+#endif
 
     //! This class' third template parameter; the type of global indices.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::global_ordinal_type global_ordinal_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::global_ordinal_type global_ordinal_type;
+#endif
 
     //! This class' fourth template parameter; the Kokkos device type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::node_type node_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::node_type node_type;
+#endif
 
     //! The Kokkos device type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::device_type device_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::device_type device_type;
+#endif
 
     //! The Kokkos execution space.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::execution_space execution_space;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::execution_space execution_space;
+#endif
 
     /// \brief Type of a norm result.
     ///
     /// This is usually the same as the type of the magnitude
     /// (absolute value) of <tt>Scalar</tt>, but may differ for
     /// certain <tt>Scalar</tt> types.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::mag_type mag_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::mag_type mag_type;
+#endif
 
     //! The Map specialization suitable for this CrsMatrix specialization.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::map_type map_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::map_type map_type;
+#endif
 
     //! The Import specialization suitable for this CrsMatrix specialization
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::import_type import_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::import_type import_type;
+#endif
 
     //! The Export specialization suitable for this CrsMatrix specialization.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::export_type export_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::export_type export_type;
+#endif
 
     //! The CrsGraph specialization suitable for this CrsMatrix specialization.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::crs_graph_type crs_graph_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::crs_graph_type crs_graph_type;
+#endif
 
     //! The part of the sparse matrix's graph on each MPI process.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_graph_type local_graph_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::local_graph_type local_graph_type;
+#endif
 
     /// \brief The specialization of Kokkos::CrsMatrix that represents
     ///        the part of the sparse matrix on each MPI process.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_matrix_type local_matrix_type;
+#else
+    typedef typename CrsMatrix<Scalar, Node>::local_matrix_type local_matrix_type;
+#endif
 
     /// \brief Parent CrsMatrix type using the same scalars
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> crs_matrix_type;
+#else
+    typedef CrsMatrix<Scalar, Node> crs_matrix_type;
+#endif
 
     //! The CrsGraph specialization suitable for this CrsMatrix specialization.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef FECrsGraph<LocalOrdinal, GlobalOrdinal, Node> fe_crs_graph_type;
+#else
+    typedef FECrsGraph<Node> fe_crs_graph_type;
+#endif
 
     //@}
     //! @name Constructors and destructor
@@ -167,17 +243,33 @@ public:
                           const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
     //! Copy constructor (forbidden).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     FECrsMatrix (const FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>&) = delete;
+#else
+    FECrsMatrix (const FECrsMatrix<Scalar, Node>&) = delete;
+#endif
 
     //! Move constructor (forbidden).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     FECrsMatrix (FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>&&) = delete;
+#else
+    FECrsMatrix (FECrsMatrix<Scalar, Node>&&) = delete;
+#endif
 
     //! Copy assignment (forbidden).
     FECrsMatrix&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     operator= (const FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>&) = delete;
+#else
+    operator= (const FECrsMatrix<Scalar, Node>&) = delete;
+#endif
     //! Move assignment (forbidden).
     FECrsMatrix&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     operator= (FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>&&) = delete;
+#else
+    operator= (FECrsMatrix<Scalar, Node>&&) = delete;
+#endif
 
     /// \brief Destructor (virtual for memory safety of derived classes).
     ///
@@ -252,10 +344,18 @@ public:
     };
 
     // The FECrsGraph from construction time
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const FECrsGraph<LocalOrdinal, GlobalOrdinal, Node> > feGraph_;
+#else
+    Teuchos::RCP<const FECrsGraph<Node> > feGraph_;
+#endif
 
     // This is whichever multivector isn't currently active
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > inactiveCrsMatrix_;
+#else
+    Teuchos::RCP<CrsMatrix<Scalar, Node> > inactiveCrsMatrix_;
+#endif
     // This is in RCP to make shallow copies of the FECrsMatrix work correctly
     Teuchos::RCP<FEWhichActive> activeCrsMatrix_;
 

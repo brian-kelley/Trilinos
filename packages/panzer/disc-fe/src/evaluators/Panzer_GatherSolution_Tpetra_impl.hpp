@@ -64,7 +64,11 @@
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherSolution_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+panzer::GatherSolution_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 GatherSolution_Tpetra(
   const Teuchos::RCP<const panzer::GlobalIndexer> & indexer,
   const Teuchos::ParameterList& p)
@@ -119,7 +123,11 @@ GatherSolution_Tpetra(
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData d,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -150,10 +158,18 @@ postRegistrationSetup(typename TRAITS::SetupData d,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+   typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
    // extract linear object container
    tpetraContainer_ = Teuchos::rcp_dynamic_cast<LOC>(d.gedc->getDataObject(globalDataKey_));
@@ -167,10 +183,18 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+   typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
    // for convenience pull out some objects from workset
    std::string blockId = this->wda(workset).block_id;
@@ -216,7 +240,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherSolution_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+panzer::GatherSolution_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 GatherSolution_Tpetra(
   const Teuchos::RCP<const panzer::GlobalIndexer> & indexer,
   const Teuchos::ParameterList& p)
@@ -274,7 +302,11 @@ GatherSolution_Tpetra(
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -292,10 +324,18 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+   typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
    // extract linear object container
    tpetraContainer_ = Teuchos::rcp_dynamic_cast<LOC>(d.gedc->getDataObject(globalDataKey_));
@@ -309,10 +349,18 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+   typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
    // for convenience pull out some objects from workset
    std::string blockId = this->wda(workset).block_id;
@@ -390,7 +438,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 GatherSolution_Tpetra(
   const Teuchos::RCP<const panzer::GlobalIndexer> & indexer,
   const Teuchos::ParameterList& p)
@@ -442,7 +494,11 @@ GatherSolution_Tpetra(
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData d,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -473,15 +529,24 @@ postRegistrationSetup(typename TRAITS::SetupData d,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
   using Teuchos::RCP;
   using Teuchos::rcp;
   using Teuchos::rcp_dynamic_cast;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
   typedef TpetraVector_ReadOnly_GlobalEvaluationData<double,LO,GO,NodeT> RO_GED;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+  typedef TpetraVector_ReadOnly_GlobalEvaluationData<double,NodeT> RO_GED;
+#endif
 
   // manage sensitivities
   ////////////////////////////////////////////////////////////
@@ -549,7 +614,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
    // for convenience pull out some objects from workset
@@ -607,7 +676,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
 KOKKOS_INLINE_FUNCTION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 operator()(const int worksetCellIndex) const
 {
   // loop over basis functions and fill the fields
@@ -624,7 +697,11 @@ operator()(const int worksetCellIndex) const
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
 KOKKOS_INLINE_FUNCTION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherSolution_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 operator()(const NoSeed,const int worksetCellIndex) const
 {
   // loop over basis functions and fill the fields

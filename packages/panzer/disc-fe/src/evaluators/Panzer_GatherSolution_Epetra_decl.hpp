@@ -94,7 +94,11 @@ namespace panzer
    *  solution names vector.
    */
   template<typename TRAITS, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class GatherSolution_Epetra<panzer::Traits::Residual, TRAITS, LO, GO>
+#else
+  class GatherSolution_Epetra<panzer::Traits::Residual, TRAITS>
+#endif
     :
     public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Residual, TRAITS>,
@@ -192,7 +196,11 @@ namespace panzer
       {
         using panzer::Traits;
         using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp(new GatherSolution_Epetra<Traits::Residual, TRAITS, LO, GO>
+#else
+        return rcp(new GatherSolution_Epetra<Traits::Residual, TRAITS>
+#endif
           (globalIndexer_, pl));
       } // end of clone()
 
@@ -288,7 +296,11 @@ namespace panzer
    *  solution names vector.
    */
   template<typename TRAITS, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class GatherSolution_Epetra<panzer::Traits::Tangent, TRAITS, LO, GO>
+#else
+  class GatherSolution_Epetra<panzer::Traits::Tangent, TRAITS>
+#endif
     :
     public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Tangent, TRAITS>,
@@ -387,7 +399,11 @@ namespace panzer
       {
         using panzer::Traits;
         using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp(new GatherSolution_Epetra<Traits::Tangent, TRAITS, LO, GO>
+#else
+        return rcp(new GatherSolution_Epetra<Traits::Tangent, TRAITS>
+#endif
           (globalIndexer_, pl));
       } // end of clone()
 
@@ -478,7 +494,11 @@ namespace panzer
    *  solution names vector.
    */
   template<typename TRAITS, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class GatherSolution_Epetra<panzer::Traits::Jacobian, TRAITS, LO, GO>
+#else
+  class GatherSolution_Epetra<panzer::Traits::Jacobian, TRAITS>
+#endif
     :
     public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Jacobian, TRAITS>,
@@ -577,7 +597,11 @@ namespace panzer
       {
         using panzer::Traits;
         using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp(new GatherSolution_Epetra<Traits::Jacobian, TRAITS, LO, GO>
+#else
+        return rcp(new GatherSolution_Epetra<Traits::Jacobian, TRAITS>
+#endif
           (globalIndexer_, pl));
       } // end of clone()
 

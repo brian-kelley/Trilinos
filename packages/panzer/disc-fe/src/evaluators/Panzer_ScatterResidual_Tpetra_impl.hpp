@@ -68,7 +68,11 @@
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+panzer::ScatterResidual_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 ScatterResidual_Tpetra(const Teuchos::RCP<const panzer::GlobalIndexer> & indexer,
                        const Teuchos::ParameterList& p)
   : globalIndexer_(indexer)
@@ -109,7 +113,11 @@ ScatterResidual_Tpetra(const Teuchos::RCP<const panzer::GlobalIndexer> & indexer
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData d,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -136,10 +144,18 @@ postRegistrationSetup(typename TRAITS::SetupData d,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
   // extract linear object container
   tpetraContainer_ = Teuchos::rcp_dynamic_cast<LOC>(d.gedc->getDataObject(globalDataKey_));
@@ -157,7 +173,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+panzer::ScatterResidual_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 ScatterResidual_Tpetra(const Teuchos::RCP<const panzer::GlobalIndexer> & indexer,
                        const Teuchos::ParameterList& p)
   : globalIndexer_(indexer)
@@ -197,7 +217,11 @@ ScatterResidual_Tpetra(const Teuchos::RCP<const panzer::GlobalIndexer> & indexer
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -212,13 +236,21 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
   using Teuchos::RCP;
   using Teuchos::rcp_dynamic_cast;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
   // this is the list of parameters and their names that this scatter has to account for
   std::vector<std::string> activeParameters = 
@@ -235,7 +267,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
    // for convenience pull out some objects from workset
@@ -275,7 +311,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+panzer::ScatterResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 ScatterResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & indexer,
                        const Teuchos::ParameterList& p)
    : globalIndexer_(indexer)
@@ -316,7 +356,11 @@ ScatterResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & indexer,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData d,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -344,10 +388,18 @@ postRegistrationSetup(typename TRAITS::SetupData d,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
   // extract linear object container
   tpetraContainer_ = Teuchos::rcp_dynamic_cast<LOC>(d.gedc->getDataObject(globalDataKey_));
@@ -441,10 +493,18 @@ public:
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
   // for convenience pull out some objects from workset
   std::string blockId = this->wda(workset).block_id;
@@ -453,7 +513,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 
   globalIndexer_->getElementLIDs(this->wda(workset).cell_local_ids_k,scratch_lids_);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   ScatterResidual_Residual_Functor<ScalarT,LO,GO,NodeT> functor;
+#else
+  ScatterResidual_Residual_Functor<ScalarT,NodeT> functor;
+#endif
   functor.r_data = r->template getLocalView<PHX::Device>();
   functor.lids = scratch_lids_;
 
@@ -468,10 +532,18 @@ evaluateFields(typename TRAITS::EvalData workset)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+   typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
    typedef typename LOC::CrsMatrixType::local_matrix_type LocalMatrixT;
 
@@ -483,7 +555,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 
    globalIndexer_->getElementLIDs(this->wda(workset).cell_local_ids_k,scratch_lids_);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    ScatterResidual_Jacobian_Functor<ScalarT,LO,GO,NodeT,LocalMatrixT> functor;
+#else
+   ScatterResidual_Jacobian_Functor<ScalarT,NodeT,LocalMatrixT> functor;
+#endif
    functor.fillResidual = (r!=Teuchos::null);
    if(functor.fillResidual)
      functor.r_data = r->template getLocalView<PHX::Device>();

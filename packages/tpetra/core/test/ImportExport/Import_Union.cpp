@@ -113,11 +113,20 @@ namespace {
   // objects to have different numbers of "same" IDs, as long as they
   // correctly (that is, in the correct order) account for those IDs
   // in the "permute" IDs.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
+#else
+  template<class NT>
+#endif
   void
   compareImports (bool& success, Teuchos::FancyOStream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   const Tpetra::Import<LO, GO, NT>& imp1,
                   const Tpetra::Import<LO, GO, NT>& imp2,
+#else
+                  const Tpetra::Import<NT>& imp1,
+                  const Tpetra::Import<NT>& imp2,
+#endif
                   const Teuchos::Comm<int>& comm)
   {
     using Teuchos::ArrayView;
@@ -280,7 +289,11 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportUnion, ContigPlusContig, LocalOrdinalType, GlobalOrdinalType, NodeType )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportUnion, ContigPlusContig, NodeType )
+#endif
   {
     using Teuchos::Array;
     using Teuchos::ArrayView;
@@ -302,10 +315,19 @@ namespace {
     typedef LocalOrdinalType LO;
     typedef GlobalOrdinalType GO;
     typedef NodeType NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, NT> map_type;
     typedef Tpetra::Import<LO, GO, NT> import_type;
+#else
+    typedef Tpetra::Map<NT> map_type;
+    typedef Tpetra::Import<NT> import_type;
+#endif
     typedef Tpetra::Vector<>::scalar_type ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Vector<ST, LO, GO, NT> vector_type;
+#else
+    typedef Tpetra::Vector<ST, NT> vector_type;
+#endif
 
     int lclSuccess = 1; // local error flag
     int gblSuccess = 1; // global error flag (result of all-reduce on lclSuccess)

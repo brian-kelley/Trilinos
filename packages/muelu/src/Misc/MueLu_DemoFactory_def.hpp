@@ -55,21 +55,41 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   DemoFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DemoFactory()
+#else
+  template <class Scalar, class Node>
+  DemoFactory<Scalar, Node>::DemoFactory()
+#endif
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   DemoFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~DemoFactory() {}
+#else
+  template <class Scalar, class Node>
+  DemoFactory<Scalar, Node>::~DemoFactory() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void DemoFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &/* currentLevel */) const {
+#else
+  template <class Scalar, class Node>
+  void DemoFactory<Scalar, Node>::DeclareInput(Level &/* currentLevel */) const {
+#endif
     // TODO: declare input for factory
     //Input(currentLevel, varName_);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void DemoFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & /* currentLevel */) const {
+#else
+  template <class Scalar, class Node>
+  void DemoFactory<Scalar, Node>::Build(Level & /* currentLevel */) const {
+#endif
     // TODO: implement factory
   }
 

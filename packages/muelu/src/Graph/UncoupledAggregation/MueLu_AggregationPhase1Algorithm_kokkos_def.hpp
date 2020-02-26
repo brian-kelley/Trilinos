@@ -68,8 +68,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationPhase1Algorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationPhase1Algorithm_kokkos<Node>::
+#endif
   BuildAggregates(const Teuchos::ParameterList& params,
                   const LWGraph_kokkos& graph,
                   Aggregates_kokkos& aggregates,
@@ -101,8 +106,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationPhase1Algorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationPhase1Algorithm_kokkos<Node>::
+#endif
   BuildAggregatesRandom(const LO maxAggSize,
                         const LWGraph_kokkos& graph,
                         Aggregates_kokkos& aggregates,
@@ -202,8 +212,13 @@ namespace MueLu {
     aggregates.SetNumAggregates(numLocalAggregates);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationPhase1Algorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationPhase1Algorithm_kokkos<Node>::
+#endif
   BuildAggregatesDeterministic(const LO maxAggSize,
                                const LWGraph_kokkos& graph,
                                Aggregates_kokkos& aggregates,

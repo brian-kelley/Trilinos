@@ -101,12 +101,20 @@ namespace MueLu {
     | Aggregates   | StructuredAggregationFactory   | Container class with aggregation information. See also Aggregates.
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class StructuredAggregationFactory : public SingleLevelFactoryBase {
 #undef MUELU_STRUCTUREDAGGREGATIONFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 

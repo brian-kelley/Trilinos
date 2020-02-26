@@ -47,7 +47,11 @@
 #define XPETRA_EXPORT_FWD_HPP
 
 namespace Xpetra {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   class Export;
 }
 

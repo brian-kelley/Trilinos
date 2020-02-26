@@ -50,18 +50,34 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
                                                                 RCP<const Map<LO,GO,NO> > map)
+#else
+    template <class SC,class NO>
+    RCP<const Matrix<SC,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,NO> > globalMatrix,
+                                                                RCP<const Map<NO> > map)
+#endif
     {
         FROSCH_TIMER_START(extractLocalSubdomainMatrixTime,"ExtractLocalSubdomainMatrix");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Matrix<SC,LO,GO,NO> > subdomainMatrix = MatrixFactory<SC,LO,GO,NO>::Build(map,2*globalMatrix->getGlobalMaxNumRowEntries());
         RCP<Import<LO,GO,NO> > scatter = ImportFactory<LO,GO,NO>::Build(globalMatrix->getRowMap(),map);
+#else
+        RCP<Matrix<SC,NO> > subdomainMatrix = MatrixFactory<SC,NO>::Build(map,2*globalMatrix->getGlobalMaxNumRowEntries());
+        RCP<Import<NO> > scatter = ImportFactory<NO>::Build(globalMatrix->getRowMap(),map);
+#endif
         subdomainMatrix->doImport(*globalMatrix,*scatter,ADD);
         //cout << *subdomainMatrix << std::endl;
         RCP<const Comm<LO> > SerialComm = rcp(new MpiComm<LO>(MPI_COMM_SELF));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > localSubdomainMap = MapFactory<LO,GO,NO>::Build(map->lib(),map->getNodeNumElements(),0,SerialComm);
         RCP<Matrix<SC,LO,GO,NO> > localSubdomainMatrix = MatrixFactory<SC,LO,GO,NO>::Build(localSubdomainMap,globalMatrix->getNodeMaxNumRowEntries());
+#else
+        RCP<Map<NO> > localSubdomainMap = MapFactory<NO>::Build(map->lib(),map->getNodeNumElements(),0,SerialComm);
+        RCP<Matrix<SC,NO> > localSubdomainMatrix = MatrixFactory<SC,NO>::Build(localSubdomainMap,globalMatrix->getNodeMaxNumRowEntries());
+#endif
 
         for (unsigned i=0; i<localSubdomainMap->getNodeNumElements(); i++) {
             ArrayView<const GO> indices;
@@ -86,19 +102,35 @@ namespace FROSch {
         return localSubdomainMatrix.getConst();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
                                                                 RCP<const Map<LO,GO,NO> > map,
+#else
+    template <class SC,class NO>
+    RCP<const Matrix<SC,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,NO> > globalMatrix,
+                                                                RCP<const Map<NO> > map,
+#endif
                                                                 SC value)
     {
         FROSCH_TIMER_START(extractLocalSubdomainMatrixTime,"ExtractLocalSubdomainMatrix");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Matrix<SC,LO,GO,NO> > subdomainMatrix = MatrixFactory<SC,LO,GO,NO>::Build(map,2*globalMatrix->getGlobalMaxNumRowEntries());
         RCP<Import<LO,GO,NO> > scatter = ImportFactory<LO,GO,NO>::Build(globalMatrix->getRowMap(),map);
+#else
+        RCP<Matrix<SC,NO> > subdomainMatrix = MatrixFactory<SC,NO>::Build(map,2*globalMatrix->getGlobalMaxNumRowEntries());
+        RCP<Import<NO> > scatter = ImportFactory<NO>::Build(globalMatrix->getRowMap(),map);
+#endif
         subdomainMatrix->doImport(*globalMatrix,*scatter,ADD);
         //cout << *subdomainMatrix << std::endl;
         RCP<const Comm<LO> > SerialComm = rcp(new MpiComm<LO>(MPI_COMM_SELF));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > localSubdomainMap = MapFactory<LO,GO,NO>::Build(map->lib(),map->getNodeNumElements(),0,SerialComm);
         RCP<Matrix<SC,LO,GO,NO> > localSubdomainMatrix = MatrixFactory<SC,LO,GO,NO>::Build(localSubdomainMap,globalMatrix->getNodeMaxNumRowEntries());
+#else
+        RCP<Map<NO> > localSubdomainMap = MapFactory<NO>::Build(map->lib(),map->getNodeNumElements(),0,SerialComm);
+        RCP<Matrix<SC,NO> > localSubdomainMatrix = MatrixFactory<SC,NO>::Build(localSubdomainMap,globalMatrix->getNodeMaxNumRowEntries());
+#endif
 
         for (unsigned i=0; i<localSubdomainMap->getNodeNumElements(); i++) {
             ArrayView<const GO> indices;
@@ -123,14 +155,26 @@ namespace FROSch {
         return localSubdomainMatrix.getConst();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int UpdateLocalSubdomainMatrix(RCP<Matrix<SC,LO,GO,NO> > globalMatrix,
                                    RCP<Map<LO,GO,NO> > &map,
                                    RCP<Matrix<SC,LO,GO,NO> > &localSubdomainMatrix)
+#else
+    template <class SC,class NO>
+    int UpdateLocalSubdomainMatrix(RCP<Matrix<SC,NO> > globalMatrix,
+                                   RCP<Map<NO> > &map,
+                                   RCP<Matrix<SC,NO> > &localSubdomainMatrix)
+#endif
     {
         FROSCH_TIMER_START(updateLocalSubdomainMatrixTime,"UpdateLocalSubdomainMatrix");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Matrix<SC,LO,GO,NO> > subdomainMatrix = MatrixFactory<SC,LO,GO,NO>::Build(map,2*globalMatrix->getGlobalMaxNumRowEntries());
         RCP<Import<LO,GO,NO> > scatter = ImportFactory<LO,GO,NO>::Build(globalMatrix->getRowMap(),map);
+#else
+        RCP<Matrix<SC,NO> > subdomainMatrix = MatrixFactory<SC,NO>::Build(map,2*globalMatrix->getGlobalMaxNumRowEntries());
+        RCP<Import<NO> > scatter = ImportFactory<NO>::Build(globalMatrix->getRowMap(),map);
+#endif
         subdomainMatrix->doImport(*globalMatrix,*scatter,ADD);
 
         localSubdomainMatrix->resumeFill();
@@ -158,18 +202,35 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int BuildSubmatrices(RCP<const Matrix<SC,LO,GO,NO> > k,
+#else
+    template <class SC,class NO>
+    int BuildSubmatrices(RCP<const Matrix<SC,NO> > k,
+#endif
                          ArrayView<GO> indI,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          RCP<Matrix<SC,LO,GO,NO> > &kII,
                          RCP<Matrix<SC,LO,GO,NO> > &kIJ,
                          RCP<Matrix<SC,LO,GO,NO> > &kJI,
                          RCP<Matrix<SC,LO,GO,NO> > &kJJ)
+#else
+                         RCP<Matrix<SC,NO> > &kII,
+                         RCP<Matrix<SC,NO> > &kIJ,
+                         RCP<Matrix<SC,NO> > &kJI,
+                         RCP<Matrix<SC,NO> > &kJJ)
+#endif
     {
         FROSCH_TIMER_START(buildSubmatricesTime,"BuildSubmatrices");
         // We need four Maps
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > mapI = MapFactory<LO,GO,NO>::Build(k->getRowMap()->lib(),-1,indI(),0,k->getRowMap()->getComm());
         RCP<Map<LO,GO,NO> > mapILocal = MapFactory<LO,GO,NO>::Build(k->getRowMap()->lib(),-1,indI.size(),0,k->getRowMap()->getComm());
+#else
+        RCP<Map<NO> > mapI = MapFactory<NO>::Build(k->getRowMap()->lib(),-1,indI(),0,k->getRowMap()->getComm());
+        RCP<Map<NO> > mapILocal = MapFactory<NO>::Build(k->getRowMap()->lib(),-1,indI.size(),0,k->getRowMap()->getComm());
+#endif
 
         Array<GO> indJ;
         for (unsigned i=0; i<k->getNodeNumRows(); i++) {
@@ -178,6 +239,7 @@ namespace FROSch {
             }
         }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > mapJ = MapFactory<LO,GO,NO>::Build(k->getRowMap()->lib(),-1,indJ(),0,k->getRowMap()->getComm());
         RCP<Map<LO,GO,NO> > mapJLocal = MapFactory<LO,GO,NO>::Build(k->getRowMap()->lib(),-1,indJ.size(),0,k->getRowMap()->getComm());
         RCP<const Map<LO,GO,NO> > colMap = k->getColMap();
@@ -185,6 +247,15 @@ namespace FROSch {
         kIJ = MatrixFactory<SC,LO,GO,NO>::Build(mapILocal,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indJ.size()));
         kJI = MatrixFactory<SC,LO,GO,NO>::Build(mapJLocal,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indI.size()));
         kJJ = MatrixFactory<SC,LO,GO,NO>::Build(mapJLocal,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indJ.size()));
+#else
+        RCP<Map<NO> > mapJ = MapFactory<NO>::Build(k->getRowMap()->lib(),-1,indJ(),0,k->getRowMap()->getComm());
+        RCP<Map<NO> > mapJLocal = MapFactory<NO>::Build(k->getRowMap()->lib(),-1,indJ.size(),0,k->getRowMap()->getComm());
+        RCP<const Map<NO> > colMap = k->getColMap();
+        kII = MatrixFactory<SC,NO>::Build(mapILocal,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indI.size()));
+        kIJ = MatrixFactory<SC,NO>::Build(mapILocal,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indJ.size()));
+        kJI = MatrixFactory<SC,NO>::Build(mapJLocal,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indI.size()));
+        kJJ = MatrixFactory<SC,NO>::Build(mapJLocal,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indJ.size()));
+#endif
 
         for (unsigned i=0; i<k->getNodeNumRows(); i++) {
             ArrayView<const LO> indices;
@@ -238,16 +309,33 @@ namespace FROSch {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int BuildSubmatrix(RCP<Matrix<SC,LO,GO,NO> > k,
+#else
+    template <class SC,class NO>
+    int BuildSubmatrix(RCP<Matrix<SC,NO> > k,
+#endif
                        ArrayView<GO> indI,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        RCP<Matrix<SC,LO,GO,NO> > &kII)
+#else
+                       RCP<Matrix<SC,NO> > &kII)
+#endif
     {
         FROSCH_TIMER_START(buildSubmatrixTime,"BuildSubmatrix");
         //RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(std::cout));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > mapI = MapFactory<LO,GO,NO>::Build(k->getRowMap()->lib(),-1,indI(),0,k->getRowMap()->getComm());
+#else
+        RCP<Map<NO> > mapI = MapFactory<NO>::Build(k->getRowMap()->lib(),-1,indI(),0,k->getRowMap()->getComm());
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         kII = MatrixFactory<SC,LO,GO,NO>::Build(mapI,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indI.size()));
+#else
+        kII = MatrixFactory<SC,NO>::Build(mapI,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indI.size()));
+#endif
         GO maxGID = mapI->getMaxAllGlobalIndex();
         GO minGID = mapI->getMinAllGlobalIndex();
         for (unsigned i=0; i<k->getNodeNumRows(); i++) {
@@ -278,16 +366,33 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     int BuildSubgraph(RCP<CrsGraph<LO,GO,NO> > k,
+#else
+    template <class NO>
+    int BuildSubgraph(RCP<CrsGraph<NO> > k,
+#endif
                       ArrayView<GO> indI,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       RCP<CrsGraph<LO,GO,NO> > &kII)
+#else
+                      RCP<CrsGraph<NO> > &kII)
+#endif
     {
         FROSCH_TIMER_START(buildSubgraphTime,"BuildSubgraph");
         //RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(std::cout));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > mapI = MapFactory<LO,GO,NO>::Build(k->getRowMap()->lib(),-1,indI(),0,k->getRowMap()->getComm());
+#else
+        RCP<Map<NO> > mapI = MapFactory<NO>::Build(k->getRowMap()->lib(),-1,indI(),0,k->getRowMap()->getComm());
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         kII = CrsGraphFactory<LO,GO,NO>::Build(mapI,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indI.size()));
+#else
+        kII = CrsGraphFactory<NO>::Build(mapI,std::min((LO) k->getGlobalMaxNumRowEntries(),(LO) indI.size()));
+#endif
         GO maxGID = mapI->getMaxAllGlobalIndex();
         GO minGID = mapI->getMinAllGlobalIndex();
         for (unsigned i=0; i<k->getNodeNumRows(); i++) {

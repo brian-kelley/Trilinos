@@ -86,7 +86,11 @@ namespace Strided {
   * \note <code> numGlobals % numVars == 0 </code>
   */
 void buildSubMaps(GO numGlobals,int numVars,const Teuchos::Comm<int> & comm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > & subMaps);
+#else
+                  std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > & subMaps);
+#endif
 
 /** Build maps to make other conversions. This functions build maps assuming
   * that there are number of variables and you want to break them all up
@@ -108,7 +112,11 @@ void buildSubMaps(GO numGlobals,int numVars,const Teuchos::Comm<int> & comm,
   * \note <code> numGlobals % sum(vars) == 0 </code>
   */
 void buildSubMaps(GO numGlobals,const std::vector<int> & vars,const Teuchos::Comm<int> & comm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > & subMaps);
+#else
+                  std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > & subMaps);
+#endif
 
 /** Build maps to make other conversions. This functions build maps assuming
   * that there are number of variables and you want to break them all up
@@ -132,7 +140,11 @@ void buildSubMaps(GO numGlobals,const std::vector<int> & vars,const Teuchos::Com
   * \note <code> numGlobals % sum(vars) == 0 </code>
   */
 void buildSubMaps(GO numGlobals,LO numMyElements,GO minMyGID,const std::vector<int> & vars,const Teuchos::Comm<int> & comm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > & subMaps);
+#else
+                  std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > & subMaps);
+#endif
 
 /** Build maps to make other conversions. This functions build maps assuming
   * that there are number of variables and you want to break them all up
@@ -154,40 +166,82 @@ void buildSubMaps(GO numGlobals,LO numMyElements,GO minMyGID,const std::vector<i
   *
   * \note <code> numGlobals % sum(vars) == 0 </code>
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void buildSubMaps(const Tpetra::Map<LO,GO,NT> & globalMap,const std::vector<int> & vars,const Teuchos::Comm<int> & comm,
                   std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > & subMaps);
+#else
+void buildSubMaps(const Tpetra::Map<NT> & globalMap,const std::vector<int> & vars,const Teuchos::Comm<int> & comm,
+                  std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > & subMaps);
+#endif
 
 // build conversion import and export operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void buildExportImport(const Tpetra::Map<LO,GO,NT> & baseMap, 
                        const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > & subMaps,
                        std::vector<Teuchos::RCP<Tpetra::Export<LO,GO,NT> > > & subExport,
                        std::vector<Teuchos::RCP<Tpetra::Import<LO,GO,NT> > > & subImport);
+#else
+void buildExportImport(const Tpetra::Map<NT> & baseMap, 
+                       const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > & subMaps,
+                       std::vector<Teuchos::RCP<Tpetra::Export<NT> > > & subExport,
+                       std::vector<Teuchos::RCP<Tpetra::Import<NT> > > & subImport);
+#endif
 
 // build a vector of subVectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void buildSubVectors(const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > & subMaps,
                      std::vector<Teuchos::RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > & subVectors,LO count);
+#else
+void buildSubVectors(const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > & subMaps,
+                     std::vector<Teuchos::RCP<Tpetra::MultiVector<ST,NT> > > & subVectors,LO count);
+#endif
 
 /** Associate a set of multi-vectors with a set of sub maps (this modifies the "extra data"
   * of the subVectors to contain info about the maps.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void associateSubVectors(const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > & subMaps,
                          std::vector<Teuchos::RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > > & subVectors);
+#else
+void associateSubVectors(const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > & subMaps,
+                         std::vector<Teuchos::RCP<const Tpetra::MultiVector<ST,NT> > > & subVectors);
+#endif
 
 // build a single subblock Epetra_CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > buildSubBlock(int i,int j,const Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> >& A,
                                              const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > & subMaps);
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST,NT> > buildSubBlock(int i,int j,const Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> >& A,
+                                             const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > & subMaps);
+#endif
 
 // Rebuild a single subblock of a matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void rebuildSubBlock(int i,int j,const Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> >& A,
                      const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > & subMaps,Tpetra::CrsMatrix<ST,LO,GO,NT> & mat);
+#else
+void rebuildSubBlock(int i,int j,const Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> >& A,
+                     const std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > & subMaps,Tpetra::CrsMatrix<ST,NT> & mat);
+#endif
 
 // copy contents of many subvectors to a single vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void many2one(Tpetra::MultiVector<ST,LO,GO,NT> & one, const std::vector<Teuchos::RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > > & many,
               const std::vector<Teuchos::RCP<Tpetra::Export<LO,GO,NT> > > & subExport);
+#else
+void many2one(Tpetra::MultiVector<ST,NT> & one, const std::vector<Teuchos::RCP<const Tpetra::MultiVector<ST,NT> > > & many,
+              const std::vector<Teuchos::RCP<Tpetra::Export<NT> > > & subExport);
+#endif
 
 // copy contents of a single vector to many subvectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void one2many(std::vector<Teuchos::RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > & many,const Tpetra::MultiVector<ST,LO,GO,NT> & single,
               const std::vector<Teuchos::RCP<Tpetra::Import<LO,GO,NT> > > & subImport);
+#else
+void one2many(std::vector<Teuchos::RCP<Tpetra::MultiVector<ST,NT> > > & many,const Tpetra::MultiVector<ST,NT> & single,
+              const std::vector<Teuchos::RCP<Tpetra::Import<NT> > > & subImport);
+#endif
 
 }
 } // end namespace TpetraHelpers

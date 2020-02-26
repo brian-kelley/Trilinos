@@ -113,10 +113,21 @@ void print_crs_graph(std::string name, const V1 rowptr, const V2 colind) {
 #if defined(HAVE_MUELU_MAGMASPARSE) && defined(HAVE_MUELU_TPETRA)
 #include <magma_v2.h>
 #include <magmasparse.h>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template<typename Scalar, typename Node>
+#endif
 class MagmaSparse_SpmV_Pack {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> vector_type;
+#else
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::MultiVector<Scalar,Node> vector_type;
+#endif
 
 public:
   MagmaSparse_SpmV_Pack (const crs_matrix_type& A,
@@ -130,12 +141,21 @@ public:
 };
 
 template<typename LocalOrdinal, typename GlobalOrdinal>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class MagmaSparse_SpmV_Pack<double,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosCudaWrapperNode> {
+#else
+class MagmaSparse_SpmV_Pack<double,Kokkos::Compat::KokkosCudaWrapperNode> {
+#endif
   // typedefs shared among other TPLs
   typedef double Scalar;
   typedef typename Kokkos::Compat::KokkosCudaWrapperNode Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> vector_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::MultiVector<Scalar,Node> vector_type;
+#endif
   typedef typename crs_matrix_type::local_matrix_type    KCRS;
   typedef typename KCRS::StaticCrsGraphType              graph_t;
   typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -245,10 +265,21 @@ private:
 // CuSparse Testing
 // =========================================================================
 #if defined(HAVE_MUELU_CUSPARSE) && defined(HAVE_MUELU_TPETRA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template<typename Scalar, typename Node>
+#endif
 class CuSparse_SpmV_Pack {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> vector_type;
+#else
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::MultiVector<Scalar,Node> vector_type;
+#endif
 
 public:
   CuSparse_SpmV_Pack (const crs_matrix_type& A,
@@ -262,12 +293,21 @@ public:
 };
 
 template<typename LocalOrdinal, typename GlobalOrdinal>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class CuSparse_SpmV_Pack<double,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosCudaWrapperNode> {
+#else
+class CuSparse_SpmV_Pack<double,Kokkos::Compat::KokkosCudaWrapperNode> {
+#endif
   // typedefs shared among other TPLs
   typedef double Scalar;
   typedef typename Kokkos::Compat::KokkosCudaWrapperNode Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> vector_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::MultiVector<Scalar,Node> vector_type;
+#endif
   typedef typename crs_matrix_type::local_matrix_type    KCRS;
   typedef typename KCRS::StaticCrsGraphType              graph_t;
   typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -434,14 +474,24 @@ void MV_MKL(sparse_matrix_t & AMKL, double * x, double * y) {
 // Tpetra Kernel Testing
 // =========================================================================
 #if defined(HAVE_MUELU_TPETRA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MV_Tpetra(const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,  const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &x,   Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &y) {
+#else
+template<class Scalar, class Node>
+void MV_Tpetra(const Tpetra::CrsMatrix<Scalar,Node> &A,  const Tpetra::MultiVector<Scalar,Node> &x,   Tpetra::MultiVector<Scalar,Node> &y) {
+#endif
   A.apply(x,y);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MV_KK(const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,  const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &x,   Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &y) {
+#else
+template<class Scalar, class Node>
+void MV_KK(const Tpetra::CrsMatrix<Scalar,Node> &A,  const Tpetra::MultiVector<Scalar,Node> &x,   Tpetra::MultiVector<Scalar,Node> &y) {
+#endif
   typedef typename Node::device_type device_type;
   const auto& AK = A.getLocalMatrix();
   auto X_lcl = x.template getLocalView<device_type> ();
@@ -453,7 +503,11 @@ void MV_KK(const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,  
 // =========================================================================
 // =========================================================================
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -527,7 +581,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
     std::ostringstream galeriStream;
     std::string rhsFile,coordFile,nullFile, materialFile; //unused
     typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
     RCP<RealValuedMultiVector> coordinates;
     RCP<MultiVector> nullspace, material, x, b;
     RCP<Matrix> A;
@@ -544,7 +602,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
       TEUCHOS_TEST_FOR_EXCEPTION(true,std::runtime_error,"The Kokkos-Kernels matvec kernel cannot be run with more than one rank.");
 
     // Load the matrix off disk (or generate it via Galeri), assuming only one right hand side is loaded.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MatrixLoad<SC,LO,GO,NO>(comm, lib, binaryFormat, matrixFile, rhsFile, rowMapFile, colMapFile, domainMapFile, rangeMapFile, coordFile, nullFile, materialFile, map, A, coordinates, nullspace, material, x, b, 1, galeriParameters, xpetraParameters, galeriStream);
+#else
+    MatrixLoad<SC,NO>(comm, lib, binaryFormat, matrixFile, rhsFile, rowMapFile, colMapFile, domainMapFile, rangeMapFile, coordFile, nullFile, materialFile, map, A, coordinates, nullspace, material, x, b, 1, galeriParameters, xpetraParameters, galeriStream);
+#endif
 
     #ifndef HAVE_MUELU_MKL
     if (do_mkl) {
@@ -634,16 +696,26 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
     comm->barrier();
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MultiVector> y = Xpetra::VectorFactory<SC,LO,GO,Node>::Build(A->getRowMap());
     RCP<MultiVector> y_baseline = Xpetra::VectorFactory<SC,LO,GO,Node>::Build(A->getRowMap());
+#else
+    RCP<MultiVector> y = Xpetra::VectorFactory<SC,Node>::Build(A->getRowMap());
+    RCP<MultiVector> y_baseline = Xpetra::VectorFactory<SC,Node>::Build(A->getRowMap());
+#endif
     x->putScalar(Teuchos::ScalarTraits<Scalar>::one());
     y->putScalar(Teuchos::ScalarTraits<Scalar>::nan());
     y_baseline->putScalar(Teuchos::ScalarTraits<Scalar>::nan());
 
 
 #ifdef HAVE_MUELU_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
     typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> vector_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+    typedef Tpetra::MultiVector<Scalar,Node> vector_type;
+#endif
     RCP<const crs_matrix_type> At;
     vector_type xt;
     vector_type yt;
@@ -661,12 +733,20 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
     if(!comm->getRank()) printf("DEBUG: A's importer has %d total permutes globally\n",(int)g_permutes);
 
   #if defined(HAVE_MUELU_CUSPARSE)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CuSparse_SpmV_Pack<SC,LO,GO,Node> CuSparse_thing_t;
+#else
+    typedef CuSparse_SpmV_Pack<SC,Node> CuSparse_thing_t;
+#endif
     CuSparse_thing_t cusparse_spmv(*At, xt, yt);
   #endif
 
   #if defined(HAVE_MUELU_MAGMASPARSE)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MagmaSparse_SpmV_Pack<SC,LO,GO,Node> MagmaSparse_thing_t;
+#else
+    typedef MagmaSparse_SpmV_Pack<SC,Node> MagmaSparse_thing_t;
+#endif
     MagmaSparse_thing_t magmasparse_spmv(*At, xt, yt);
   #endif
   #if defined(HAVE_MUELU_MKL)

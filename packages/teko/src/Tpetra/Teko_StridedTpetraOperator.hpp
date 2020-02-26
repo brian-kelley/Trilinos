@@ -68,23 +68,43 @@ class StridedTpetraOperator : public TpetraOperatorWrapper {
 public:
    enum eNormType { Inf, One, Frobenius};
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    StridedTpetraOperator(int numVars,const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & content,
+#else
+   StridedTpetraOperator(int numVars,const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & content,
+#endif
                          const std::string & label="<ANYM>");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    StridedTpetraOperator(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & content,
+#else
+   StridedTpetraOperator(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & content,
+#endif
                          const std::string & label="<ANYM>");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void SetContent(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & content);
+#else
+   virtual void SetContent(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & content);
+#endif
 
    virtual void RebuildOps()
    { BuildBlockedOperator(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > GetContent() const
+#else
+   virtual const Teuchos::RCP<const Tpetra::Operator<ST,NT> > GetContent() const
+#endif
    { return fullContent_; }
 
    // virtual const Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > GetContent()
    // { return fullContent_; }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > GetBlock(int i,int j) const;
+#else
+   const Teuchos::RCP<const Tpetra::Operator<ST,NT> > GetBlock(int i,int j) const;
+#endif
 
    /** Use a reorder manager to block this operator as desired.
      * Multiple calls to the function reorder only the underlying object. 
@@ -119,7 +139,11 @@ public:
    virtual int SetUseTranspose(bool /* useTranspose */)
    { return -1; }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual int applyInverse(const Tpetra::MultiVector<ST,LO,GO,NT>  &/* X */, Tpetra::MultiVector<ST,LO,GO,NT>  &/* Y */) const
+#else
+   virtual int applyInverse(const Tpetra::MultiVector<ST,NT>  &/* X */, Tpetra::MultiVector<ST,NT>  &/* Y */) const
+#endif
    { TEUCHOS_ASSERT(false); return -1; }
 
    virtual ST NormInf() const
@@ -136,7 +160,11 @@ public:
 
 protected:
    // gooey center of this shell
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > fullContent_;
+#else
+   Teuchos::RCP<const Tpetra::Operator<ST,NT> > fullContent_;
+#endif
    Teuchos::RCP<TpetraStridedMappingStrategy> stridedMapping_;
    Teuchos::RCP<Thyra::LinearOpBase<ST> > stridedOperator_;
    Teuchos::RCP<const BlockReorderManager> reorderManager_;

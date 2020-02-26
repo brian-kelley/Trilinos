@@ -150,10 +150,18 @@ namespace Belos {
         typedef global_ordinal_type GO;
         typedef node_type NT;
         RCP<const map_type> rowMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           createUniformContigMapWithNode<LO, GO, NT> (numRows, comm_);
+#else
+          createUniformContigMapWithNode<NT> (numRows, comm_);
+#endif
         RCP<const map_type> rangeMap = rowMap;
         RCP<const map_type> domainMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           createUniformContigMapWithNode<LO, GO, NT> (numCols, comm_);
+#else
+          createUniformContigMapWithNode<NT> (numCols, comm_);
+#endif
 
         // Convert the read-in matrix data into a Tpetra::CrsMatrix.
         typedef ArrayView<const int>::size_type size_type;
@@ -678,11 +686,19 @@ namespace Belos {
         typedef local_ordinal_type LO;
         typedef global_ordinal_type GO;
         typedef node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef ::Tpetra::Map<LO, GO, NT> map_type;
+#else
+        typedef ::Tpetra::Map<NT> map_type;
+#endif
 
         // For a square matrix, we only need a Map for the range of the matrix.
         RCP<const map_type> pRangeMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           createUniformContigMapWithNode<LO, GO, NT> (globalNumRows, comm_);
+#else
+          createUniformContigMapWithNode<NT> (globalNumRows, comm_);
+#endif
         // The sparse matrix object to fill.
         RCP<sparse_matrix_type> pMat = rcp (new sparse_matrix_type (pRangeMap, 0));
 
@@ -729,11 +745,19 @@ namespace Belos {
         typedef typename SparseMatrixType::local_ordinal_type LO;
         typedef typename SparseMatrixType::global_ordinal_type GO;
         typedef typename SparseMatrixType::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef ::Tpetra::Map<LO, GO, NT> map_type;
+#else
+        typedef ::Tpetra::Map<NT> map_type;
+#endif
 
         // For a square matrix, we only need a Map for the range of the matrix.
         RCP<const map_type> pRangeMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           createUniformContigMapWithNode<LO, GO, NT> (globalNumRows, comm_);
+#else
+          createUniformContigMapWithNode<NT> (globalNumRows, comm_);
+#endif
 
         // The sparse matrix object to fill.
         RCP<sparse_matrix_type> pMat = rcp (new sparse_matrix_type (pRangeMap, 0));

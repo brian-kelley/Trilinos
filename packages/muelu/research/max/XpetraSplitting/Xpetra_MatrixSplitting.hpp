@@ -159,8 +159,13 @@ template <class Scalar        = Operator<>::scalar_type,
     class Node          = typename Operator<LocalOrdinal, GlobalOrdinal>::node_type,
     UnderlyingLib lib   = Xpetra::UseEpetra,
     bool collapse       = false>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class MatrixSplitting : public Matrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > {
+#else
+class MatrixSplitting : public Matrix< Scalar, Node > {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> Map;
   typedef Xpetra::Matrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > Matrix;
   typedef Xpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node> CrsGraph;
@@ -168,11 +173,25 @@ class MatrixSplitting : public Matrix< Scalar, LocalOrdinal, GlobalOrdinal, Node
   typedef Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> CrsMatrixWrap;
   typedef Xpetra::CrsMatrixFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> CrsMatrixFactory;
   typedef Xpetra::MatrixView<Scalar, LocalOrdinal, GlobalOrdinal, Node> MatrixView;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::Matrix< Scalar, Node > Matrix;
+  typedef Xpetra::CrsGraph<Node> CrsGraph;
+  typedef Xpetra::CrsMatrix<Scalar, Node> CrsMatrix;
+  typedef Xpetra::CrsMatrixWrap<Scalar, Node> CrsMatrixWrap;
+  typedef Xpetra::CrsMatrixFactory<Scalar, Node> CrsMatrixFactory;
+  typedef Xpetra::MatrixView<Scalar, Node> MatrixView;
+#endif
 
   //Xpetra structures must be converted into Tpetra specialized ones to construct an Ifpack2::OverlappingRowMatrix object
   //Once the Ifpack2::OverlappingRowMatrix class is transferred into the Xpetra directory, the following 6 lines can be changed/removed
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> tpetra_crs_matrix;
   typedef Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> tpetra_row_matrix;
+#else
+  typedef Tpetra::CrsMatrix<Scalar, Node> tpetra_crs_matrix;
+  typedef Tpetra::RowMatrix<Scalar, Node> tpetra_row_matrix;
+#endif
 
 public:
 
@@ -187,7 +206,11 @@ public:
   //
   //
   MatrixSplitting(const char* matrix_file_name,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Xpetra::RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node> > regionHandler,
+#else
+      Teuchos::RCP<Xpetra::RegionHandler<Scalar, Node> > regionHandler,
+#endif
       RCP<const Teuchos::Comm<int> > comm
       )
   {
@@ -206,15 +229,24 @@ public:
     //Create Xpetra map for composite stiffness matrix
     if(comm_->getRank()==0)
       std::cout<<"Starting construction of Composite Map"<<std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Map<int,GlobalOrdinal,Node> > xpetraMap;
     xpetraMap = Xpetra::MapFactory<int,GlobalOrdinal,Node>::Build(lib, num_total_elements_, elementlist, 0, comm);
+#else
+    RCP<const Xpetra::Map<Node> > xpetraMap;
+    xpetraMap = Xpetra::MapFactory<Node>::Build(lib, num_total_elements_, elementlist, 0, comm);
+#endif
     if(comm_->getRank()==0)
       std::cout<<"Finished construction of Composite Map"<<std::endl;
 
     if(comm_->getRank()==0)
       std::cout<<"Started reading composite matrix"<<std::endl;
     //Import matrix from an .mm file into an Xpetra wrapper for an Epetra matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     compositeMatrixData_ = Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Read(matrix_file_name, xpetraMap);
+#else
+    compositeMatrixData_ = Xpetra::IO<Scalar,Node>::Read(matrix_file_name, xpetraMap);
+#endif
     if(comm_->getRank()==0)
       std::cout<<"Finished reading composite matrix"<<std::endl;
 
@@ -466,7 +498,11 @@ public:
   //! \brief Get a copy of the diagonal entries owned by this node, with local row idices.
   /*! Returns a distributed Vector object partitioned according to this matrix's row map, containing the
 		  the zero and non-zero diagonals owned by this node. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void getLocalDiagCopy(Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &diag) const {
+#else
+  void getLocalDiagCopy(Xpetra::Vector<Scalar,Node> &diag) const {
+#endif
     compositeMatrixData_->getLocalDiagCopy(diag);
   }
 
@@ -476,7 +512,11 @@ public:
   }
 
   //! Get a copy of the diagonal entries owned by this node, with local row indices, using row offsets.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void getLocalDiagCopy(Xpetra::Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &diag, const ArrayView<const size_t> &offsets) const {
+#else
+  void getLocalDiagCopy(Xpetra::Vector< Scalar, Node > &diag, const ArrayView<const size_t> &offsets) const {
+#endif
     compositeMatrixData_->getLocalDiagCopy(diag,offsets);
   }
 
@@ -486,12 +526,20 @@ public:
   }
 
   //! Left scale matrix using the given vector entries
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void leftScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) {
+#else
+  void leftScale (const Vector<Scalar, Node>& x) {
+#endif
     compositeMatrixData_->leftScale(x);
   }
 
   //! Neighbor2 scale matrix using the given vector entries
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void rightScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) {
+#else
+  void rightScale (const Vector<Scalar, Node>& x) {
+#endif
     compositeMatrixData_->rightScale(x);
   }
 
@@ -509,8 +557,13 @@ public:
   /*! Performs \f$Y = \alpha A^{\textrm{mode}} X + \beta Y\f$, with one special exceptions:
 		- if <tt>beta == 0</tt>, apply() overwrites \c Y, so that any values in \c Y (including NaNs) are ignored.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void apply(const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X,
       Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y,
+#else
+  virtual void apply(const Xpetra::MultiVector<Scalar,Node>& X,
+      Xpetra::MultiVector<Scalar,Node>& Y,
+#endif
       Teuchos::ETransp mode = Teuchos::NO_TRANS,
       Scalar alpha = ScalarTraits<Scalar>::one(),
       Scalar beta = ScalarTraits<Scalar>::zero()) const {
@@ -520,13 +573,21 @@ public:
 
   //! \brief Returns the Map associated with the domain of this operator.
   //! This will be <tt>null</tt> until fillComplete() is called.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const {
+#else
+  RCP<const Xpetra::Map<Node> > getDomainMap() const {
+#endif
     return compositeMatrixData_->getDomainMap();
   }
 
   //! Returns the Map associated with the domain of this operator.
   //! This will be <tt>null</tt> until fillComplete() is called.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const {
+#else
+  RCP<const Xpetra::Map<Node> > getRangeMap() const {
+#endif
     return compositeMatrixData_->getRangeMap();
   }
 
@@ -553,13 +614,21 @@ public:
   //{@
 
   //! Access function for the Tpetra::Map this DistObject was constructed with.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP< const Xpetra::Map< LocalOrdinal, GlobalOrdinal, Node > > getMap() const {
+#else
+  const RCP< const Xpetra::Map<Node > > getMap() const {
+#endif
     return compositeMatrixData_->getMap();
   }
 
   //! Import.
   void doImport(const Matrix &source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Xpetra::Import< LocalOrdinal, GlobalOrdinal, Node > &importer, CombineMode CM) {
+#else
+      const Xpetra::Import<Node > &importer, CombineMode CM) {
+#endif
     std::cout<<"Import not implemented"<<std::endl;
     //const MatrixSplitting & sourceWrp = dynamic_cast<const MatrixSplitting &>(source);
     //compositeMatrixData_->doImport(*sourceWrp.getCrsMatrix(), importer, CM);
@@ -567,7 +636,11 @@ public:
 
   //! Export.
   void doExport(const Matrix &dest,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Xpetra::Import< LocalOrdinal, GlobalOrdinal, Node >& importer, CombineMode CM) {
+#else
+      const Xpetra::Import<Node >& importer, CombineMode CM) {
+#endif
     std::cout<<"Export not implemented"<<std::endl;
     //const MatrixSplitting & destWrp = dynamic_cast<const MatrixSplitting &>(dest);
     //compositeMatrixData_->doExport(*destWrp.getCrsMatrix(), importer, CM);
@@ -575,7 +648,11 @@ public:
 
   //! Import (using an Exporter).
   void doImport(const Matrix &source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Xpetra::Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) {
+#else
+      const Xpetra::Export<Node >& exporter, CombineMode CM) {
+#endif
     std::cout<<"Import not implemented"<<std::endl;
     //const MatrixSplitting & sourceWrp = dynamic_cast<const MatrixSplitting &>(source);
     //compositeMatrixData_->doImport(*sourceWrp.getCrsMatrix(), exporter, CM);
@@ -583,7 +660,11 @@ public:
 
   //! Export (using an Importer).
   void doExport(const Matrix &dest,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Xpetra::Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) {
+#else
+      const Xpetra::Export<Node >& exporter, CombineMode CM) {
+#endif
     std::cout<<"Export not implemented"<<std::endl;
     //const MatrixSplitting & destWrp = dynamic_cast<const MatrixSplitting &>(dest);
     //compositeMatrixData_->doExport(*destWrp.getCrsMatrix(), exporter, CM);
@@ -629,7 +710,11 @@ public:
 		        }
 
   //! Return a ppointer to the underlying regionHandler object used for the matrix splitting
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node> > getRegionHandler() const
+#else
+  RCP<RegionHandler<Scalar, Node> > getRegionHandler() const
+#endif
 		        {
     return regionHandler_;
 		        }
@@ -641,7 +726,11 @@ public:
   {
     std::string file_name;
     file_name += "./output/A_composite.mm";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Write(file_name, *compositeMatrixData_);
+#else
+    Xpetra::IO<Scalar,Node>::Write(file_name, *compositeMatrixData_);
+#endif
   }
 
 
@@ -654,7 +743,11 @@ public:
       file_name += "./output/A_region_";
       file_name += region_str;
       file_name += ".mm";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Write(file_name.c_str(), *regionMatrixData_[i]);
+#else
+      Xpetra::IO<Scalar,Node>::Write(file_name.c_str(), *regionMatrixData_[i]);
+#endif
     }
   }
   // @}
@@ -693,7 +786,11 @@ private:
     TEUCHOS_TEST_FOR_EXCEPTION( num_total_regions_!=regionMatrixData_.size(), Exceptions::RuntimeError, "Number of regions does not match with the size of regionMatrixData_ structure \n");
     RCP<Matrix> region_matrix = regionMatrixData_[region_idx];
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<tpetra_crs_matrix > tpetraGlobalMatrix = MueLu::Utilities<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Op2NonConstTpetraCrs(compositeMatrixData_);
+#else
+    RCP<tpetra_crs_matrix > tpetraGlobalMatrix = MueLu::Utilities<Scalar, Node>::Op2NonConstTpetraCrs(compositeMatrixData_);
+#endif
     Ifpack2::OverlappingRowMatrix<tpetra_row_matrix> enlargedMatrix(tpetraGlobalMatrix, 2);
 
     region_matrix->resumeFill();
@@ -1423,15 +1520,24 @@ private:
     for( int i = 0; i<num_total_regions_; ++i )
     {
       //Create Xpetra map for region stiffness matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Xpetra::Map<int,GlobalOrdinal,Node> > xpetraMap;
       xpetraMap = Xpetra::MapFactory<int,GlobalOrdinal,Node>::Build(lib, regionHandler_->GetNumRegionNodes(i), region_maps[i], 0, comm_);
+#else
+      RCP<const Xpetra::Map<Node> > xpetraMap;
+      xpetraMap = Xpetra::MapFactory<Node>::Build(lib, regionHandler_->GetNumRegionNodes(i), region_maps[i], 0, comm_);
+#endif
       int num_elements = xpetraMap->getGlobalNumElements();
 
       RCP<CrsMatrix> crs_matrix;
       if( Xpetra::UseEpetra==lib )
         crs_matrix = rcp( new EpetraCrsMatrix(xpetraMap, num_elements) );
       else if( Xpetra::UseTpetra==lib )
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         crs_matrix = rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>( xpetraMap, num_elements ) );
+#else
+        crs_matrix = rcp( new TpetraCrsMatrix<Scalar, Node>( xpetraMap, num_elements ) );
+#endif
       else
         std::cerr<<" The library to build matrices must be either Epetra or Tpetra \n";
 
@@ -1459,7 +1565,11 @@ private:
   RCP<const Teuchos::Comm<int> > comm_;
 
   //! Handling node-to-region mappings etc.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node> > regionHandler_;
+#else
+  RCP<RegionHandler<Scalar, Node> > regionHandler_;
+#endif
 
   //! The original (non-splitted) matrix
   RCP<Matrix> compositeMatrixData_;

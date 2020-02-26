@@ -73,8 +73,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   BlockedDirectSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BlockedDirectSolver()
+#else
+  template <class Scalar, class Node>
+  BlockedDirectSolver<Scalar, Node>::BlockedDirectSolver()
+#endif
     : type_("blocked direct solver")
   {
     MergedAFact_ = Teuchos::rcp(new MergedBlockedMatrixFactory());
@@ -83,8 +88,13 @@ namespace MueLu {
     s_ = Teuchos::rcp(new DirectSolver("", params));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> BlockedDirectSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> BlockedDirectSolver<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A", null, "Generating factory of the matrix A");
@@ -92,8 +102,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlockedDirectSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void BlockedDirectSolver<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     // Note that we have a nested smoother/solver object (of type DirectSolver), so we have to declare the dependencies by hand
     // call DeclareInput by hand, since this->Input(currentLevel, "A") would not properly free A in the release mode (dependencies)
     // We need the blocked version of A as input for the MergedAFact_
@@ -107,8 +122,13 @@ namespace MueLu {
     s_->DeclareInput(currentLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlockedDirectSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(Level &currentLevel) {
+#else
+  template <class Scalar, class Node>
+  void BlockedDirectSolver<Scalar, Node>::Setup(Level &currentLevel) {
+#endif
     RCP<Teuchos::FancyOStream> out = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
 
     FactoryMonitor m(*this, "Setup BlockedDirectSolver", currentLevel);
@@ -126,8 +146,13 @@ namespace MueLu {
     this->IsSetup(true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlockedDirectSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Apply(MultiVector &X, const MultiVector& B, bool InitialGuessIsZero) const {
+#else
+  template <class Scalar, class Node>
+  void BlockedDirectSolver<Scalar, Node>::Apply(MultiVector &X, const MultiVector& B, bool InitialGuessIsZero) const {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(this->IsSetup() == false, Exceptions::RuntimeError,
                                "MueLu::BlockedDirectSolver::Apply(): Setup() has not been called");
 
@@ -175,22 +200,38 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   BlockedDirectSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Copy() const {
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::SmootherPrototype<Scalar, Node> >
+  BlockedDirectSolver<Scalar, Node>::Copy() const {
+#endif
     return rcp (new BlockedDirectSolver (*this));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string BlockedDirectSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string BlockedDirectSolver<Scalar, Node>::description() const {
+#endif
     std::ostringstream out;
     out << SmootherPrototype::description();
     out << "{type = " << type_ << "}";
     return out.str();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlockedDirectSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void BlockedDirectSolver<Scalar, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#endif
     MUELU_DESCRIBE;
 
     if (verbLevel & Parameters0)
@@ -200,8 +241,13 @@ namespace MueLu {
       out0 << "IsSetup: " << Teuchos::toString(SmootherPrototype::IsSetup()) << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t BlockedDirectSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNodeSmootherComplexity() const {
+#else
+  template <class Scalar, class Node>
+  size_t BlockedDirectSolver<Scalar, Node>::getNodeSmootherComplexity() const {
+#endif
     // FIXME: This is a placeholder
     return Teuchos::OrdinalTraits<size_t>::invalid();
   }

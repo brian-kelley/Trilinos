@@ -70,16 +70,28 @@ namespace MueLu {
     All the parameters needed are passed to this class by the StructuredAggregationFactory class.
   */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
            class Node = DefaultNode>
+#else
+  template<class Node = DefaultNode>
+#endif
   class AggregationStructuredAlgorithm_kokkos :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public MueLu::AggregationAlgorithmBase_kokkos<LocalOrdinal,GlobalOrdinal,Node> {
+#else
+    public MueLu::AggregationAlgorithmBase_kokkos<Node> {
+#endif
 #undef MUELU_AGGREGATIONSTRUCTUREDALGORITHM_KOKKOS_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     using local_graph_type       = typename LWGraph_kokkos::local_graph_type;
     using non_const_row_map_type = typename local_graph_type::row_map_type::non_const_type;
     using size_type              = typename local_graph_type::size_type;

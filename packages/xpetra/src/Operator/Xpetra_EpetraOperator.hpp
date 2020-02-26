@@ -73,7 +73,11 @@ namespace Xpetra {
 
 
     //! The Map associated with the domain of this operator, which must be compatible with X.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const 
+#else
+    virtual Teuchos::RCP<const Xpetra::Map<Node> > getDomainMap() const 
+#endif
     {
       XPETRA_MONITOR("EpetraOperator::getDomainMap()");
       return toXpetra<GlobalOrdinal,Node>(op_->OperatorDomainMap());
@@ -81,7 +85,11 @@ namespace Xpetra {
 
 
     //! The Map associated with the range of this operator, which must be compatible with Y.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const 
+#else
+    virtual Teuchos::RCP<const Xpetra::Map<Node> > getRangeMap() const 
+#endif
     {
       XPETRA_MONITOR("EpetraOperator::getRangeMap()");
       return toXpetra<GlobalOrdinal,Node>(op_->OperatorRangeMap());
@@ -95,8 +103,13 @@ namespace Xpetra {
         - if <tt>alpha == 0</tt>, apply() <b>may</b> short-circuit the operator, so that any values in \c X (including NaNs) are ignored.
      */
     virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     apply (const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
            MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+    apply (const MultiVector<Scalar,Node> &X,
+           MultiVector<Scalar,Node> &Y,
+#endif
            Teuchos::ETransp mode = Teuchos::NO_TRANS,
            Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
            Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const 
@@ -157,9 +170,15 @@ namespace Xpetra {
     EpetraOperator(const Teuchos::RCP<Epetra_Operator> &op) : op_(op) { } //TODO removed const
 
     //! Compute a residual R = B - (*this) * X
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void residual(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & X,
                   const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & B,
                   MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & R) const {
+#else
+    void residual(const MultiVector< Scalar, Node > & X,
+                  const MultiVector< Scalar, Node > & B,
+                  MultiVector< Scalar, Node > & R) const {
+#endif
       using STS = Teuchos::ScalarTraits<Scalar>;
       R.update(STS::one(),B,STS::zero());
       this->apply (X, R, Teuchos::NO_TRANS, -STS::one(), STS::one());   

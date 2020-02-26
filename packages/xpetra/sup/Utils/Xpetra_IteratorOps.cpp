@@ -77,9 +77,15 @@ namespace Xpetra {
 #ifndef HAVE_XPETRA_EPETRAEXT
       throw(Xpetra::Exceptions::RuntimeError("Xpetra::IteratorOps::Jacobi requires EpetraExt to be compiled."));
 #else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(A);
       Epetra_CrsMatrix& epB = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(B);
       Epetra_CrsMatrix& epC = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(C);
+#else
+      Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,NO>::Op2NonConstEpetraCrs(A);
+      Epetra_CrsMatrix& epB = Xpetra::Helpers<SC,NO>::Op2NonConstEpetraCrs(B);
+      Epetra_CrsMatrix& epC = Xpetra::Helpers<SC,NO>::Op2NonConstEpetraCrs(C);
+#endif
       // FIXME
       XPETRA_DYNAMIC_CAST(const EpetraVectorT<GO XPETRA_COMMA NO>, Dinv, epD, "Xpetra::IteratorOps::Jacobi() only accepts Xpetra::EpetraVector as input argument.");
 
@@ -107,10 +113,17 @@ namespace Xpetra {
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
       throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra GO=<double,int,int> enabled."));
 # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::CrsMatrix<SC,LO,GO,NO>    & tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
       const Tpetra::CrsMatrix<SC,LO,GO,NO>    & tpB = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(B);
       Tpetra::CrsMatrix<SC,LO,GO,NO>          & tpC = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(C);
       const RCP<Tpetra::Vector<SC,LO,GO,NO> > & tpD = toTpetra(Dinv);
+#else
+      const Tpetra::CrsMatrix<SC,NO>    & tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+      const Tpetra::CrsMatrix<SC,NO>    & tpB = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(B);
+      Tpetra::CrsMatrix<SC,NO>          & tpC = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(C);
+      const RCP<Tpetra::Vector<SC,NO> > & tpD = toTpetra(Dinv);
+#endif
       Tpetra::MatrixMatrix::Jacobi(omega, *tpD, tpA, tpB, tpC, haveMultiplyDoFillComplete, label, params);
 # endif
 #else
@@ -125,8 +138,13 @@ namespace Xpetra {
     }
 
     // transfer striding information
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Matrix<SC,LO,GO,NO> > rcpA = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,LO,GO,NO> >(Teuchos::rcpFromRef(A));
     Teuchos::RCP<Xpetra::Matrix<SC,LO,GO,NO> > rcpB = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,LO,GO,NO> >(Teuchos::rcpFromRef(B));
+#else
+    Teuchos::RCP<Xpetra::Matrix<SC,NO> > rcpA = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,NO> >(Teuchos::rcpFromRef(A));
+    Teuchos::RCP<Xpetra::Matrix<SC,NO> > rcpB = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,NO> >(Teuchos::rcpFromRef(B));
+#endif
     C.CreateView("stridedMaps", rcpA, false, rcpB, false); // TODO use references instead of RCPs
   }
 #endif
@@ -160,9 +178,15 @@ namespace Xpetra {
 #ifndef HAVE_XPETRA_EPETRAEXT
       throw(Xpetra::Exceptions::RuntimeError("Xpetra::IteratorOps::Jacobi requires EpetraExt to be compiled."));
 #else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(A);
       Epetra_CrsMatrix& epB = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(B);
       Epetra_CrsMatrix& epC = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(C);
+#else
+      Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,NO>::Op2NonConstEpetraCrs(A);
+      Epetra_CrsMatrix& epB = Xpetra::Helpers<SC,NO>::Op2NonConstEpetraCrs(B);
+      Epetra_CrsMatrix& epC = Xpetra::Helpers<SC,NO>::Op2NonConstEpetraCrs(C);
+#endif
       // FIXME
       XPETRA_DYNAMIC_CAST(const EpetraVectorT<GO XPETRA_COMMA NO>, Dinv, epD, "Xpetra::IteratorOps::Jacobi() only accepts Xpetra::EpetraVector as input argument.");
 
@@ -190,10 +214,17 @@ namespace Xpetra {
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
       throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra GO=<double,int,long long> enabled."));
 # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::CrsMatrix<SC,LO,GO,NO>    & tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
       const Tpetra::CrsMatrix<SC,LO,GO,NO>    & tpB = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(B);
       Tpetra::CrsMatrix<SC,LO,GO,NO>          & tpC = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(C);
       const RCP<Tpetra::Vector<SC,LO,GO,NO> > & tpD = toTpetra(Dinv);
+#else
+      const Tpetra::CrsMatrix<SC,NO>    & tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+      const Tpetra::CrsMatrix<SC,NO>    & tpB = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(B);
+      Tpetra::CrsMatrix<SC,NO>          & tpC = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(C);
+      const RCP<Tpetra::Vector<SC,NO> > & tpD = toTpetra(Dinv);
+#endif
       Tpetra::MatrixMatrix::Jacobi(omega, *tpD, tpA, tpB, tpC, haveMultiplyDoFillComplete, label, params);
 # endif
 #else
@@ -208,8 +239,13 @@ namespace Xpetra {
     }
 
     // transfer striding information
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Matrix<SC,LO,GO,NO> > rcpA = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,LO,GO,NO> >(Teuchos::rcpFromRef(A));
     Teuchos::RCP<Xpetra::Matrix<SC,LO,GO,NO> > rcpB = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,LO,GO,NO> >(Teuchos::rcpFromRef(B));
+#else
+    Teuchos::RCP<Xpetra::Matrix<SC,NO> > rcpA = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,NO> >(Teuchos::rcpFromRef(A));
+    Teuchos::RCP<Xpetra::Matrix<SC,NO> > rcpB = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,NO> >(Teuchos::rcpFromRef(B));
+#endif
     C.CreateView("stridedMaps", rcpA, false, rcpB, false); // TODO use references instead of RCPs
   }
 #endif

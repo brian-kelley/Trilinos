@@ -74,7 +74,11 @@ template<class LO,
          class GO,
          class Node,
          class DiagOffsetType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 GetGraphDiagOffsets<LO, GO, Node, DiagOffsetType>::
+#else
+GetGraphDiagOffsets<Node, DiagOffsetType>::
+#endif
 GetGraphDiagOffsets (const diag_offsets_type& diagOffsets,
                      const local_map_type& lclRowMap,
                      const local_map_type& lclColMap,
@@ -101,7 +105,11 @@ template<class LO,
          class Node,
          class DiagOffsetType>
 KOKKOS_FUNCTION void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 GetGraphDiagOffsets<LO, GO, Node, DiagOffsetType>::
+#else
+GetGraphDiagOffsets<Node, DiagOffsetType>::
+#endif
 operator() (const LO& lclRowInd) const
 {
   const size_t STINV =
@@ -137,7 +145,12 @@ operator() (const LO& lclRowInd) const
 // Explicit template instantiation macro for
 // Tpetra::Details::Impl::GetGraphDiagOffsets.  NOT FOR USERS!!!  Must
 // be used inside the Tpetra namespace.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DETAILS_IMPL_GETGRAPHDIAGOFFSETS_INSTANT( LO, GO, NODE ) \
   template class Details::Impl::GetGraphDiagOffsets< LO, GO, NODE::device_type >;
+#else
+#define TPETRA_DETAILS_IMPL_GETGRAPHDIAGOFFSETS_INSTANT(NODE ) \
+  template class Details::Impl::GetGraphDiagOffsets<NODE::device_type >;
+#endif
 
 #endif // TPETRA_DETAILS_GETGRAPHDIAGOFFSETS_DEF_HPP

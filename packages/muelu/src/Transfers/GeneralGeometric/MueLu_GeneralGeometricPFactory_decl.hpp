@@ -59,7 +59,11 @@
 
 namespace MueLuTests {
   // Forward declaration of friend tester class used to UnitTest GeneralGeometricPFactory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class GeneralGeometricPFactoryTester;
 }
 
@@ -113,8 +117,10 @@ namespace MueLu {
 
 */
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class GeneralGeometricPFactory : public PFactory {
 #undef MUELU_GENERALGEOMETRICPFACTORY_SHORT
@@ -122,7 +128,13 @@ namespace MueLu {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     friend class MueLuTests::GeneralGeometricPFactoryTester<Scalar,LocalOrdinal,GlobalOrdinal,Node>;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    friend class MueLuTests::GeneralGeometricPFactoryTester<Scalar,Node>;
+#endif
 
     //! @name Constructors/Destructors.
     //@{
@@ -212,11 +224,19 @@ namespace MueLu {
                          Array<Array<GO> >& lCoarseNodesGIDs) const;
 
     void MakeGeneralGeometricP(RCP<GeometricData> myGeo,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                const RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,LO,GO,NO> >& fCoords,
+#else
+                               const RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,NO> >& fCoords,
+#endif
                                const LO nnzP, const LO dofsPerNode,
                                RCP<const Map>& stridedDomainMapP,
                                RCP<Matrix> & Amat, RCP<Matrix>& P,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,LO,GO,NO> >& cCoords,
+#else
+                               RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,NO> >& cCoords,
+#endif
                                RCP<NodesIDs> ghostedCoarseNodes, Array<Array<GO> > coarseNodesGIDs,
                                int interpolationOrder) const;
 

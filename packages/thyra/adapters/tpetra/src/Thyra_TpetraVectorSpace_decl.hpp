@@ -56,23 +56,43 @@ namespace Thyra {
  *
  * \ingroup Tpetra_Thyra_Op_Vec_adapters_grp
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 class TpetraVectorSpace : public SpmdVectorSpaceDefaultBase<Scalar>
 {
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   /** \brief . */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node> this_t;
+#else
+  typedef TpetraVectorSpace<Scalar,Node> this_t;
+#endif
 
   /** @name Constructors and initializers */
   //@{
 
   /** \brief Create with weak ownership to self. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static RCP<TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node> > create();
+#else
+  static RCP<TpetraVectorSpace<Scalar,Node> > create();
+#endif
 
   /** \brief Initialize a serial space. */
   void initialize(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > &tpetraMap
+#else
+    const RCP<const Tpetra::Map<Node> > &tpetraMap
+#endif
     );
 
   //@}
@@ -89,7 +109,11 @@ public:
   RCP< const VectorSpaceBase<Scalar> > clone() const;
 
   /** \brief Get the embedded Tpetra::Map. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  RCP<const Tpetra::Map<Node> >
+#endif
   getTpetraMap() const;
 
   //@}
@@ -133,9 +157,15 @@ private:
   // //////////////////////////////////////
   // Private data members
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > tpetraMap_;
   mutable RCP<TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tpetraDomainSpace_;
   mutable RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tpetraMV_;
+#else
+  RCP<const Tpetra::Map<Node> > tpetraMap_;
+  mutable RCP<TpetraVectorSpace<Scalar,Node> > tpetraDomainSpace_;
+  mutable RCP<Tpetra::MultiVector<Scalar,Node> > tpetraMV_;
+#endif
   // The only reason Thyra needs this comm_ object is because Thyra
   // uses Ordinal as the Comm template parameter, while Tpetra uses
   // int.  Ordinal is some 64-bit type, which doesn't make any sense,
@@ -157,14 +187,28 @@ private:
  *
  * \relates TpetraVectorSpace
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+template <class Scalar, class Node>
+RCP<TpetraVectorSpace<Scalar,Node> >
+#endif
 tpetraVectorSpace(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > &tpetraMap
+#else
+  const RCP<const Tpetra::Map<Node> > &tpetraMap
+#endif
   )
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vs =
     TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::create();
+#else
+  RCP<TpetraVectorSpace<Scalar,Node> > vs =
+    TpetraVectorSpace<Scalar,Node>::create();
+#endif
   vs->initialize(tpetraMap);
   return vs;
 }

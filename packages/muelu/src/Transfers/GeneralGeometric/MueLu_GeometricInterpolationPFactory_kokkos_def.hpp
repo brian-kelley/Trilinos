@@ -58,8 +58,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> GeometricInterpolationPFactory_kokkos<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -86,8 +91,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory_kokkos<Scalar, Node>::
+#endif
   DeclareInput(Level& fineLevel, Level& coarseLevel) const {
     const ParameterList& pL = GetParameterList();
 
@@ -105,14 +115,24 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory_kokkos<Scalar, Node>::
+#endif
   Build(Level& fineLevel, Level &coarseLevel) const {
     return BuildP(fineLevel, coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory_kokkos<Scalar, Node>::
+#endif
   BuildP(Level &fineLevel, Level &coarseLevel) const {
     FactoryMonitor m(*this, "BuildP", coarseLevel);
 
@@ -154,7 +174,11 @@ namespace MueLu {
                                                          geoData->getNumCoarseNodes(),
                                                          fineCoordinates->getMap()->getIndexBase(),
                                                          fineCoordinates->getMap()->getComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       coarseCoordinates = Xpetra::MultiVectorFactory<real_type,LO,GO,Node>::
+#else
+      coarseCoordinates = Xpetra::MultiVectorFactory<real_type,Node>::
+#endif
         Build(coarseCoordsMap, fineCoordinates->getNumVectors());
 
       // Construct and launch functor to fill coarse coordinates values
@@ -178,7 +202,11 @@ namespace MueLu {
       // Compute the prolongator using piece-wise linear interpolation
       // First get all the required coordinates to compute the local part of P
       RCP<realvaluedmultivector_type> ghostCoordinates
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         = Xpetra::MultiVectorFactory<real_type,LO,GO,NO>::Build(prolongatorGraph->getColMap(),
+#else
+        = Xpetra::MultiVectorFactory<real_type,NO>::Build(prolongatorGraph->getColMap(),
+#endif
                                                                 fineCoordinates->getNumVectors());
       RCP<const Import> ghostImporter = ImportFactory::Build(coarseCoordinates->getMap(),
                                                              prolongatorGraph->getColMap());
@@ -212,8 +240,13 @@ namespace MueLu {
 
   } // BuildP
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory_kokkos<Scalar, Node>::
+#endif
   BuildConstantP(RCP<Matrix>& P, RCP<const CrsGraph>& prolongatorGraph, RCP<Matrix>& A) const {
 
     // Set debug outputs based on environment variable
@@ -250,8 +283,13 @@ namespace MueLu {
 
   } // BuildConstantP
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory_kokkos<Scalar, Node>::
+#endif
   BuildLinearP(RCP<Matrix>& A, RCP<const CrsGraph>& prolongatorGraph,
                RCP<realvaluedmultivector_type>& fineCoordinates,
                RCP<realvaluedmultivector_type>& ghostCoordinates,
@@ -364,8 +402,13 @@ namespace MueLu {
   } // BuildLinearP
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory_kokkos<Scalar, Node>::
+#endif
   ComputeLinearInterpolationStencil(const int numDimensions, const int numInterpolationPoints,
                                     const Array<Array<real_type> > coord,
                                     Array<real_type>& stencil) const {
@@ -452,8 +495,13 @@ namespace MueLu {
 
   } // End ComputeLinearInterpolationStencil
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory_kokkos<Scalar, Node>::
+#endif
   GetInterpolationFunctions(const LO numDimensions,
                             const Teuchos::SerialDenseVector<LO, real_type> parametricCoordinates,
                             real_type functions[4][8]) const {
@@ -510,8 +558,13 @@ namespace MueLu {
 
   } // End GetInterpolationFunctions
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  GeometricInterpolationPFactory_kokkos<Scalar, Node>::
+#endif
   coarseCoordinatesBuilderFunctor::coarseCoordinatesBuilderFunctor(RCP<IndexManager_kokkos> geoData,
                                                                    coord_view_type fineCoordView,
                                                                    coord_view_type coarseCoordView)
@@ -519,9 +572,17 @@ namespace MueLu {
 
   } // coarseCoordinatesBuilderFunctor()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   KOKKOS_INLINE_FUNCTION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void GeometricInterpolationPFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  void GeometricInterpolationPFactory_kokkos<Scalar, Node>::
+#endif
   coarseCoordinatesBuilderFunctor::operator() (const LO coarseNodeIdx) const {
 
     LO fineNodeIdx;

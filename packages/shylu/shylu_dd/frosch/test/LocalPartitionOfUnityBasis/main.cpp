@@ -115,16 +115,33 @@ int main(int argc, char *argv[])
         dofs3[i] = 3*i+2;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,NO> > nodesMap = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,nodes(),0,SerialComm);
     RCP<Map<LO,GO,NO> > dofsMap = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,dofs(),0,SerialComm);
     ArrayRCP<RCP<Map<LO,GO,NO> > > dofsMaps (3);
     dofsMaps[0] = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,dofs1(),0,SerialComm);
     dofsMaps[1] = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,dofs2(),0,SerialComm);
     dofsMaps[2] = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,dofs3(),0,SerialComm);
+#else
+    RCP<Map<NO> > nodesMap = MapFactory<NO>::Build(xpetraLib,-1,nodes(),0,SerialComm);
+    RCP<Map<NO> > dofsMap = MapFactory<NO>::Build(xpetraLib,-1,dofs(),0,SerialComm);
+    ArrayRCP<RCP<Map<NO> > > dofsMaps (3);
+    dofsMaps[0] = MapFactory<NO>::Build(xpetraLib,-1,dofs1(),0,SerialComm);
+    dofsMaps[1] = MapFactory<NO>::Build(xpetraLib,-1,dofs2(),0,SerialComm);
+    dofsMaps[2] = MapFactory<NO>::Build(xpetraLib,-1,dofs3(),0,SerialComm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ArrayRCP<RCP<MultiVector<SC,LO,GO,NO> > > partitionOfUnity(2);
+#else
+    ArrayRCP<RCP<MultiVector<SC,NO> > > partitionOfUnity(2);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MultiVector<SC,LO,GO,NO> > tmpVec = MultiVectorFactory<SC,LO,GO,NO>::Build(dofsMap,2);
+#else
+    RCP<MultiVector<SC,NO> > tmpVec = MultiVectorFactory<SC,NO>::Build(dofsMap,2);
+#endif
     tmpVec->replaceLocalValue(dofsMaps[0]->getGlobalElement(nodes[0]),0,ScalarTraits<SC>::one());
     tmpVec->replaceLocalValue(dofsMaps[1]->getGlobalElement(nodes[0]),0,ScalarTraits<SC>::one());
     tmpVec->replaceLocalValue(dofsMaps[2]->getGlobalElement(nodes[0]),0,ScalarTraits<SC>::one());
@@ -134,7 +151,11 @@ int main(int argc, char *argv[])
     tmpVec->replaceLocalValue(dofsMaps[2]->getGlobalElement(nodes[8]),1,ScalarTraits<SC>::one());
     partitionOfUnity[0] = tmpVec;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tmpVec = MultiVectorFactory<SC,LO,GO,NO>::Build(dofsMap,1);
+#else
+    tmpVec = MultiVectorFactory<SC,NO>::Build(dofsMap,1);
+#endif
     for (UN i=1; i<8; i++) {
         tmpVec->replaceLocalValue(dofsMaps[0]->getGlobalElement(nodes[i]),0,ScalarTraits<SC>::one());
         tmpVec->replaceLocalValue(dofsMaps[1]->getGlobalElement(nodes[i]),0,ScalarTraits<SC>::one());
@@ -142,7 +163,11 @@ int main(int argc, char *argv[])
     }
     partitionOfUnity[1] = tmpVec;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MultiVector<SC,LO,GO,NO> > nullspace = MultiVectorFactory<SC,LO,GO,NO>::Build(dofsMap,6);
+#else
+    RCP<MultiVector<SC,NO> > nullspace = MultiVectorFactory<SC,NO>::Build(dofsMap,6);
+#endif
     for (UN i=0; i<9; i++) {
         nullspace->replaceLocalValue(dofsMaps[0]->getGlobalElement(nodes[i]),0,ScalarTraits<SC>::one());
         nullspace->replaceLocalValue(dofsMaps[1]->getGlobalElement(nodes[i]),1,ScalarTraits<SC>::one());
@@ -168,16 +193,30 @@ int main(int argc, char *argv[])
     Array<GO> partitionOfUnityMapVec2(1);
     partitionOfUnityMapVec1[0] = 0;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ArrayRCP<RCP<Map<LO,GO,NO> > > partitionOfUnityMaps(2);
     partitionOfUnityMaps[0] = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,partitionOfUnityMapVec1(),0,SerialComm);
     partitionOfUnityMaps[1] = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,partitionOfUnityMapVec2(),0,SerialComm);
+#else
+    ArrayRCP<RCP<Map<NO> > > partitionOfUnityMaps(2);
+    partitionOfUnityMaps[0] = MapFactory<NO>::Build(xpetraLib,-1,partitionOfUnityMapVec1(),0,SerialComm);
+    partitionOfUnityMaps[1] = MapFactory<NO>::Build(xpetraLib,-1,partitionOfUnityMapVec2(),0,SerialComm);
+#endif
 
     RCP<ParameterList> parameterList = getParametersFromXmlFile("Parameters.xml");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     LocalPartitionOfUnityBasis<SC,LO,GO,NO> TestBasis(SerialComm,SerialComm,3,parameterList,nullspace,partitionOfUnity,partitionOfUnityMaps);
+#else
+    LocalPartitionOfUnityBasis<SC,NO> TestBasis(SerialComm,SerialComm,3,parameterList,nullspace,partitionOfUnity,partitionOfUnityMaps);
+#endif
     TestBasis.buildLocalPartitionOfUnityBasis();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<CoarseSpace<SC,LO,GO,NO> > coarseSpace = TestBasis.getLocalPartitionOfUnitySpace();
+#else
+    RCP<CoarseSpace<SC,NO> > coarseSpace = TestBasis.getLocalPartitionOfUnitySpace();
+#endif
 
     for (UN i=0; i<coarseSpace->getAssembledBasis()->getLocalLength(); i++) {
         for (UN j=0; j<coarseSpace->getAssembledBasis()->getNumVectors(); j++) {

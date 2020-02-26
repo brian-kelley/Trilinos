@@ -102,9 +102,15 @@ int main (int argc, char *argv[])
   using std::cout;
   using std::endl;
   typedef Tpetra::Map<>::node_type    NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO,GO,NT>       map_type;
   typedef Tpetra::Import<LO,GO,NT>    import_type;
   typedef Tpetra::Vector<LO,LO,GO,NT> vec_type;
+#else
+  typedef Tpetra::Map<NT>       map_type;
+  typedef Tpetra::Import<NT>    import_type;
+  typedef Tpetra::Vector<LO,NT> vec_type;
+#endif
   typedef Tpetra::global_size_t GST; // Map's constructor needs this
 
   Tpetra::ScopeGuard tpetraScope (&argc, &argv);

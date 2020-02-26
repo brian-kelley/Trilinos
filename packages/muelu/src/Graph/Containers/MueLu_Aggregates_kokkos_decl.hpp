@@ -100,12 +100,25 @@ namespace MueLu {
     where rows (or vertices) correspond to aggregates and colunmns (or edges)
     correspond to nodes. While not strictly necessary, it might be convenient.
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   class Aggregates_kokkos;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   class Aggregates_kokkos<LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType> > : public BaseClass {
+#else
+  template <class DeviceType>
+  class Aggregates_kokkos<Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType> > : public BaseClass {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     // For some reason we seem intent on having these declared before pulling the short names in
     // I am not sure why but I will keep things as it is for now
     // If you need to define a type that depend on a short name please do it further down after

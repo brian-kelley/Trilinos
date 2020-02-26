@@ -239,7 +239,11 @@ string Ifpack2_toString(const double& x)
 
 //============================================================================
 int Ifpack2_PrintResidual(char* Label, const Tpetra_RowMatrix& A,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>&Y)
+#else
+                         const Tpetra_MultiVector<Scalar,Node>& X, const Tpetra_MultiVector<Scalar,Node>&Y)
+#endif
 {
   if (X.Comm().MyPID() == 0) {
     cout << "***** " << Label << endl;
@@ -251,7 +255,11 @@ int Ifpack2_PrintResidual(char* Label, const Tpetra_RowMatrix& A,
 
 //============================================================================
 int Ifpack2_PrintResidual(const int iter, const Tpetra_RowMatrix& A,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>&Y)
+#else
+                         const Tpetra_MultiVector<Scalar,Node>& X, const Tpetra_MultiVector<Scalar,Node>&Y)
+#endif
 {
   Tpetra_MultiVector RHS(X);
   std::vector<double> Norm2;

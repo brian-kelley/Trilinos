@@ -125,8 +125,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ParameterListInterpreter(ParameterList& paramList, Teuchos::RCP<const Teuchos::Comm<int> > comm, Teuchos::RCP<FactoryFactory> factFact, Teuchos::RCP<FacadeClassFactory> facadeFact) : factFact_(factFact) {
+#else
+  template <class Scalar, class Node>
+  ParameterListInterpreter<Scalar, Node>::ParameterListInterpreter(ParameterList& paramList, Teuchos::RCP<const Teuchos::Comm<int> > comm, Teuchos::RCP<FactoryFactory> factFact, Teuchos::RCP<FacadeClassFactory> facadeFact) : factFact_(factFact) {
+#endif
     RCP<Teuchos::TimeMonitor> tM = rcp(new Teuchos::TimeMonitor(*Teuchos::TimeMonitor::getNewTimer(std::string("MueLu: ParameterListInterpreter (ParameterList)"))));
     if(facadeFact == Teuchos::null)
       facadeFact_ = Teuchos::rcp(new FacadeClassFactory());
@@ -151,8 +156,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ParameterListInterpreter(const std::string& xmlFileName, const Teuchos::Comm<int>& comm, Teuchos::RCP<FactoryFactory> factFact, Teuchos::RCP<FacadeClassFactory> facadeFact) : factFact_(factFact) {
+#else
+  template <class Scalar, class Node>
+  ParameterListInterpreter<Scalar, Node>::ParameterListInterpreter(const std::string& xmlFileName, const Teuchos::Comm<int>& comm, Teuchos::RCP<FactoryFactory> factFact, Teuchos::RCP<FacadeClassFactory> facadeFact) : factFact_(factFact) {
+#endif
     RCP<Teuchos::TimeMonitor> tM = rcp(new Teuchos::TimeMonitor(*Teuchos::TimeMonitor::getNewTimer(std::string("MueLu: ParameterListInterpreter (XML)"))));
     if(facadeFact == Teuchos::null)
       facadeFact_ = Teuchos::rcp(new FacadeClassFactory());
@@ -164,8 +174,13 @@ namespace MueLu {
     SetParameterList(paramList);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetParameterList(const ParameterList& paramList) {
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::SetParameterList(const ParameterList& paramList) {
+#endif
     Cycle_     = Hierarchy::GetDefaultCycle();
     scalingFactor_= Teuchos::ScalarTraits<double>::one();
     blockSize_ = 1;
@@ -240,8 +255,13 @@ namespace MueLu {
   else             varName = rcp(new newFactory());
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   SetEasyParameterList(const ParameterList& constParamList) {
     ParameterList paramList;
 
@@ -508,8 +528,13 @@ namespace MueLu {
   // =====================================================================================================
   // ==================================== UpdateFactoryManager ===========================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager(ParameterList& paramList, const ParameterList& defaultList, FactoryManager& manager,
                        int levelID, std::vector<keep_pair>& keeps) const
   {
@@ -646,8 +671,13 @@ namespace MueLu {
   // =====================================================================================================
   // ========================================= Smoothers =================================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_Smoothers(ParameterList& paramList, const ParameterList& defaultList,
                                  FactoryManager& manager, int levelID, std::vector<keep_pair>& keeps) const
   {
@@ -856,8 +886,13 @@ namespace MueLu {
   // =====================================================================================================
   // ====================================== Coarse Solvers ===============================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_CoarseSolvers(ParameterList& paramList, const ParameterList& defaultList,
                                      FactoryManager& manager, int /* levelID */, std::vector<keep_pair>& /* keeps */) const
   {
@@ -915,8 +950,13 @@ namespace MueLu {
   // =====================================================================================================
   // ========================================= Smoothers =================================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_Aggregation_TentativeP(ParameterList& paramList, const ParameterList& defaultList,
                                               FactoryManager& manager, int levelID, std::vector<keep_pair>& keeps) const
   {
@@ -1060,8 +1100,13 @@ namespace MueLu {
   // =====================================================================================================
   // ============================================ RAP ====================================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_RAP(ParameterList& paramList, const ParameterList& defaultList, FactoryManager& manager,
                            int /* levelID */, std::vector<keep_pair>& keeps) const
   {
@@ -1179,8 +1224,13 @@ namespace MueLu {
   // =====================================================================================================
   // ======================================= Coordinates =================================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_Coordinates(ParameterList& paramList, const ParameterList& /* defaultList */,
                                    FactoryManager& manager, int /* levelID */, std::vector<keep_pair>& /* keeps */) const
   {
@@ -1212,8 +1262,13 @@ namespace MueLu {
   // =====================================================================================================
   // =========================================== Restriction =============================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_Restriction(ParameterList& paramList, const ParameterList& defaultList , FactoryManager& manager,
                                  int levelID, std::vector<keep_pair>& /* keeps */) const
   {
@@ -1275,8 +1330,13 @@ namespace MueLu {
   // =====================================================================================================
   // ========================================= Repartition ===============================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_Repartition(ParameterList& paramList, const ParameterList& defaultList, FactoryManager& manager,
                                    int levelID, std::vector<keep_pair>& keeps, RCP<Factory> & nullSpaceFactory) const
   {
@@ -1366,7 +1426,11 @@ namespace MueLu {
       if (levelID == nodeRepartitionLevel) {
 #ifdef HAVE_MPI
         //        partitioner = rcp(new NodePartitionInterface());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         partitioner = rcp(new MueLu::NodePartitionInterface<SC,LO,GO,NO>());
+#else
+        partitioner = rcp(new MueLu::NodePartitionInterface<SC,NO>());
+#endif
         ParameterList partParams;
         MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "repartition: node id"               ,int,repartheurParams);
         partitioner->SetParameterList(partParams);
@@ -1478,8 +1542,13 @@ namespace MueLu {
   // =====================================================================================================
   // =========================================== Nullspace ===============================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_Nullspace(ParameterList& paramList, const ParameterList& /* defaultList */, FactoryManager& manager,
                                  int /* levelID */, std::vector<keep_pair>& /* keeps */, RCP<Factory> & nullSpaceFactory) const
   {
@@ -1507,8 +1576,13 @@ namespace MueLu {
   // =====================================================================================================
   // ================================= Algorithm: SemiCoarsening =========================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_SemiCoarsen(ParameterList& paramList, const ParameterList& defaultList, FactoryManager& manager,
                                    int /* levelID */, std::vector<keep_pair>& /* keeps */) const
   {
@@ -1567,8 +1641,13 @@ namespace MueLu {
   // =====================================================================================================
   // ================================== Algorithm: P-Coarsening ==========================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_PCoarsen(ParameterList& paramList, const ParameterList& defaultList, FactoryManager& manager,
                                 int levelID, std::vector<keep_pair>& keeps) const
   {
@@ -1619,8 +1698,13 @@ namespace MueLu {
   // =====================================================================================================
   // ============================== Algorithm: Smoothed Aggregation ======================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_SA(ParameterList& paramList, const ParameterList& defaultList, FactoryManager& manager, int /* levelID */, std::vector<keep_pair>& keeps) const {
     // Smoothed aggregation
     MUELU_KOKKOS_FACTORY(P, SaPFactory, SaPFactory_kokkos);
@@ -1669,8 +1753,13 @@ namespace MueLu {
   // =====================================================================================================
   // =============================== Algorithm: Energy Minimization ======================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_Emin(ParameterList& paramList, const ParameterList& defaultList, FactoryManager& manager,
                             int /* levelID */, std::vector<keep_pair>& /* keeps */) const
   {
@@ -1711,8 +1800,13 @@ namespace MueLu {
   // =====================================================================================================
   // ================================= Algorithm: Petrov-Galerkin ========================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_PG(ParameterList& /* paramList */, const ParameterList& /* defaultList */, FactoryManager& manager,
                           int /* levelID */, std::vector<keep_pair>& /* keeps */) const
   {
@@ -1731,8 +1825,13 @@ namespace MueLu {
   // =====================================================================================================
   // ====================================== Algorithm: Matlab ============================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   UpdateFactoryManager_Matlab(ParameterList& paramList, const ParameterList& /* defaultList */, FactoryManager& manager,
                               int /* levelID */, std::vector<keep_pair>& /* keeps */) const {
 #ifdef HAVE_MUELU_MATLAB
@@ -1755,8 +1854,13 @@ namespace MueLu {
 
   size_t LevenshteinDistance(const char* s, size_t len_s, const char* t, size_t len_t);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Validate(const ParameterList& constParamList) const {
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::Validate(const ParameterList& constParamList) const {
+#endif
     ParameterList paramList = constParamList;
     const ParameterList& validList = *MasterList::List();
     // Validate up to maxLevels level specific parameter sublists
@@ -1833,8 +1937,13 @@ namespace MueLu {
   // =====================================================================================================
   // ==================================== FACTORY interpreter ============================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   SetFactoryParameterList(const ParameterList& constParamList) {
     // Create a non const copy of the parameter list
     // Working with a modifiable list is much much easier than with original one
@@ -2147,8 +2256,13 @@ namespace MueLu {
   ///  We have to create a new block (with a different name than myNspFact). In the example we use "myNspFactDeps".
   ///  It should contain a parameter "dependency for" with the name of the factory that we want the dependencies to be addded to.
   ///  With above block we do not need the entry for the Nullspace in the global FactoryManager any more.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::
+#endif
   BuildFactoryMap(const ParameterList& paramList, const FactoryMap& factoryMapIn, FactoryMap& factoryMapOut, FactoryManagerMap& factoryManagers) const {
     for (ParameterList::ConstIterator param = paramList.begin(); param != paramList.end(); ++param) {
       const std::string             & paramName  = paramList.name(param);  //< paramName contains the user chosen factory name (e.g., "smootherFact1")
@@ -2242,8 +2356,13 @@ namespace MueLu {
   // =====================================================================================================
   // ======================================= MISC functions ==============================================
   // =====================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetupOperator(Operator& Op) const {
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::SetupOperator(Operator& Op) const {
+#endif
     try {
       Matrix& A = dynamic_cast<Matrix&>(Op);
       if (A.GetFixedBlockSize() != blockSize_)
@@ -2262,8 +2381,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetupHierarchy(Hierarchy& H) const {
+#else
+  template <class Scalar, class Node>
+  void ParameterListInterpreter<Scalar, Node>::SetupHierarchy(Hierarchy& H) const {
+#endif
     H.SetCycle(Cycle_);
     H.SetProlongatorScalingFactor(scalingFactor_);
     HierarchyManager::SetupHierarchy(H);

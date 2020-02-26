@@ -71,20 +71,32 @@ namespace Amesos2 {
    *******************/
 
   template < typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              typename LocalOrdinal,
              typename GlobalOrdinal,
+#endif
              typename Node >
   struct MatrixTraits<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node> > {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_t;
     typedef LocalOrdinal local_ordinal_t;
     typedef GlobalOrdinal global_ordinal_t;
     typedef Node node_t;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>  matrix_type;
+#else
+    typedef Tpetra::RowMatrix<Scalar, Node>  matrix_type;
+#endif
     typedef typename matrix_type::local_matrix_type  local_matrix_t;
     typedef typename matrix_type::local_matrix_type::row_map_type::pointer_type  sparse_ptr_type;
     typedef typename matrix_type::local_matrix_type::index_type::pointer_type sparse_idx_type;
@@ -94,20 +106,32 @@ namespace Amesos2 {
   };
 
   template < typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              typename LocalOrdinal,
              typename GlobalOrdinal,
+#endif
              typename Node >
   struct MatrixTraits<
     Tpetra::CrsMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node> > {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_t;
     typedef LocalOrdinal local_ordinal_t;
     typedef GlobalOrdinal global_ordinal_t;
     typedef Node node_t;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>  matrix_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar, Node>  matrix_type;
+#endif
     typedef typename matrix_type::local_matrix_type  local_matrix_t;
     typedef typename matrix_type::local_matrix_type::row_map_type::pointer_type  sparse_ptr_type;
     typedef typename matrix_type::local_matrix_type::index_type::pointer_type sparse_idx_type;

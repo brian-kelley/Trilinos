@@ -58,8 +58,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   IndexManager<LocalOrdinal, GlobalOrdinal, Node>::IndexManager(const RCP<const Teuchos::Comm<int> > comm,
+#else
+  template<class Node>
+  IndexManager<Node>::IndexManager(const RCP<const Teuchos::Comm<int> > comm,
+#endif
                                                                 const bool coupled,
                                                                 const int NumDimensions,
                                                                 const int interpolationOrder,
@@ -82,8 +87,13 @@ namespace MueLu {
 
   } // Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   void IndexManager<LocalOrdinal, GlobalOrdinal, Node>::computeMeshParameters() {
+#else
+  template<class Node>
+  void IndexManager<Node>::computeMeshParameters() {
+#endif
 
     RCP<Teuchos::FancyOStream> out;
     if(const char* dbg = std::getenv("MUELU_INDEXMANAGER_DEBUG")) {

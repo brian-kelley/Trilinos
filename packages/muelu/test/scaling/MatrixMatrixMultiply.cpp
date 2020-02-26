@@ -68,14 +68,26 @@
 namespace MueLuTests {
 
   // generate random matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > generateRandomMatrix(LocalOrdinal const &minEntriesPerRow, LocalOrdinal const &maxEntriesPerRow,
 											     Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > &rowMap,
 											     Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > &domainMap);
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > generateRandomMatrix(LocalOrdinal const &minEntriesPerRow, LocalOrdinal const &maxEntriesPerRow,
+											     Teuchos::RCP<const Xpetra::Map<Node> > &rowMap,
+											     Teuchos::RCP<const Xpetra::Map<Node> > &domainMap);
+#endif
 
   // generate random map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > generateRandomContiguousMap(size_t const minRowsPerProc, size_t const maxRowsPerProc,
+#else
+  template <class Node>
+  Teuchos::RCP<const Xpetra::Map<Node> > generateRandomContiguousMap(size_t const minRowsPerProc, size_t const maxRowsPerProc,
+#endif
       Teuchos::RCP<const Teuchos::Comm<int> > const &comm, Xpetra::UnderlyingLib const lib);
 
   // generate "random" whole number in interval [a,b]
@@ -92,7 +104,11 @@ namespace MueLuTests {
 }
 
 //- -- --------------------------------------------------------
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib, int argc, char *argv[]) {
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -151,14 +167,31 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib, int ar
 	if (minRowsPerProc > maxRowsPerProc) minRowsPerProc=maxRowsPerProc;
 	
 	// Create row map.  This will also be used as the range map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	RCP<const Map> rowMapForA = generateRandomContiguousMap<LO,GO,NO>(minRowsPerProc, maxRowsPerProc, comm, xpetraParameters.GetLib());
+#else
+	RCP<const Map> rowMapForA = generateRandomContiguousMap<NO>(minRowsPerProc, maxRowsPerProc, comm, xpetraParameters.GetLib());
+#endif
 	// Create domain map for A. This will also be the row map for B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	RCP<const Map> domainMapForA = generateRandomContiguousMap<LO,GO,NO>(minRowsPerProc, maxRowsPerProc, comm, xpetraParameters.GetLib());
+#else
+	RCP<const Map> domainMapForA = generateRandomContiguousMap<NO>(minRowsPerProc, maxRowsPerProc, comm, xpetraParameters.GetLib());
+#endif
 	// Create domain map for B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	RCP<const Map> domainMapForB = generateRandomContiguousMap<LO,GO,NO>(minRowsPerProc, maxRowsPerProc, comm, xpetraParameters.GetLib());
+#else
+	RCP<const Map> domainMapForB = generateRandomContiguousMap<NO>(minRowsPerProc, maxRowsPerProc, comm, xpetraParameters.GetLib());
+#endif
 	
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	A = generateRandomMatrix<SC,LO,GO,NO>(optMinEntriesPerRow, optMaxEntriesPerRow, rowMapForA, domainMapForA);
 	B = generateRandomMatrix<SC,LO,GO,NO>(optMinEntriesPerRow, optMaxEntriesPerRow, domainMapForA, domainMapForB);
+#else
+	A = generateRandomMatrix<SC,NO>(optMinEntriesPerRow, optMaxEntriesPerRow, rowMapForA, domainMapForA);
+	B = generateRandomMatrix<SC,NO>(optMinEntriesPerRow, optMaxEntriesPerRow, domainMapForA, domainMapForB);
+#endif
 	
 	if (comm->getRank() == 0) {
 	  std::cout << "case " << jj << " of " << optNmults-1 << " : "
@@ -180,9 +213,17 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib, int ar
 	
 	if (optDumpMatrices) {
 	  std::string fileName="checkA.mm";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	  Xpetra::IO<SC,LO,GO,Node>::Write( fileName,*A);
+#else
+	  Xpetra::IO<SC,Node>::Write( fileName,*A);
+#endif
 	  fileName="checkB.mm";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	  Xpetra::IO<SC,LO,GO,Node>::Write( fileName,*B);
+#else
+	  Xpetra::IO<SC,Node>::Write( fileName,*B);
+#endif
 	}
 	
       }  //scope for timing matrix creation
@@ -192,7 +233,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib, int ar
 	
 	RCP<Matrix> AB;
 	RCP<Teuchos::FancyOStream> fos = Teuchos::getFancyOStream(rcp(new Teuchos::oblackholestream()));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	AB = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *B, false, *fos);
+#else
+	AB = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *B, false, *fos);
+#endif
 	//if (optDumpMatrices) {
 	//  std::string fileName="checkAB.mm";
 	//  Utils::Write( fileName,*AB);
@@ -249,11 +294,20 @@ namespace MueLuTests {
   }
 
   //- -- --------------------------------------------------------
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > generateRandomContiguousMap(size_t const minRowsPerProc, size_t const maxRowsPerProc, Teuchos::RCP<const Teuchos::Comm<int> > const &comm, Xpetra::UnderlyingLib const lib)
+#else
+  template <class Node>
+  Teuchos::RCP<const Xpetra::Map<Node> > generateRandomContiguousMap(size_t const minRowsPerProc, size_t const maxRowsPerProc, Teuchos::RCP<const Teuchos::Comm<int> > const &comm, Xpetra::UnderlyingLib const lib)
+#endif
   {
     size_t numMyElements = generateRandomNumber(minRowsPerProc,maxRowsPerProc);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > map = Xpetra::MapFactory<LocalOrdinal,GlobalOrdinal,Node>::createContigMap(lib,
+#else
+    Teuchos::RCP<const Xpetra::Map<Node> > map = Xpetra::MapFactory<Node>::createContigMap(lib,
+#endif
         Teuchos::OrdinalTraits<size_t>::invalid(),
         numMyElements,
         comm);
@@ -261,10 +315,17 @@ namespace MueLuTests {
   }
 
   //- -- --------------------------------------------------------
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > generateRandomMatrix(LocalOrdinal const &minEntriesPerRow, LocalOrdinal const &maxEntriesPerRow,
 											     Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > &rowMap,
 											     Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > &domainMap)
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > generateRandomMatrix(LocalOrdinal const &minEntriesPerRow, LocalOrdinal const &maxEntriesPerRow,
+											     Teuchos::RCP<const Xpetra::Map<Node> > &rowMap,
+											     Teuchos::RCP<const Xpetra::Map<Node> > &domainMap)
+#endif
   {
     using Teuchos::Array;
     using Teuchos::ArrayView;
@@ -285,7 +346,11 @@ namespace MueLuTests {
     LO realMaxEntriesPerRow = maxEntriesPerRow;
     if (maxEntriesPerRow > numGlobalRows)
       realMaxEntriesPerRow = numGlobalRows;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rowMap, eprData));
+#else
+    RCP<Matrix> A = Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(rowMap, eprData));
+#endif
 
     Array<Scalar> vals(realMaxEntriesPerRow);
     //stick in ones for values

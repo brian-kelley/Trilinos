@@ -88,7 +88,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData d);
 
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new GatherOrientation<EvalT,TRAITS,LO,GO>(indexers_,pl)); }
+#else
+  { return Teuchos::rcp(new GatherOrientation<EvalT,TRAITS>(indexers_,pl)); }
+#endif
   
 private:
 

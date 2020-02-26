@@ -82,12 +82,20 @@ namespace MueLu {
     computing, 34(2), A1079-A1109.
   */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar = double, class LocalOrdinal = int, class GlobalOrdinal = LocalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Scalar = double, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class AggregateQualityEstimateFactory : public SingleLevelFactoryBase {
 #undef MUELU_AGGREGATEQUALITYESTIMATEFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 
@@ -136,14 +144,22 @@ namespace MueLu {
     //! @name Internal method for computing aggregate quality.
     //@{
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void ComputeAggregateQualities(RCP<const Matrix> A, RCP<const Aggregates> aggs, RCP<Xpetra::MultiVector<magnitudeType,LO,GO,Node>> agg_qualities) const;
+#else
+    void ComputeAggregateQualities(RCP<const Matrix> A, RCP<const Aggregates> aggs, RCP<Xpetra::MultiVector<magnitudeType,Node>> agg_qualities) const;
+#endif
 
     //@}
 
     //! @name Internal method for outputting aggregate quality
     //@{
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void OutputAggQualities(const Level& level, RCP<const Xpetra::MultiVector<magnitudeType,LO,GO,Node>> agg_qualities) const;
+#else
+    void OutputAggQualities(const Level& level, RCP<const Xpetra::MultiVector<magnitudeType,Node>> agg_qualities) const;
+#endif
 
     //@}
 

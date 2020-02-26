@@ -119,12 +119,19 @@ FillComplete() will not be called on B upon exit by this method.
 \return Zero upon success
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MatrixMatrixAdd(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, bool transposeA, double scalarA,
                     Tpetra::CrsMatrix<ST, LO, GO, N>& B, double scalarB);
+#else
+MatrixMatrixAdd(const Tpetra::CrsMatrix<ST, N>& A, bool transposeA, double scalarA,
+                    Tpetra::CrsMatrix<ST, N>& B, double scalarB);
+#endif
 
 /*!
 \brief Multiply matrices A*B
@@ -139,12 +146,20 @@ The user is responsible for freeing the returned result.
 \return Result upon success and NULL upon failure
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > 
 MatMatMult(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, bool transA, 
                              const Tpetra::CrsMatrix<ST, LO, GO, N>& B, bool transB,
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > 
+MatMatMult(const Tpetra::CrsMatrix<ST, N>& A, bool transA, 
+                             const Tpetra::CrsMatrix<ST, N>& B, bool transB,
+#endif
                              int outlevel);
 
 
@@ -153,11 +168,18 @@ MatMatMult(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, bool transA,
        FillComplete() is NOT called on exit.
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > 
 PaddedMatrix(const Tpetra::Map<LO, GO, N> & rowmap, double val, const int numentriesperrow);
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > 
+PaddedMatrix(const Tpetra::Map<N> & rowmap, double val, const int numentriesperrow);
+#endif
 
 
 /*!
@@ -173,11 +195,18 @@ on the result.
 \return The new matrix upon success, NULL otherwise
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > 
 StripZeros(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, double eps);
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > 
+StripZeros(const Tpetra::CrsMatrix<ST, N>& A, double eps);
+#endif
 
 /*!
 \brief split a matrix into a 2x2 block system where the rowmap of one of the blocks is given
@@ -198,10 +227,13 @@ Matrix blocks are FillComplete() on exit.
 \param A22       : on exit matrix block A22 
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
                     Teuchos::RCP<Tpetra::Map<LO, GO, N> >& A11rowmap,
                     Teuchos::RCP<Tpetra::Map<LO, GO, N> >& A22rowmap,
@@ -209,6 +241,15 @@ SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
                     Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> >& A12,
                     Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> >& A21,
                     Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> >& A22);
+#else
+SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > A,
+                    Teuchos::RCP<Tpetra::Map<N> >& A11rowmap,
+                    Teuchos::RCP<Tpetra::Map<N> >& A22rowmap,
+                    Teuchos::RCP<Tpetra::CrsMatrix<ST, N> >& A11,
+                    Teuchos::RCP<Tpetra::CrsMatrix<ST, N> >& A12,
+                    Teuchos::RCP<Tpetra::CrsMatrix<ST, N> >& A21,
+                    Teuchos::RCP<Tpetra::CrsMatrix<ST, N> >& A22);
+#endif
 
 /*!
 \brief split a rowmap of matrix A
@@ -220,39 +261,63 @@ to be given on input
 \param Agiven    : on entry submap that is given and part of Amap 
 \return the remainder map of Amap that is not overlapping with Agiven 
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO,
           class GO,
           class N >
 Teuchos::RCP<Tpetra::Map<LO, GO, N> > SplitMap(const Tpetra::Map<LO, GO, N>& Amap,
                      const Tpetra::Map<LO, GO, N>& Agiven);
+#else
+template <class N >
+Teuchos::RCP<Tpetra::Map<N> > SplitMap(const Tpetra::Map<N>& Amap,
+                     const Tpetra::Map<N>& Agiven);
+#endif
 
 /*!
 \brief split a vector into 2 non-overlapping pieces
 
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 SplitVector(const Tpetra::Vector<ST, LO, GO, N>& x,
                  const Tpetra::Map<LO, GO, N>& x1map,
                  const Teuchos::RCP<Tpetra::Vector<ST, LO, GO, N> >&   x1,
                  const Tpetra::Map<LO, GO, N>& x2map,
                  const Teuchos::RCP<Tpetra::Vector<ST, LO, GO, N> >&   x2);
+#else
+SplitVector(const Tpetra::Vector<ST, N>& x,
+                 const Tpetra::Map<N>& x1map,
+                 const Teuchos::RCP<Tpetra::Vector<ST, N> >&   x1,
+                 const Tpetra::Map<N>& x2map,
+                 const Teuchos::RCP<Tpetra::Vector<ST, N> >&   x2);
+#endif
 
 /*!
 \brief merge results from 2 vectors into one (assumes matching submaps)
 
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MergeVector(const Tpetra::Vector<ST, LO, GO, N>& x1,
                  const Tpetra::Vector<ST, LO, GO, N>& x2,
                  Tpetra::Vector<ST, LO, GO, N>& xresult);
+#else
+MergeVector(const Tpetra::Vector<ST, N>& x1,
+                 const Tpetra::Vector<ST, N>& x2,
+                 Tpetra::Vector<ST, N>& xresult);
+#endif
 
 /*!
 \brief Print matrix to file
@@ -268,11 +333,17 @@ the sond row gives the local size of the row- and column map.
 \param ibase : Index base, should be either 1 or 0 
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Print_Matrix(std::string name, const Tpetra::CrsMatrix<ST, LO, GO, N>& A, int ibase);
+#else
+Print_Matrix(std::string name, const Tpetra::CrsMatrix<ST, N>& A, int ibase);
+#endif
 
 /*!
 \brief Print graph to file
@@ -287,11 +358,19 @@ the second row gives the local size of the row- and column map.
 \param A : Graph to print
 \param ibase : Index base, should be either 1 or 0 
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO,
           class GO,
           class N >
+#else
+template <class N >
+#endif
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Print_Graph(std::string name, const Tpetra::CrsGraph<LO, GO, N>& A, int ibase);
+#else
+Print_Graph(std::string name, const Tpetra::CrsGraph<N>& A, int ibase);
+#endif
 
 /*!
 \brief Print vector to file
@@ -305,11 +384,17 @@ Index base can either be 0 or 1.
 \param ibase : Index base, should be either 1 or 0 
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Print_Vector(std::string name, const Tpetra::Vector<ST, LO, GO, N>& v, int ibase);
+#else
+Print_Vector(std::string name, const Tpetra::Vector<ST, N>& v, int ibase);
+#endif
 
 } // namespace MoertelT
 

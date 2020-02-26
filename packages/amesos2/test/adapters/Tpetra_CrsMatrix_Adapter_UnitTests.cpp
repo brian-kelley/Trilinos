@@ -175,7 +175,11 @@ namespace {
    * UNIT TESTS
    */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, Initialization, Scalar, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, Initialization, Scalar )
+#endif
   {
     /* Test correct initialization of the MatrixAdapter
      *
@@ -184,7 +188,11 @@ namespace {
      * - Correct typedefs ( using Amesos2::is_same<> )
      */
     typedef ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef MatrixAdapter<MAT> ADAPT;
 
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
@@ -193,7 +201,11 @@ namespace {
     const size_t rank     = comm->getRank();
     // create a Map
     const size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,Node> > map = rcp( new Map<LO,GO,Node>(INVALID,numLocal,0,comm) );
+#else
+    RCP<Map<Node> > map = rcp( new Map<Node>(INVALID,numLocal,0,comm) );
+#endif
     RCP<MAT> eye = rcp( new MAT(map,1,Tpetra::StaticProfile) );
     GO base = numLocal*rank;
     for( size_t i = 0; i < numLocal; ++i ){
@@ -213,20 +225,32 @@ namespace {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, Dimensions, Scalar, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, Dimensions, Scalar )
+#endif
   {
     // Test that the dimensions reported by the adapter match those as reported
     // by the Tpetra::CrsMatrix
     // Check equality of mapped method calls
     typedef ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
     RCP<const Comm<int> > comm = getDefaultComm();
     //const size_t numprocs = comm->getSize();
     const size_t rank     = comm->getRank();
     // create a Map
     const size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,Node> > map = rcp( new Map<LO,GO,Node>(INVALID,numLocal,0,comm) );
+#else
+    RCP<Map<Node> > map = rcp( new Map<Node>(INVALID,numLocal,0,comm) );
+#endif
     RCP<MAT> eye = rcp( new MAT(map,1,Tpetra::StaticProfile) );
     GO base = numLocal*rank;
     for( size_t i = 0; i < numLocal; ++i ){
@@ -243,12 +267,20 @@ namespace {
     TEST_EQUALITY(eye->getGlobalNumCols(), adapter->getGlobalNumCols());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, CRS_Serial, Scalar, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, CRS_Serial, Scalar )
+#endif
   {
     /* Test the getCrs() method of MatrixAdapter.  We check against a simple
      * test matrix that we construct on the fly.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef MatrixAdapter<MAT> ADAPT;
     typedef std::pair<Scalar,GO> my_pair_t;
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
@@ -266,7 +298,11 @@ namespace {
     RCP<MAT> mat =
       Tpetra::MatrixMarket::Reader<MAT>::readSparseFile(TestTraitsNS::test_traits<Scalar>::test_mat,
                                                         comm, true, true);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > map = mat->getRowMap();
+#else
+    RCP<const Map<Node> > map = mat->getRowMap();
+#endif
 
     RCP<ADAPT> adapter = Amesos2::createMatrixAdapter<MAT>(mat);
 
@@ -324,18 +360,30 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, CRS_Replicated, Scalar, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, CRS_Replicated, Scalar )
+#endif
   {
     /* Test the getCrs() method of MatrixAdapter.  We check against a simple
      * test matrix that we construct on the fly.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef MatrixAdapter<MAT> ADAPT;
     typedef std::pair<Scalar,GO> my_pair_t;
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
     // create a Map for our matrix
     global_size_t nrows = 6;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > map = createUniformContigMap<LO,GO>(nrows,comm);
+#else
+    RCP<const Map<Node> > map = createUniformContigMap<LO,GO>(nrows,comm);
+#endif
 
     /* We will be using the following matrix for this test (amesos2_test_mat0[_complex].mtx):
      *
@@ -404,19 +452,31 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, CRS_Map, Scalar, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, CRS_Map, Scalar )
+#endif
   {
     /* Test the getCrs() method of MatrixAdapter.  We check against a simple
      * test matrix that we construct on the fly.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef MatrixAdapter<MAT> ADAPT;
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
     const size_t numprocs = comm->getSize();
     const size_t rank     = comm->getRank();
     // create a Map for our matrix
     global_size_t nrows = 6;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > map = createUniformContigMap<LO,GO>(nrows,comm);
+#else
+    RCP<const Map<Node> > map = createUniformContigMap<LO,GO>(nrows,comm);
+#endif
 
     /* We will be using the following matrix for this test (amesos2_test_mat0[_complex].mtx):
      *
@@ -455,7 +515,11 @@ namespace {
     } else {                    // We only have 1 proc, then she just takes it all
       my_num_rows = 6;
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Map<LO,GO,Node> half_map(6, my_num_rows, 0, comm);
+#else
+    const Map<Node> half_map(6, my_num_rows, 0, comm);
+#endif
 
     adapter->getCrs(nzvals,colind,rowptr,nnz, Teuchos::ptrInArg(half_map), Amesos2::SORTED_INDICES, Amesos2::DISTRIBUTED); // ROOTED = default distribution
 
@@ -482,12 +546,20 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, CCS, Scalar, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrixAdapter, CCS, Scalar )
+#endif
   {
     /* Test the getCcs() method of MatrixAdapter.  Again, check against a known
      * matrix
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef MatrixAdapter<MAT> ADAPT;
 
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
@@ -577,12 +649,21 @@ namespace {
   // #define FAST_DEVELOPMENT_UNIT_TEST_BUILD
 
 #define UNIT_TEST_GROUP_ORDINAL_SCALAR( LO, GO, SCALAR )                \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, Initialization, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, Dimensions, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, CRS_Serial, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, CRS_Replicated, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, CRS_Map, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, CCS, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, Initialization, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, Dimensions, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, CRS_Serial, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, CRS_Replicated, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, CRS_Map, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrixAdapter, CCS, SCALAR )
+#endif
 
 #define UNIT_TEST_GROUP_ORDINAL( ORDINAL )              \
   UNIT_TEST_GROUP_ORDINAL_ORDINAL( ORDINAL, ORDINAL )

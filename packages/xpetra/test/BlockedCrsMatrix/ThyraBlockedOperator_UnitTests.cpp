@@ -126,7 +126,11 @@ TEUCHOS_STATIC_SETUP()
 //
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraVectorSpace2XpetraMap_Tpetra, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraVectorSpace2XpetraMap_Tpetra, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
@@ -134,17 +138,33 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraVectorSpace2Xpetra
   // TPetra version
 #ifdef HAVE_XPETRA_TPETRA
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::Map<LO,GO,Node> > map = Xpetra::MapFactory<LO,GO,Node>::Build(Xpetra::UseTpetra, 1000, 0, comm);
+#else
+    Teuchos::RCP<const Xpetra::Map<Node> > map = Xpetra::MapFactory<Node>::Build(Xpetra::UseTpetra, 1000, 0, comm);
+#endif
     TEST_EQUALITY(Teuchos::is_null(map),false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Tpetra::Map<LO,GO,Node > > tMap = Xpetra::toTpetra(map);
+#else
+    Teuchos::RCP<const Tpetra::Map<Node > > tMap = Xpetra::toTpetra(map);
+#endif
     TEST_EQUALITY(Teuchos::is_null(tMap),false);
 
     // transform to Thyra...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > thyraVectorSpace = Thyra::createVectorSpace<Scalar, LO, GO, Node>(tMap);
+#else
+    Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > thyraVectorSpace = Thyra::createVectorSpace<Scalar, Node>(tMap);
+#endif
     TEST_EQUALITY(Teuchos::is_null(thyraVectorSpace),false);
 
     // transform back to Xpetra...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Map<LO,GO,Node> > xMap = Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toXpetra(thyraVectorSpace,comm);
+#else
+    Teuchos::RCP<Xpetra::Map<Node> > xMap = Xpetra::ThyraUtils<Scalar,Node>::toXpetra(thyraVectorSpace,comm);
+#endif
 
     TEST_EQUALITY(Teuchos::is_null(xMap),false);
 
@@ -155,7 +175,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraVectorSpace2Xpetra
 #endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraVectorSpace2XpetraMap_Epetra, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraVectorSpace2XpetraMap_Epetra, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
@@ -163,7 +187,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraVectorSpace2Xpetra
   // Epetra version
 #ifdef HAVE_XPETRA_EPETRA
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::Map<LO,GO,Node> > map = Xpetra::MapFactory<LO,GO,Node>::Build(Xpetra::UseEpetra, 1000, 0, comm);
+#else
+    Teuchos::RCP<const Xpetra::Map<Node> > map = Xpetra::MapFactory<Node>::Build(Xpetra::UseEpetra, 1000, 0, comm);
+#endif
     TEST_EQUALITY(Teuchos::is_null(map),false);
     const Epetra_Map ret = Xpetra::toEpetra(map);
     Teuchos::RCP<const Epetra_Map> eMap = Teuchos::rcp(&ret,false);
@@ -174,7 +202,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraVectorSpace2Xpetra
     TEST_EQUALITY(Teuchos::is_null(thyraVectorSpace),false);
 
     // transform back to Xpetra...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Map<LO,GO,Node> > xMap = Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toXpetra(thyraVectorSpace,comm);
+#else
+    Teuchos::RCP<Xpetra::Map<Node> > xMap = Xpetra::ThyraUtils<Scalar,Node>::toXpetra(thyraVectorSpace,comm);
+#endif
 
     TEST_EQUALITY(Teuchos::is_null(xMap),false);
 
@@ -185,7 +217,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraVectorSpace2Xpetra
 #endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraShrinkMaps, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraShrinkMaps, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
@@ -193,9 +229,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraShrinkMaps, M, MA,
   M testMap(1,0,comm);
   Xpetra::UnderlyingLib lib = testMap.lib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> MapClass;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
   typedef Xpetra::MapUtils<LO, GO, Node> MapUtilsClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+  typedef Xpetra::MapUtils<Node> MapUtilsClass;
+#endif
 
   // generate non-overlapping map
   Teuchos::Array<GO> myGIDs;
@@ -240,7 +282,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraShrinkMaps, M, MA,
 #endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraOperator2XpetraCrsMat, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraOperator2XpetraCrsMat, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
@@ -248,14 +294,27 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraOperator2XpetraCrs
   M testMap(1,0,comm);
   Xpetra::UnderlyingLib lib = testMap.lib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
+#else
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+#endif
 
   // generate the matrix
   LO nEle = 63;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Teuchos::RCP<const Xpetra::Map<LO,GO,Node> > map = MapFactoryClass::Build(lib, nEle, 0, comm);
+#else
+  const Teuchos::RCP<const Xpetra::Map<Node> > map = MapFactoryClass::Build(lib, nEle, 0, comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > matrix =
                Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 10);
+#else
+  Teuchos::RCP<Xpetra::CrsMatrix<Scalar, Node> > matrix =
+               Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 10);
+#endif
 
   LO NumMyElements = map->getNodeNumElements();
   Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
@@ -270,11 +329,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraOperator2XpetraCrs
 
   // create a Thyra operator from Xpetra::CrsMatrix
   Teuchos::RCP<const Thyra::LinearOpBase<Scalar> > thyraOp =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(matrix);
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(matrix);
+#endif
 
   // transform Thyra operator 2 Xpetra::CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::CrsMatrix<Scalar, LO, GO, Node> > xCrsMat =
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toXpetra(thyraOp);
+#else
+  Teuchos::RCP<const Xpetra::CrsMatrix<Scalar, Node> > xCrsMat =
+      Xpetra::ThyraUtils<Scalar,Node>::toXpetra(thyraOp);
+#endif
   TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(xCrsMat));
 
   TEST_EQUALITY(xCrsMat->getFrobeniusNorm()   ,matrix->getFrobeniusNorm());
@@ -287,9 +355,14 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraOperator2XpetraCrs
 #endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraBlockedOperator2XpetraBlockedCrsMat, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraBlockedOperator2XpetraBlockedCrsMat, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> MapClass;
   typedef Xpetra::StridedMap<LO, GO, Node> StridedMapClass;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
@@ -297,6 +370,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraBlockedOperator2Xp
   typedef Xpetra::MapExtractor<Scalar,LO,GO,Node> MapExtractorClass;
   typedef Xpetra::MapExtractorFactory<Scalar,LO,GO,Node> MapExtractorFactoryClass;
   typedef Xpetra::Matrix<Scalar, LO, GO, Node> MatrixClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::StridedMap<Node> StridedMapClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+  typedef Xpetra::StridedMapFactory<Node> StridedMapFactoryClass;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractorClass;
+  typedef Xpetra::MapExtractorFactory<Scalar,Node> MapExtractorFactoryClass;
+  typedef Xpetra::Matrix<Scalar, Node> MatrixClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -357,7 +439,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraBlockedOperator2Xp
     return;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MatrixClass> A = Xpetra::IO<Scalar,LO,GO,Node>::Read("A.mat", fullmap->getMap());
+#else
+  Teuchos::RCP<MatrixClass> A = Xpetra::IO<Scalar,Node>::Read("A.mat", fullmap->getMap());
+#endif
 
   std::vector<Teuchos::RCP<const MapClass> > xmaps;
   xmaps.push_back(velmap);
@@ -365,15 +451,24 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraBlockedOperator2Xp
 
   Teuchos::RCP<const MapExtractorClass> map_extractor = MapExtractorFactoryClass::Build(fullmap,xmaps);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp =
       Xpetra::MatrixUtils<Scalar, LO, GO, Node>::SplitMatrix(*A,map_extractor,map_extractor);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp =
+      Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*A,map_extractor,map_extractor);
+#endif
 
   bOp->fillComplete();
   TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(bOp));
 
   // create Thyra operator
   Teuchos::RCP<Thyra::LinearOpBase<Scalar> > thOp =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(bOp);
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(bOp);
+#endif
   TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(thOp));
 
   Teuchos::RCP<Thyra::BlockedLinearOpBase<Scalar> > thbOp =
@@ -394,10 +489,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ThyraBlockedOperator2Xp
 #endif // end HAVE_XPETRA_THYRA
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, XpetraBlockedCrsMatConstructor, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, XpetraBlockedCrsMatConstructor, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> MapClass;
   typedef Xpetra::StridedMap<LO, GO, Node> StridedMapClass;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
@@ -405,6 +505,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, XpetraBlockedCrsMatCons
   typedef Xpetra::MapExtractor<Scalar,LO,GO,Node> MapExtractorClass;
   typedef Xpetra::MapExtractorFactory<Scalar,LO,GO,Node> MapExtractorFactoryClass;
   typedef Xpetra::Matrix<Scalar, LO, GO, Node> MatrixClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::StridedMap<Node> StridedMapClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+  typedef Xpetra::StridedMapFactory<Node> StridedMapFactoryClass;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractorClass;
+  typedef Xpetra::MapExtractorFactory<Scalar,Node> MapExtractorFactoryClass;
+  typedef Xpetra::Matrix<Scalar, Node> MatrixClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -465,7 +574,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, XpetraBlockedCrsMatCons
     return;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MatrixClass> A = Xpetra::IO<Scalar,LO,GO,Node>::Read("A.mat", fullmap->getMap());
+#else
+  Teuchos::RCP<MatrixClass> A = Xpetra::IO<Scalar,Node>::Read("A.mat", fullmap->getMap());
+#endif
 
   std::vector<Teuchos::RCP<const MapClass> > xmaps;
   xmaps.push_back(velmap);
@@ -473,8 +586,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, XpetraBlockedCrsMatCons
 
   Teuchos::RCP<const MapExtractorClass> map_extractor = MapExtractorFactoryClass::Build(fullmap,xmaps);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp =
       Xpetra::MatrixUtils<Scalar, LO, GO, Node>::SplitMatrix(*A,map_extractor,map_extractor);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp =
+      Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*A,map_extractor,map_extractor);
+#endif
 
   bOp->fillComplete();
   TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(bOp));
@@ -483,7 +601,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, XpetraBlockedCrsMatCons
 
   // create Thyra operator
   Teuchos::RCP<Thyra::LinearOpBase<Scalar> > thOp =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(bOp);
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(bOp);
+#endif
   TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(thOp));
 
   Teuchos::RCP<Thyra::BlockedLinearOpBase<Scalar> > thbOp =
@@ -503,8 +625,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, XpetraBlockedCrsMatCons
   TEST_EQUALITY(Teuchos::as<Xpetra::global_size_t>(productDomain->getBlock(1)->dim()) ,premap->getGlobalNumElements());
 
   //construct a Xpetra::BlockedCrsMatrix object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar, LO, GO, Node> > bOp2 =
       Teuchos::rcp(new Xpetra::BlockedCrsMatrix<Scalar, LO, GO, Node>(thbOp,comm));
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar, Node> > bOp2 =
+      Teuchos::rcp(new Xpetra::BlockedCrsMatrix<Scalar, Node>(thbOp,comm));
+#endif
 
   TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(bOp2));
   TEST_EQUALITY(bOp2->getGlobalNumRows(),bOp->getGlobalNumRows());
@@ -531,14 +658,27 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, XpetraBlockedCrsMatCons
 #endif // end HAVE_XPETRA_THYRA
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, SplitMatrixForThyra, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, SplitMatrixForThyra, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> MapClass;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::MapExtractor<Scalar,LO,GO,Node> MapExtractorClass;
   typedef Xpetra::MapExtractorFactory<Scalar,LO,GO,Node> MapExtractorFactoryClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractorClass;
+  typedef Xpetra::MapExtractorFactory<Scalar,Node> MapExtractorFactoryClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
@@ -555,8 +695,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, SplitMatrixForThyra, M,
   GO NumGlobalElements = map->getGlobalNumElements();
   Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
       Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 3);
+#else
+  Teuchos::RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+      Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 3);
+#endif
   TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == true || A->isFillActive() == false, std::runtime_error, "");
 
   for (LO i = 0; i < NumMyElements; i++) {
@@ -580,8 +725,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, SplitMatrixForThyra, M,
   A->fillComplete();
   TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == false || A->isFillActive() == true, std::runtime_error, "");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::Matrix<Scalar, LO, GO, Node> > mat =
       Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar, LO, GO, Node>(A));
+#else
+  Teuchos::RCP<Xpetra::Matrix<Scalar, Node> > mat =
+      Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar, Node>(A));
+#endif
 
   Teuchos::Array<GO> gids1;
   Teuchos::Array<GO> gids2;
@@ -609,8 +759,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, SplitMatrixForThyra, M,
 
   Teuchos::RCP<const MapExtractorClass> map_extractor = MapExtractorFactoryClass::Build(map,xmaps);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp =
       Xpetra::MatrixUtils<Scalar, LO, GO, Node>::SplitMatrix(*mat,map_extractor,map_extractor,Teuchos::null,true);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp =
+      Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*mat,map_extractor,map_extractor,Teuchos::null,true);
+#endif
 
   // build gloabl vector with one entries
   Teuchos::RCP<VectorClass> ones_A   = VectorFactoryClass::Build(map, true);
@@ -633,19 +788,34 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, SplitMatrixForThyra, M,
   TEST_EQUALITY(bOp->getDomainMap(1)->getMinAllGlobalIndex(), 0);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, NestedBlockOperator2ThyraBlockedCrsMat, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, NestedBlockOperator2ThyraBlockedCrsMat, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map< LO, GO, Node> MapClass;
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 6 [3 2] ]");
@@ -670,7 +840,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, NestedBlockOperator2Thyr
 #ifdef HAVE_XPETRA_THYRA
   // create Thyra operator
   Teuchos::RCP<Thyra::LinearOpBase<Scalar> > thOp =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(Teuchos::rcp_const_cast<BlockedCrsMatrixClass>(brop));
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(Teuchos::rcp_const_cast<BlockedCrsMatrixClass>(brop));
+#endif
   TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(thOp));
 
   Teuchos::RCP<Thyra::BlockedLinearOpBase<Scalar> > thbOp =
@@ -707,11 +881,23 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, NestedBlockOperator2Thyr
 #if 0
   // create Thyra product vector space
   Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > vs1 =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(brop->getRangeMapExtractor()->getMap(0,true));
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(brop->getRangeMapExtractor()->getMap(0,true));
+#endif
   Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > vs2 =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(brop->getRangeMapExtractor()->getMap(1,true));
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(brop->getRangeMapExtractor()->getMap(1,true));
+#endif
   Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > vs3 =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(brop->getRangeMapExtractor()->getMap(2,true));
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(brop->getRangeMapExtractor()->getMap(2,true));
+#endif
 
   Teuchos::Array<Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > > vecSpacesInner(2);
   Teuchos::Array<Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > > vecSpacesOuter(2);
@@ -732,15 +918,24 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, NestedBlockOperator2Thyr
 
   Thyra::assign<Scalar>(X.ptr(), Teuchos::as<Scalar>(0.0));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::ThyraUtils<Scalar,LO,GO,Node>::updateThyra(ones_A, brop->getDomainMapExtractor(), Teuchos::rcp_dynamic_cast<Thyra::ProductMultiVectorBase<Scalar> >(X));
+#else
+  Xpetra::ThyraUtils<Scalar,Node>::updateThyra(ones_A, brop->getDomainMapExtractor(), Teuchos::rcp_dynamic_cast<Thyra::ProductMultiVectorBase<Scalar> >(X));
+#endif
 
   Teuchos::RCP<Thyra::MultiVectorBase<Scalar> > B = Thyra::createMembers(ps,1);
   Thyra::assign<Scalar>(B.ptr(), Teuchos::as<Scalar>(0.0));
 
   thbOp->apply( Thyra::NOTRANS, *X, B.ptr(), STS::one(), STS::zero());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > xres =
         Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toXpetra(B, comm);
+#else
+  Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > xres =
+        Xpetra::ThyraUtils<Scalar,Node>::toXpetra(B, comm);
+#endif
 
   Teuchos::ArrayRCP<const Scalar> xdata = xres->getData(0);
   bool bCheck = true;
@@ -758,19 +953,34 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, NestedBlockOperator2Thyr
 #endif // HAVE_XPETRA_THYRA
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, ReorderBlockOperator2ThyraBlockedCrsMat, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, ReorderBlockOperator2ThyraBlockedCrsMat, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map< LO, GO, Node> MapClass;
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 6 3 2]");
@@ -795,7 +1005,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, ReorderBlockOperator2Thy
 #ifdef HAVE_XPETRA_THYRA
   // create Thyra operator
   Teuchos::RCP<Thyra::LinearOpBase<Scalar> > thOp =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(Teuchos::rcp_const_cast<BlockedCrsMatrixClass>(brop));
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(Teuchos::rcp_const_cast<BlockedCrsMatrixClass>(brop));
+#endif
   TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(thOp));
 
   Teuchos::RCP<Thyra::BlockedLinearOpBase<Scalar> > thbOp =
@@ -818,11 +1032,23 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, ReorderBlockOperator2Thy
 
   // create Thyra product vector space
   Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > vs1 =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(brop->getRangeMapExtractor()->getMap(0,true));
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(brop->getRangeMapExtractor()->getMap(0,true));
+#endif
   Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > vs2 =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(brop->getRangeMapExtractor()->getMap(1,true));
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(brop->getRangeMapExtractor()->getMap(1,true));
+#endif
   Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > vs3 =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(brop->getRangeMapExtractor()->getMap(2,true));
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::toThyra(brop->getRangeMapExtractor()->getMap(2,true));
+#endif
 
   Teuchos::Array<Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> > > vecSpaces(3);
   vecSpaces[0] = vs1;
@@ -836,21 +1062,39 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, ReorderBlockOperator2Thy
 
   Thyra::assign<Scalar>(X.ptr(), Teuchos::as<Scalar>(0.0));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::ThyraUtils<Scalar,LO,GO,Node>::updateThyra(ones_A, brop->getDomainMapExtractor(), Teuchos::rcp_dynamic_cast<Thyra::ProductMultiVectorBase<Scalar> >(X));
+#else
+  Xpetra::ThyraUtils<Scalar,Node>::updateThyra(ones_A, brop->getDomainMapExtractor(), Teuchos::rcp_dynamic_cast<Thyra::ProductMultiVectorBase<Scalar> >(X));
+#endif
 
   Teuchos::RCP<Thyra::MultiVectorBase<Scalar> > B = Thyra::createMembers(ps,1);
   Thyra::assign<Scalar>(B.ptr(), Teuchos::as<Scalar>(0.0));
 
   thbOp->apply( Thyra::NOTRANS, *X, B.ptr(), STS::one(), STS::zero());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > xres =
         Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toXpetra(B, comm);
+#else
+  Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > xres =
+        Xpetra::ThyraUtils<Scalar,Node>::toXpetra(B, comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedMultiVector<Scalar,LO,GO,Node> > xresb =
       Teuchos::rcp_dynamic_cast<Xpetra::BlockedMultiVector<Scalar,LO,GO,Node>>(xres);
+#else
+  Teuchos::RCP<Xpetra::BlockedMultiVector<Scalar,Node> > xresb =
+      Teuchos::rcp_dynamic_cast<Xpetra::BlockedMultiVector<Scalar,Node>>(xres);
+#endif
   TEST_EQUALITY(xresb.is_null(), false);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > xresmerged = xresb->Merge();
+#else
+  Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > xresmerged = xresb->Merge();
+#endif
 
   Teuchos::ArrayRCP<const Scalar> xdata = xresmerged->getData(0);
   bool bCheck = true;
@@ -867,15 +1111,28 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL(ThyraBlockedOperator, ReorderBlockOperator2Thy
 #endif // HAVE_XPETRA_THYRA
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ReadWriteMatrixMatrixMarket, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ReadWriteMatrixMatrixMarket, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> MapClass;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::MapExtractor<Scalar,LO,GO,Node> MapExtractorClass;
   typedef Xpetra::MapExtractorFactory<Scalar,LO,GO,Node> MapExtractorFactoryClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractorClass;
+  typedef Xpetra::MapExtractorFactory<Scalar,Node> MapExtractorFactoryClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
@@ -892,8 +1149,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ReadWriteMatrixMatrixMa
   GO NumGlobalElements = map->getGlobalNumElements();
   Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
       Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 3);
+#else
+  Teuchos::RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+      Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 3);
+#endif
   TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == true || A->isFillActive() == false, std::runtime_error, "");
 
   for (LO i = 0; i < NumMyElements; i++) {
@@ -917,8 +1179,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ReadWriteMatrixMatrixMa
   A->fillComplete();
   TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == false || A->isFillActive() == true, std::runtime_error, "");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::Matrix<Scalar, LO, GO, Node> > mat =
       Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar, LO, GO, Node>(A));
+#else
+  Teuchos::RCP<Xpetra::Matrix<Scalar, Node> > mat =
+      Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar, Node>(A));
+#endif
 
   Teuchos::Array<GO> gids1;
   Teuchos::Array<GO> gids2;
@@ -946,8 +1213,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ReadWriteMatrixMatrixMa
 
   Teuchos::RCP<const MapExtractorClass> map_extractor = MapExtractorFactoryClass::Build(map,xmaps);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bMat =
       Xpetra::MatrixUtils<Scalar, LO, GO, Node>::SplitMatrix(*mat,map_extractor,map_extractor,Teuchos::null,true);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bMat =
+      Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*mat,map_extractor,map_extractor,Teuchos::null,true);
+#endif
 
 
   // Write matrices out, read fine A back in, and check that the read was ok
@@ -970,8 +1242,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ReadWriteMatrixMatrixMa
   tname = "_" + tname;
 
   const bool alwaysWriteMaps = true;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::IO<Scalar, LO, GO, Node>::WriteBlockedCrsMatrix(tname, *bMat, alwaysWriteMaps);
   Teuchos::RCP<const Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bMat2 = Xpetra::IO<Scalar, LO, GO, Node>::ReadBlockedCrsMatrix(tname, lib, comm);
+#else
+  Xpetra::IO<Scalar, Node>::WriteBlockedCrsMatrix(tname, *bMat, alwaysWriteMaps);
+  Teuchos::RCP<const Xpetra::BlockedCrsMatrix<Scalar,Node> > bMat2 = Xpetra::IO<Scalar, Node>::ReadBlockedCrsMatrix(tname, lib, comm);
+#endif
 
   TEST_EQUALITY(bMat->getMatrix(0,0)->getGlobalNumEntries(),bMat2->getMatrix(0,0)->getGlobalNumEntries());
   TEST_EQUALITY(bMat->getMatrix(0,1)->getGlobalNumEntries(),bMat2->getMatrix(0,1)->getGlobalNumEntries());
@@ -1044,21 +1321,32 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ReadWriteMatrixMatrixMa
 //
 #ifdef HAVE_XPETRA_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_TPETRA_TYPES( S, LO, GO, N) \
     typedef typename Xpetra::TpetraMap<LO,GO,N> M##LO##GO##N; \
     typedef typename Xpetra::TpetraCrsMatrix<S,LO,GO,N> MA##S##LO##GO##N;
+#else
+  #define XPETRA_TPETRA_TYPES( S, N) \
+    typedef typename Xpetra::TpetraMap<N> M##LO##GO##N; \
+    typedef typename Xpetra::TpetraCrsMatrix<S,N> MA##S##LO##GO##N;
+#endif
 
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_EPETRA_TYPES( S, LO, GO, N) \
+#else
+  #define XPETRA_EPETRA_TYPES( S, N) \
+#endif
     typedef typename Xpetra::EpetraMapT<GO,N> M##LO##GO##N; \
     typedef typename Xpetra::EpetraCrsMatrixT<GO,N> MA##S##LO##GO##N;
 
 #endif
 
 // List of tests which run both with Epetra and Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_MATRIX_INSTANT(S,LO,GO,N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraOperator2XpetraCrsMat, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraShrinkMaps,            M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N ) \
@@ -1068,14 +1356,35 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedOperator, ReadWriteMatrixMatrixMa
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraBlockedOperator2XpetraBlockedCrsMat, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, NestedBlockOperator2ThyraBlockedCrsMat, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ReorderBlockOperator2ThyraBlockedCrsMat, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N )
+#else
+#define XP_MATRIX_INSTANT(S,N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraOperator2XpetraCrsMat, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraShrinkMaps,            M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, SplitMatrixForThyra, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ReadWriteMatrixMatrixMarket, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, XpetraBlockedCrsMatConstructor, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraBlockedOperator2XpetraBlockedCrsMat, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, NestedBlockOperator2ThyraBlockedCrsMat, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ReorderBlockOperator2ThyraBlockedCrsMat, M##LO##GO##N , MA##S##LO##GO##N, S,N )
+#endif
 
 // List of tests which run only with Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_TPETRA_MATRIX_INSTANT(S,LO,GO,N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraVectorSpace2XpetraMap_Tpetra, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N )
+#else
+#define XP_TPETRA_MATRIX_INSTANT(S,N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraVectorSpace2XpetraMap_Tpetra, M##LO##GO##N , MA##S##LO##GO##N, S,N )
+#endif
 
 // List of tests which run only with Epetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_EPETRA_MATRIX_INSTANT(S,LO,GO,N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraVectorSpace2XpetraMap_Epetra, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N )
+#else
+#define XP_EPETRA_MATRIX_INSTANT(S,N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedOperator, ThyraVectorSpace2XpetraMap_Epetra, M##LO##GO##N , MA##S##LO##GO##N, S,N )
+#endif
 
 
 #if defined(HAVE_XPETRA_TPETRA)

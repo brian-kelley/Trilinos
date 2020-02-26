@@ -69,11 +69,19 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class BlackBoxPFactoryTester {
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 
@@ -84,7 +92,11 @@ namespace MueLuTests {
     virtual ~BlackBoxPFactoryTester() { }
     //@}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void TestGetGeometricData(Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType, LO, GO, NO> >& coordinates,
+#else
+    void TestGetGeometricData(Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> >& coordinates,
+#endif
                               Array<LO> coarseRate, Array<GO> gNodesPerDim, Array<LO> lNodesPerDim,
                               LO BlkSize, Array<GO>& gIndices, Array<GO>& gCoarseNodesPerDir,
                               Array<GO>& ghostGIDs, Array<GO>& coarseNodesGIDs, Array<GO>& colGIDs,
@@ -94,9 +106,15 @@ namespace MueLuTests {
                               ArrayRCP<Array<typename Teuchos::ScalarTraits<Scalar>::magnitudeType> > coarseNodes, Array<int>& boundaryFlags) const
     {
       // Call the method to be tested.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<typename MueLu::BlackBoxPFactory<SC,LO,GO,Node>::NodesIDs> ghostedCoarseNodes
         = rcp(new typename MueLu::BlackBoxPFactory<SC,LO,GO,Node>::NodesIDs{});
       MueLu::BlackBoxPFactory<SC,LO,GO,Node> mybbmgPFactory;
+#else
+      RCP<typename MueLu::BlackBoxPFactory<SC,Node>::NodesIDs> ghostedCoarseNodes
+        = rcp(new typename MueLu::BlackBoxPFactory<SC,Node>::NodesIDs{});
+      MueLu::BlackBoxPFactory<SC,Node> mybbmgPFactory;
+#endif
       mybbmgPFactory.GetGeometricData(coordinates, coarseRate, gNodesPerDim, lNodesPerDim, BlkSize,
                                       gIndices, myOffset, ghostInterface, endRate,
                                       gCoarseNodesPerDir, lCoarseNodesPerDir, glCoarseNodesPerDir,
@@ -120,7 +138,11 @@ namespace MueLuTests {
                                  Teuchos::SerialDenseMatrix<LO,SC>& Pf,
                                  Teuchos::SerialDenseMatrix<LO,SC>& Pe,
                                  Array<LO>& dofType, Array<LO>& lDofInd) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLu::BlackBoxPFactory<SC,LO,GO,NO> mybbmgPFactory;
+#else
+      MueLu::BlackBoxPFactory<SC,NO> mybbmgPFactory;
+#endif
       mybbmgPFactory.ComputeLocalEntries(Aghost, coarseRate, endRate, BlkSize, elemInds,
                                          lCoarseElementsPerDir, numDimensions,
                                          lFineNodesPerDir, gFineNodesPerDir, gIndices,
@@ -133,26 +155,44 @@ namespace MueLuTests {
                            const LO je, const LO ke, const ArrayView<const SC> rowValues,
                            const Array<LO> elementNodesPerDir, const int collapseFlags[3],
                            const std::string stencilType, Array<SC>& stencil) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLu::BlackBoxPFactory<SC,LO,GO,Node> mybbmgPFactory;
+#else
+      MueLu::BlackBoxPFactory<SC,Node> mybbmgPFactory;
+#endif
       mybbmgPFactory.FormatStencil(BlkSize, ghostInterface, ie, je, ke, rowValues,
                                    elementNodesPerDir, collapseFlags, stencilType, stencil);
     };
 
     void TestGetNodeInfo(const LO ie, const LO je, const LO ke, const Array<LO> elementNodesPerDir,
                          int* nodeType, LO& nodeIndex) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLu::BlackBoxPFactory<SC,LO,GO,Node> mybbmgPFactory;
+#else
+      MueLu::BlackBoxPFactory<SC,Node> mybbmgPFactory;
+#endif
       int dummy;
       mybbmgPFactory.GetNodeInfo(ie, je, ke, elementNodesPerDir, nodeType, nodeIndex, &dummy);
     };
 
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void GetProblemData(RCP<const Teuchos::Comm<int> >& comm, const Xpetra::UnderlyingLib lib,
                       const LocalOrdinal numDimensions, const std::string stencilType,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& Op,
                       RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> >&Coordinates,
                       RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> >& map,
+#else
+                      RCP<Xpetra::Matrix<Scalar, Node> >& Op,
+                      RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> >&Coordinates,
+                      RCP<Xpetra::Map<Node> >& map,
+#endif
                       Array<GlobalOrdinal>& gNodesPerDim, Array<LocalOrdinal>& lNodesPerDim) {
 #include "MueLu_UseShortNames.hpp"
 
@@ -269,7 +309,11 @@ namespace MueLuTests {
 
     // Create the map and store coordinates using the above array views
     map         = MapFactory::Build(lib, gNumPoints, myGIDs(), 0, comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(map, myCoordinates(),
+#else
+    Coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(map, myCoordinates(),
+#endif
                                                                      numDimensions);
 
     // small parameter list for Galeri
@@ -319,8 +363,12 @@ namespace MueLuTests {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, Constructor, Scalar, LocalOrdinal,
                                     GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, Constructor, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -333,8 +381,12 @@ namespace MueLuTests {
 
   } //Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, BlackBoxGhosts, Scalar, LocalOrdinal,
                                     GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, BlackBoxGhosts, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -351,11 +403,19 @@ namespace MueLuTests {
     const std::string stencilType = "reduced";
 
     RCP<Matrix> Op;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates;
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates;
+#endif
     RCP<Map> map;
     Array<GO> gNodesPerDim(3);
     Array<LO> lNodesPerDim(3);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     GetProblemData<SC,LO,GO,NO>(comm, lib, numDimensions, stencilType, Op, coordinates, map,
+#else
+    GetProblemData<SC,NO>(comm, lib, numDimensions, stencilType, Op, coordinates, map,
+#endif
                                 gNodesPerDim, lNodesPerDim);
 
     Array<LO> coarseRate(3);
@@ -367,7 +427,11 @@ namespace MueLuTests {
       coarseRate[2] = 2;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlackBoxPFactoryTester<SC,LO,GO,Node> factTester;
+#else
+    BlackBoxPFactoryTester<SC,Node> factTester;
+#endif
     Array<GO> gIndices(3), gCoarseNodesPerDir(3), ghostGIDs, coarseNodesGIDs, colGIDs;
     Array<LO> myOffset(3), lCoarseNodesPerDir(3), glCoarseNodesPerDir(3), endRate(3);
     Array<bool> ghostInterface(6);
@@ -474,15 +538,23 @@ namespace MueLuTests {
 
   } //BlackBoxGhosts
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, GetNodeInfo, Scalar, LocalOrdinal,
                                     GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, GetNodeInfo, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
 
     // Creater tester factory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlackBoxPFactoryTester<SC,LO,GO,Node> factTester;
+#else
+    BlackBoxPFactoryTester<SC,Node> factTester;
+#endif
 
     // Create coarse element data
     Teuchos::Array<LO> elementNodesPerDir(3);
@@ -518,8 +590,12 @@ namespace MueLuTests {
     TEST_EQUALITY(checkResult, true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, Prolongator, Scalar, LocalOrdinal,
                                     GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, Prolongator, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -536,7 +612,11 @@ namespace MueLuTests {
     const std::string stencilType = "reduced";
 
     RCP<Matrix> A;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates;
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates;
+#endif
     RCP<Map> map;
     Array<GO> gNodesPerDim(3);
     Array<LO> lNodesPerDim(3);
@@ -544,7 +624,11 @@ namespace MueLuTests {
                    lNodesPerDim);
 
     // Creater tester factory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlackBoxPFactoryTester<SC,LO,GO,Node> factTester;
+#else
+    BlackBoxPFactoryTester<SC,Node> factTester;
+#endif
 
     LO BlkSize = 1;
     Array<GO> gIndices(3), gCoarseNodesPerDir(3), ghostGIDs, coarseNodesGIDs, colGIDs;
@@ -638,19 +722,35 @@ namespace MueLuTests {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> ghostedRowMap = Xpetra::MapFactory<LO,GO,NO>::Build(A->getRowMap()->lib(),
+#else
+    RCP<const Map> ghostedRowMap = Xpetra::MapFactory<NO>::Build(A->getRowMap()->lib(),
+#endif
                                            Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),
                                            ghostRowGIDs(),
                                            A->getRowMap()->getIndexBase(),
                                            A->getRowMap()->getComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> ghostedColMap = Xpetra::MapFactory<LO,GO,NO>::Build(A->getRowMap()->lib(),
+#else
+    RCP<const Map> ghostedColMap = Xpetra::MapFactory<NO>::Build(A->getRowMap()->lib(),
+#endif
                                            Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),
                                            ghostColGIDs(),
                                            A->getRowMap()->getIndexBase(),
                                            A->getRowMap()->getComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Import> ghostImporter = Xpetra::ImportFactory<LO,GO,NO>::Build(A->getRowMap(),
+#else
+    RCP<const Import> ghostImporter = Xpetra::ImportFactory<NO>::Build(A->getRowMap(),
+#endif
                                                                              ghostedRowMap);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Matrix> Aghost        = Xpetra::MatrixFactory<SC,LO,GO,NO>::Build(A, *ghostImporter,
+#else
+    RCP<const Matrix> Aghost        = Xpetra::MatrixFactory<SC,NO>::Build(A, *ghostImporter,
+#endif
                                                                                 ghostedRowMap,
                                                                                 ghostedColMap);
 
@@ -739,7 +839,11 @@ namespace MueLuTests {
   } // Prolongator
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, BBPoisson, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlackBoxPFactory, BBPoisson, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -758,7 +862,11 @@ namespace MueLuTests {
     const std::string stencilType = "reduced";
 
     RCP<Matrix> A;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates;
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates;
+#endif
     RCP<Map> map;
     Array<GO> gNodesPerDim(3);
     Array<LO> lNodesPerDim(3);
@@ -842,18 +950,31 @@ namespace MueLuTests {
 
     // Extract the prolongator operator
     RCP<Level> lvl1 = H->GetLevel(1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<SC,LO,GO,Node> > P = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#else
+    RCP<Xpetra::Matrix<SC,Node> > P = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#endif
     RCP<CrsMatrix> PCrs = rcp_dynamic_cast<CrsMatrixWrap>(P)->getCrsMatrix();
 
   } // BBPoisson
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(Scalar, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,Constructor,       Scalar,LO,GO,Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,BlackBoxGhosts,    Scalar,LO,GO,Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,GetNodeInfo,       Scalar,LO,GO,Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,Prolongator,       Scalar,LO,GO,Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,BBPoisson,         Scalar,LO,GO,Node)
+#else
+#  define MUELU_ETI_GROUP(Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,Constructor,       Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,BlackBoxGhosts,    Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,GetNodeInfo,       Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,Prolongator,       Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlackBoxPFactory,BBPoisson,         Scalar,Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

@@ -20,8 +20,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> EminPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> EminPFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -48,8 +53,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void EminPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void EminPFactory<Scalar, Node>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#endif
     Input(fineLevel, "A");
 
     static bool isAvailableP0          = false;
@@ -78,13 +88,23 @@ namespace MueLu {
       Input(coarseLevel, "Constraint");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void EminPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void EminPFactory<Scalar, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     BuildP(fineLevel, coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void EminPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void EminPFactory<Scalar, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Prolongator minimization", coarseLevel);
 
     const ParameterList& pL = GetParameterList();

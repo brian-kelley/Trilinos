@@ -62,8 +62,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationPhase1Algorithm<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationPhase1Algorithm<Node>::
+#endif
   BuildAggregates(const ParameterList& params, const GraphBase& graph, Aggregates& aggregates, std::vector<unsigned>& aggStat,
                   LO& numNonAggregatedNodes) const {
     Monitor m(*this, "BuildAggregates");
@@ -228,16 +233,26 @@ namespace MueLu {
     aggregates.SetNumAggregates(numLocalAggregates);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationPhase1Algorithm<LocalOrdinal, GlobalOrdinal, Node>::RandomReorder(ArrayRCP<LO> list) const {
+#else
+  template <class Node>
+  void AggregationPhase1Algorithm<Node>::RandomReorder(ArrayRCP<LO> list) const {
+#endif
     //TODO: replace int
     int n = list.size();
     for(int i = 0; i < n-1; i++)
       std::swap(list[i], list[RandomOrdinal(i,n-1)]);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   int AggregationPhase1Algorithm<LocalOrdinal, GlobalOrdinal, Node>::RandomOrdinal(int min, int max) const {
+#else
+  template <class Node>
+  int AggregationPhase1Algorithm<Node>::RandomOrdinal(int min, int max) const {
+#endif
     return min + as<int>((max-min+1) * (static_cast<double>(std::rand()) / (RAND_MAX + 1.0)));
   }
 

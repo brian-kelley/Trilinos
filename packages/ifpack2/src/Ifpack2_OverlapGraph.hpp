@@ -69,13 +69,25 @@ namespace Ifpack2 {
 /// use of the Ifpack2::Details namespace for classes that they are
 /// not yet ready to make public.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal = typename Tpetra::CrsGraph<>::local_ordinal_type,
          class GlobalOrdinal = typename Tpetra::CrsGraph<LocalOrdinal>::global_ordinal_type,
          class Node = typename Tpetra::CrsGraph<LocalOrdinal, GlobalOrdinal>::node_type>
+#else
+template<class Node = typename Tpetra::CrsGraph<LocalOrdinal, GlobalOrdinal>::node_type>
+#endif
 class OverlapGraph : public Teuchos::Describable {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   //! The Tpetra::CrsGraph specialization that this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node> graph_type;
+#else
+  typedef Tpetra::CrsGraph<Node> graph_type;
+#endif
 
   /// \brief Constructor that takes a graph and the level of overlap.
   ///
@@ -87,21 +99,37 @@ public:
                 int OverlapLevel_in);
 
   //! Copy constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   OverlapGraph (const OverlapGraph<LocalOrdinal,GlobalOrdinal,Node>& Source);
+#else
+  OverlapGraph (const OverlapGraph<Node>& Source);
+#endif
 
   //! Destructor (virtual for memory safety of derived classes).
   virtual ~OverlapGraph () {}
 
   //! Return the overlap graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node>&
+#else
+  const Tpetra::CrsGraph<Node>&
+#endif
   getOverlapGraph () const { return *OverlapGraph_; }
 
   //! Return the overlap graph's row Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>&
+#else
+  const Tpetra::Map<Node>&
+#endif
   getOverlapRowMap () const {return *OverlapRowMap_; }
 
   //! Return the Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>&
+#else
+  const Tpetra::Import<Node>&
+#endif
   getOverlapImporter () const { return *OverlapImporter_; }
 
   /// \brief Return the level of overlap used to create this graph.
@@ -115,17 +143,30 @@ public:
   //@}
 
 protected:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > OverlapGraph_;
   Teuchos::RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > UserMatrixGraph_;
   Teuchos::RCP<Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > OverlapRowMap_;
   Teuchos::RCP<Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node> > OverlapImporter_;
+#else
+  Teuchos::RCP<const Tpetra::CrsGraph<Node> > OverlapGraph_;
+  Teuchos::RCP<const Tpetra::CrsGraph<Node> > UserMatrixGraph_;
+  Teuchos::RCP<Tpetra::Map<Node> > OverlapRowMap_;
+  Teuchos::RCP<Tpetra::Import<Node> > OverlapImporter_;
+#endif
   int OverlapLevel_;
   bool IsOverlapped_;
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 OverlapGraph<LocalOrdinal,GlobalOrdinal,Node>::
 OverlapGraph (const Teuchos::RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> >& UserMatrixGraph_in,
+#else
+template<class Node>
+OverlapGraph<Node>::
+OverlapGraph (const Teuchos::RCP<const Tpetra::CrsGraph<Node> >& UserMatrixGraph_in,
+#endif
               int OverlapLevel_in)
   : UserMatrixGraph_ (UserMatrixGraph_in),
     OverlapLevel_ (OverlapLevel_in),
@@ -134,16 +175,26 @@ OverlapGraph (const Teuchos::RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdin
   OverlapGraph_ = createOverlapGraph (UserMatrixGraph_, OverlapLevel_);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 OverlapGraph<LocalOrdinal,GlobalOrdinal,Node>::
 OverlapGraph (const OverlapGraph<LocalOrdinal,GlobalOrdinal,Node>& Source)
+#else
+template<class Node>
+OverlapGraph<Node>::
+OverlapGraph (const OverlapGraph<Node>& Source)
+#endif
   : UserMatrixGraph_ (Source.UserMatrixGraph_),
     OverlapRowMap_ (Source.OverlapRowMap_),
     OverlapLevel_ (Source.OverlapLevel_),
     IsOverlapped_ (Source.IsOverlapped_)
 {
   using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+#endif
 
   if (IsOverlapped_) {
     if (! OverlapGraph_.is_null ()) {

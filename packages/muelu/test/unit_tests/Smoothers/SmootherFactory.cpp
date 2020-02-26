@@ -62,13 +62,21 @@ namespace MueLuTests {
     using namespace MueLu::Exceptions;
 
     template
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    <class Scalar, class Node>
+#endif
     class SmootherFactoryHelpers {
 
 #   include <MueLu_UseShortNames.hpp>
 
       public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       ////////////////////////////////////////////////////////////////////////////////
       // Helper functions: class invariant
       ////////////////////////////////////////////////////////////////////////////////
@@ -265,7 +273,11 @@ namespace MueLuTests {
         RCP<SmootherFactory> smooFact = rcp( new SmootherFactory(smooProtoA, smooProtoB) );
 
         Level level; //level.SetupPhase(true);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         TestHelpers::TestFactory<SC, LO, GO, NO>::createSingleLevelHierarchy(level);
+#else
+        TestHelpers::TestFactory<SC, NO>::createSingleLevelHierarchy(level);
+#endif
 
         level.Request("PreSmoother",smooFact.get());
         level.Request("PostSmoother", smooFact.get());
@@ -279,7 +291,11 @@ namespace MueLuTests {
         RCP<SmootherFactory> smooFact = rcp( new SmootherFactory(smooProtoA, smooProtoB) );
 
         Level level; //level.SetupPhase(true);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         TestHelpers::TestFactory<SC, LO, GO, NO>::createSingleLevelHierarchy(level);
+#else
+        TestHelpers::TestFactory<SC, NO>::createSingleLevelHierarchy(level);
+#endif
 
         level.Request("PreSmoother",smooFact.get());
         level.Request("PostSmoother", smooFact.get());
@@ -299,7 +315,11 @@ namespace MueLuTests {
         RCP<SmootherFactory> smooFact = rcp( new SmootherFactory(smooProtoA, smooProtoB) );
 
         Level level; //level.SetupPhase(true);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         TestHelpers::TestFactory<SC, LO, GO, NO>::createSingleLevelHierarchy(level);
+#else
+        TestHelpers::TestFactory<SC, NO>::createSingleLevelHierarchy(level);
+#endif
 
         level.Request("PreSmoother",smooFact.get());
         level.Request("PostSmoother", smooFact.get());
@@ -315,12 +335,20 @@ namespace MueLuTests {
     // Test: Constructor_OneArg
     ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, Constructor_OneArg, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, Constructor_OneArg, Scalar, Node)
+#endif
     {
 #     include <MueLu_UseShortNames.hpp>
       MUELU_TESTING_SET_OSTREAM;
       MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef SmootherFactoryHelpers<SC,LO,GO,NO> SFH;
+#else
+      typedef SmootherFactoryHelpers<SC,NO> SFH;
+#endif
       SFH::testCollection(&SFH::testConstructor1, out, success);               // TEST: Valid input parameter
       SFH::testInvalidCollection(&SFH::testInvalidConstructor1, out, success); // TEST: Invalid input parameter
     }
@@ -329,12 +357,20 @@ namespace MueLuTests {
     // Test: Constructor_TwoArg
     ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, Constructor_TwoArg, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, Constructor_TwoArg, Scalar, Node)
+#endif
     {
 #     include <MueLu_UseShortNames.hpp>
       MUELU_TESTING_SET_OSTREAM;
       MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef SmootherFactoryHelpers<SC,LO,GO,NO> SFH;
+#else
+      typedef SmootherFactoryHelpers<SC,NO> SFH;
+#endif
       SFH::testCollection(&SFH::testConstructor2, out, success); // TEST: Valid input parameter
       SFH::testInvalidCollection(&SFH::testInvalidConstructor2, out, success); // TEST: Valid input parameter
     }
@@ -343,12 +379,20 @@ namespace MueLuTests {
     // Test: SetSmootherPrototypes_OneArg
     ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, SetSmootherPrototypes_OneArg, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, SetSmootherPrototypes_OneArg, Scalar, Node)
+#endif
     {
 #     include <MueLu_UseShortNames.hpp>
       MUELU_TESTING_SET_OSTREAM;
       MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef SmootherFactoryHelpers<SC,LO,GO,NO> SFH;
+#else
+      typedef SmootherFactoryHelpers<SC,NO> SFH;
+#endif
       SFH::testCollection(&SFH::testSetSmootherPrototypes1, out, success); // TEST: Valid input parameter
       SFH::testInvalidCollection(&SFH::testInvalidSetSmootherPrototypes1, out, success); // TEST: Invalid input parameter
     }
@@ -357,12 +401,20 @@ namespace MueLuTests {
     // Test: SetSmootherPrototypes_TwoArg
     ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, SetSmootherPrototypes_TwoArg, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, SetSmootherPrototypes_TwoArg, Scalar, Node)
+#endif
     {
 #     include <MueLu_UseShortNames.hpp>
       MUELU_TESTING_SET_OSTREAM;
       MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef SmootherFactoryHelpers<SC,LO,GO,NO> SFH;
+#else
+      typedef SmootherFactoryHelpers<SC,NO> SFH;
+#endif
       SFH::testCollection(&SFH::testSetSmootherPrototypes2, out, success); // TEST: Valid input parameter
       SFH::testInvalidCollection(&SFH::testInvalidSetSmootherPrototypes2, out, success); // TEST: Invalid input parameter
     }
@@ -395,12 +447,20 @@ namespace MueLuTests {
     // Test: Build
     ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, Build, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, Build, Scalar, Node)
+#endif
     {
 #     include <MueLu_UseShortNames.hpp>
       MUELU_TESTING_SET_OSTREAM;
       MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef SmootherFactoryHelpers<SC,LO,GO,NO> SFH;
+#else
+      typedef SmootherFactoryHelpers<SC,NO> SFH;
+#endif
       SFH::testCollection(&SFH::testBuild, out, success);
     }
 
@@ -408,12 +468,20 @@ namespace MueLuTests {
     // Test: BuildSmoother
     ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, BuildSmoother, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, BuildSmoother, Scalar, Node)
+#endif
     {
 #     include <MueLu_UseShortNames.hpp>
       MUELU_TESTING_SET_OSTREAM;
       MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef SmootherFactoryHelpers<SC,LO,GO,NO> SFH;
+#else
+      typedef SmootherFactoryHelpers<SC,NO> SFH;
+#endif
       SFH::testCollection(&SFH::testBuildSmootherDefaultArg, out, success); // TEST: default arg
       SFH::testCollection(&SFH::testBuildSmoother, out, success);           // TEST: PRE, POST and BOTH
     }
@@ -425,18 +493,27 @@ namespace MueLuTests {
     // Make sure that Constructors and SetSmootherPrototypes() are not using references as input arguments
     // (to allow Teuchos::null as input arguments)
     //TODO: const ref?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, Compilation, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SmootherFactory, Compilation, Scalar, Node)
+#endif
     {
 #     include <MueLu_UseShortNames.hpp>
       MUELU_TESTING_SET_OSTREAM;
       MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef SmootherFactoryHelpers<SC,LO,GO,NO> SFH;
+#else
+      typedef SmootherFactoryHelpers<SC,NO> SFH;
+#endif
       SmootherFactory smooFact1(Teuchos::null);
       SmootherFactory smooFact2(Teuchos::null, Teuchos::null);
       smooFact1.SetSmootherPrototypes(Teuchos::null);
       smooFact1.SetSmootherPrototypes(Teuchos::null, Teuchos::null);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, Constructor_OneArg, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, Constructor_TwoArg, SC, LO, GO, NO) \
@@ -445,6 +522,16 @@ namespace MueLuTests {
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, Build, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, BuildSmoother, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, Compilation, SC, LO, GO, NO)
+#else
+#define MUELU_ETI_GROUP(SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, Constructor_OneArg, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, Constructor_TwoArg, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, SetSmootherPrototypes_OneArg, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, SetSmootherPrototypes_TwoArg, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, Build, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, BuildSmoother, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SmootherFactory, Compilation, SC, NO)
+#endif
 #include <MueLu_ETI_4arg.hpp>
 
   } // namespace SmootherFactory

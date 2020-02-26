@@ -111,13 +111,23 @@
 namespace MueLu {
 
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class ParameterListInterpreter :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public HierarchyManager<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+    public HierarchyManager<Scalar, Node> {
+#endif
 #undef MUELU_PARAMETERLISTINTERPRETER_SHORT
 #include "MueLu_UseShortNames.hpp"
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef std::pair<std::string, const FactoryBase*> keep_pair;
 
   public:
@@ -264,7 +274,11 @@ namespace MueLu {
     Teuchos::RCP<FactoryFactory> factFact_;
 
     //! FacadeClass factory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<MueLu::FacadeClassFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> > facadeFact_;
+#else
+    Teuchos::RCP<MueLu::FacadeClassFactory<Scalar, Node> > facadeFact_;
+#endif
 
     //@}
   };

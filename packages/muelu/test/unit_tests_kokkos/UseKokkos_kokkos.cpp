@@ -62,7 +62,11 @@
 namespace MueLuTests {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(UseKokkos_kokkos, FactoryManager, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(UseKokkos_kokkos, FactoryManager, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -72,14 +76,26 @@ namespace MueLuTests {
     using Teuchos::RCP;
     using Teuchos::rcp;
     using real_type = typename Teuchos::ScalarTraits<SC>::coordinateType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using RealValuedMultiVector = Xpetra::MultiVector<real_type,LO,GO,NO>;
+#else
+    using RealValuedMultiVector = Xpetra::MultiVector<real_type,NO>;
+#endif
 
     const bool useKokkos = false;
 
     // Build the problem
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = MueLuTests::TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(2001);
+#else
+    RCP<Matrix> A = MueLuTests::TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(2001);
+#endif
     RCP<const Map> map = A->getMap();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<RealValuedMultiVector> coordinates = Xpetra::MultiVectorFactory<real_type, LO, GO, NO>::Build(map, 1);
+#else
+    RCP<RealValuedMultiVector> coordinates = Xpetra::MultiVectorFactory<real_type,NO>::Build(map, 1);
+#endif
     RCP<MultiVector> nullspace = MultiVectorFactory::Build(map, 1);
     nullspace->putScalar(Teuchos::ScalarTraits<SC>::one());
 
@@ -96,8 +112,13 @@ namespace MueLuTests {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(UseKokkos_kokkos, FactoryManager, SC, LO, GO, NO)
+#else
+#define MUELU_ETI_GROUP(SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(UseKokkos_kokkos, FactoryManager, SC, NO)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

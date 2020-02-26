@@ -231,7 +231,11 @@ namespace Tpetra {
         // It could be that Map is one-to-one, but the class doesn't
         // give us a way to test this, other than to create the
         // one-to-one Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         oneToOneMap = createOneToOne<LO, GO, NT> (map);
+#else
+        oneToOneMap = createOneToOne<NT> (map);
+#endif
       }
 
       RCP<const MapType> gatherMap;

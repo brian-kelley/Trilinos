@@ -55,20 +55,35 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   CoupledAggregationFactory<LocalOrdinal, GlobalOrdinal, Node>::CoupledAggregationFactory()
+#else
+  template <class Node>
+  CoupledAggregationFactory<Node>::CoupledAggregationFactory()
+#endif
   {
     TEUCHOS_TEST_FOR_EXCEPTION(algo2_.GetMinNodesPerAggregate() != algo1_.GetMinNodesPerAggregate(), Exceptions::RuntimeError, "");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoupledAggregationFactory<LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Node>
+  void CoupledAggregationFactory<Node>::DeclareInput(Level &currentLevel) const {
+#endif
     Input(currentLevel, "Graph");
     //Input(currentLevel, "UnAmalgamationInfo"); // TODO, only provided by CoalesceDropFactory2
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoupledAggregationFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(Level &currentLevel) const
+#else
+  template <class Node>
+  void CoupledAggregationFactory<Node>::Build(Level &currentLevel) const
+#endif
   {
     FactoryMonitor m(*this, "Build", currentLevel);
 

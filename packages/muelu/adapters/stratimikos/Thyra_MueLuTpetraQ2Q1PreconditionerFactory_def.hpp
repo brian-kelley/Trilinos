@@ -116,16 +116,29 @@ namespace Thyra {
   using Teuchos::Array;
 
   // Constructors/initializers/accessors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::MueLuTpetraQ2Q1PreconditionerFactory() {}
+#else
+  template <class Scalar, class Node>
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::MueLuTpetraQ2Q1PreconditionerFactory() {}
+#endif
 
 
   // Overridden from PreconditionerFactoryBase
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::isCompatible(const LinearOpSourceBase<Scalar>& fwdOpSrc) const {
     typedef Thyra ::TpetraLinearOp<SC,LO,GO,NO> ThyraTpetraLinOp;
     typedef Tpetra::Operator      <SC,LO,GO,NO> TpetraLinOp;
     typedef Tpetra::CrsMatrix     <SC,LO,GO,NO> TpetraCrsMat;
+#else
+  template <class Scalar, class Node>
+  bool MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::isCompatible(const LinearOpSourceBase<Scalar>& fwdOpSrc) const {
+    typedef Thyra ::TpetraLinearOp<SC,NO> ThyraTpetraLinOp;
+    typedef Tpetra::Operator      <SC,NO> TpetraLinOp;
+    typedef Tpetra::CrsMatrix     <SC,NO> TpetraCrsMat;
+#endif
 
     const RCP<const LinearOpBase<SC> > fwdOp            = fwdOpSrc.getOp();
     const RCP<const ThyraTpetraLinOp>  thyraTpetraFwdOp = rcp_dynamic_cast<const ThyraTpetraLinOp>(fwdOp);
@@ -135,14 +148,27 @@ namespace Thyra {
     return Teuchos::nonnull(tpetraFwdCrsMat);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   RCP<PreconditionerBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createPrec() const {
+#else
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::createPrec() const {
+#endif
     return rcp(new DefaultPreconditioner<SC>);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Scalar, class Node>
+  void MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::
+#endif
   initializePrec(const RCP<const LinearOpSourceBase<Scalar> > &fwdOpSrc, PreconditionerBase<Scalar> *prec, const ESupportSolveUse supportSolveUse) const {
     // Check precondition
     TEUCHOS_ASSERT(Teuchos::nonnull(fwdOpSrc));
@@ -153,15 +179,27 @@ namespace Thyra {
     const RCP<const LinearOpBase<SC> > fwdOp = fwdOpSrc->getOp();
     TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(fwdOp));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Thyra::TpetraLinearOp<SC,LO,GO,NO> ThyraTpetraLinOp;
+#else
+    typedef Thyra::TpetraLinearOp<SC,NO> ThyraTpetraLinOp;
+#endif
     const RCP<const ThyraTpetraLinOp> thyraTpetraFwdOp = rcp_dynamic_cast<const ThyraTpetraLinOp>(fwdOp);
     TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(thyraTpetraFwdOp));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Operator<SC,LO,GO,NO> TpetraLinOp;
+#else
+    typedef Tpetra::Operator<SC,NO> TpetraLinOp;
+#endif
     const RCP<const TpetraLinOp> tpetraFwdOp = thyraTpetraFwdOp->getConstTpetraOperator();
     TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(tpetraFwdOp));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<SC,LO,GO,NO> TpetraCrsMat;
+#else
+    typedef Tpetra::CrsMatrix<SC,NO> TpetraCrsMat;
+#endif
     const RCP<const TpetraCrsMat> tpetraFwdCrsMat = rcp_dynamic_cast<const TpetraCrsMat>(tpetraFwdOp);
     TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(tpetraFwdCrsMat));
 
@@ -177,7 +215,11 @@ namespace Thyra {
     // Create a copy, as we may remove some things from the list
     ParameterList paramList = *paramList_;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<SC,LO,GO,NO> MultiVector;
+#else
+    typedef Tpetra::MultiVector<SC,NO> MultiVector;
+#endif
     RCP<MultiVector> coords, nullspace, velCoords, presCoords;
     ArrayRCP<LO>     p2vMap;
     Teko::LinearOp   thA11, thA12, thA21, thA11_9Pt;
@@ -191,15 +233,24 @@ namespace Thyra {
     if (paramList.isType<Teko::LinearOp>   ("A21"))         { thA21      = paramList.get<Teko::LinearOp>   ("A21");         paramList.remove("A21"); }
     if (paramList.isType<Teko::LinearOp>   ("A11_9Pt"))     { thA11_9Pt  = paramList.get<Teko::LinearOp>   ("A11_9Pt");     paramList.remove("A11_9Pt"); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MueLu::TpetraOperator<SC,LO,GO,NO> MueLuOperator;
+#else
+    typedef MueLu::TpetraOperator<SC,NO> MueLuOperator;
+#endif
     const RCP<MueLuOperator> mueluPrecOp = Q2Q1MkPrecond(paramList, velCoords, presCoords, p2vMap, thA11, thA12, thA21, thA11_9Pt);
 
     const RCP<LinearOpBase<SC> > thyraPrecOp = Thyra::createLinearOp(RCP<TpetraLinOp>(mueluPrecOp));
     defaultPrec->initializeUnspecified(thyraPrecOp);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Scalar, class Node>
+  void MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::
+#endif
   uninitializePrec(PreconditionerBase<Scalar> *prec, RCP<const LinearOpSourceBase<Scalar> >* fwdOp, ESupportSolveUse* supportSolveUse) const {
     // Check precondition
     TEUCHOS_ASSERT(prec);
@@ -223,36 +274,73 @@ namespace Thyra {
 
 
   // Overridden from ParameterListAcceptor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setParameterList(const RCP<ParameterList>& paramList) {
+#else
+  template <class Scalar, class Node>
+  void MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::setParameterList(const RCP<ParameterList>& paramList) {
+#endif
     TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(paramList));
     paramList_ = paramList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   RCP<ParameterList>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getNonconstParameterList() {
+#else
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::getNonconstParameterList() {
+#endif
     return paramList_;
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   RCP<ParameterList>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::unsetParameterList() {
+#else
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::unsetParameterList() {
+#endif
     RCP<ParameterList> savedParamList = paramList_;
     paramList_ = Teuchos::null;
     return savedParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   RCP<const ParameterList>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getParameterList() const {
+#else
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::getParameterList() const {
+#endif
     return paramList_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   RCP<const ParameterList>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getValidParameters() const {
+#else
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::getValidParameters() const {
+#endif
     static RCP<const ParameterList> validPL;
 
     if (validPL.is_null())
@@ -261,20 +349,37 @@ namespace Thyra {
     return validPL;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::TpetraOperator<Scalar,Node> >
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::
+#endif
   Q2Q1MkPrecond(const ParameterList& paramList,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& velCoords,
                 const RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& presCoords,
+#else
+                const RCP<Tpetra::MultiVector<Scalar,Node> >& velCoords,
+                const RCP<Tpetra::MultiVector<Scalar,Node> >& presCoords,
+#endif
                 const ArrayRCP<LocalOrdinal>& p2vMap,
                 const Teko::LinearOp& thA11, const Teko::LinearOp& thA12, const Teko::LinearOp& thA21, const Teko::LinearOp& thA11_9Pt) const
   {
     using Teuchos::null;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix           <SC,LO,GO,NO> TP_Crs;
     typedef Tpetra::Operator            <SC,LO,GO,NO> TP_Op;
+#else
+    typedef Tpetra::CrsMatrix           <SC,NO> TP_Crs;
+    typedef Tpetra::Operator            <SC,NO> TP_Op;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::BlockedCrsMatrix    <SC,LO,GO,NO> BlockedCrsMatrix;
     typedef Xpetra::CrsMatrix           <SC,LO,GO,NO> CrsMatrix;
     typedef Xpetra::CrsMatrixWrap       <SC,LO,GO,NO> CrsMatrixWrap;
@@ -285,8 +390,24 @@ namespace Thyra {
     typedef Xpetra::Matrix              <SC,LO,GO,NO> Matrix;
     typedef Xpetra::MatrixFactory       <SC,LO,GO,NO> MatrixFactory;
     typedef Xpetra::StridedMapFactory      <LO,GO,NO> StridedMapFactory;
+#else
+    typedef Xpetra::BlockedCrsMatrix    <SC,NO> BlockedCrsMatrix;
+    typedef Xpetra::CrsMatrix           <SC,NO> CrsMatrix;
+    typedef Xpetra::CrsMatrixWrap       <SC,NO> CrsMatrixWrap;
+    typedef Xpetra::MapExtractorFactory <SC,NO> MapExtractorFactory;
+    typedef Xpetra::MapExtractor        <SC,NO> MapExtractor;
+    typedef Xpetra::Map                    <NO> Map;
+    typedef Xpetra::MapFactory             <NO> MapFactory;
+    typedef Xpetra::Matrix              <SC,NO> Matrix;
+    typedef Xpetra::MatrixFactory       <SC,NO> MatrixFactory;
+    typedef Xpetra::StridedMapFactory      <NO> StridedMapFactory;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MueLu::Hierarchy            <SC,LO,GO,NO> Hierarchy;
+#else
+    typedef MueLu::Hierarchy            <SC,NO> Hierarchy;
+#endif
 
     const RCP<const Teuchos::Comm<int> > comm = velCoords->getMap()->getComm();
 
@@ -296,10 +417,17 @@ namespace Thyra {
     RCP<Thyra::LinearOpBase<SC> > ThNonConstA12     = rcp_const_cast<Thyra::LinearOpBase<double> >(thA12);
     RCP<Thyra::LinearOpBase<SC> > ThNonConstA11_9Pt = rcp_const_cast<Thyra::LinearOpBase<double> >(thA11_9Pt);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<TP_Op>  TpetA11     = Thyra::TpetraOperatorVectorExtraction<SC,LO,GO,NO>::getTpetraOperator(ThNonConstA11);
     RCP<TP_Op>  TpetA21     = Thyra::TpetraOperatorVectorExtraction<SC,LO,GO,NO>::getTpetraOperator(ThNonConstA21);
     RCP<TP_Op>  TpetA12     = Thyra::TpetraOperatorVectorExtraction<SC,LO,GO,NO>::getTpetraOperator(ThNonConstA12);
     RCP<TP_Op>  TpetA11_9Pt = Thyra::TpetraOperatorVectorExtraction<SC,LO,GO,NO>::getTpetraOperator(ThNonConstA11_9Pt);
+#else
+    RCP<TP_Op>  TpetA11     = Thyra::TpetraOperatorVectorExtraction<SC,NO>::getTpetraOperator(ThNonConstA11);
+    RCP<TP_Op>  TpetA21     = Thyra::TpetraOperatorVectorExtraction<SC,NO>::getTpetraOperator(ThNonConstA21);
+    RCP<TP_Op>  TpetA12     = Thyra::TpetraOperatorVectorExtraction<SC,NO>::getTpetraOperator(ThNonConstA12);
+    RCP<TP_Op>  TpetA11_9Pt = Thyra::TpetraOperatorVectorExtraction<SC,NO>::getTpetraOperator(ThNonConstA11_9Pt);
+#endif
 
     RCP<TP_Crs> TpetCrsA11      = rcp_dynamic_cast<TP_Crs>(TpetA11);
     RCP<TP_Crs> TpetCrsA21      = rcp_dynamic_cast<TP_Crs>(TpetA21);
@@ -416,8 +544,13 @@ namespace Thyra {
     RCP<Teuchos::FancyOStream> fancy = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
     Teuchos::FancyOStream& out = *fancy;
     out.setOutputToRootOnly(0);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> BBt     = Xpetra::MatrixMatrix<SC,LO,GO,NO>::Multiply(*A_21,     false, *A_12,     false, out);
     RCP<Matrix> BBt_abs = Xpetra::MatrixMatrix<SC,LO,GO,NO>::Multiply(*A_21_abs, false, *A_12_abs, false, out);
+#else
+    RCP<Matrix> BBt     = Xpetra::MatrixMatrix<SC,NO>::Multiply(*A_21,     false, *A_12,     false, out);
+    RCP<Matrix> BBt_abs = Xpetra::MatrixMatrix<SC,NO>::Multiply(*A_21_abs, false, *A_12_abs, false, out);
+#endif
 
     SC dropTol = (paramList.get<int>("useFilters") ? paramList.get<double>("tau_1") : 0.00);
     RCP<Matrix> filteredA = FilterMatrix(*A_11, *A_11,    dropTol);
@@ -456,7 +589,11 @@ namespace Thyra {
     // -------------------------------------------------------------------------
     // Preconditioner construction - I.a (filtered hierarchy)
     // -------------------------------------------------------------------------
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MueLu::FactoryManager<SC,LO,GO,NO> M;
+#else
+    MueLu::FactoryManager<SC,NO> M;
+#endif
     SetDependencyTree(M, paramList);
 
     RCP<Hierarchy> H = rcp(new Hierarchy);
@@ -486,8 +623,13 @@ namespace Thyra {
       RCP<Matrix>           Pp    = Pcrs->getMatrix(1,1);
       RCP<Matrix>           Pv    = Pcrs->getMatrix(0,0);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<SC,LO,GO,NO>::Write("Pp_l" + MueLu::toString(i) + ".mm", *Pp);
       Xpetra::IO<SC,LO,GO,NO>::Write("Pv_l" + MueLu::toString(i) + ".mm", *Pv);
+#else
+      Xpetra::IO<SC,NO>::Write("Pp_l" + MueLu::toString(i) + ".mm", *Pp);
+      Xpetra::IO<SC,NO>::Write("Pv_l" + MueLu::toString(i) + ".mm", *Pv);
+#endif
     }
 #endif
 
@@ -521,9 +663,14 @@ namespace Thyra {
 
     H->Setup(M, 0, H->GetNumLevels());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return rcp(new MueLu::TpetraOperator<SC,LO,GO,NO>(H));
+#else
+    return rcp(new MueLu::TpetraOperator<SC,NO>(H));
+#endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
@@ -533,6 +680,17 @@ namespace Thyra {
     typedef MueLu::CoalesceDropFactory<SC,LO,GO,NO> CoalesceDropFactory;
     typedef MueLu::FilteredAFactory<SC,LO,GO,NO>    FilteredAFactory;
     typedef MueLu::GraphBase<LO,GO,NO>              GraphBase;
+#else
+  template <class Scalar, class Node>
+  RCP<Xpetra::Matrix<Scalar,Node> >
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::
+  FilterMatrix(Xpetra::Matrix<Scalar,Node>& A, Xpetra::Matrix<Scalar,Node>& Pattern, Scalar dropTol) const {
+    typedef Xpetra::Matrix<SC,NO>             Matrix;
+    typedef MueLu::AmalgamationFactory<SC,NO> AmalgamationFactory;
+    typedef MueLu::CoalesceDropFactory<SC,NO> CoalesceDropFactory;
+    typedef MueLu::FilteredAFactory<SC,NO>    FilteredAFactory;
+    typedef MueLu::GraphBase<NO>              GraphBase;
+#endif
 
     RCP<GraphBase> filteredGraph;
     {
@@ -618,8 +776,13 @@ namespace Thyra {
     return filteredA;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
   SetDependencyTree(MueLu::FactoryManager<Scalar,LocalOrdinal,GlobalOrdinal,Node>& M, const ParameterList& paramList) const {
     typedef MueLu::BlockedPFactory      <SC,LO,GO,NO> BlockedPFactory;
@@ -628,6 +791,16 @@ namespace Thyra {
     typedef MueLu::SmootherFactory      <SC,LO,GO,NO> SmootherFactory;
     typedef MueLu::BlockedDirectSolver  <SC,LO,GO,NO> BlockedDirectSolver;
     typedef MueLu::FactoryManager       <SC,LO,GO,NO> FactoryManager;
+#else
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::
+  SetDependencyTree(MueLu::FactoryManager<Scalar,Node>& M, const ParameterList& paramList) const {
+    typedef MueLu::BlockedPFactory      <SC,NO> BlockedPFactory;
+    typedef MueLu::GenericRFactory      <SC,NO> GenericRFactory;
+    typedef MueLu::BlockedRAPFactory    <SC,NO> BlockedRAPFactory;
+    typedef MueLu::SmootherFactory      <SC,NO> SmootherFactory;
+    typedef MueLu::BlockedDirectSolver  <SC,NO> BlockedDirectSolver;
+    typedef MueLu::FactoryManager       <SC,NO> FactoryManager;
+#endif
 
     // Pressure and velocity dependency trees are identical. The only
     // difference is that pressure has to go first, so that velocity can use
@@ -663,8 +836,13 @@ namespace Thyra {
     M.SetFactory("CoarseSolver", Teuchos::null);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
   SetBlockDependencyTree(MueLu::FactoryManager<Scalar,LocalOrdinal,GlobalOrdinal,Node>& M, LocalOrdinal row, LocalOrdinal col, const std::string& mode, const ParameterList& paramList) const {
     typedef MueLu::ConstraintFactory <SC,LO,GO,NO> ConstraintFactory;
@@ -674,6 +852,17 @@ namespace Thyra {
     typedef MueLu::Q2Q1PFactory      <SC,LO,GO,NO> Q2Q1PFactory;
     typedef MueLu::Q2Q1uPFactory     <SC,LO,GO,NO> Q2Q1uPFactory;
     typedef MueLu::SubBlockAFactory  <SC,LO,GO,NO> SubBlockAFactory;
+#else
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::
+  SetBlockDependencyTree(MueLu::FactoryManager<Scalar,Node>& M, LocalOrdinal row, LocalOrdinal col, const std::string& mode, const ParameterList& paramList) const {
+    typedef MueLu::ConstraintFactory <SC,NO> ConstraintFactory;
+    typedef MueLu::EminPFactory      <SC,NO> EminPFactory;
+    typedef MueLu::GenericRFactory   <SC,NO> GenericRFactory;
+    typedef MueLu::PatternFactory    <SC,NO> PatternFactory;
+    typedef MueLu::Q2Q1PFactory      <SC,NO> Q2Q1PFactory;
+    typedef MueLu::Q2Q1uPFactory     <SC,NO> Q2Q1uPFactory;
+    typedef MueLu::SubBlockAFactory  <SC,NO> SubBlockAFactory;
+#endif
 
     RCP<SubBlockAFactory> AFact = rcp(new SubBlockAFactory());
     AFact->SetFactory  ("A",         MueLu::NoFactory::getRCP());
@@ -743,12 +932,21 @@ namespace Thyra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   RCP<MueLu::FactoryBase>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::
+#endif
   GetSmoother(const std::string& type, const ParameterList& paramList, bool coarseSolver) const {
     typedef Teuchos::ParameterEntry                   ParameterEntry;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MueLu::BlockedDirectSolver   <SC,LO,GO,NO> BlockedDirectSolver;
     typedef MueLu::BraessSarazinSmoother <SC,LO,GO,NO> BraessSarazinSmoother;
     typedef MueLu::DirectSolver          <SC,LO,GO,NO> DirectSolver;
@@ -757,6 +955,16 @@ namespace Thyra {
     typedef MueLu::SmootherFactory       <SC,LO,GO,NO> SmootherFactory;
     typedef MueLu::SmootherPrototype     <SC,LO,GO,NO> SmootherPrototype;
     typedef MueLu::TrilinosSmoother      <SC,LO,GO,NO> TrilinosSmoother;
+#else
+    typedef MueLu::BlockedDirectSolver   <SC,NO> BlockedDirectSolver;
+    typedef MueLu::BraessSarazinSmoother <SC,NO> BraessSarazinSmoother;
+    typedef MueLu::DirectSolver          <SC,NO> DirectSolver;
+    typedef MueLu::FactoryManager        <SC,NO> FactoryManager;
+    typedef MueLu::SchurComplementFactory<SC,NO> SchurComplementFactory;
+    typedef MueLu::SmootherFactory       <SC,NO> SmootherFactory;
+    typedef MueLu::SmootherPrototype     <SC,NO> SmootherPrototype;
+    typedef MueLu::TrilinosSmoother      <SC,NO> TrilinosSmoother;
+#endif
 
     RCP<SmootherPrototype> smootherPrototype;
     if (type == "none") {
@@ -842,12 +1050,21 @@ namespace Thyra {
     return coarseSolver ? rcp(new SmootherFactory(smootherPrototype, Teuchos::null)) : rcp(new SmootherFactory(smootherPrototype));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Absolute(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& A) const {
     typedef Xpetra::CrsMatrix    <SC,LO,GO,NO> CrsMatrix;
     typedef Xpetra::CrsMatrixWrap<SC,LO,GO,NO> CrsMatrixWrap;
     typedef Xpetra::Matrix       <SC,LO,GO,NO> Matrix;
+#else
+  template <class Scalar, class Node>
+  RCP<Xpetra::Matrix<Scalar,Node> >
+  MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::Absolute(const Xpetra::Matrix<Scalar,Node>& A) const {
+    typedef Xpetra::CrsMatrix    <SC,NO> CrsMatrix;
+    typedef Xpetra::CrsMatrixWrap<SC,NO> CrsMatrixWrap;
+    typedef Xpetra::Matrix       <SC,NO> Matrix;
+#endif
 
     const CrsMatrixWrap& Awrap = dynamic_cast<const CrsMatrixWrap&>(A);
 
@@ -872,8 +1089,13 @@ namespace Thyra {
   }
 
   // Public functions overridden from Teuchos::Describable
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string MueLuTpetraQ2Q1PreconditionerFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string MueLuTpetraQ2Q1PreconditionerFactory<Scalar,Node>::description() const {
+#endif
     return "Thyra::MueLuTpetraQ2Q1PreconditionerFactory";
   }
 

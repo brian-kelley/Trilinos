@@ -93,7 +93,11 @@ public:
   typedef typename InputTraits<User>::part_t   part_t;
   typedef typename InputTraits<User>::node_t   node_t;
   typedef typename InputTraits<User>::offset_t offset_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::CrsMatrix<scalar_t, lno_t, gno_t, node_t> xmatrix_t;
+#else
+  typedef Xpetra::CrsMatrix<scalar_t, node_t> xmatrix_t;
+#endif
   typedef User user_t;
   typedef UserCoord userCoord_t;
 #endif
@@ -225,8 +229,13 @@ private:
 
   RCP<const User> inmatrix_;
   RCP<const xmatrix_t> matrix_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::Map<lno_t, gno_t, node_t> > rowMap_;
   RCP<const Xpetra::Map<lno_t, gno_t, node_t> > colMap_;
+#else
+  RCP<const Xpetra::Map<node_t> > rowMap_;
+  RCP<const Xpetra::Map<node_t> > colMap_;
+#endif
   lno_t base_;
   ArrayRCP< const offset_t > offset_;
   ArrayRCP< const lno_t > localColumnIds_;

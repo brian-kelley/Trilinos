@@ -54,7 +54,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IndexManager, CreateGlobalLexicographicIndexManager, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IndexManager, CreateGlobalLexicographicIndexManager, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -66,7 +70,11 @@ namespace MueLuTests {
     fout->setShowAllFrontMatter(false).setShowProcRank(true);
 
     typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
     RCP<const Teuchos::Comm<int> > comm = MueLuTests::TestHelpers::Parameters::getDefaultComm();
 
@@ -90,14 +98,23 @@ namespace MueLuTests {
     }
 
     RCP<RealValuedMultiVector> coords =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLuTests::TestHelpers::TestFactory<SC,LO,GO,NO>::BuildGeoCoordinates(numDimensions,
+#else
+      MueLuTests::TestHelpers::TestFactory<SC,NO>::BuildGeoCoordinates(numDimensions,
+#endif
                                                                              gNodesPerDir,
                                                                              lNodesPerDir,
                                                                              meshData,
                                                                              "Global Lexicographic");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::GlobalLexicographicIndexManager<LO,GO,NO> > myIndexManager =
       rcp(new MueLu::GlobalLexicographicIndexManager<LO,GO,NO>(comm, coupled, numDimensions,
+#else
+    RCP<MueLu::GlobalLexicographicIndexManager<NO> > myIndexManager =
+      rcp(new MueLu::GlobalLexicographicIndexManager<NO>(comm, coupled, numDimensions,
+#endif
                                                                interpolationOrder, gNodesPerDir,
                                                                lNodesPerDir, coarseRate,
                                                                coords->getMap()->getMinGlobalIndex()
@@ -284,7 +301,11 @@ namespace MueLuTests {
 
   } // CreateGlobalLexicographicIndexManager
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IndexManager, CreateLocalLexicographicIndexManager, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IndexManager, CreateLocalLexicographicIndexManager, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -296,7 +317,11 @@ namespace MueLuTests {
     fout->setShowAllFrontMatter(false).setShowProcRank(true);
 
     typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
     RCP<const Teuchos::Comm<int> > comm = MueLuTests::TestHelpers::Parameters::getDefaultComm();
 
@@ -320,14 +345,23 @@ namespace MueLuTests {
     }
 
     RCP<RealValuedMultiVector> coords =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLuTests::TestHelpers::TestFactory<SC,LO,GO,NO>::BuildGeoCoordinates(numDimensions,
+#else
+      MueLuTests::TestHelpers::TestFactory<SC,NO>::BuildGeoCoordinates(numDimensions,
+#endif
                                                                              gNodesPerDir,
                                                                              lNodesPerDir,
                                                                              meshData,
                                                                              "Local Lexicographic");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::LocalLexicographicIndexManager<LO,GO,NO> > myIndexManager =
       rcp(new MueLu::LocalLexicographicIndexManager<LO,GO,NO>(comm, coupled, numDimensions,
+#else
+    RCP<MueLu::LocalLexicographicIndexManager<NO> > myIndexManager =
+      rcp(new MueLu::LocalLexicographicIndexManager<NO>(comm, coupled, numDimensions,
+#endif
                                                               interpolationOrder, comm->getRank(),
                                                               comm->getSize(), gNodesPerDir,
                                                               lNodesPerDir, coarseRate, meshData));
@@ -512,7 +546,11 @@ namespace MueLuTests {
 
   } // CreateLocalLexicographicIndexManager
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IndexManager, CreateUncoupledIndexManager, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IndexManager, CreateUncoupledIndexManager, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -524,7 +562,11 @@ namespace MueLuTests {
     fout->setShowAllFrontMatter(false).setShowProcRank(true);
 
     typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
     RCP<const Teuchos::Comm<int> > comm = MueLuTests::TestHelpers::Parameters::getDefaultComm();
 
@@ -548,14 +590,23 @@ namespace MueLuTests {
     }
 
     RCP<RealValuedMultiVector> coords =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLuTests::TestHelpers::TestFactory<SC,LO,GO,NO>::BuildGeoCoordinates(numDimensions,
+#else
+      MueLuTests::TestHelpers::TestFactory<SC,NO>::BuildGeoCoordinates(numDimensions,
+#endif
                                                                              gNodesPerDir,
                                                                              lNodesPerDir,
                                                                              meshData,
                                                                              "Local Lexicographic");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::UncoupledIndexManager<LO,GO,NO> > myIndexManager =
       rcp(new MueLu::UncoupledIndexManager<LO,GO,NO>(comm, coupled, numDimensions,
+#else
+    RCP<MueLu::UncoupledIndexManager<NO> > myIndexManager =
+      rcp(new MueLu::UncoupledIndexManager<NO>(comm, coupled, numDimensions,
+#endif
                                                      interpolationOrder, comm->getRank(),
                                                      comm->getSize(), gNodesPerDir,
                                                      lNodesPerDir, coarseRate));
@@ -704,10 +755,17 @@ namespace MueLuTests {
   } // CreateUncoupledIndexManager
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(Scalar, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IndexManager,CreateGlobalLexicographicIndexManager,Scalar,LO,GO,Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IndexManager,CreateLocalLexicographicIndexManager,Scalar,LO,GO,Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IndexManager,CreateUncoupledIndexManager,Scalar,LO,GO,Node) \
+#else
+#  define MUELU_ETI_GROUP(Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IndexManager,CreateGlobalLexicographicIndexManager,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IndexManager,CreateLocalLexicographicIndexManager,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IndexManager,CreateUncoupledIndexManager,Scalar,Node) \
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

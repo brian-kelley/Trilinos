@@ -51,13 +51,20 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class TwoLevelBlockPreconditioner : public OneLevelPreconditioner<SC,LO,GO,NO> {
+#else
+    class TwoLevelBlockPreconditioner : public OneLevelPreconditioner<SC,NO> {
+#endif
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMapPtr                             = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMapPtr;
         using ConstXMapPtr                        = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMapPtr;
         using XMapPtrVecPtr                       = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMapPtrVecPtr;
@@ -79,18 +86,63 @@ namespace FROSch {
         using GDSWCoarseOperatorPtr               = typename SchwarzPreconditioner<SC,LO,GO,NO>::GDSWCoarseOperatorPtr;
         using RGDSWCoarseOperatorPtr              = typename SchwarzPreconditioner<SC,LO,GO,NO>::RGDSWCoarseOperatorPtr;
         using IPOUHarmonicCoarseOperatorPtr       = typename SchwarzPreconditioner<SC,LO,GO,NO>::IPOUHarmonicCoarseOperatorPtr;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using XMapPtr                             = typename SchwarzPreconditioner<SC,NO>::XMapPtr;
+        using ConstXMapPtr                        = typename SchwarzPreconditioner<SC,NO>::ConstXMapPtr;
+        using XMapPtrVecPtr                       = typename SchwarzPreconditioner<SC,NO>::XMapPtrVecPtr;
+        using ConstXMapPtrVecPtr                  = typename SchwarzPreconditioner<SC,NO>::ConstXMapPtrVecPtr;
+        using XMapPtrVecPtr2D                     = typename SchwarzPreconditioner<SC,NO>::XMapPtrVecPtr2D;
+        using ConstXMapPtrVecPtr2D                = typename SchwarzPreconditioner<SC,NO>::ConstXMapPtrVecPtr2D;
 
+        using XMatrixPtr                          = typename SchwarzPreconditioner<SC,NO>::XMatrixPtr;
+        using ConstXMatrixPtr                     = typename SchwarzPreconditioner<SC,NO>::ConstXMatrixPtr;
+
+        using XMultiVectorPtr                     = typename SchwarzPreconditioner<SC,NO>::XMultiVectorPtr;
+        using XMultiVectorPtrVecPtr               = typename SchwarzPreconditioner<SC,NO>::XMultiVectorPtrVecPtr;
+        using ConstXMultiVectorPtrVecPtr          = typename SchwarzPreconditioner<SC,NO>::ConstXMultiVectorPtrVecPtr;
+
+        using ParameterListPtr                    = typename SchwarzPreconditioner<SC,NO>::ParameterListPtr;
+
+        using AlgebraicOverlappingOperatorPtr     = typename SchwarzPreconditioner<SC,NO>::AlgebraicOverlappingOperatorPtr;
+        using CoarseOperatorPtr                   = typename SchwarzPreconditioner<SC,NO>::CoarseOperatorPtr;
+        using GDSWCoarseOperatorPtr               = typename SchwarzPreconditioner<SC,NO>::GDSWCoarseOperatorPtr;
+        using RGDSWCoarseOperatorPtr              = typename SchwarzPreconditioner<SC,NO>::RGDSWCoarseOperatorPtr;
+        using IPOUHarmonicCoarseOperatorPtr       = typename SchwarzPreconditioner<SC,NO>::IPOUHarmonicCoarseOperatorPtr;
+#endif
+
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using DofOrderingVecPtr                   = typename SchwarzPreconditioner<SC,LO,GO,NO>::DofOrderingVecPtr;
+#else
+        using DofOrderingVecPtr                   = typename SchwarzPreconditioner<SC,NO>::DofOrderingVecPtr;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using UN                                  = typename SchwarzPreconditioner<SC,LO,GO,NO>::UN;
         using UNVecPtr                            = typename SchwarzPreconditioner<SC,LO,GO,NO>::UNVecPtr;
+#else
+        using UN                                  = typename SchwarzPreconditioner<SC,NO>::UN;
+        using UNVecPtr                            = typename SchwarzPreconditioner<SC,NO>::UNVecPtr;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using LOVecPtr                            = typename SchwarzPreconditioner<SC,LO,GO,NO>::LOVecPtr;
+#else
+        using LOVecPtr                            = typename SchwarzPreconditioner<SC,NO>::LOVecPtr;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using GOVec                               = typename SchwarzPreconditioner<SC,LO,GO,NO>::GOVec;
         using GOVec2D                             = typename SchwarzPreconditioner<SC,LO,GO,NO>::GOVec2D;
         using GOVecPtr                            = typename SchwarzPreconditioner<SC,LO,GO,NO>::GOVecPtr;
         using GOVecPtr2D                          = typename SchwarzPreconditioner<SC,LO,GO,NO>::GOVecPtr2D;
+#else
+        using GOVec                               = typename SchwarzPreconditioner<SC,NO>::GOVec;
+        using GOVec2D                             = typename SchwarzPreconditioner<SC,NO>::GOVec2D;
+        using GOVecPtr                            = typename SchwarzPreconditioner<SC,NO>::GOVecPtr;
+        using GOVecPtr2D                          = typename SchwarzPreconditioner<SC,NO>::GOVecPtr2D;
+#endif
 
     public:
 

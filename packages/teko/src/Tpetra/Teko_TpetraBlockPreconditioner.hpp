@@ -102,7 +102,11 @@ public:
      * \param[in] clear If true, than any previous state saved by the preconditioner
      *                  is discarded.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void buildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A,bool clear=true);
+#else
+   virtual void buildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A,bool clear=true);
+#endif
 
    /** \brief Build this preconditioner from an Epetra_Operator 
      * passed in to this object. It is assumed that this Epetra_Operator
@@ -117,7 +121,11 @@ public:
      * \param[in] clear If true, than any previous state saved by the preconditioner
      *                  is discarded.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void buildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A,const Tpetra::MultiVector<ST,LO,GO,NT> & mv,bool clear=true);
+#else
+   virtual void buildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A,const Tpetra::MultiVector<ST,NT> & mv,bool clear=true);
+#endif
 
    /** \brief Rebuild this preconditioner from an Epetra_Operator passed
      * in this to object. 
@@ -131,7 +139,11 @@ public:
      *
      * \param[in] A The Epetra source operator. (Should be a EpetraOperatorWrapper!)
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void rebuildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A);
+#else
+   virtual void rebuildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A);
+#endif
 
    /** \brief Rebuild this preconditioner from an Epetra_Operator passed
      * in this to object. 
@@ -146,7 +158,11 @@ public:
      * \param[in] A The Epetra source operator. (Should be a EpetraOperatorWrapper!)
      * \param[in] mv A vector that was used to build the source operator.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void rebuildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A,const Tpetra::MultiVector<ST,LO,GO,NT> & mv);
+#else
+   virtual void rebuildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A,const Tpetra::MultiVector<ST,NT> & mv);
+#endif
 
    /** Try to get a <code>Teko::PreconditionerState</code> object. This method
      * attempts to cast its internal representation of a preconditioner 
@@ -171,8 +187,13 @@ public:
    virtual Teuchos::RCP<const PreconditionerState> getPreconditionerState() const;
 
 protected:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<const Thyra::LinearOpBase<ST> > extractLinearOp(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A) const;
    Teuchos::RCP<const MappingStrategy> extractMappingStrategy(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A) const;
+#else
+   Teuchos::RCP<const Thyra::LinearOpBase<ST> > extractLinearOp(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A) const;
+   Teuchos::RCP<const MappingStrategy> extractMappingStrategy(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A) const;
+#endif
 
    TpetraBlockPreconditioner(); 
    TpetraBlockPreconditioner(const TpetraBlockPreconditioner &); 

@@ -345,10 +345,16 @@ bool MOERTEL::Segment::GetPtrstoNodes(MOERTEL::Interface& interface)
 
 #ifdef HAVE_MOERTEL_TPETRA
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MOERTEL::Segment::GetPtrstoNodes(MoertelT::InterfaceT<ST, LO, GO, N>& interface)
+#else
+bool MOERTEL::Segment::GetPtrstoNodes(MoertelT::InterfaceT<ST, N>& interface)
+#endif
 { 
   if (!interface.IsComplete()) return false;
   if (interface.lComm() == Teuchos::null) return true;

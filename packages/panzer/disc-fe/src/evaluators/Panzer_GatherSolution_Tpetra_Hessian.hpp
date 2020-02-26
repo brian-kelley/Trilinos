@@ -55,7 +55,11 @@ namespace panzer {
 // Hessian Specialization
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class GatherSolution_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>
+#else
+class GatherSolution_Tpetra<panzer::Traits::Hessian,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Hessian, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -77,7 +81,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData /* d */) {}
 
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new GatherSolution_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new GatherSolution_Tpetra<panzer::Traits::Hessian,TRAITS,NodeT>(globalIndexer_,pl)); }
+#endif
 
   // for testing purposes
   const PHX::FieldTag & getFieldTag(int i) const
@@ -98,7 +106,11 @@ private:
   bool useTimeDerivativeSolutionVector_;
   std::string globalDataKey_; // what global data does this fill?
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TpetraLinearObjContainer<double,LO,GO,NodeT> > tpetraContainer_;
+#else
+  Teuchos::RCP<const TpetraLinearObjContainer<double,NodeT> > tpetraContainer_;
+#endif
 
   // Fields for storing tangent components dx/dp of solution vector x
   // These are not actually used by the residual specialization of this evaluator,

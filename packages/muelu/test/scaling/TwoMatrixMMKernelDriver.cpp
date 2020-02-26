@@ -127,8 +127,13 @@ std::string mkl_error(sparse_status_t code) {
    
 
   // mkl_sparse_spmm
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MM2_MKL(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A, const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B1, Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B2, Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &C,Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >&Ccolmap, std::string algorithm_name) {
+#else
+template<class Scalar, class Node>
+void MM2_MKL(const Xpetra::Matrix<Scalar,Node> &A, const Xpetra::Matrix<Scalar,Node> &B1, Xpetra::Matrix<Scalar,Node> &B2, Xpetra::Matrix<Scalar,Node> &C,Teuchos::RCP<const Xpetra::Map<Node> >&Ccolmap, std::string algorithm_name) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -138,7 +143,11 @@ void MM2_MKL(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A, co
   Xpetra::UnderlyingLib lib = A.getRowMap()->lib();
   RCP<TimeMonitor> tm;
 #ifdef HAVE_MUELU_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+#endif
     typedef typename crs_matrix_type::local_matrix_type    KCRS;
     typedef typename KCRS::StaticCrsGraphType              graph_t;
     typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -146,7 +155,11 @@ void MM2_MKL(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A, co
     typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;
     typedef typename graph_t::entries_type::const_type     c_lno_nnz_view_t;
     typedef typename KCRS::values_type::non_const_type     scalar_view_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO,GO,NO>                                     map_type;
+#else
+    typedef Tpetra::Map<NO>                                     map_type;
+#endif
     typedef typename map_type::local_map_type                         local_map_type;
 
 
@@ -169,7 +182,11 @@ void MM2_MKL(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A, co
     lno_nnz_view_t Ccolind = Cmat.graph.entries;
     const scalar_view_t Avals = Amat.values, B1vals = B1mat.values, B2vals = B2mat.values;
     scalar_view_t Cvals = Cmat.values;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Map<LO,GO,Node> > Ccolmap_t = Xpetra::toTpetra(Ccolmap);
+#else
+    RCP<const Tpetra::Map<Node> > Ccolmap_t = Xpetra::toTpetra(Ccolmap);
+#endif
     local_map_type Bcolmap_local = B1u->getColMap()->getLocalMap();
     local_map_type Icolmap_local = B2u->getColMap()->getLocalMap();
     local_map_type Ccolmap_local = Ccolmap_t->getLocalMap();
@@ -321,8 +338,13 @@ void MM2_MKL(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A, co
 #include "TpetraExt_MatrixMatrix_ExtraKernels_def.hpp"
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MM2_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,  const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B1,   Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B2, Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &C,Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >&Ccolmap, std::string algorithm_name, int team_work_size) {
+#else
+template<class Scalar, class Node>
+void MM2_Wrapper(const Xpetra::Matrix<Scalar,Node> &A,  const Xpetra::Matrix<Scalar,Node> &B1,   Xpetra::Matrix<Scalar,Node> &B2, Xpetra::Matrix<Scalar,Node> &C,Teuchos::RCP<const Xpetra::Map<Node> >&Ccolmap, std::string algorithm_name, int team_work_size) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -335,8 +357,13 @@ void MM2_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A
 
   if (lib == Xpetra::UseTpetra) {
 #if defined(HAVE_MUELU_TPETRA) && defined(HAVE_TPETRA_INST_OPENMP)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
     typedef Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>           import_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+    typedef Tpetra::Import<Node>           import_type;
+#endif
     typedef typename crs_matrix_type::local_matrix_type    KCRS;
     typedef typename KCRS::device_type device_t;
     typedef typename KCRS::StaticCrsGraphType graph_t;
@@ -344,7 +371,11 @@ void MM2_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A
     typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;
     typedef typename KCRS::values_type::non_const_type scalar_view_t;
     typedef Kokkos::View<LO*, typename lno_view_t::array_layout, typename lno_view_t::device_type> lo_view_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO,GO,NO>                                     map_type;
+#else
+    typedef Tpetra::Map<NO>                                     map_type;
+#endif
     typedef typename map_type::local_map_type                         local_map_type;
     typedef typename Node::execution_space execution_space;
     typedef Kokkos::RangePolicy<execution_space, size_t> range_type;
@@ -361,7 +392,11 @@ void MM2_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A
     // Copy in the data for Kernel Wrapper
     tm = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("MM2 "+name+": CopyIn")));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node> Aview, Bview;
+#else
+    Tpetra::CrsMatrixStruct<Scalar, Node> Aview, Bview;
+#endif
     Aview.origMatrix   = Au;
     Aview.origRowMap   = Au->getRowMap();
     Aview.rowMap       = Au->getRowMap();
@@ -380,7 +415,11 @@ void MM2_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A
     Bview.importMatrix = B2u;
     Bview.importColMap = B2u->getColMap();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Map<LO,GO,Node> > Ccolmap_t = Xpetra::toTpetra(Ccolmap);
+#else
+    RCP<const Tpetra::Map<Node> > Ccolmap_t = Xpetra::toTpetra(Ccolmap);
+#endif
     Cnc->replaceColMap(Ccolmap_t);
 
 
@@ -427,7 +466,11 @@ void MM2_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A
     params->set("openmp: team work size",team_work_size);
 
     tm = rcp(new TimeMonitor(*TimeMonitor::getNewTimer(std::string("MM2 ")+name+": Kernel")));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::MMdetails::KernelWrappers<SC,LO,GO,Node,lno_nnz_view_t>::mult_A_B_newmatrix_kernel_wrapper(Aview,Bview,targetMapToOrigRow,targetMapToImportRow,Bcol2Ccol,Icol2Ccol,*Cnc,Cimport,name,params);
+#else
+    Tpetra::MMdetails::KernelWrappers<SC,Node,lno_nnz_view_t>::mult_A_B_newmatrix_kernel_wrapper(Aview,Bview,targetMapToOrigRow,targetMapToImportRow,Bcol2Ccol,Icol2Ccol,*Cnc,Cimport,name,params);
+#endif
 
     tm = Teuchos::null;
     Au->getComm()->barrier();
@@ -440,7 +483,11 @@ void MM2_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A
 // =========================================================================
 // =========================================================================
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -569,8 +616,13 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
     comm->barrier();
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = Xpetra::IO<SC,LO,GO,Node>::Read(std::string(matrixFileNameA), lib, comm);
     RCP<Matrix> B = Xpetra::IO<SC,LO,GO,Node>::Read(std::string(matrixFileNameB), lib, comm);
+#else
+    RCP<Matrix> A = Xpetra::IO<SC,Node>::Read(std::string(matrixFileNameA), lib, comm);
+    RCP<Matrix> B = Xpetra::IO<SC,Node>::Read(std::string(matrixFileNameB), lib, comm);
+#endif
     RCP<Matrix> B1,B2,C;
 
     
@@ -590,15 +642,30 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
         else {b2list[i2] = Browmap->getGlobalElement(i); i2++;}
       }
       
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Map> B1rowmap = Xpetra::MapFactory<LO,GO,Node>::Build(lib,GO_INVALID,b1list(),0,comm);
       RCP<const Map> B2rowmap = Xpetra::MapFactory<LO,GO,Node>::Build(lib,GO_INVALID,b2list(),0,comm);
+#else
+      RCP<const Map> B1rowmap = Xpetra::MapFactory<Node>::Build(lib,GO_INVALID,b1list(),0,comm);
+      RCP<const Map> B2rowmap = Xpetra::MapFactory<Node>::Build(lib,GO_INVALID,b2list(),0,comm);
+#endif
       
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Import> B1import = Xpetra::ImportFactory<LO,GO,Node>::Build(Browmap,B1rowmap);
       RCP<const Import> B2import = Xpetra::ImportFactory<LO,GO,Node>::Build(Browmap,B2rowmap);
+#else
+      RCP<const Import> B1import = Xpetra::ImportFactory<Node>::Build(Browmap,B1rowmap);
+      RCP<const Import> B2import = Xpetra::ImportFactory<Node>::Build(Browmap,B2rowmap);
+#endif
       RCP<const Map> dummy;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       B1 = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(B,*B1import,dummy,B1rowmap);
       B2 = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(B,*B2import,dummy,B2rowmap);
+#else
+      B1 = Xpetra::MatrixFactory<SC,Node>::Build(B,*B1import,dummy,B1rowmap);
+      B2 = Xpetra::MatrixFactory<SC,Node>::Build(B,*B2import,dummy,B2rowmap);
+#endif
     }
 
 
@@ -643,7 +710,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
         // MKL MULT_ADD
         case Experiments::MKL_MULT_ADD:
          #ifdef HAVE_MUELU_MKL
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM2 MKL MULT_ADD: Total"));            
             MM2_MKL(*A,*B1,*B2,*C,Bcolmap,std::string("MULT_ADD"));
@@ -653,7 +724,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
         // MKL ADD_MULT
         case Experiments::MKL_ADD_MULT:
          #ifdef HAVE_MUELU_MKL
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM2 MKL ADD_MULT: Total"));            
             MM2_MKL(*A,*B1,*B2,*C,Bcolmap,std::string("ADD_MULT"));
@@ -662,7 +737,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // KK Algorithms (KK Memory)
         case Experiments::KK_MEM:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM2 SPGEMM_KK_MEMORY: Total"));
             MM2_Wrapper(*A,*B1,*B2,*C,Bcolmap,std::string("SPGEMM_KK_MEMORY"),kk_team_work_size);
@@ -670,7 +749,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // KK Algorithms (KK Dense)
         case Experiments::KK_DENSE:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM2 SPGEMM_KK_DENSE: Total"));
             MM2_Wrapper(*A,*B1,*B2,*C,Bcolmap,std::string("SPGEMM_KK_DENSE"),kk_team_work_size);
@@ -678,7 +761,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // KK Algorithms (KK Default)
         case Experiments::KK_DEFAULT:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM2 SPGEMM_KK: Total"));
             MM2_Wrapper(*A,*B1,*B2,*C,Bcolmap,std::string("SPGEMM_KK"),kk_team_work_size);
@@ -686,7 +773,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // LTG
         case Experiments::LTG:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM2 LTG: Total"));
             MM2_Wrapper(*A,*B1,*B2,*C,Bcolmap,std::string("LTG"),kk_team_work_size);

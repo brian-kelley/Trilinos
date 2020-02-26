@@ -80,7 +80,11 @@
 
 /*********************************************************************/
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
@@ -99,7 +103,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   // =========================================================================
   typedef Teuchos::ScalarTraits<SC> STS;
   typedef typename STS::coordinateType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   // =========================================================================
   // Parameters initialization
@@ -184,7 +192,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   RCP<MultiVector> X, B;
 
   // Load the matrix off disk (or generate it via Galeri)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MatrixLoad<SC,LO,GO,NO>(comm,lib,binaryFormat,matrixFile,rhsFile,rowMapFile,colMapFile,domainMapFile,rangeMapFile,coordFile,nullFile,materialFile,map,A,coordinates,nullspace,material,X,B,numVectors,galeriParameters,xpetraParameters,galeriStream);
+#else
+  MatrixLoad<SC,NO>(comm,lib,binaryFormat,matrixFile,rhsFile,rowMapFile,colMapFile,domainMapFile,rangeMapFile,coordFile,nullFile,materialFile,map,A,coordinates,nullspace,material,X,B,numVectors,galeriParameters,xpetraParameters,galeriStream);
+#endif
   comm->barrier();
   tm = Teuchos::null;
   out << galeriStream.str();

@@ -67,10 +67,19 @@ namespace Tpetra {
 /// \paran[in] newDiag Tpetra::Vector with new values for the diagonal
 ///
 /// \return Local number of successfully replaced diagonal entries
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 replaceDiagonalCrsMatrix(::Tpetra::CrsMatrix<SC, LO, GO, NT>& matrix,
     const ::Tpetra::Vector<SC, LO, GO, NT>& newDiag);
+#else
+replaceDiagonalCrsMatrix(::Tpetra::CrsMatrix<SC, NT>& matrix,
+    const ::Tpetra::Vector<SC, NT>& newDiag);
+#endif
 
 } // namespace Tpetra
 

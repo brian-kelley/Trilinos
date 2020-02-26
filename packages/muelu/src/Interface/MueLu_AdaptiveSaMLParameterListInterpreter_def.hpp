@@ -68,19 +68,34 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   AdaptiveSaMLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AdaptiveSaMLParameterListInterpreter(Teuchos::ParameterList & paramList, std::vector<RCP<FactoryBase> > factoryList) : TransferFacts_(factoryList), blksize_(1) {
+#else
+  template <class Scalar, class Node>
+  AdaptiveSaMLParameterListInterpreter<Scalar, Node>::AdaptiveSaMLParameterListInterpreter(Teuchos::ParameterList & paramList, std::vector<RCP<FactoryBase> > factoryList) : TransferFacts_(factoryList), blksize_(1) {
+#endif
     SetParameterList(paramList);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   AdaptiveSaMLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AdaptiveSaMLParameterListInterpreter(const std::string & xmlFileName, std::vector<RCP<FactoryBase> > factoryList) : nullspace_(NULL), TransferFacts_(factoryList), blksize_(1) {
+#else
+  template <class Scalar, class Node>
+  AdaptiveSaMLParameterListInterpreter<Scalar, Node>::AdaptiveSaMLParameterListInterpreter(const std::string & xmlFileName, std::vector<RCP<FactoryBase> > factoryList) : nullspace_(NULL), TransferFacts_(factoryList), blksize_(1) {
+#endif
     Teuchos::RCP<Teuchos::ParameterList> paramList = Teuchos::getParametersFromXmlFile(xmlFileName);
     SetParameterList(*paramList);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AdaptiveSaMLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetParameterList(const Teuchos::ParameterList & paramList_in) {
+#else
+  template <class Scalar, class Node>
+  void AdaptiveSaMLParameterListInterpreter<Scalar, Node>::SetParameterList(const Teuchos::ParameterList & paramList_in) {
+#endif
     Teuchos::ParameterList paramList = paramList_in;
 
     RCP<Teuchos::FancyOStream> out = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout)); // TODO: use internal out (GetOStream())
@@ -326,8 +341,13 @@ namespace MueLu {
     } // for (level loop)
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AdaptiveSaMLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetupInitHierarchy(Hierarchy & H) const {
+#else
+  template <class Scalar, class Node>
+  void AdaptiveSaMLParameterListInterpreter<Scalar, Node>::SetupInitHierarchy(Hierarchy & H) const {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(!H.GetLevel(0)->IsAvailable("A"), Exceptions::RuntimeError, "No fine level operator");
 
     RCP<Level>    l  = H.GetLevel(0);
@@ -353,8 +373,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AdaptiveSaMLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetupHierarchy(Hierarchy & H) const {
+#else
+  template <class Scalar, class Node>
+  void AdaptiveSaMLParameterListInterpreter<Scalar, Node>::SetupHierarchy(Hierarchy & H) const {
+#endif
 
     // set fine level null space
     // usually this null space is provided from outside (by the user) using
@@ -389,10 +414,18 @@ namespace MueLu {
       Teuchos::RCP<MueLu::Level> Finest = H.GetLevel(0);  // get finest level,MueLu::NoFactory::get()
       Teuchos::RCP<MultiVector> nspVector2 = Finest->Get<Teuchos::RCP<MultiVector> >("Nullspace");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Write("orig_nsp.vec", *nspVector2);
+#else
+      Xpetra::IO<Scalar,Node>::Write("orig_nsp.vec", *nspVector2);
+#endif
 
       RCP<Matrix> Op = Finest->Get<RCP<Matrix> >("A");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Write("A.mat", *Op);
+#else
+      Xpetra::IO<Scalar,Node>::Write("A.mat", *Op);
+#endif
 
 
       Teuchos::RCP<MultiVector> homogRhsVec = MultiVectorFactory::Build(nspVector2->getMap(),nspVector2->getNumVectors(),true);
@@ -406,7 +439,11 @@ namespace MueLu {
       // store improved fine level null space
       Finest->Set("Nullspace",nspVector2);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Write("new_nsp.vec", *nspVector2);
+#else
+      Xpetra::IO<Scalar,Node>::Write("new_nsp.vec", *nspVector2);
+#endif
 
       //H.Delete("CoarseSolver", init_levelManagers_[0]->GetFactory("CoarseSolver").get());
     }
@@ -431,20 +468,35 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AdaptiveSaMLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddTransferFactory(const RCP<FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void AdaptiveSaMLParameterListInterpreter<Scalar, Node>::AddTransferFactory(const RCP<FactoryBase>& factory) {
+#endif
     // check if it's a TwoLevelFactoryBase based transfer factory
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::rcp_dynamic_cast<TwoLevelFactoryBase>(factory) == Teuchos::null, Exceptions::BadCast, "Transfer factory is not derived from TwoLevelFactoryBase. Since transfer factories will be handled by the RAPFactory they have to be derived from TwoLevelFactoryBase!");
     TransferFacts_.push_back(factory);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t AdaptiveSaMLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NumTransferFactories() const {
+#else
+  template <class Scalar, class Node>
+  size_t AdaptiveSaMLParameterListInterpreter<Scalar, Node>::NumTransferFactories() const {
+#endif
     return TransferFacts_.size();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AdaptiveSaMLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetupOperator(Operator & Op) const {
+#else
+  template <class Scalar, class Node>
+  void AdaptiveSaMLParameterListInterpreter<Scalar, Node>::SetupOperator(Operator & Op) const {
+#endif
     try {
       Matrix& A = dynamic_cast<Matrix&>(Op);
       if (A.GetFixedBlockSize() != blksize_)

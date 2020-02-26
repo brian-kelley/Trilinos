@@ -54,19 +54,33 @@
 namespace MueLu {
 
   template<class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<int,int,Node> >
   AMGXOperator<double,int,int,Node>::getDomainMap() const {
+#else
+  Teuchos::RCP<const Tpetra::Map<Node> >
+  AMGXOperator<double,Node>::getDomainMap() const {
+#endif
     return domainMap_;
   }
 
   template<class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<int,int,Node> > AMGXOperator<double,int,int,Node>::getRangeMap() const {
+#else
+  Teuchos::RCP<const Tpetra::Map<Node> > AMGXOperator<double,Node>::getRangeMap() const {
+#endif
     return rangeMap_;
   }
 
   template<class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void AMGXOperator<double,int,int,Node>::apply(const Tpetra::MultiVector<double,int,int,Node>& X,
                                                 Tpetra::MultiVector<double,int,int,Node>&       Y,
+#else
+  void AMGXOperator<double,Node>::apply(const Tpetra::MultiVector<double,Node>& X,
+                                                Tpetra::MultiVector<double,Node>&       Y,
+#endif
                                                 Teuchos::ETransp mode, double alpha, double beta) const {
 
     RCP<const Teuchos::Comm<int> > comm = Y.getMap()->getComm();
@@ -136,7 +150,11 @@ namespace MueLu {
   }
 
   template<class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool AMGXOperator<double,int,int,Node>::hasTransposeApply() const {
+#else
+  bool AMGXOperator<double,Node>::hasTransposeApply() const {
+#endif
     return false;
   }
 

@@ -58,8 +58,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> FilteredAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> FilteredAFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -75,15 +80,25 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void FilteredAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void FilteredAFactory<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "Filtering");
     Input(currentLevel, "Graph");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void FilteredAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void FilteredAFactory<Scalar, Node>::Build(Level& currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Matrix filtering", currentLevel);
 
     RCP<Matrix> A = Get< RCP<Matrix> >(currentLevel, "A");
@@ -148,8 +163,13 @@ namespace MueLu {
   // This trick allows us to bypass constructing a new matrix. Instead, we
   // make a deep copy of the original one, and fill it in with zeros, which
   // are ignored during the prolongator smoothing.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void FilteredAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void FilteredAFactory<Scalar, Node>::
+#endif
   BuildReuse(const Matrix& A, const GraphBase& G, const bool lumping, Matrix& filteredA) const {
     SC zero = Teuchos::ScalarTraits<SC>::zero();
 
@@ -238,8 +258,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void FilteredAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void FilteredAFactory<Scalar, Node>::
+#endif
   BuildNew(const Matrix& A, const GraphBase& G, const bool lumping, Matrix& filteredA) const {
     SC zero = Teuchos::ScalarTraits<SC>::zero();
 

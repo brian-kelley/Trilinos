@@ -61,13 +61,19 @@
 namespace MueLu {
 
   template <class Scalar = MueLu::DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = MueLu::DefaultLocalOrdinal,
             class GlobalOrdinal = MueLu::DefaultGlobalOrdinal,
+#endif
             class Node = MueLu::DefaultNode>
   class Q2Q1PFactory : public PFactory {
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 
@@ -96,8 +102,13 @@ namespace MueLu {
     //@}
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> Q2Q1PFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> Q2Q1PFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A", Teuchos::null, "Generating factory of the matrix A");
@@ -105,18 +116,33 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1PFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Q2Q1PFactory<Scalar, Node>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#endif
     Input(fineLevel, "A");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1PFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Q2Q1PFactory<Scalar, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     return BuildP(fineLevel, coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1PFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Q2Q1PFactory<Scalar, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
 
     RCP<Matrix> A = Get< RCP<Matrix> >(fineLevel, "A");

@@ -72,8 +72,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const ParameterList> RebalanceBlockRestrictionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+template <class Scalar, class Node>
+RCP<const ParameterList> RebalanceBlockRestrictionFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
   RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -90,13 +95,23 @@ RCP<const ParameterList> RebalanceBlockRestrictionFactory<Scalar, LocalOrdinal, 
   return validParamList;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
 void RebalanceBlockRestrictionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager) {
+#else
+template <class Scalar, class Node>
+void RebalanceBlockRestrictionFactory<Scalar, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager) {
+#endif
   FactManager_.push_back(FactManager);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RebalanceBlockRestrictionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+template <class Scalar, class Node>
+void RebalanceBlockRestrictionFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
   Input(coarseLevel, "R");
 
   std::vector<Teuchos::RCP<const FactoryManagerBase> >::const_iterator it;
@@ -116,8 +131,13 @@ void RebalanceBlockRestrictionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RebalanceBlockRestrictionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#else
+template <class Scalar, class Node>
+void RebalanceBlockRestrictionFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#endif
   FactoryMonitor m(*this, "Build", coarseLevel);
 
 
@@ -127,8 +147,13 @@ void RebalanceBlockRestrictionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>
   Teuchos::RCP<Matrix> originalTransferOp = Teuchos::null;
   originalTransferOp = Get< RCP<Matrix> >(coarseLevel, "R");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > bOriginalTransferOp =
     Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(originalTransferOp);
+#else
+  RCP<Xpetra::BlockedCrsMatrix<Scalar, Node> > bOriginalTransferOp =
+    Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar, Node> >(originalTransferOp);
+#endif
   TEUCHOS_TEST_FOR_EXCEPTION(bOriginalTransferOp==Teuchos::null, Exceptions::BadCast, "MueLu::RebalanceBlockTransferFactory::Build: input matrix P or R is not of type BlockedCrsMatrix! error.");
 
   RCP<const MapExtractor> rangeMapExtractor = bOriginalTransferOp->getRangeMapExtractor();

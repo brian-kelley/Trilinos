@@ -54,8 +54,13 @@ template<class Real,
          class GO=Tpetra::Map<>::global_ordinal_type,
          class Node=Tpetra::Map<>::node_type > 
 class TpetraTeuchosBatchManager : public TeuchosBatchManager<Real,GO> {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Real,LO,GO,Node> Tpetra_Vector;
   typedef TpetraMultiVector<Real,LO,GO,Node> OptVector;
+#else
+  typedef Tpetra::MultiVector<Real,Node> Tpetra_Vector;
+  typedef TpetraMultiVector<Real,Node> OptVector;
+#endif
 
 public:
   TpetraTeuchosBatchManager(const ROL::Ptr<const Teuchos::Comm<int> > &comm)

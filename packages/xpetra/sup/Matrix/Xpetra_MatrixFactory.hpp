@@ -60,13 +60,23 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Scalar, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class MatrixFactory2 {
 #undef XPETRA_MATRIXFACTORY2_SHORT
 #include "Xpetra_UseShortNames.hpp"
 
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > A) {
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    static RCP<Xpetra::Matrix<Scalar, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, Node> > A) {
+#endif
       RCP<const CrsMatrixWrap> oldOp = Teuchos::rcp_dynamic_cast<const CrsMatrixWrap>(A);
       if (oldOp == Teuchos::null)
         throw Exceptions::BadCast("Cast from Xpetra::Matrix to Xpetra::CrsMatrixWrap failed");
@@ -110,7 +120,11 @@ namespace Xpetra {
   //template<>
   //class MatrixFactory2<double,int,int,typename Xpetra::Matrix<double, int, int>::node_type> {
   template<class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class MatrixFactory2<double,int,int,Node> {
+#else
+  class MatrixFactory2<double,Node> {
+#endif
     typedef double                                        Scalar;
     typedef int                                           LocalOrdinal;
     typedef int                                           GlobalOrdinal;
@@ -118,7 +132,11 @@ namespace Xpetra {
 #undef XPETRA_MATRIXFACTORY2_SHORT
 #include "Xpetra_UseShortNames.hpp"
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > A) {
+#else
+    static RCP<Xpetra::Matrix<Scalar, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, Node> > A) {
+#endif
       RCP<const CrsMatrixWrap> oldOp = Teuchos::rcp_dynamic_cast<const CrsMatrixWrap>(A);
       if (oldOp == Teuchos::null)
         throw Exceptions::BadCast("Cast from Xpetra::Matrix to Xpetra::CrsMatrixWrap failed");
@@ -162,7 +180,11 @@ namespace Xpetra {
   //template<>
   //class MatrixFactory2<double,int,long long,typename Xpetra::Matrix<double, int, long long>::node_type> {
   template<class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class MatrixFactory2<double, int, long long, Node> {
+#else
+  class MatrixFactory2<double, Node> {
+#endif
     typedef double                                        Scalar;
     typedef int                                           LocalOrdinal;
     typedef long long                                     GlobalOrdinal;
@@ -170,7 +192,11 @@ namespace Xpetra {
 #undef XPETRA_MATRIXFACTORY2_SHORT
 #include "Xpetra_UseShortNames.hpp"
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > A) {
+#else
+    static RCP<Xpetra::Matrix<Scalar, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, Node> > A) {
+#endif
       RCP<const CrsMatrixWrap> oldOp = Teuchos::rcp_dynamic_cast<const CrsMatrixWrap>(A);
       if (oldOp == Teuchos::null)
         throw Exceptions::BadCast("Cast from Xpetra::Matrix to Xpetra::CrsMatrixWrap failed");
@@ -212,14 +238,20 @@ namespace Xpetra {
 
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   class MatrixFactory {
 #undef XPETRA_MATRIXFACTORY_SHORT
 #include "Xpetra_UseShortNames.hpp"
 
   private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Private constructor. This is a static class.
     MatrixFactory() {}
 
@@ -250,14 +282,22 @@ namespace Xpetra {
     static RCP<Matrix> Build (
         const Teuchos::RCP<const Map>& rowMap,
         const Teuchos::RCP<const Map>& colMap,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const typename Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_matrix_type& lclMatrix,
+#else
+        const typename Xpetra::CrsMatrix<Scalar, Node>::local_matrix_type& lclMatrix,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = null)  {
       XPETRA_MONITOR("MatrixFactory::Build");
       return rcp(new CrsMatrixWrap(rowMap, colMap, lclMatrix, params));
     }
     //! Constructor providing a local Kokkos::CrsMatrix together with all maps
     static RCP<Matrix> Build (
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const typename Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_matrix_type& lclMatrix,
+#else
+        const typename Xpetra::CrsMatrix<Scalar, Node>::local_matrix_type& lclMatrix,
+#endif
         const Teuchos::RCP<const Map>& rowMap,
         const Teuchos::RCP<const Map>& colMap,
         const Teuchos::RCP<const Map>& domainMap = Teuchos::null,
@@ -350,10 +390,18 @@ namespace Xpetra {
 
     //! create an explicit copy of a given matrix
     //! This routine supports blocked and single-block operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > A) {
+#else
+    static RCP<Xpetra::Matrix<Scalar, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, Node> > A) {
+#endif
       RCP<const BlockedCrsMatrix> input = Teuchos::rcp_dynamic_cast<const BlockedCrsMatrix>(A);
       if(input == Teuchos::null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return Xpetra::MatrixFactory2<Scalar,LocalOrdinal,GlobalOrdinal,Node>::BuildCopy(A);
+#else
+        return Xpetra::MatrixFactory2<Scalar,Node>::BuildCopy(A);
+#endif
 
       // deep copy of MapExtractors (and underlying maps)
       RCP<const MapExtractor> rgMapExt = Teuchos::rcp(new MapExtractor(*(input->getRangeMapExtractor())));
@@ -368,7 +416,11 @@ namespace Xpetra {
             // make a deep copy of the matrix
             // This is a recursive call to this function
             RCP<Matrix> mat =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 Xpetra::MatrixFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::BuildCopy(input->getMatrix(r,c));
+#else
+                Xpetra::MatrixFactory<Scalar,Node>::BuildCopy(input->getMatrix(r,c));
+#endif
             bop->setMatrix(r,c,mat);
           }
       }

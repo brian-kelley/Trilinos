@@ -47,12 +47,21 @@
 namespace BelosTpetra {
 namespace Impl {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void register_BlockGmres_tmpl (const bool verbose)
 {
   using ::Belos::Impl::registerSolverSubclassForTypes;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
   using OP = ::Tpetra::Operator<SC, LO, GO, NT>;
+#else
+  using MV = ::Tpetra::MultiVector<SC, NT>;
+  using OP = ::Tpetra::Operator<SC, NT>;
+#endif
   using solver_type = ::Belos::BlockGmresSolMgr<SC, MV, OP>;
 
   if (verbose) {
@@ -74,7 +83,11 @@ void register_BlockGmres (const bool verbose)
 #ifdef BELOS_TPETRA_REGISTER_BLOCKGMRES
 #  undef BELOS_TPETRA_REGISTER_BLOCKGMRES
 #endif // BELOS_TPETRA_REGISTER_BLOCKGMRES
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define BELOS_TPETRA_REGISTER_BLOCKGMRES( SC, LO, GO, NT ) register_BlockGmres_tmpl<SC, LO, GO, NT> (verbose);
+#else
+#define BELOS_TPETRA_REGISTER_BLOCKGMRES( SC, NT ) register_BlockGmres_tmpl<SC, NT> (verbose);
+#endif
 
   TPETRA_INSTANTIATE_SLGN_NO_ORDINAL_SCALAR( BELOS_TPETRA_REGISTER_BLOCKGMRES )
 

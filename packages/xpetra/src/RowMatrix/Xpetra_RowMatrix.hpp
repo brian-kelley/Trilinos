@@ -59,11 +59,17 @@
 namespace Xpetra {
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class RowMatrix {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_type;
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
@@ -81,10 +87,18 @@ namespace Xpetra {
     //@{
 
     //! Returns the Map that describes the row distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getRowMap() const = 0;
+#else
+    virtual const Teuchos::RCP< const Map<Node > >  getRowMap() const = 0;
+#endif
 
     //! Returns the Map that describes the column distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getColMap() const = 0;
+#else
+    virtual const Teuchos::RCP< const Map<Node > >  getColMap() const = 0;
+#endif
 
     //! Returns the number of global rows in this matrix.
     virtual global_size_t getGlobalNumRows() const = 0;
@@ -140,7 +154,11 @@ namespace Xpetra {
     virtual void getLocalRowView(LocalOrdinal LocalRow, ArrayView< const LocalOrdinal > &indices, ArrayView< const Scalar > &values) const = 0;
 
     //! Get a copy of the diagonal entries owned by this node, with local row indices.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void getLocalDiagCopy(Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &diag) const = 0;
+#else
+    virtual void getLocalDiagCopy(Vector< Scalar, Node > &diag) const = 0;
+#endif
 
     //@}
 
@@ -156,13 +174,25 @@ namespace Xpetra {
     //@{
 
     //! Returns the Map associated with the domain of this operator, which must be compatible with X.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getDomainMap() const = 0;
+#else
+    virtual const Teuchos::RCP< const Map<Node > >  getDomainMap() const = 0;
+#endif
 
     //! Returns the Map associated with the range of this operator, which must be compatible with Y.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getRangeMap() const = 0;
+#else
+    virtual const Teuchos::RCP< const Map<Node > >  getRangeMap() const = 0;
+#endif
 
     //! Computes the operator-multivector application.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void apply(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &X, MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, Scalar alpha=Teuchos::ScalarTraits< Scalar >::one(), Scalar beta=Teuchos::ScalarTraits< Scalar >::zero()) const = 0;
+#else
+    virtual void apply(const MultiVector< Scalar, Node > &X, MultiVector< Scalar, Node > &Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, Scalar alpha=Teuchos::ScalarTraits< Scalar >::one(), Scalar beta=Teuchos::ScalarTraits< Scalar >::zero()) const = 0;
+#endif
 
     //@}
 

@@ -65,33 +65,65 @@ namespace Tpetra {
     /// returns (as an output argument) an array of (PID,GID) pairs.
     /// If use_minus_one_for_local is true, any GIDs owned by this
     /// processor get -1 instead of their PID.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+    template <typename Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getPidGidPairs (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
+#else
+    getPidGidPairs (const Tpetra::Import<Node>& Importer,
+#endif
                     Teuchos::Array< std::pair<int,GlobalOrdinal> >& gpids,
                     bool use_minus_one_for_local);
 
     //! Like getPidGidPairs, but just gets the PIDs, ordered by the column Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+    template <typename Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getPids (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
+#else
+    getPids (const Tpetra::Import<Node>& Importer,
+#endif
              Teuchos::Array<int>& pids,
              bool use_minus_one_for_local);
 
     //! Like getPidGidPairs, but just gets the PIDs, ordered by the column Map.
     // Like the above, but without the resize
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+    template <typename Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getPids (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
+#else
+    getPids (const Tpetra::Import<Node>& Importer,
+#endif
              Teuchos::ArrayView<int>& pids,
              bool use_minus_one_for_local);
 
 
     /// \brief Get a list of remote PIDs from an importer in the order
     ///   corresponding to the remote LIDs.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+    template <typename Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getRemotePIDs (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
+#else
+    getRemotePIDs (const Tpetra::Import<Node>& Importer,
+#endif
                    Teuchos::Array<int>& RemotePIDs);
 
   } // namespace Import_Util
@@ -100,9 +132,17 @@ namespace Tpetra {
 namespace Tpetra {
 namespace Import_Util {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 getPidGidPairs (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
+#else
+getPidGidPairs (const Tpetra::Import<Node>& Importer,
+#endif
                 Teuchos::Array< std::pair<int,GlobalOrdinal> >& gpids,
                 bool use_minus_one_for_local)
 {
@@ -145,9 +185,17 @@ getPidGidPairs (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 getPids (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
+#else
+getPids (const Tpetra::Import<Node>& Importer,
+#endif
          Teuchos::Array<int>& pids,
          bool use_minus_one_for_local)
 {
@@ -158,9 +206,17 @@ getPids (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 getPids (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
+#else
+getPids (const Tpetra::Import<Node>& Importer,
+#endif
          Teuchos::ArrayView<int>& pids,
          bool use_minus_one_for_local)
 {
@@ -198,9 +254,17 @@ getPids (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 getRemotePIDs (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
+#else
+getRemotePIDs (const Tpetra::Import<Node>& Importer,
+#endif
                Teuchos::Array<int>& RemotePIDs)
 {
   const Tpetra::Distributor& D = Importer.getDistributor();
@@ -232,13 +296,26 @@ getRemotePIDs (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer,
  
 /* Check some of the validity of an Import object
    WARNING: This is a debugging routine only. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 checkImportValidity (const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>& Importer)
+#else
+checkImportValidity (const Tpetra::Import<Node>& Importer)
+#endif
 {
   using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > source = Importer.getSourceMap();
   RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > target = Importer.getTargetMap();
+#else
+  RCP<const Tpetra::Map<Node> > source = Importer.getSourceMap();
+  RCP<const Tpetra::Map<Node> > target = Importer.getTargetMap();
+#endif
   RCP<const Teuchos::Comm<int> > comm = source->getComm();
 
   // For now, do not check validity of a locally replicated source map (just return true)

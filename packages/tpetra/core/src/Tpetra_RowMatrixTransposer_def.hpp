@@ -52,21 +52,34 @@
 namespace Tpetra {
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 RowMatrixTransposer<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+RowMatrixTransposer<Scalar, Node>::
+#endif
 RowMatrixTransposer (const Teuchos::RCP<const crs_matrix_type>& origMatrix,
                      const std::string& label)
   : origMatrix_ (origMatrix), label_ (label)
 {}
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 RowMatrixTransposer<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+Teuchos::RCP<CrsMatrix<Scalar, Node> >
+RowMatrixTransposer<Scalar, Node>::
+#endif
 createTranspose (const Teuchos::RCP<Teuchos::ParameterList> &params)
 {
   using Teuchos::RCP;
@@ -82,7 +95,11 @@ createTranspose (const Teuchos::RCP<Teuchos::ParameterList> &params)
   // If transMatrixWithSharedRows has an exporter, that's what we
   // want.  If it doesn't, the rows aren't actually shared, and we're
   // done!
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using export_type = Export<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+  using export_type = Export<Node>;
+#endif
   RCP<const export_type> exporter =
     transMatrixWithSharedRows->getGraph ()->getExporter ();
   if (exporter.is_null ()) {
@@ -112,11 +129,18 @@ createTranspose (const Teuchos::RCP<Teuchos::ParameterList> &params)
 // resolving typedefs), but the arguments are considered inside the
 // class scope.
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 RowMatrixTransposer<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+Teuchos::RCP<CrsMatrix<Scalar, Node> >
+RowMatrixTransposer<Scalar, Node>::
+#endif
 createTransposeLocal (const Teuchos::RCP<Teuchos::ParameterList>& params)
 {
   using Teuchos::Array;
@@ -127,9 +151,15 @@ createTransposeLocal (const Teuchos::RCP<Teuchos::ParameterList>& params)
   using Teuchos::rcp_dynamic_cast;
   using LO = LocalOrdinal;
   using GO = GlobalOrdinal;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using IST = typename CrsMatrix<Scalar, LO, GO, Node>::impl_scalar_type;
   using import_type = Tpetra::Import<LO, GO, Node>;
   using export_type = Tpetra::Export<LO, GO, Node>;
+#else
+  using IST = typename CrsMatrix<Scalar, Node>::impl_scalar_type;
+  using import_type = Tpetra::Import<Node>;
+  using export_type = Tpetra::Export<Node>;
+#endif
 
 #ifdef HAVE_TPETRA_MMM_TIMINGS
   std::string prefix = std::string("Tpetra ") + label_ + ": ";
@@ -287,8 +317,13 @@ createTransposeLocal (const Teuchos::RCP<Teuchos::ParameterList>& params)
 // Must be expanded from within the Tpetra namespace!
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_ROWMATRIXTRANSPOSER_INSTANT(SCALAR,LO,GO,NODE) \
   template class RowMatrixTransposer< SCALAR, LO , GO , NODE >;
+#else
+#define TPETRA_ROWMATRIXTRANSPOSER_INSTANT(SCALAR,NODE) \
+  template class RowMatrixTransposer< SCALAR, NODE >;
+#endif
 
 } // namespace Tpetra
 

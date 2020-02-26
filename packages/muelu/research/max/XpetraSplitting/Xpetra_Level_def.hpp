@@ -57,37 +57,62 @@
 namespace Xpetra
 {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Level( int levelID, int num_regions ):
+#else
+template< class Scalar, class Node >
+Level<Scalar, Node>::Level( int levelID, int num_regions ):
+#endif
 levelID_(levelID),
 num_regions_(num_regions){}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 void Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetP( Array<RCP<matrix_type> >& P )
+#else
+template< class Scalar, class Node >
+void Level<Scalar, Node>::SetP( Array<RCP<matrix_type> >& P )
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( regionP_.size()!=0, Exceptions::RuntimeError, "Current level already has prolongators \n" );
   TEUCHOS_TEST_FOR_EXCEPTION( P.size()!=num_regions_, Exceptions::RuntimeError, "Number of region prolongators is "<<P.size()<<"and does not math the number of regions which is "<<num_regions_<<" \n" );
   regionP_ = P;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 void Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetR( Array<RCP<matrix_type> >& R )
+#else
+template< class Scalar, class Node >
+void Level<Scalar, Node>::SetR( Array<RCP<matrix_type> >& R )
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( regionR_.size()!=0, Exceptions::RuntimeError, "Current level already has restrictions \n" );
   TEUCHOS_TEST_FOR_EXCEPTION( R.size()!=num_regions_, Exceptions::RuntimeError, "Number of region restrictions is "<<R.size()<<"and does not math the number of regions which is "<<num_regions_<<" \n" );
   regionR_ = R;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 void Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetA( Array<RCP<matrix_type> >& A )
+#else
+template< class Scalar, class Node >
+void Level<Scalar, Node>::SetA( Array<RCP<matrix_type> >& A )
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( regionA_.size()!=0, Exceptions::RuntimeError, "Current level already has operators \n" );
   TEUCHOS_TEST_FOR_EXCEPTION( A.size()!=num_regions_, Exceptions::RuntimeError, "Number of region operators is "<<A.size()<<"and does not math the number of regions which is "<<num_regions_<<" \n" );
   regionA_ = A;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 void Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetSmoother( Array<RCP<multivector_type> >& S )
+#else
+template< class Scalar, class Node >
+void Level<Scalar, Node>::SetSmoother( Array<RCP<multivector_type> >& S )
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( regionSmoother_.size()!=0, Exceptions::RuntimeError, "Current level already has smoothers \n" );
   TEUCHOS_TEST_FOR_EXCEPTION( S.size()!=num_regions_, Exceptions::RuntimeError, "Number of region smoothers is "<<S.size()<<"and does not math the number of regions which is "<<num_regions_<<" \n" );
@@ -95,23 +120,38 @@ void Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetSmoother( Array<RCP<mu
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 void Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetRegionToAll( Array<Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > > regionToAll )
+#else
+template< class Scalar, class Node >
+void Level<Scalar, Node>::SetRegionToAll( Array<Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > > regionToAll )
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( regionToAll.size()!=num_regions_, Exceptions::RuntimeError, "Passed regionToAll has number of regions equal to "<<regionToAll.size()<<"which does not match the number of regions in level ID: <<"<<levelID_<<" with number of regions equal to "<<num_regions_<<"\n" );
   level_regionToAll_ = regionToAll;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 int Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetNumRegions( ) const
+#else
+template< class Scalar, class Node >
+int Level<Scalar, Node>::GetNumRegions( ) const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( num_regions_==0, Exceptions::RuntimeError, "level ID: <<"<<levelID_<<" does NOT have defined regions \n" );
   return num_regions_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 Array<Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > > Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetRegionToAll( ) const
+#else
+template< class Scalar, class Node >
+Array<Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > > Level<Scalar, Node>::GetRegionToAll( ) const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( level_regionToAll_.size()==0, Exceptions::RuntimeError, "level ID: "<<levelID_<<" does NOT have level_regionToAll_ initialized yet \n" );
   return level_regionToAll_;
@@ -119,8 +159,13 @@ Array<Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > > Level<Scalar, LocalOrdi
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 GlobalOrdinal Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetCompositeIndex(int region_idx, GlobalOrdinal region_node_idx ) const
+#else
+template< class Scalar, class Node >
+GlobalOrdinal Level<Scalar, Node>::GetCompositeIndex(int region_idx, GlobalOrdinal region_node_idx ) const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( level_regionToAll_.size()==0, Exceptions::RuntimeError, "level ID: "<<levelID_<<" does NOT have level_regionToAll_ initialized yet \n" );
   TEUCHOS_TEST_FOR_EXCEPTION( level_regionToAll_.size()!=num_regions_, Exceptions::RuntimeError, "level ID: "<<levelID_<<" has information stored for a number of regions that does NOT match with the declared number of regions \n" );
@@ -139,8 +184,13 @@ GlobalOrdinal Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetCompositeInde
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 void Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::checkConsistency( ) const
+#else
+template< class Scalar, class Node >
+void Level<Scalar, Node>::checkConsistency( ) const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( num_regions_<=0, Exceptions::RuntimeError, "level ID: "<<levelID_<<" does not have any regions \n" );
   TEUCHOS_TEST_FOR_EXCEPTION( num_regions_!=regionA_.size(), Exceptions::RuntimeError, "level ID: "<<levelID_<<" - number of region matrices "<<regionA_.size()<< " does NOT match the number of regions "<<num_regions_<<"\n" );
@@ -170,14 +220,23 @@ void Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::checkConsistency( ) const
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 void Level<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ComputeRegionJacobi( )
+#else
+template< class Scalar, class Node >
+void Level<Scalar, Node>::ComputeRegionJacobi( )
+#endif
 {
   regionSmoother_.resize(num_regions_);
 
   for( int i = 0; i<num_regions_; ++i )
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     regionSmoother_[i] =  VectorFactory< Scalar, LocalOrdinal, GlobalOrdinal, Node >::Build(regionA_[i]->getRowMap()) ;
+#else
+    regionSmoother_[i] =  VectorFactory< Scalar, Node >::Build(regionA_[i]->getRowMap()) ;
+#endif
     regionA_[i]->getLocalDiagCopy( *(regionSmoother_[i]) );
   }
 

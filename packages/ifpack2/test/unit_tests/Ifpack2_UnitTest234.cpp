@@ -84,9 +84,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL(Chebyshev, Issue234, SC)
   typedef Tpetra::Map<>::global_ordinal_type GO;
   typedef Tpetra::Map<>::node_type NT;
   typedef Tpetra::global_size_t GST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SC, LO, GO, NT> crs_matrix_type;
   typedef Tpetra::RowMatrix<SC, LO, GO, NT> row_matrix_type;
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::CrsMatrix<SC, NT> crs_matrix_type;
+  typedef Tpetra::RowMatrix<SC, NT> row_matrix_type;
+  typedef Tpetra::Map<NT> map_type;
+#endif
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType magnitude_type;
   const SC ONE = Teuchos::ScalarTraits<SC>::one ();
 

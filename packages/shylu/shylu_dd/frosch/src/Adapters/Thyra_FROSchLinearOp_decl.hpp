@@ -103,11 +103,19 @@ namespace Thyra {
     using namespace Xpetra;
 
     /** \brief Concrete Thyra::LinearOpBase subclass for Operator.**/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal=LocalOrdinal,
+#else
+    template <class Scalar,
+#endif
     class Node=KokkosClassic::DefaultNode::DefaultNodeType>
     class FROSchLinearOp : virtual public LinearOpDefaultBase<Scalar> {
         public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+        using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+        using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
         /** \name Constructors/initializers. */
         //@{
 
@@ -117,22 +125,38 @@ namespace Thyra {
         /** \brief Initialize. */
         void initialize(const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
                         const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         const RCP<Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &xpetraOperator,
+#else
+                        const RCP<Operator<Scalar,Node> > &xpetraOperator,
+#endif
                         bool bIsEpetra,
                         bool bIsTpetra);
 
         /** \brief Initialize. */
         void constInitialize(const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
                              const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                              const RCP<const Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &xpetraOperator,
+#else
+                             const RCP<const Operator<Scalar,Node> > &xpetraOperator,
+#endif
                              bool bIsEpetra,
                              bool bIsTpetra);
 
         /** \brief Get embedded non-const Operator. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > getXpetraOperator();
+#else
+        RCP<Operator<Scalar,Node> > getXpetraOperator();
+#endif
 
         /** \brief Get embedded const Operator. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > getConstXpetraOperator() const;
+#else
+        RCP<const Operator<Scalar,Node> > getConstXpetraOperator() const;
+#endif
 
         //@}
 
@@ -176,7 +200,11 @@ namespace Thyra {
 
         bool bIsEpetra_;
         bool bIsTpetra_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         ConstNonconstObjectContainer<Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+        ConstNonconstObjectContainer<Operator<Scalar,Node> >
+#endif
         xpetraOperator_;
 
         template<class XpetraOperator_t>
@@ -192,15 +220,29 @@ namespace Thyra {
      *
      * \relates XpetraLinearOp
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<FROSchLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> > fROSchLinearOp(const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
+#else
+    template <class Scalar, class Node>
+    RCP<FROSchLinearOp<Scalar, Node> > fROSchLinearOp(const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
+#endif
                                                                                    const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                                    const RCP<Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &xpetraOperator,
+#else
+                                                                                   const RCP<Operator<Scalar,Node> > &xpetraOperator,
+#endif
                                                                                    bool bIsEpetra,
                                                                                    bool bIsTpetra)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const RCP<FROSchLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> > op =
         rcp(new FROSchLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node>);
+#else
+        const RCP<FROSchLinearOp<Scalar, Node> > op =
+        rcp(new FROSchLinearOp<Scalar, Node>);
+#endif
         op->initialize(rangeSpace,domainSpace,xpetraOperator,bIsEpetra,bIsTpetra);
         return op;
     }
@@ -210,15 +252,29 @@ namespace Thyra {
      *
      * \relates XpetraLinearOp
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<const FROSchLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> > constFROSchLinearOp(const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
+#else
+    template <class Scalar, class Node>
+    RCP<const FROSchLinearOp<Scalar, Node> > constFROSchLinearOp(const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
+#endif
                                                                                               const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                                               const RCP<const Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &xpetraOperator,
+#else
+                                                                                              const RCP<const Operator<Scalar,Node> > &xpetraOperator,
+#endif
                                                                                               bool bIsEpetra,
                                                                                               bool bIsTpetra)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const RCP<FROSchLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> > op =
         rcp(new FROSchLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node>);
+#else
+        const RCP<FROSchLinearOp<Scalar, Node> > op =
+        rcp(new FROSchLinearOp<Scalar, Node>);
+#endif
         op->constInitialize(rangeSpace, domainSpace, xpetraOperator,bIsEpetra,bIsTpetra);
         return op;
     }

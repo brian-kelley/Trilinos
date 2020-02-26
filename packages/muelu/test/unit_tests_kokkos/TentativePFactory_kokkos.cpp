@@ -61,7 +61,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TentativePFactory_kokkos, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TentativePFactory_kokkos, Constructor, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -90,11 +94,19 @@ namespace MueLuTests {
     using TMT            = Teuchos::ScalarTraits<magnitude_type>;
 
     Level fineLevel, coarseLevel;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers::TestFactory<SC, LO, GO, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#else
+    TestHelpers::TestFactory<SC, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#endif
     fineLevel.SetFactoryManager(Teuchos::null);  // factory manager is not used on this test
     coarseLevel.SetFactoryManager(Teuchos::null);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(/*199*/29);
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(/*199*/29);
+#endif
     A->SetFixedBlockSize(1);
     fineLevel.Set("A",A);
 
@@ -160,7 +172,11 @@ namespace MueLuTests {
   } // MakeTentative  Lapack QR
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TentativePFactory_kokkos, MakeTentative, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TentativePFactory_kokkos, MakeTentative, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -181,12 +197,20 @@ namespace MueLuTests {
     out << "Test QR with user-supplied nullspace" << std::endl;
 
     Level fineLevel, coarseLevel;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#else
+    TestHelpers_kokkos::TestFactory<SC,NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#endif
 
     fineLevel  .SetFactoryManager(Teuchos::null);  // factory manager is not used on this test
     coarseLevel.SetFactoryManager(Teuchos::null);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::Build1DPoisson(199);
+#else
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC,NO>::Build1DPoisson(199);
+#endif
     fineLevel.Request("A");
     fineLevel.Set    ("A", A);
 
@@ -262,7 +286,11 @@ namespace MueLuTests {
     TEST_EQUALITY(PtentTPtent->getGlobalNumEntries(),   diagVec->getGlobalLength());
   } // MakeTentative
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TentativePFactory_kokkos, MakeTentativeVectorBasedUsingDefaultNullSpace, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TentativePFactory_kokkos, MakeTentativeVectorBasedUsingDefaultNullSpace, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -281,9 +309,17 @@ namespace MueLuTests {
     out << "Test QR when nullspace isn't supplied by user" << std::endl;
 
     Level fineLevel, coarseLevel;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#else
+    TestHelpers_kokkos::TestFactory<SC, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     auto A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(200);
+#else
+    auto A = TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(200);
+#endif
 
     A->SetFixedBlockSize(2);
 
@@ -367,7 +403,11 @@ namespace MueLuTests {
     TEST_EQUALITY(PtentTPtent->getGlobalNumEntries(), diagVec->getGlobalLength());
   } // MakeTentativeVectorBasedUsingDefaultNullSpace
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TentativePFactory_kokkos, MakeTentativeUsingDefaultNullSpace, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TentativePFactory_kokkos, MakeTentativeUsingDefaultNullSpace, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -386,9 +426,17 @@ namespace MueLuTests {
     out << "Test QR when nullspace isn't supplied by user" << std::endl;
 
     Level fineLevel, coarseLevel;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#else
+    TestHelpers_kokkos::TestFactory<SC, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     auto A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(199);
+#else
+    auto A = TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(199);
+#endif
 
     fineLevel.Set("A", A);
 
@@ -735,8 +783,13 @@ namespace MueLuTests {
         TEST_EQUALITY(R2->getGlobalNumRows(), 7);
         TEST_EQUALITY(R2->getGlobalNumCols(), 21);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<Xpetra::Matrix<Scalar,LO,GO,Node> > PtentTPtent = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::Multiply(*P1,true,*P1,false,out);
         Teuchos::RCP<Xpetra::Vector<Scalar,LO,GO,Node> > diagVec = Xpetra::VectorFactory<Scalar,LO,GO,Node>::Build(PtentTPtent->getRowMap());
+#else
+        Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > PtentTPtent = Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*P1,true,*P1,false,out);
+        Teuchos::RCP<Xpetra::Vector<Scalar,Node> > diagVec = Xpetra::VectorFactory<Scalar,Node>::Build(PtentTPtent->getRowMap());
+#endif
         PtentTPtent->getLocalDiagCopy(*diagVec);
         TEST_FLOATING_EQUALITY(diagVec->norm1(), TST::magnitude(diagVec->getGlobalLength()), 100*TMT:eps());
         TEST_FLOATING_EQUALITY(diagVec->normInf(), TMT::one(), 100*TMT:eps());
@@ -774,11 +827,19 @@ namespace MueLuTests {
 #endif
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TentativePFactory_kokkos, Constructor,   SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TentativePFactory_kokkos, MakeTentative, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TentativePFactory_kokkos, MakeTentativeUsingDefaultNullSpace, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TentativePFactory_kokkos, MakeTentativeVectorBasedUsingDefaultNullSpace, SC, LO, GO, NO)
+#else
+#define MUELU_ETI_GROUP(SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TentativePFactory_kokkos, Constructor,   SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TentativePFactory_kokkos, MakeTentative, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TentativePFactory_kokkos, MakeTentativeUsingDefaultNullSpace, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TentativePFactory_kokkos, MakeTentativeVectorBasedUsingDefaultNullSpace, SC, NO)
+#endif
 
 
 

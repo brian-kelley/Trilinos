@@ -79,12 +79,21 @@ namespace Tpetra {
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template<class Scalar, class Node>
+#endif
     void
     readHBMatrix (const std::string &filename,
                   const Teuchos::RCP<const Teuchos::Comm<int> > &comm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &A,
                   Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > rowMap = Teuchos::null,
+#else
+                  Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node> > &A,
+                  Teuchos::RCP<const Tpetra::Map<Node> > rowMap = Teuchos::null,
+#endif
                   const Teuchos::RCP<Teuchos::ParameterList> &params = Teuchos::null);
 
   } // end of Tpetra::Utils namespace

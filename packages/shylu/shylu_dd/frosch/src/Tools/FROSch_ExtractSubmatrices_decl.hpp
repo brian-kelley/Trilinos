@@ -76,6 +76,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
                                                                 RCP<const Map<LO,GO,NO> > map);
@@ -83,30 +84,76 @@ namespace FROSch {
     template <class SC,class LO,class GO,class NO>
     RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
                                                                 RCP<const Map<LO,GO,NO> > map,
+#else
+    template <class SC,class NO>
+    RCP<const Matrix<SC,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,NO> > globalMatrix,
+                                                                RCP<const Map<NO> > map);
+
+    template <class SC,class NO>
+    RCP<const Matrix<SC,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,NO> > globalMatrix,
+                                                                RCP<const Map<NO> > map,
+#endif
                                                                 SC value);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int UpdateLocalSubdomainMatrix(RCP<Matrix<SC,LO,GO,NO> > globalMatrix,
                                    RCP<Map<LO,GO,NO> > &map,
                                    RCP<Matrix<SC,LO,GO,NO> > &localSubdomainMatrix);
+#else
+    template <class SC,class NO>
+    int UpdateLocalSubdomainMatrix(RCP<Matrix<SC,NO> > globalMatrix,
+                                   RCP<Map<NO> > &map,
+                                   RCP<Matrix<SC,NO> > &localSubdomainMatrix);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int BuildSubmatrices(RCP<const Matrix<SC,LO,GO,NO> > k,
+#else
+    template <class SC,class NO>
+    int BuildSubmatrices(RCP<const Matrix<SC,NO> > k,
+#endif
                          ArrayView<GO> indI,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          RCP<const Matrix<SC,LO,GO,NO> > &kII,
                          RCP<const Matrix<SC,LO,GO,NO> > &kIJ,
                          RCP<const Matrix<SC,LO,GO,NO> > &kJI,
                          RCP<const Matrix<SC,LO,GO,NO> > &kJJ);
+#else
+                         RCP<const Matrix<SC,NO> > &kII,
+                         RCP<const Matrix<SC,NO> > &kIJ,
+                         RCP<const Matrix<SC,NO> > &kJI,
+                         RCP<const Matrix<SC,NO> > &kJJ);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int BuildSubmatrix(RCP<const Matrix<SC,LO,GO,NO> > k,
+#else
+    template <class SC,class NO>
+    int BuildSubmatrix(RCP<const Matrix<SC,NO> > k,
+#endif
                        ArrayView<GO> indI,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        RCP<const Matrix<SC,LO,GO,NO> > &kII);
+#else
+                       RCP<const Matrix<SC,NO> > &kII);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     int BuildSubgraph(RCP<const CrsGraph<LO,GO,NO> > k,
+#else
+    template <class NO>
+    int BuildSubgraph(RCP<const CrsGraph<NO> > k,
+#endif
                       ArrayView<GO> indI,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       RCP<const CrsGraph<LO,GO,NO> > &kII);
+#else
+                      RCP<const CrsGraph<NO> > &kII);
+#endif
 }
 
 #endif

@@ -69,7 +69,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RebalanceTransfer, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RebalanceTransfer, Constructor, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -82,7 +86,11 @@ namespace MueLuTests {
 
 #ifdef NEVER_TESTED_TODO
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RebalanceTransfer, Build1, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RebalanceTransfer, Build1, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -90,9 +98,17 @@ namespace MueLuTests {
     out << "version: " << MueLu::Version() << std::endl;
 
     Level fineLevel, coarseLevel;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers::TestFactory<SC, LO, GO, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#else
+    TestHelpers::TestFactory<SC, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#endif
     GO nx = 199;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(nx);
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(nx);
+#endif
     fineLevel.Set("A",A);
 
     //build coordinates
@@ -135,8 +151,13 @@ namespace MueLuTests {
 
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC, LO, GO, NO) \
      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(RebalanceTransfer, Constructor, SC, LO, GO, NO)
+#else
+#define MUELU_ETI_GROUP(SC, NO) \
+     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(RebalanceTransfer, Constructor, SC, NO)
+#endif
 #include <MueLu_ETI_4arg.hpp>
 
 

@@ -16,19 +16,33 @@
 
 // Nonmember constuctors
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 Teuchos::RCP<EvaluatorTpetraHeq<Scalar, LO, GO, Node> >
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<EvaluatorTpetraHeq<Scalar, Node> >
+#endif
 evaluatorTpetraHeq(const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                    const Tpetra::global_size_t numGlobalElements,
                    const Scalar omega)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Teuchos::rcp(new EvaluatorTpetraHeq<Scalar, LO, GO, Node>(comm, numGlobalElements, omega));
+#else
+  return Teuchos::rcp(new EvaluatorTpetraHeq<Scalar, Node>(comm, numGlobalElements, omega));
+#endif
 }
 
 // Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 EvaluatorTpetraHeq<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+EvaluatorTpetraHeq<Scalar, Node>::
+#endif
 EvaluatorTpetraHeq(const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                    const Tpetra::global_size_t numGlobalElements,
                    const Scalar omega) :
@@ -42,7 +56,11 @@ EvaluatorTpetraHeq(const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
   // solution space
   GO indexBase = 0;
   xMap_ = Teuchos::rcp(new const tpetra_map(numGlobalElements_, indexBase, comm_));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   xSpace_ = Thyra::createVectorSpace<Scalar, LO, GO, Node>(xMap_);
+#else
+  xSpace_ = Thyra::createVectorSpace<Scalar, Node>(xMap_);
+#endif
 
   // residual space
   fMap_ = xMap_;
@@ -86,16 +104,26 @@ EvaluatorTpetraHeq(const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
 // Initializers/Accessors
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void EvaluatorTpetraHeq<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void EvaluatorTpetraHeq<Scalar, Node>::
+#endif
 setShowGetInvalidArgs(bool showGetInvalidArg)
 {
   showGetInvalidArg_ = showGetInvalidArg;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void EvaluatorTpetraHeq<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void EvaluatorTpetraHeq<Scalar, Node>::
+#endif
 set_W_factory(const Teuchos::RCP<const Thyra::LinearOpWithSolveFactoryBase<Scalar> >& W_factory)
 {
   W_factory_ = W_factory;
@@ -105,44 +133,92 @@ set_W_factory(const Teuchos::RCP<const Thyra::LinearOpWithSolveFactoryBase<Scala
 // Public functions overridden from ModelEvaulator
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 EvaluatorTpetraHeq<Scalar, LO, GO, Node>::get_x_space() const
+#else
+EvaluatorTpetraHeq<Scalar, Node>::get_x_space() const
+#endif
 {
   return xSpace_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 EvaluatorTpetraHeq<Scalar, LO, GO, Node>::get_f_space() const
+#else
+EvaluatorTpetraHeq<Scalar, Node>::get_f_space() const
+#endif
 {
   return fSpace_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 EvaluatorTpetraHeq<Scalar, LO, GO, Node>::getNominalValues() const
+#else
+EvaluatorTpetraHeq<Scalar, Node>::getNominalValues() const
+#endif
 {
   return nominalValues_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Teuchos::RCP<Thyra::LinearOpBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 EvaluatorTpetraHeq<Scalar, LO, GO, Node>::create_W_op() const
+#else
+EvaluatorTpetraHeq<Scalar, Node>::create_W_op() const
+#endif
 {
   Teuchos::RCP<jac_op> W_tpetra = Teuchos::rcp(new jac_op(xMap_, procNumElements_, procMinGIDs_));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Thyra::tpetraLinearOp<Scalar, LO, GO, Node>(fSpace_, xSpace_, W_tpetra);
+#else
+  return Thyra::tpetraLinearOp<Scalar, Node>(fSpace_, xSpace_, W_tpetra);
+#endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Teuchos::RCP< Thyra::PreconditionerBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 EvaluatorTpetraHeq<Scalar, LO, GO, Node>::create_W_prec() const
+#else
+EvaluatorTpetraHeq<Scalar, Node>::create_W_prec() const
+#endif
 {
   // Create the CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LO, GO, Node> tpetra_graph;
+#else
+  typedef Tpetra::CrsGraph<Node> tpetra_graph;
+#endif
   typedef typename tpetra_graph::local_graph_type::row_map_type::non_const_type row_map_type;
   typedef typename tpetra_graph::local_graph_type::entries_type::non_const_type view_type;
   const std::size_t numMyElements = xMap_->getNodeNumElements();
@@ -159,24 +235,44 @@ EvaluatorTpetraHeq<Scalar, LO, GO, Node>::create_W_prec() const
 
   // Create the Thyra preconditioner
   Teuchos::RCP<thyra_op> W_op
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     = Thyra::tpetraLinearOp<Scalar, LO, GO, Node>(fSpace_, xSpace_, W_tpetra);
+#else
+    = Thyra::tpetraLinearOp<Scalar, Node>(fSpace_, xSpace_, W_tpetra);
+#endif
   Teuchos::RCP<Thyra::DefaultPreconditioner<Scalar> > prec
     = Teuchos::rcp(new Thyra::DefaultPreconditioner<Scalar>);
   prec->initializeRight(W_op);
   return prec;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Teuchos::RCP<const Thyra::LinearOpWithSolveFactoryBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 EvaluatorTpetraHeq<Scalar, LO, GO, Node>::get_W_factory() const
+#else
+EvaluatorTpetraHeq<Scalar, Node>::get_W_factory() const
+#endif
 {
   return W_factory_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 EvaluatorTpetraHeq<Scalar, LO, GO, Node>::createInArgs() const
+#else
+EvaluatorTpetraHeq<Scalar, Node>::createInArgs() const
+#endif
 {
   return prototypeInArgs_;
 }
@@ -185,16 +281,29 @@ EvaluatorTpetraHeq<Scalar, LO, GO, Node>::createInArgs() const
 // Private functions overridden from ModelEvaulatorDefaultBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Thyra::ModelEvaluatorBase::OutArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 EvaluatorTpetraHeq<Scalar, LO, GO, Node>::createOutArgsImpl() const
+#else
+EvaluatorTpetraHeq<Scalar, Node>::createOutArgsImpl() const
+#endif
 {
   return prototypeOutArgs_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void EvaluatorTpetraHeq<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void EvaluatorTpetraHeq<Scalar, Node>::
+#endif
 evalModelImpl(const Thyra::ModelEvaluatorBase::InArgs<Scalar> &inArgs,
               const Thyra::ModelEvaluatorBase::OutArgs<Scalar> &outArgs) const
 {
@@ -208,7 +317,11 @@ evalModelImpl(const Thyra::ModelEvaluatorBase::InArgs<Scalar> &inArgs,
   const bool fill_W = nonnull(W_out);
   const bool fill_W_prec = nonnull(W_prec_out);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Thyra::TpetraOperatorVectorExtraction<Scalar,LO,GO,Node> tpetra_extract;
+#else
+  typedef Thyra::TpetraOperatorVectorExtraction<Scalar,Node> tpetra_extract;
+#endif
 
   if ( fill_f || fill_W || fill_W_prec ) {
 
@@ -321,9 +434,15 @@ evalModelImpl(const Thyra::ModelEvaluatorBase::InArgs<Scalar> &inArgs,
 ////////////////////////////////////////////////////////
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 HeqJacobianOperator<Scalar, LO, GO, Node>::
 HeqJacobianOperator(const Teuchos::RCP<const Tpetra::Map<LO, GO, Node> >& map,
+#else
+template<class Scalar, class Node>
+HeqJacobianOperator<Scalar, Node>::
+HeqJacobianOperator(const Teuchos::RCP<const Tpetra::Map<Node> >& map,
+#endif
                     const std::vector<std::size_t>& procNumElements,
                     const std::vector<GO>& procMinGIDs) :
   map_(map),
@@ -334,10 +453,19 @@ HeqJacobianOperator(const Teuchos::RCP<const Tpetra::Map<LO, GO, Node> >& map,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void HeqJacobianOperator<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void HeqJacobianOperator<Scalar, Node>::
+#endif
 initialize(const Scalar& omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            const Teuchos::RCP<Tpetra::Vector<Scalar, LO, GO, Node> >& integralOp)
+#else
+           const Teuchos::RCP<Tpetra::Vector<Scalar, Node> >& integralOp)
+#endif
 {
   omega_ = omega;
 
@@ -346,8 +474,13 @@ initialize(const Scalar& omega,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void HeqJacobianOperator<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void HeqJacobianOperator<Scalar, Node>::
+#endif
 unitialize()
 {
   omega_ = Teuchos::ScalarTraits<scalar_type>::zero();
@@ -355,26 +488,45 @@ unitialize()
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 Teuchos::RCP<const Tpetra::Map<LO, GO, Node> >
 HeqJacobianOperator<Scalar, LO, GO, Node>::getDomainMap() const
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Tpetra::Map<Node> >
+HeqJacobianOperator<Scalar, Node>::getDomainMap() const
+#endif
 {
   return map_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 Teuchos::RCP<const Tpetra::Map<LO, GO, Node> >
 HeqJacobianOperator<Scalar, LO, GO, Node>::getRangeMap() const
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Tpetra::Map<Node> >
+HeqJacobianOperator<Scalar, Node>::getRangeMap() const
+#endif
 {
   return map_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void HeqJacobianOperator<Scalar, LO, GO, Node>::
 apply(const Tpetra::MultiVector<Scalar,LO,GO,Node>& X,
       Tpetra::MultiVector<Scalar,LO,GO,Node>& Y,
+#else
+template<class Scalar, class Node>
+void HeqJacobianOperator<Scalar, Node>::
+apply(const Tpetra::MultiVector<Scalar,Node>& X,
+      Tpetra::MultiVector<Scalar,Node>& Y,
+#endif
       Teuchos::ETransp mode,
       Scalar alpha,
       Scalar beta) const

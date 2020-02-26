@@ -268,7 +268,11 @@ int main(int argc, char *argv[]) {
     std::cout << "||NS|| = " << norms[0] << std::endl;
 
   // USER GUIDE   // create new hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<MueLu::Hierarchy<SC, LO, GO, NO> > H;
+#else
+  RCP<MueLu::Hierarchy<SC, NO> > H;
+#endif
   // USER GUIDE   //
 
   //
@@ -416,7 +420,11 @@ int main(int argc, char *argv[]) {
         }
         else if(optRepartition == 2) {
 #if defined(HAVE_MPI) && defined(HAVE_MUELU_ISORROPIA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<MueLu::IsorropiaInterface<LO, GO, NO> > isoInterface = rcp(new MueLu::IsorropiaInterface<LO, GO, NO>());
+#else
+          RCP<MueLu::IsorropiaInterface<NO> > isoInterface = rcp(new MueLu::IsorropiaInterface<NO>());
+#endif
           isoInterface->SetFactory("A", AFact);
           // we don't need Coordinates here!
           RepartitionFact->SetFactory("Partition", isoInterface);
@@ -570,8 +578,13 @@ int main(int argc, char *argv[]) {
     H->IsPreconditioner(true);
 
     // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO>(A)); // Turns a Xpetra::Operator object into a Belos operator
     Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, LO, GO, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+    Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, NO>(A)); // Turns a Xpetra::Operator object into a Belos operator
+    Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
 
     // Construct a Belos LinearProblem object
     RCP< Belos::LinearProblem<SC, MV, OP> > belosProblem = rcp(new Belos::LinearProblem<SC, MV, OP>(belosOp, X, B));

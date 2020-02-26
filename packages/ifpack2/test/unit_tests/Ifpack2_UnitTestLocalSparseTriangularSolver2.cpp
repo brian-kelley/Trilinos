@@ -9,12 +9,24 @@
 
 namespace {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
+#else
+  template<class NT>
+#endif
   Tpetra::Details::LocalTriangularStructureResult<LO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   getLocalTriangularStructure (const Tpetra::RowGraph<LO, GO, NT>& G)
+#else
+  getLocalTriangularStructure (const Tpetra::RowGraph<NT>& G)
+#endif
   {
     using Tpetra::Details::determineLocalTriangularStructure;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using crs_graph_type = Tpetra::CrsGraph<LO, GO, NT>;
+#else
+    using crs_graph_type = Tpetra::CrsGraph<NT>;
+#endif
 
     const crs_graph_type& G_crs = dynamic_cast<const crs_graph_type&> (G);
 
@@ -24,9 +36,17 @@ namespace {
     return determineLocalTriangularStructure (G_lcl, lclRowMap, lclColMap, true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class SC, class LO, class GO, class NT>
+#else
+  template<class SC, class NT>
+#endif
   Tpetra::Details::LocalTriangularStructureResult<LO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   getLocalTriangularStructure (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A)
+#else
+  getLocalTriangularStructure (const Tpetra::CrsMatrix<SC, NT>& A)
+#endif
   {
     return getLocalTriangularStructure (* (A.getGraph ()));
   }
@@ -72,16 +92,33 @@ namespace {
   //
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, EmptyTriSolve, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, EmptyTriSolve, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using crs_matrix_type = Tpetra::CrsMatrix<Scalar, LO, GO, Node>;
     using row_matrix_type = Tpetra::RowMatrix<Scalar, LO, GO, Node>;
+#else
+    using crs_matrix_type = Tpetra::CrsMatrix<Scalar, Node>;
+    using row_matrix_type = Tpetra::RowMatrix<Scalar, Node>;
+#endif
     using solver_type = Ifpack2::LocalSparseTriangularSolver<row_matrix_type>;
     using STS = Teuchos::ScalarTraits<Scalar>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using MV = Tpetra::MultiVector<Scalar,LO,GO,Node>;
+#else
+    using MV = Tpetra::MultiVector<Scalar,Node>;
+#endif
     using mag_type = typename STS::magnitudeType;
     using STM = Teuchos::ScalarTraits<mag_type>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Tpetra::Map<LO, GO, Node>;
+#else
+    using map_type = Tpetra::Map<Node>;
+#endif
 
     const size_t numLocal = 13, numVecs = 7;
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
@@ -89,7 +126,11 @@ namespace {
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
     // create a Map
     RCP<const map_type> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::createContigMapWithNode<LO, GO, Node> (INVALID, numLocal, comm);
+#else
+      Tpetra::createContigMapWithNode<Node> (INVALID, numLocal, comm);
+#endif
 
     /* Create a triangular matrix with no entries, for testing implicit diagonals.
       We test with Transpose and Non-Transpose application solve (these should be equivalent for the identity matrix)
@@ -146,7 +187,11 @@ namespace {
   }
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, TriSolve, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, TriSolve, Scalar, Node )
+#endif
   {
     out << "Testing Tpetra::CrsMatrix triangular solve with nonempty matrices"
         << endl;
@@ -160,12 +205,25 @@ namespace {
       return;
     }
     else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using crs_matrix_type = Tpetra::CrsMatrix<Scalar,LO,GO,Node>;
       using row_matrix_type = Tpetra::RowMatrix<Scalar,LO,GO,Node>;
+#else
+      using crs_matrix_type = Tpetra::CrsMatrix<Scalar,Node>;
+      using row_matrix_type = Tpetra::RowMatrix<Scalar,Node>;
+#endif
       using solver_type = Ifpack2::LocalSparseTriangularSolver<row_matrix_type>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using map_type = Tpetra::Map<LO, GO, Node>;
+#else
+      using map_type = Tpetra::Map<Node>;
+#endif
       using STS = Teuchos::ScalarTraits<Scalar>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using MV = Tpetra::MultiVector<Scalar,LO,GO,Node>;
+#else
+      using MV = Tpetra::MultiVector<Scalar,Node>;
+#endif
       using mag_type = typename STS::magnitudeType;
       using STM = Teuchos::ScalarTraits<mag_type>;
 
@@ -175,7 +233,11 @@ namespace {
       // Create a row Map for the matrix.
       // This will be the same as the domain and range Maps.
       RCP<const map_type> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Tpetra::createContigMapWithNode<LO, GO, Node> (INVALID, numLocal, comm);
+#else
+        Tpetra::createContigMapWithNode<Node> (INVALID, numLocal, comm);
+#endif
       Scalar SONE = STS::one ();
 
       /* Create one of the following locally triangular matries:
@@ -413,9 +475,15 @@ namespace {
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, EmptyTriSolve, SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, TriSolve, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, EmptyTriSolve, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, TriSolve, SCALAR,NODE )
+#endif
 
 #include "Ifpack2_ETIHelperMacros.h"
 

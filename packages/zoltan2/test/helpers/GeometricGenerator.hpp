@@ -888,9 +888,17 @@ private:
 
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename scalar_t, typename lno_t, typename gno_t, typename node_t>
+#else
+template <typename scalar_t, typename node_t>
+#endif
 class GeometricGenerator {
 private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using lno_t = typename Tpetra::Map<>::local_ordinal_type;
+  using gno_t = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   Hole<scalar_t> **holes; //to represent if there is any hole in the input
   int holeCount;
   int coordinate_dimension;  //dimension of the geometry
@@ -921,8 +929,13 @@ private:
   std::string outfile;
   float perturbation_ratio;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> tMVector_t;
   typedef Tpetra::Map<lno_t, gno_t, node_t> tMap_t;
+#else
+  typedef Tpetra::MultiVector<scalar_t, node_t> tMVector_t;
+  typedef Tpetra::Map<node_t> tMap_t;
+#endif
 
 
   template <typename tt>
@@ -2378,8 +2391,13 @@ public:
 
 	  //T **weight = NULL;
 	  //typedef Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> tMVector_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	  RCP<Tpetra::Map<lno_t, gno_t, node_t> > mp = rcp(
 			  new Tpetra::Map<lno_t, gno_t, node_t> (numGlobalPoints, numLocalPoints, 0, comm));
+#else
+	  RCP<Tpetra::Map<node_t> > mp = rcp(
+			  new Tpetra::Map<node_t> (numGlobalPoints, numLocalPoints, 0, comm));
+#endif
 
 	  Teuchos::Array<Teuchos::ArrayView<const scalar_t> > coordView(coord_dim);
 
@@ -2395,8 +2413,13 @@ public:
 		  }
 	  }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	  RCP< Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> >tmVector = RCP< Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> >(
 			  new Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t>( mp, coordView.view(0, coord_dim), coord_dim));
+#else
+	  RCP< Tpetra::MultiVector<scalar_t, node_t> >tmVector = RCP< Tpetra::MultiVector<scalar_t, node_t> >(
+			  new Tpetra::MultiVector<scalar_t, node_t>( mp, coordView.view(0, coord_dim), coord_dim));
+#endif
 
 
 	  RCP<const tMVector_t> coordsConst = Teuchos::rcp_const_cast<const tMVector_t>(tmVector);
@@ -2535,8 +2558,13 @@ public:
 	  int coord_dim = this->coordinate_dimension;
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	  RCP<Tpetra::Map<lno_t, gno_t, node_t> > mp = rcp(
 			  new Tpetra::Map<lno_t, gno_t, node_t> (this->numGlobalCoords, this->numLocalCoords, 0, this->comm));
+#else
+	  RCP<Tpetra::Map<node_t> > mp = rcp(
+			  new Tpetra::Map<node_t> (this->numGlobalCoords, this->numLocalCoords, 0, this->comm));
+#endif
 
 	  Teuchos::Array<Teuchos::ArrayView<const scalar_t> > coordView(coord_dim);
 	  for (int i=0; i < coord_dim; i++){

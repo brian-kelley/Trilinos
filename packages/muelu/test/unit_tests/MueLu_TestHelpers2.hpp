@@ -86,11 +86,19 @@ namespace MueLuTests {
 
   namespace TestHelpers {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     class TestProblem {
 #include "MueLu_UseShortNames.hpp"
 
     public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       TestProblem(Xpetra::UnderlyingLib lib) : lib_(lib) { }
 
       void Init() {
@@ -98,7 +106,11 @@ namespace MueLuTests {
 
           // Create a matrix
           {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             A_ = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(99);
+#else
+            A_ = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(99);
+#endif
           }
 
           // Create a Hierarchy
@@ -166,15 +178,28 @@ namespace MueLuTests {
     };
 
     // Singleton for TestProblem
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<TestProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> > &
+#else
+    template <class Scalar, class Node>
+    RCP<TestProblem<Scalar, Node> > &
+#endif
     getTestProblem (Xpetra::UnderlyingLib lib)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Array<RCP<TestProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> > > problem_(2);
+#else
+      static Array<RCP<TestProblem<Scalar, Node> > > problem_(2);
+#endif
 
       int libNum = (Xpetra::UseEpetra) ? 0 : 1;
       if (problem_[libNum] == Teuchos::null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         problem_[libNum] = rcp (new TestProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> (lib));
+#else
+        problem_[libNum] = rcp (new TestProblem<Scalar, Node> (lib));
+#endif
 
       return problem_[libNum];
     }

@@ -57,8 +57,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> UserPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> UserPFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A",              Teuchos::null, "Generating factory of the matrix A");
@@ -69,19 +74,34 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void UserPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& fineLevel, Level& /* coarseLevel */) const {
+#else
+  template <class Scalar, class Node>
+  void UserPFactory<Scalar, Node>::DeclareInput(Level& fineLevel, Level& /* coarseLevel */) const {
+#endif
     Input(fineLevel, "A");
     Input(fineLevel, "Nullspace");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void UserPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void UserPFactory<Scalar, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     return BuildP(fineLevel, coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void UserPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void UserPFactory<Scalar, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
 
     RCP<Matrix>      A             = Get< RCP<Matrix> >      (fineLevel, "A");
@@ -93,17 +113,30 @@ namespace MueLu {
 
     std::string    mapFile   = pL.get<std::string>("mapFileName");
     RCP<const Map> rowMap    = A->getRowMap();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> coarseMap = Xpetra::IO<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ReadMap(mapFile, rowMap->lib(), rowMap->getComm());
+#else
+    RCP<const Map> coarseMap = Xpetra::IO<Scalar, Node>::ReadMap(mapFile, rowMap->lib(), rowMap->getComm());
+#endif
     Set(coarseLevel, "CoarseMap", coarseMap);
 
     std::string matrixFile = pL.get<std::string>("matrixFileName");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> P          = Xpetra::IO<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Read(matrixFile, rowMap, coarseMap, coarseMap, rowMap);
+#else
+    RCP<Matrix> P          = Xpetra::IO<Scalar, Node>::Read(matrixFile, rowMap, coarseMap, coarseMap, rowMap);
+#endif
 #if 1
     Set(coarseLevel, "P", P);
 #else
     // Expand column map by 1
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> P1 = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *P, false);
     P = Xpetra::IO<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Read(matrixFile, rowMap, P1->getColMap(), coarseMap, rowMap);
+#else
+    RCP<Matrix> P1 = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *P, false);
+    P = Xpetra::IO<Scalar, Node>::Read(matrixFile, rowMap, P1->getColMap(), coarseMap, rowMap);
+#endif
     Set(coarseLevel, "P", P);
 #endif
 

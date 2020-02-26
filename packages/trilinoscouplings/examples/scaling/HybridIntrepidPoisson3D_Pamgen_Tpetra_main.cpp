@@ -300,7 +300,11 @@ main (int argc, char *argv[])
       int dim = 3;
       Teuchos::Array<Teuchos::ArrayView<const double>> coordsArrayView(dim);
       for(int i=0; i<dim; ++i) { coordsArrayView[i] = coordsArray[i](); }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP< Tpetra::MultiVector<double, LO, GO, Node> > coordinates = rcp (new Tpetra::MultiVector<double,LO,GO,Node>(A->getRowMap(),coordsArrayView,dim));
+#else
+      RCP< Tpetra::MultiVector<double, Node> > coordinates = rcp (new Tpetra::MultiVector<double,Node>(A->getRowMap(),coordsArrayView,dim));
+#endif
 
       // Set region type
       std::string regionType;
@@ -325,11 +329,23 @@ main (int argc, char *argv[])
           const std::string userName = "user data";
           Teuchos::ParameterList& userParamList = mueluParams.sublist(userName);
           userParamList.set<Teuchos::Array<LO> >("Array<LO> lNodesPerDim", lNodesPerDim);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           userParamList.set< RCP<Tpetra::MultiVector<double,LO,GO,Node>> >("Coordinates", coordinates);
+#else
+          userParamList.set< RCP<Tpetra::MultiVector<double,Node>> >("Coordinates", coordinates);
+#endif
           userParamList.set< std::string >("string aggregationRegionType", regionType);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	      M = MueLu::CreateTpetraPreconditioner<ST,LO,GO,Node>(opA, mueluParams);
+#else
+	      M = MueLu::CreateTpetraPreconditioner<ST,Node>(opA, mueluParams);
+#endif
 	    } else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	      M = MueLu::CreateTpetraPreconditioner<ST,LO,GO,Node>(opA);
+#else
+	      M = MueLu::CreateTpetraPreconditioner<ST,Node>(opA);
+#endif
 	    }
 	  }
 #else // NOT HAVE_TRILINOSCOUPLINGS_MUELU

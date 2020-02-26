@@ -56,13 +56,21 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,
             class GlobalOrdinal,
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class Import
     : public Teuchos::Describable
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node node_type;
@@ -106,10 +114,18 @@ namespace Xpetra {
     virtual ArrayView< const int > getExportPIDs() const = 0;
 
     //! The Source Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getSourceMap() const = 0;
+#else
+    virtual Teuchos::RCP< const Map<Node > > getSourceMap() const = 0;
+#endif
 
     //! The Target Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getTargetMap() const = 0;
+#else
+    virtual Teuchos::RCP< const Map<Node > > getTargetMap() const = 0;
+#endif
 
     //! Set parameters on the underlying object
     virtual void setDistributorParameters(const Teuchos::RCP<Teuchos::ParameterList> params) const = 0;

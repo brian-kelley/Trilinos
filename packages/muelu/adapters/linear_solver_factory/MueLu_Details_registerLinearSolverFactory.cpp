@@ -69,10 +69,17 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 // call it LCL_CALL and not LCL_INST.  We are just using the macros to
 // invoke this class method over the set of enabled template
 // parameters.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define LCL_CALL( SC, LO, GO, NT ) \
   ::MueLu::Details::LinearSolverFactory<Tpetra::MultiVector<SC, LO, GO, NT>, \
                                         Tpetra::Operator<SC, LO, GO, NT>, \
                                         typename Tpetra::MultiVector<SC, LO, GO, NT>::mag_type>::registerLinearSolverFactory ();
+#else
+#define LCL_CALL( SC, NT ) \
+  ::MueLu::Details::LinearSolverFactory<Tpetra::MultiVector<SC, NT>, \
+                                        Tpetra::Operator<SC, NT>, \
+                                        typename Tpetra::MultiVector<SC, NT>::mag_type>::registerLinearSolverFactory ();
+#endif
 
 namespace MueLu {
 namespace Details {

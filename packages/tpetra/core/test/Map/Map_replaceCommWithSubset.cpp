@@ -77,12 +77,21 @@ typedef Tpetra::global_size_t GST;
 // Calling collective functions on origMap or its communicator will
 // likely result in a hang!  This includes Map methods like
 // getRemoteIndexList and isOneToOne.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 void
 testSubsetMapOverSubsetComm (int& gblSuccess, // output argument; 0 means false
                              std::ostream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                              const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& origMap,
                              const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& subsetMap,
+#else
+                             const Teuchos::RCP<const Tpetra::Map<NT> >& origMap,
+                             const Teuchos::RCP<const Tpetra::Map<NT> >& subsetMap,
+#endif
                              const Teuchos::RCP<const Teuchos::Comm<int> >& subsetComm)
 {
   int lclSuccess = 1; // to be modified below
@@ -264,12 +273,21 @@ testSubsetMapOverSubsetComm (int& gblSuccess, // output argument; 0 means false
 // NOTE: Don't call this with the unit test's original FancyOStream.
 // That thing only prints to Process 0 in MPI_COMM_WORLD by default.
 // We want to collect all the test's output.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 void
 testSubsetMapOverOrigComm (int& gblSuccess, // output argument; 0 means false
                            std::ostream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                            const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& origMap,
                            const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& subsetMap)
+#else
+                           const Teuchos::RCP<const Tpetra::Map<NT> >& origMap,
+                           const Teuchos::RCP<const Tpetra::Map<NT> >& subsetMap)
+#endif
 {
   int lclSuccess = 1; // to be modified below
 
@@ -327,13 +345,25 @@ testSubsetMapOverOrigComm (int& gblSuccess, // output argument; 0 means false
 // NOTE: Don't call this with the unit test's original FancyOStream.
 // That thing only prints to Process 0 in MPI_COMM_WORLD by default.
 // We want to collect all the test's output.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 void
 testSubsetMap (int& gblSuccess, // output argument; 0 means false
                std::ostream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& origMap,
+#else
+               const Teuchos::RCP<const Tpetra::Map<NT> >& origMap,
+#endif
                const Teuchos::RCP<const Teuchos::Comm<int> >& origComm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& subsetMap,
+#else
+               const Teuchos::RCP<const Tpetra::Map<NT> >& subsetMap,
+#endif
                const Teuchos::RCP<const Teuchos::Comm<int> >& subsetComm)
 {
   int lclSuccess = 1; // to be modified below
@@ -361,9 +391,17 @@ testSubsetMap (int& gblSuccess, // output argument; 0 means false
 }
 
 // This test is only meaningful in an MPI build.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, replaceCommWithSubset, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, replaceCommWithSubset, NT )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
   typedef typename Teuchos::Array<GO>::size_type size_type;
   int lclSuccess = 1; // to be modified below
   int gblSuccess = 0; // output argument
@@ -505,8 +543,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, replaceCommWithSubset, LO, GO, NT )
 // INSTANTIATIONS OF TESTS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, replaceCommWithSubset, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP(NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, replaceCommWithSubset, NODE )
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

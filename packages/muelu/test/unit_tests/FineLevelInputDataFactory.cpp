@@ -57,9 +57,15 @@ namespace MueLuTests {
   /////////////////////////
   // helper function
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal, GlobalOrdinal, Node> >
   GenerateProblemMatrix(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > map,
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar, Node> >
+  GenerateProblemMatrix(const Teuchos::RCP<const Xpetra::Map<Node> > map,
+#endif
                         Scalar a = 2.0, Scalar b = -1.0, Scalar c = -1.0) {
 #   include "MueLu_UseShortNames.hpp"
 
@@ -120,9 +126,17 @@ namespace MueLuTests {
   }
 
   // dummy helper class (placeholder)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class DummyFactory : public MueLu::SingleLevelFactoryBase {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     DummyFactory() { }
     virtual ~DummyFactory() { }
     RCP<const Teuchos::ParameterList> GetValidParameterList() const { return Teuchos::null; };
@@ -130,7 +144,11 @@ namespace MueLuTests {
     void Build(MueLu::Level& currentLevel) const {};
   }; //class DummyFactory
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(FineLevelInputDataFactory, InputData, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(FineLevelInputDataFactory, InputData, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -149,7 +167,11 @@ namespace MueLuTests {
 
     map   = MapFactory::Build(lib, numElements, 0, comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = GenerateProblemMatrix<Scalar, LO, GO, Node>(map,2,-1,-1);
+#else
+    RCP<Matrix> A = GenerateProblemMatrix<Scalar, Node>(map,2,-1,-1);
+#endif
 
     // build hierarchy
     RCP<Level> levelOne = rcp(new Level());
@@ -174,7 +196,11 @@ namespace MueLuTests {
     levelOne->Release("A-output", &inputData);
 
     // Test 2: set fine level factory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MueLuTests::DummyFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node> dummyFact;
+#else
+    MueLuTests::DummyFactory<Scalar,Node> dummyFact;
+#endif
     levelOne->Set("A-output2", A);
     inputData.SetFactory("Fine level factory", MueLu::NoFactory::getRCP());
     inputData.SetFactory("Coarse level factory", Teuchos::rcpFromRef(dummyFact));
@@ -210,7 +236,11 @@ namespace MueLuTests {
     TEST_EQUALITY(AA.get(), A.get());
   } // InputData
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(FineLevelInputDataFactory, InputDataMap, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(FineLevelInputDataFactory, InputDataMap, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -249,7 +279,11 @@ namespace MueLuTests {
     levelOne->Release("m", &inputData);
 
     // Test 2: set fine level factory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MueLuTests::DummyFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node> dummyFact;
+#else
+    MueLuTests::DummyFactory<Scalar,Node> dummyFact;
+#endif
     levelOne->Set("m", map);
     inputData.SetFactory("Fine level factory", MueLu::NoFactory::getRCP());
     inputData.SetFactory("Coarse level factory", Teuchos::rcpFromRef(dummyFact));
@@ -287,10 +321,18 @@ namespace MueLuTests {
   } // InputDataMap
 
   // helper class for testing functionality of FineLevelInputDataFactory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class FineLevelInputDataFactoryTester {
 #   include "MueLu_UseShortNames.hpp"
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     void test_testfunc(const FineLevelInputDataFactory& fac) {
       //std::cout << "FineLevelInputDataFactoryTester" << std::endl;
       fac.test();
@@ -298,7 +340,11 @@ namespace MueLuTests {
   };
 
   // unit test just for demonstration purposes
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(FineLevelInputDataFactory, TestFunc, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(FineLevelInputDataFactory, TestFunc, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -307,17 +353,28 @@ namespace MueLuTests {
 
     FineLevelInputDataFactory fac;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     FineLevelInputDataFactoryTester<Scalar,LocalOrdinal,GlobalOrdinal,Node> tester;
+#else
+    FineLevelInputDataFactoryTester<Scalar,Node> tester;
+#endif
 
     tester.test_testfunc(fac);
 
     //TEST_EQUALITY(AA.get(), A.get());
   } // TestFunc
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(FineLevelInputDataFactory, InputData, SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(FineLevelInputDataFactory, InputDataMap, SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(FineLevelInputDataFactory, TestFunc, SC, LO, GO, Node) \
+#else
+#  define MUELU_ETI_GROUP(SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(FineLevelInputDataFactory, InputData, SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(FineLevelInputDataFactory, InputDataMap, SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(FineLevelInputDataFactory, TestFunc, SC, Node) \
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 }

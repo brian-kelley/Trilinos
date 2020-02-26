@@ -4,18 +4,31 @@
 #include "Thyra_StateFuncModelEvaluatorBase.hpp"
 #include "Tpetra_CrsMatrix.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 class EvaluatorTpetraHeq;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 class HeqJacobianOperator;
 
 /** \brief Nonmember constuctor.
  *
  * \relates EvaluatorTpetraHeq
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 Teuchos::RCP<EvaluatorTpetraHeq<Scalar, LO, GO, Node> >
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<EvaluatorTpetraHeq<Scalar, Node> >
+#endif
 evaluatorTpetraHeq(const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                    const Tpetra::global_size_t numGlobalElements,
                    const Scalar omega);
@@ -37,22 +50,38 @@ evaluatorTpetraHeq(const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
  * The Jacobian for this system is dense, so this creates a matrix-free Jacobian operator class.
  * The preconditioner this computes is the inverse diagonal of the Jacobian.
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 class EvaluatorTpetraHeq
   : public Thyra::StateFuncModelEvaluatorBase<Scalar>
 {
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   // Public typedefs
   typedef Scalar scalar_type;
   typedef LO local_ordinal_type;
   typedef GO global_ordinal_type;
   typedef Node node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef HeqJacobianOperator<Scalar, LO, GO, Node> jac_op;
   typedef Tpetra::Map<LO, GO, Node> tpetra_map;
   typedef Tpetra::Vector<Scalar, LO, GO, Node> tpetra_vec;
   typedef Tpetra::Operator<Scalar, LO, GO, Node> tpetra_op;
   typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> tpetra_mat;
+#else
+  typedef HeqJacobianOperator<Scalar, Node> jac_op;
+  typedef Tpetra::Map<Node> tpetra_map;
+  typedef Tpetra::Vector<Scalar, Node> tpetra_vec;
+  typedef Tpetra::Operator<Scalar, Node> tpetra_op;
+  typedef Tpetra::CrsMatrix<Scalar, Node> tpetra_mat;
+#endif
   typedef Thyra::VectorSpaceBase<Scalar> thyra_vec_space;
   typedef Thyra::VectorBase<Scalar> thyra_vec;
   typedef Thyra::LinearOpBase<Scalar> thyra_op;
@@ -135,20 +164,38 @@ private: // data members
   mutable Teuchos::RCP<Teuchos::Time> intOpTimer_;
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 class HeqJacobianOperator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   : public Tpetra::Operator<Scalar, LO, GO, Node>
+#else
+  : public Tpetra::Operator<Scalar, Node>
+#endif
 {
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   // Public typedefs
   typedef Scalar scalar_type;
   typedef LO local_ordinal_type;
   typedef GO global_ordinal_type;
   typedef Node node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, Node> tpetra_map;
   typedef Tpetra::Vector<Scalar, LO, GO, Node> tpetra_vec;
   typedef Tpetra::MultiVector<Scalar, LO, GO, Node> tpetra_mv;
+#else
+  typedef Tpetra::Map<Node> tpetra_map;
+  typedef Tpetra::Vector<Scalar, Node> tpetra_vec;
+  typedef Tpetra::MultiVector<Scalar, Node> tpetra_mv;
+#endif
 
   // Constructor
   HeqJacobianOperator(const Teuchos::RCP<const tpetra_map>& map,

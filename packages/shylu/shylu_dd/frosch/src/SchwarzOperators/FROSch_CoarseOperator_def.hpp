@@ -50,24 +50,44 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     CoarseOperator<SC,LO,GO,NO>::CoarseOperator(ConstXMatrixPtr k,
+#else
+    template<class SC,class NO>
+    CoarseOperator<SC,NO>::CoarseOperator(ConstXMatrixPtr k,
+#endif
                                                 ParameterListPtr parameterList) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     SchwarzOperator<SC,LO,GO,NO> (k,parameterList),
     CoarseSpace_ (new CoarseSpace<SC,LO,GO,NO>(this->MpiComm_,this->SerialComm_)),
+#else
+    SchwarzOperator<SC,NO> (k,parameterList),
+    CoarseSpace_ (new CoarseSpace<SC,NO>(this->MpiComm_,this->SerialComm_)),
+#endif
     DistributionList_ (sublist(parameterList,"Distribution"))
     {
         FROSCH_TIMER_START_LEVELID(coarseOperatorTime,"CoarseOperator::CoarseOperator");
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     CoarseOperator<SC,LO,GO,NO>::~CoarseOperator()
+#else
+    template<class SC,class NO>
+    CoarseOperator<SC,NO>::~CoarseOperator()
+#endif
     {
         CoarseSolver_.reset();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int CoarseOperator<SC,LO,GO,NO>::compute()
+#else
+    template <class SC,class NO>
+    int CoarseOperator<SC,NO>::compute()
+#endif
     {
         FROSCH_TIMER_START_LEVELID(computeTime,"CoarseOperator::compute");
         FROSCH_ASSERT(this->IsInitialized_,"FROSch::CoarseOperator : ERROR: CoarseOperator has to be initialized before calling compute()");
@@ -107,14 +127,24 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int CoarseOperator<SC,LO,GO,NO>::clearCoarseSpace()
+#else
+    template <class SC,class NO>
+    int CoarseOperator<SC,NO>::clearCoarseSpace()
+#endif
     {
         return CoarseSpace_->clearCoarseSpace();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     void CoarseOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
+#else
+    template<class SC,class NO>
+    void CoarseOperator<SC,NO>::apply(const XMultiVector &x,
+#endif
                                             XMultiVector &y,
                                             bool usePreconditionerOnly,
                                             ETransp mode,
@@ -124,14 +154,26 @@ namespace FROSch {
         FROSCH_TIMER_START_LEVELID(applyTime,"CoarseOperator::apply");
         static int i = 0;
         if (!Phi_.is_null() && this->IsComputed_) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
+#else
+            if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,NO>::Build(x.getMap(),x.getNumVectors());
+#endif
             *XTmp_ = x;
             if (!usePreconditionerOnly && mode == NO_TRANS) {
                 this->K_->apply(x,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
             }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             if (XCoarseSolve_.is_null()) XCoarseSolve_ = MultiVectorFactory<SC,LO,GO,NO>::Build(GatheringMaps_[GatheringMaps_.size()-1],x.getNumVectors());
+#else
+            if (XCoarseSolve_.is_null()) XCoarseSolve_ = MultiVectorFactory<SC,NO>::Build(GatheringMaps_[GatheringMaps_.size()-1],x.getNumVectors());
+#endif
             else XCoarseSolve_->replaceMap(GatheringMaps_[GatheringMaps_.size()-1]); // The map is replaced in applyCoarseSolve(). If we do not build it from scratch, we should at least replace the map here. This may be important since the maps live on different communicators.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             if (YCoarseSolve_.is_null()) YCoarseSolve_ = MultiVectorFactory<SC,LO,GO,NO>::Build(GatheringMaps_[GatheringMaps_.size()-1],y.getNumVectors());
+#else
+            if (YCoarseSolve_.is_null()) YCoarseSolve_ = MultiVectorFactory<SC,NO>::Build(GatheringMaps_[GatheringMaps_.size()-1],y.getNumVectors());
+#endif
             applyPhiT(*XTmp_,*XCoarseSolve_);
             applyCoarseSolve(*XCoarseSolve_,*YCoarseSolve_,mode);
             applyPhi(*YCoarseSolve_,*XTmp_);
@@ -149,13 +191,22 @@ namespace FROSch {
         }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     void CoarseOperator<SC,LO,GO,NO>::applyPhiT(const XMultiVector& x,
+#else
+    template<class SC,class NO>
+    void CoarseOperator<SC,NO>::applyPhiT(const XMultiVector& x,
+#endif
                                                 XMultiVector& y) const
     {
         FROSCH_TIMER_START_LEVELID(applyPhiTTime,"CoarseOperator::applyPhiT");
         // AH 08/22/2019 TODO: We cannot ger rid of the Build() calls because of "XCoarse_ = XCoarseSolveTmp_;". This is basically caused by the whole Gathering Map strategy. As soon as we have replaced this, we can get rid of the Build() calls
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         XCoarse_ = MultiVectorFactory<SC,LO,GO,NO>::Build(CoarseSpace_->getBasisMapUnique(),x.getNumVectors()); // AH 08/22/2019 TODO: Can we get rid of this? If possible, we should remove the whole GatheringMaps idea and replace it by some smart all-to-all MPI communication
+#else
+        XCoarse_ = MultiVectorFactory<SC,NO>::Build(CoarseSpace_->getBasisMapUnique(),x.getNumVectors()); // AH 08/22/2019 TODO: Can we get rid of this? If possible, we should remove the whole GatheringMaps idea and replace it by some smart all-to-all MPI communication
+#endif
         {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
             FROSCH_TIMER_START_LEVELID(applyTime,"apply");
@@ -163,7 +214,11 @@ namespace FROSch {
             Phi_->apply(x,*XCoarse_,TRANS);
         }
         for (UN j=0; j<GatheringMaps_.size(); j++) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XCoarseSolveTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(GatheringMaps_[j],x.getNumVectors()); // AH 08/22/2019 TODO: Can we get rid of this? If possible, we should remove the whole GatheringMaps idea and replace it by some smart all-to-all MPI communication
+#else
+            XCoarseSolveTmp_ = MultiVectorFactory<SC,NO>::Build(GatheringMaps_[j],x.getNumVectors()); // AH 08/22/2019 TODO: Can we get rid of this? If possible, we should remove the whole GatheringMaps idea and replace it by some smart all-to-all MPI communication
+#endif
             {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                 FROSCH_TIMER_START_LEVELID(applyTime,"doExport");
@@ -175,35 +230,61 @@ namespace FROSch {
         y = *XCoarseSolveTmp_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     void CoarseOperator<SC,LO,GO,NO>::applyCoarseSolve(XMultiVector& x,
+#else
+    template<class SC,class NO>
+    void CoarseOperator<SC,NO>::applyCoarseSolve(XMultiVector& x,
+#endif
                                                        XMultiVector& y,
                                                        ETransp mode) const
     {
         FROSCH_TIMER_START_LEVELID(applyCoarseSolveTime,"CoarseOperator::applyCoarseSolve");
         if (OnCoarseSolveComm_) {
             x.replaceMap(CoarseSolveMap_);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             if (YTmp_.is_null()) YTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(CoarseSolveMap_,x.getNumVectors());
+#else
+            if (YTmp_.is_null()) YTmp_ = MultiVectorFactory<SC,NO>::Build(CoarseSolveMap_,x.getNumVectors());
+#endif
             else YTmp_->replaceMap(CoarseSolveMap_); // The map is replaced later in this function. If we do not build it from scratch, we should at least replace the map here. This may be important since the maps live on different communicators.
             CoarseSolver_->apply(x,*YTmp_,mode);
         } else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             if (YTmp_.is_null()) YTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(CoarseSolveMap_,x.getNumVectors());
+#else
+            if (YTmp_.is_null()) YTmp_ = MultiVectorFactory<SC,NO>::Build(CoarseSolveMap_,x.getNumVectors());
+#endif
             else YTmp_->replaceMap(CoarseSolveMap_); // The map is replaced later in this function. If we do not build it from scratch, we should at least replace the map here. This may be important since the maps live on different communicators.
         }
         YTmp_->replaceMap(GatheringMaps_[GatheringMaps_.size()-1]);
         y = *YTmp_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     void CoarseOperator<SC,LO,GO,NO>::applyPhi(const XMultiVector& x,
+#else
+    template<class SC,class NO>
+    void CoarseOperator<SC,NO>::applyPhi(const XMultiVector& x,
+#endif
                                                XMultiVector& y) const
     {
         FROSCH_TIMER_START_LEVELID(applyPhiTime,"CoarseOperator::applyPhi");
         // AH 08/22/2019 TODO: We have the same issue here as in applyPhiT()
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         YCoarseSolveTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
+#else
+        YCoarseSolveTmp_ = MultiVectorFactory<SC,NO>::Build(x.getMap(),x.getNumVectors());
+#endif
         *YCoarseSolveTmp_ = x;
         for (int j=GatheringMaps_.size()-1; j>0; j--) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             YCoarse_ = MultiVectorFactory<SC,LO,GO,NO>::Build(GatheringMaps_[j-1],x.getNumVectors());
+#else
+            YCoarse_ = MultiVectorFactory<SC,NO>::Build(GatheringMaps_[j-1],x.getNumVectors());
+#endif
             {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                 FROSCH_TIMER_START_LEVELID(applyTime,"doImport");
@@ -216,7 +297,11 @@ namespace FROSch {
             }
             YCoarseSolveTmp_ = YCoarse_;
         }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         YCoarse_ = MultiVectorFactory<SC,LO,GO,NO>::Build(CoarseSpace_->getBasisMapUnique(),x.getNumVectors());
+#else
+        YCoarse_ = MultiVectorFactory<SC,NO>::Build(CoarseSpace_->getBasisMapUnique(),x.getNumVectors());
+#endif
         {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
             FROSCH_TIMER_START_LEVELID(applyTime,"doImport");
@@ -235,14 +320,24 @@ namespace FROSch {
         }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename CoarseOperator<SC,LO,GO,NO>::CoarseSpacePtr CoarseOperator<SC,LO,GO,NO>::getCoarseSpace() const
+#else
+    template<class SC,class NO>
+    typename CoarseOperator<SC,NO>::CoarseSpacePtr CoarseOperator<SC,NO>::getCoarseSpace() const
+#endif
     {
         return CoarseSpace_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int CoarseOperator<SC,LO,GO,NO>::setUpCoarseOperator()
+#else
+    template<class SC,class NO>
+    int CoarseOperator<SC,NO>::setUpCoarseOperator()
+#endif
     {
         FROSCH_TIMER_START_LEVELID(setUpCoarseOperatorTime,"CoarseOperator::setUpCoarseOperator");
         if (!Phi_.is_null()) {
@@ -252,7 +347,11 @@ namespace FROSch {
             //------------------------------------------------------------------------------------------------------------------------
             // Communicate coarse matrix
             if (!DistributionList_->get("Type","linear").compare("linear")) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 XMatrixPtr tmpCoarseMatrix = MatrixFactory<SC,LO,GO,NO>::Build(GatheringMaps_[0]);
+#else
+                XMatrixPtr tmpCoarseMatrix = MatrixFactory<SC,NO>::Build(GatheringMaps_[0]);
+#endif
                 {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                     FROSCH_TIMER_START_LEVELID(coarseMatrixExportTime,"Export Coarse Matrix");
@@ -263,7 +362,11 @@ namespace FROSch {
                 for (UN j=1; j<GatheringMaps_.size(); j++) {
                     tmpCoarseMatrix->fillComplete();
                     k0 = tmpCoarseMatrix;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     tmpCoarseMatrix = MatrixFactory<SC,LO,GO,NO>::Build(GatheringMaps_[j]);
+#else
+                    tmpCoarseMatrix = MatrixFactory<SC,NO>::Build(GatheringMaps_[j]);
+#endif
                     {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                         FROSCH_TIMER_START_LEVELID(coarseMatrixExportTime,"Export Coarse Matrix");
@@ -276,10 +379,18 @@ namespace FROSch {
             } else if (!DistributionList_->get("Type","linear").compare("Zoltan2")) {
 #ifdef HAVE_SHYLU_DDFROSCH_ZOLTAN2
                 GatheringMaps_[0] = rcp_const_cast<XMap> (BuildUniqueMap(k0->getRowMap()));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 CoarseSolveExporters_[0] = ExportFactory<LO,GO,NO>::Build(CoarseSpace_->getBasisMapUnique(),GatheringMaps_[0]);
+#else
+                CoarseSolveExporters_[0] = ExportFactory<NO>::Build(CoarseSpace_->getBasisMapUnique(),GatheringMaps_[0]);
+#endif
                 
                 if (NumProcsCoarseSolve_ < this->MpiComm_->getSize()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     XMatrixPtr k0Unique = MatrixFactory<SC,LO,GO,NO>::Build(GatheringMaps_[0]);
+#else
+                    XMatrixPtr k0Unique = MatrixFactory<SC,NO>::Build(GatheringMaps_[0]);
+#endif
                     k0Unique->doExport(*k0,*CoarseSolveExporters_[0],INSERT);
                     k0Unique->fillComplete(GatheringMaps_[0],GatheringMaps_[0]);
                     
@@ -291,13 +402,21 @@ namespace FROSch {
                     
                     k0 = k0Unique;
                     GatheringMaps_[0] = k0->getRowMap();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     CoarseSolveExporters_[0] = ExportFactory<LO,GO,NO>::Build(CoarseSpace_->getBasisMapUnique(),GatheringMaps_[0]);
+#else
+                    CoarseSolveExporters_[0] = ExportFactory<NO>::Build(CoarseSpace_->getBasisMapUnique(),GatheringMaps_[0]);
+#endif
                     
                     if (GatheringMaps_[0]->getNodeNumElements()>0) {
                         OnCoarseSolveComm_=true;
                     }
                     CoarseSolveComm_ = this->MpiComm_->split(!OnCoarseSolveComm_,this->MpiComm_->getRank());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     CoarseSolveMap_ = MapFactory<LO,GO,NO>::Build(CoarseSpace_->getBasisMapUnique()->lib(),-1,GatheringMaps_[0]->getNodeElementList(),0,CoarseSolveComm_);
+#else
+                    CoarseSolveMap_ = MapFactory<NO>::Build(CoarseSpace_->getBasisMapUnique()->lib(),-1,GatheringMaps_[0]->getNodeElementList(),0,CoarseSolveComm_);
+#endif
                 }
 #else
                 ThrowErrorMissingPackage("FROSch::CoarseOperator","Zoltan2");
@@ -324,7 +443,11 @@ namespace FROSch {
                         }
                         elemsPerRow[i] = numEntries;
                     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     CoarseMatrix_ = MatrixFactory<SC,LO,GO,NO>::Build(CoarseSolveMap_,elemsPerRow);
+#else
+                    CoarseMatrix_ = MatrixFactory<SC,NO>::Build(CoarseSolveMap_,elemsPerRow);
+#endif
                     for (LO i = 0; i < numRows; i++) {
                         GO globalRow = CoarseSolveMap_->getGlobalElement(i);
                         k0->getLocalRowView(i,indices,values);
@@ -354,7 +477,11 @@ namespace FROSch {
                         }
                         elemsPerRow[i] = numEntries;
                     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     CoarseMatrix_ = MatrixFactory<SC,LO,GO,NO>::Build(CoarseSolveMap_,elemsPerRow);
+#else
+                    CoarseMatrix_ = MatrixFactory<SC,NO>::Build(CoarseSolveMap_,elemsPerRow);
+#endif
                     for (LO i = 0; i < numRows; i++) {
                         GO globalRow = CoarseSolveMap_->getGlobalElement(i);
                         k0->getGlobalRowView(globalRow,indices,values);
@@ -375,7 +502,11 @@ namespace FROSch {
                 }
                 if (!reuseCoarseMatrixSymbolicFactorization) {
                     if (this->IsComputed_ && this->Verbose_) std::cout << "FROSch::CoarseOperator : Recomputing the Symbolic Factorization of the coarse matrix" << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     CoarseSolver_.reset(new SubdomainSolver<SC,LO,GO,NO>(CoarseMatrix_,sublist(this->ParameterList_,"CoarseSolver")));
+#else
+                    CoarseSolver_.reset(new SubdomainSolver<SC,NO>(CoarseMatrix_,sublist(this->ParameterList_,"CoarseSolver")));
+#endif
                     CoarseSolver_->initialize();
                 } else {
                     FROSCH_ASSERT(!CoarseSolver_.is_null(),"FROSch::CoarseOperator : ERROR: CoarseSolver_.is_null()");
@@ -389,24 +520,44 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename CoarseOperator<SC,LO,GO,NO>::XMatrixPtr CoarseOperator<SC,LO,GO,NO>::buildCoarseMatrix()
+#else
+    template<class SC,class NO>
+    typename CoarseOperator<SC,NO>::XMatrixPtr CoarseOperator<SC,NO>::buildCoarseMatrix()
+#endif
     {
         FROSCH_TIMER_START_LEVELID(buildCoarseMatrixTime,"CoarseOperator::buildCoarseMatrix");
         XMatrixPtr k0;
         if (this->ParameterList_->get("Use Triple MatrixMultiply",false)) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             k0 = MatrixFactory<SC,LO,GO,NO>::Build(CoarseSpace_->getBasisMapUnique(),as<LO>(0));
             TripleMatrixMultiply<SC,LO,GO,NO>::MultiplyRAP(*Phi_,true,*this->K_,false,*Phi_,false,*k0);
+#else
+            k0 = MatrixFactory<SC,NO>::Build(CoarseSpace_->getBasisMapUnique(),as<LO>(0));
+            TripleMatrixMultiply<SC,NO>::MultiplyRAP(*Phi_,true,*this->K_,false,*Phi_,false,*k0);
+#endif
         } else {
             RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(std::cout));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XMatrixPtr tmp = MatrixMatrix<SC,LO,GO,NO>::Multiply(*this->K_,false,*Phi_,false,*fancy);
             k0 = MatrixMatrix<SC,LO,GO,NO>::Multiply(*Phi_,true,*tmp,false,*fancy);
+#else
+            XMatrixPtr tmp = MatrixMatrix<SC,NO>::Multiply(*this->K_,false,*Phi_,false,*fancy);
+            k0 = MatrixMatrix<SC,NO>::Multiply(*Phi_,true,*tmp,false,*fancy);
+#endif
         }
         return k0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int CoarseOperator<SC,LO,GO,NO>::buildCoarseSolveMap(ConstXMapPtr coarseMapUnique)
+#else
+    template<class SC,class NO>
+    int CoarseOperator<SC,NO>::buildCoarseSolveMap(ConstXMapPtr coarseMapUnique)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(buildCoarseSolveMapTime,"CoarseOperator::buildCoarseSolveMap");
         NumProcsCoarseSolve_ = DistributionList_->get("NumProcs",1);
@@ -458,7 +609,11 @@ namespace FROSch {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                     FROSCH_TIMER_START_LEVELID(gatheringMapsTime,"Gathering Maps");
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     GatheringMaps_[i] = MapFactory<LO,GO,NO>::Build(coarseMapUnique->lib(),-1,numMyRows,0,this->MpiComm_);
+#else
+                    GatheringMaps_[i] = MapFactory<NO>::Build(coarseMapUnique->lib(),-1,numMyRows,0,this->MpiComm_);
+#endif
                 }
             }
 
@@ -474,7 +629,11 @@ namespace FROSch {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                 FROSCH_TIMER_START_LEVELID(gatheringMapsTime,"Gathering Maps");
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 GatheringMaps_[gatheringSteps-1] = MapFactory<LO,GO,NO>::Build(coarseMapUnique->lib(),-1,numMyRows,0,this->MpiComm_);
+#else
+                GatheringMaps_[gatheringSteps-1] = MapFactory<NO>::Build(coarseMapUnique->lib(),-1,numMyRows,0,this->MpiComm_);
+#endif
             }
             //cout << *GatheringMaps_->at(gatheringSteps-1);
 
@@ -493,7 +652,11 @@ namespace FROSch {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                 FROSCH_TIMER_START_LEVELID(coarseCommMapTime,"Coarse Communicator Map");
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 CoarseSolveMap_ = MapFactory<LO,GO,NO>::Build(coarseMapUnique->lib(),-1,GatheringMaps_[GatheringMaps_.size()-1]->getNodeElementList(),0,CoarseSolveComm_);
+#else
+                CoarseSolveMap_ = MapFactory<NO>::Build(coarseMapUnique->lib(),-1,GatheringMaps_[GatheringMaps_.size()-1]->getNodeElementList(),0,CoarseSolveComm_);
+#endif
             }
             
             // Possibly change the Send type for this Exporter
@@ -506,7 +669,11 @@ namespace FROSch {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                 FROSCH_TIMER_START_LEVELID(coarseSolveExportersTime,"Build Exporters");
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 CoarseSolveExporters_[0] = ExportFactory<LO,GO,NO>::Build(coarseMapUnique,GatheringMaps_[0]);
+#else
+                CoarseSolveExporters_[0] = ExportFactory<NO>::Build(coarseMapUnique,GatheringMaps_[0]);
+#endif
                 CoarseSolveExporters_[0]->setDistributorParameters(gatheringCommunicationList); // Set the parameter list for the communication of the exporter
             }
 #ifdef FROSCH_COARSEOPERATOR_EXPORT_AND_IMPORT
@@ -514,7 +681,11 @@ namespace FROSch {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                 FROSCH_TIMER_START_LEVELID(coarseSolveImportersTime,"Build Importers");
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 CoarseSolveImporters_[0] = ImportFactory<LO,GO,NO>::Build(GatheringMaps_[0],coarseMapUnique);
+#else
+                CoarseSolveImporters_[0] = ImportFactory<NO>::Build(GatheringMaps_[0],coarseMapUnique);
+#endif
                 CoarseSolveImporters_[0]->setDistributorParameters(gatheringCommunicationList); // Set the parameter list for the communication of the exporter
             }
 #endif
@@ -524,7 +695,11 @@ namespace FROSch {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                     FROSCH_TIMER_START_LEVELID(coarseSolveExportersTime,"Build Exporters");
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     CoarseSolveExporters_[j] = ExportFactory<LO,GO,NO>::Build(GatheringMaps_[j-1],GatheringMaps_[j]);
+#else
+                    CoarseSolveExporters_[j] = ExportFactory<NO>::Build(GatheringMaps_[j-1],GatheringMaps_[j]);
+#endif
                     CoarseSolveExporters_[j]->setDistributorParameters(gatheringCommunicationList); // Set the parameter list for the communication of the exporter
                 }
 #ifdef FROSCH_COARSEOPERATOR_EXPORT_AND_IMPORT
@@ -532,7 +707,11 @@ namespace FROSch {
 #ifdef FROSCH_COARSEOPERATOR_DETAIL_TIMERS
                     FROSCH_TIMER_START_LEVELID(coarseSolveImportersTime,"Build Importers");
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     CoarseSolveImporters_[j] = ImportFactory<LO,GO,NO>::Build(GatheringMaps_[j],GatheringMaps_[j-1]);
+#else
+                    CoarseSolveImporters_[j] = ImportFactory<NO>::Build(GatheringMaps_[j],GatheringMaps_[j-1]);
+#endif
                     CoarseSolveImporters_[j]->setDistributorParameters(gatheringCommunicationList); // Set the parameter list for the communication of the exporter
                 }
 #endif

@@ -54,7 +54,11 @@ namespace {
   // UNIT TESTS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, GetGlobalRowCopy, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, GetGlobalRowCopy, Scalar, Node )
+#endif
   {
     using Tpetra::TestingUtilities::getDefaultComm;
     using Teuchos::ArrayView;
@@ -66,8 +70,13 @@ namespace {
     using Teuchos::reduceAll;
     using Teuchos::tuple;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> crs_matrix_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     typedef Tpetra::global_size_t GST;
     typedef Teuchos::ScalarTraits<Scalar> STS;
     typedef typename STS::magnitudeType MT;
@@ -151,7 +160,11 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, GetLocalRowCopy, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, GetLocalRowCopy, Scalar, Node )
+#endif
   {
     using Tpetra::TestingUtilities::getDefaultComm;
     using Teuchos::ArrayView;
@@ -163,8 +176,13 @@ namespace {
     using Teuchos::reduceAll;
     using Teuchos::tuple;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> crs_matrix_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     typedef Tpetra::global_size_t GST;
     typedef Teuchos::ScalarTraits<Scalar> STS;
     typedef typename STS::magnitudeType MT;
@@ -254,9 +272,15 @@ namespace {
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, GetGlobalRowCopy, SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, GetLocalRowCopy, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, GetGlobalRowCopy, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, GetLocalRowCopy, SCALAR,NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

@@ -78,7 +78,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 template<typename TRAITS, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS, LO, GO>::
+#else
+panzer::GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS>::
+#endif
 GatherSolution_BlockedEpetra(
   const std::vector<Teuchos::RCP<const GlobalIndexer<LO, int>>>&
     indexers,
@@ -133,7 +137,11 @@ GatherSolution_BlockedEpetra(
 ///////////////////////////////////////////////////////////////////////////////
 template<typename TRAITS, typename LO, typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS, LO, GO>::
+#else
+panzer::GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS>::
+#endif
 postRegistrationSetup(
   typename TRAITS::SetupData /* d  */,
   PHX::FieldManager<TRAITS>& /* fm */)
@@ -162,7 +170,11 @@ postRegistrationSetup(
 ///////////////////////////////////////////////////////////////////////////////
 template<typename TRAITS, typename LO, typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS, LO, GO>::
+#else
+panzer::GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS>::
+#endif
 preEvaluate(
   typename TRAITS::PreEvalData d)
 {
@@ -243,7 +255,11 @@ preEvaluate(
 ///////////////////////////////////////////////////////////////////////////////
 template<typename TRAITS, typename LO, typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS, LO, GO>::
+#else
+panzer::GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS>::
+#endif
 evaluateFields(
   typename TRAITS::EvalData workset)
 {

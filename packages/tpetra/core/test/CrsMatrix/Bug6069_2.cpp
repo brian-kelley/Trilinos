@@ -79,7 +79,11 @@ GetNeighboursCartesian2d (const GO i, const GO nx, const GO ny,
   else              upper = i + nx;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6069_2, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6069_2, SC, NT)
+#endif
 {
   using Teuchos::Array;
   using Teuchos::ArrayView;
@@ -90,8 +94,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6069_2, SC, LO, GO, NT)
   using Teuchos::FancyOStream;
   using Tpetra::TestingUtilities::getDefaultComm;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SC, LO, GO, NT> MatrixType;
   typedef Tpetra::Map<LO, GO, NT> MapType;
+#else
+  typedef Tpetra::CrsMatrix<SC, NT> MatrixType;
+  typedef Tpetra::Map<NT> MapType;
+#endif
 
   // global_size_t: Tpetra defines this unsigned integer type big
   // enough to hold any global dimension or amount of data.
@@ -195,8 +204,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6069_2, SC, LO, GO, NT)
   comm->barrier ();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, LO, GO, NT )                   \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, Bug6069_2, SC, LO, GO, NT)
+#else
+#define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, NT )                   \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, Bug6069_2, SC, NT)
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

@@ -74,20 +74,44 @@ namespace Tpetra {
   /// also allows insertion of data into nonowned rows, much like
   /// Epetra_FECrsGraph.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,
             class GlobalOrdinal,
             class Node>
+#else
+  template <class Node>
+#endif
   class FECrsGraph :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public CrsGraph<LocalOrdinal, GlobalOrdinal, Node>
+#else
+    public CrsGraph<Node>
+#endif
   {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! The specialization of DistObject that is this class' parent class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef DistObject<GlobalOrdinal, LocalOrdinal, GlobalOrdinal, Node> dist_object_type;
+#else
+    typedef DistObject<GlobalOrdinal, Node> dist_object_type;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class S, class LO, class GO, class N>
+#else
+    template <class S, class N>
+#endif
     friend class FECrsMatrix;
   public:
     //! Parent class
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsGraph<LocalOrdinal, GlobalOrdinal, Node> crs_graph_type;
+#else
+    typedef CrsGraph<Node> crs_graph_type;
+#endif
 
     //! This class' first template parameter; the type of local indices.
     typedef LocalOrdinal local_ordinal_type;
@@ -97,19 +121,43 @@ namespace Tpetra {
     typedef Node node_type;
 
     //! The Kokkos device type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsGraph<LocalOrdinal, GlobalOrdinal, Node>::device_type device_type;
+#else
+    typedef typename CrsGraph<Node>::device_type device_type;
+#endif
     //! The Kokkos execution space.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename CrsGraph<LocalOrdinal, GlobalOrdinal, Node>::execution_space execution_space;
+#else
+    typedef typename CrsGraph<Node>::execution_space execution_space;
+#endif
 
     //! The type of the part of the sparse graph on each MPI process.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef  typename CrsGraph<LocalOrdinal, GlobalOrdinal, Node>::local_graph_type local_graph_type;
+#else
+    typedef  typename CrsGraph<Node>::local_graph_type local_graph_type;
+#endif
 
     //! The Map specialization used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = ::Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using map_type = ::Tpetra::Map<Node>;
+#endif
     //! The Import specialization used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using import_type = ::Tpetra::Import<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using import_type = ::Tpetra::Import<Node>;
+#endif
     //! The Export specialization used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using export_type = ::Tpetra::Export<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using export_type = ::Tpetra::Export<Node>;
+#endif
 
     //! @name Constructor/Destructor Methods
     //@{
@@ -245,18 +293,34 @@ namespace Tpetra {
                 const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
     //! Copy constructor (forbidden).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     FECrsGraph (const FECrsGraph<LocalOrdinal, GlobalOrdinal, Node>&) = delete;
+#else
+    FECrsGraph (const FECrsGraph<Node>&) = delete;
+#endif
 
     //! Move constructor (forbidden).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     FECrsGraph (FECrsGraph<LocalOrdinal, GlobalOrdinal, Node>&&) = delete;
+#else
+    FECrsGraph (FECrsGraph<Node>&&) = delete;
+#endif
 
     //! Copy assignment (forbidden).
     FECrsGraph&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     operator= (const FECrsGraph<LocalOrdinal, GlobalOrdinal, Node>&) = delete;
+#else
+    operator= (const FECrsGraph<Node>&) = delete;
+#endif
 
     //! Move assignment (forbidden).
     FECrsGraph&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     operator= (FECrsGraph<LocalOrdinal, GlobalOrdinal, Node>&&) = delete;
+#else
+    operator= (FECrsGraph<Node>&&) = delete;
+#endif
 
     /// \brief Destructor (virtual for memory safety of derived classes).
     ///
@@ -385,7 +449,11 @@ namespace Tpetra {
 
 
     // This is whichever multivector isn't currently active
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<CrsGraph<LocalOrdinal, GlobalOrdinal, Node> > inactiveCrsGraph_;
+#else
+    Teuchos::RCP<CrsGraph<Node> > inactiveCrsGraph_;
+#endif
     // This is in RCP to make shallow copies of the FECrsGraph work correctly
     Teuchos::RCP<FEWhichActive> activeCrsGraph_;
 

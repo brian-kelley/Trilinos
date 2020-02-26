@@ -49,8 +49,13 @@
 
 #include "MueLu_FacadeClassBase_def.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   template class MueLu::FacadeClassBase<SC,LO,GO,NO>;
+#else
+#define MUELU_ETI_GROUP(SC,NO) \
+  template class MueLu::FacadeClassBase<SC,NO>;
+#endif
 
 #include "MueLu_ETI_4arg.hpp"
 

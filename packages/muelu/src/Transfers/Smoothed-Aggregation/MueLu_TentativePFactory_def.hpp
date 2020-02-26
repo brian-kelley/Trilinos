@@ -73,8 +73,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> TentativePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> TentativePFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -101,8 +106,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void TentativePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& fineLevel, Level& /* coarseLevel */) const {
+#else
+  template <class Scalar, class Node>
+  void TentativePFactory<Scalar, Node>::DeclareInput(Level& fineLevel, Level& /* coarseLevel */) const {
+#endif
 
     const ParameterList& pL = GetParameterList();
     // NOTE: This guy can only either be 'Nullspace' or 'Scaled Nullspace' or else the validator above will cause issues
@@ -124,17 +134,32 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void TentativePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void TentativePFactory<Scalar, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     return BuildP(fineLevel, coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void TentativePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void TentativePFactory<Scalar, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
     typedef typename Teuchos::ScalarTraits<Scalar>::coordinateType coordinate_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<coordinate_type,LO,GO,NO> RealValuedMultiVector;
     typedef Xpetra::MultiVectorFactory<coordinate_type,LO,GO,NO> RealValuedMultiVectorFactory;
+#else
+    typedef Xpetra::MultiVector<coordinate_type,NO> RealValuedMultiVector;
+    typedef Xpetra::MultiVectorFactory<coordinate_type,NO> RealValuedMultiVectorFactory;
+#endif
 
     const ParameterList& pL = GetParameterList();
     std::string nspName = "Nullspace";
@@ -256,8 +281,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void TentativePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void TentativePFactory<Scalar, Node>::
+#endif
   BuildPuncoupled(RCP<Matrix> A, RCP<Aggregates> aggregates, RCP<AmalgamationInfo> amalgInfo, RCP<MultiVector> fineNullspace,
                 RCP<const Map> coarseMap, RCP<Matrix>& Ptentative, RCP<MultiVector>& coarseNullspace, const int levelID) const {
     RCP<const Map> rowMap = A->getRowMap();
@@ -588,8 +618,13 @@ namespace MueLu {
     PtentCrs->expertStaticFillComplete(coarseMap, A->getDomainMap(),dummy_i,dummy_e,FCparams);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void TentativePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void TentativePFactory<Scalar, Node>::
+#endif
   BuildPcoupled(RCP<Matrix> A, RCP<Aggregates> aggregates, RCP<AmalgamationInfo> amalgInfo, RCP<MultiVector> fineNullspace,
                 RCP<const Map> coarseMap, RCP<Matrix>& Ptentative, RCP<MultiVector>& coarseNullspace) const {
     typedef Teuchos::ScalarTraits<SC> STS;
@@ -651,8 +686,13 @@ namespace MueLu {
 
     RCP<const Map > ghostQMap;
     RCP<MultiVector> ghostQvalues;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Array<RCP<Xpetra::Vector<GO,LO,GO,Node> > > ghostQcolumns;
     RCP<Xpetra::Vector<GO,LO,GO,Node> > ghostQrowNums;
+#else
+    Array<RCP<Xpetra::Vector<GO,Node> > > ghostQcolumns;
+    RCP<Xpetra::Vector<GO,Node> > ghostQrowNums;
+#endif
     ArrayRCP< ArrayRCP<SC> > ghostQvals;
     ArrayRCP< ArrayRCP<GO> > ghostQcols;
     ArrayRCP< GO > ghostQrows;
@@ -676,8 +716,13 @@ namespace MueLu {
     //expensive, as the number of Vectors is NSDim.
     ghostQcolumns.resize(NSDim);
     for (size_t i=0; i<NSDim; ++i)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ghostQcolumns[i] = Xpetra::VectorFactory<GO,LO,GO,Node>::Build(ghostQMap);
     ghostQrowNums = Xpetra::VectorFactory<GO,LO,GO,Node>::Build(ghostQMap);
+#else
+      ghostQcolumns[i] = Xpetra::VectorFactory<GO,Node>::Build(ghostQMap);
+    ghostQrowNums = Xpetra::VectorFactory<GO,Node>::Build(ghostQMap);
+#endif
     if (ghostQvalues->getLocalLength() > 0) {
       ghostQvals.resize(NSDim);
       ghostQcols.resize(NSDim);
@@ -905,7 +950,11 @@ namespace MueLu {
     GetOStream(Runtime1) << "TentativePFactory : aggregates may cross process boundaries" << std::endl;
     // Import ghost parts of Q factors and insert into Ptentative.
     // First import just the global row numbers.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GO,LO,GO,Node> > targetQrowNums = Xpetra::VectorFactory<GO,LO,GO,Node>::Build(rowMapForPtent);
+#else
+    RCP<Xpetra::Vector<GO,Node> > targetQrowNums = Xpetra::VectorFactory<GO,Node>::Build(rowMapForPtent);
+#endif
     targetQrowNums->putScalar(-1);
     targetQrowNums->doImport(*ghostQrowNums,*importer,Xpetra::INSERT);
     ArrayRCP< GO > targetQrows = targetQrowNums->getDataNonConst(0);
@@ -925,9 +974,17 @@ namespace MueLu {
     // Import using the row numbers that this processor will receive.
     importer = ImportFactory::Build(ghostQMap, reducedMap);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Array<RCP<Xpetra::Vector<GO,LO,GO,Node> > > targetQcolumns(NSDim);
+#else
+    Array<RCP<Xpetra::Vector<GO,Node> > > targetQcolumns(NSDim);
+#endif
     for (size_t i=0; i<NSDim; ++i) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       targetQcolumns[i] = Xpetra::VectorFactory<GO,LO,GO,Node>::Build(reducedMap);
+#else
+      targetQcolumns[i] = Xpetra::VectorFactory<GO,Node>::Build(reducedMap);
+#endif
       targetQcolumns[i]->doImport(*(ghostQcolumns[i]),*importer,Xpetra::INSERT);
     }
     RCP<MultiVector> targetQvalues = MultiVectorFactory::Build(reducedMap,NSDim);
@@ -959,8 +1016,13 @@ namespace MueLu {
     Ptentative->fillComplete(coarseMap, A->getDomainMap());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   bool TentativePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::isGoodMap(const Map& rowMap, const Map& colMap) const {
+#else
+  template <class Scalar, class Node>
+  bool TentativePFactory<Scalar, Node>::isGoodMap(const Map& rowMap, const Map& colMap) const {
+#endif
     ArrayView<const GO> rowElements = rowMap.getNodeElementList();
     ArrayView<const GO> colElements = colMap.getNodeElementList();
 

@@ -328,10 +328,18 @@ namespace ROL {
     class TpetraBoundConstraint : public BoundConstraint<Real> {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Tpetra::MultiVector<Real,LO,GO,Node> MV;
+#else
+        typedef Tpetra::MultiVector<Real,Node> MV;
+#endif
         typedef ROL::Ptr<MV> MVP;
         typedef ROL::Ptr<const MV> CMVP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef TpetraMultiVector<Real,LO,GO,Node> TMV;
+#else
+        typedef TpetraMultiVector<Real,Node> TMV;
+#endif
         typedef ROL::Ptr<TMV> TMVP;
         typedef typename MV::dual_view_type::t_dev ViewType;
 

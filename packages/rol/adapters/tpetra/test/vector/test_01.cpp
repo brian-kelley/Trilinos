@@ -64,8 +64,13 @@ typedef double ElementT;
 typedef Tpetra::Map<>::local_ordinal_type LO;
 typedef Tpetra::Map<>::global_ordinal_type GO;
 typedef Tpetra::Map<>::node_type Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::Map<LO, GO, Node> Map;
 typedef Tpetra::MultiVector<RealT, LO, GO, Node> MV;
+#else
+typedef Tpetra::Map<Node> Map;
+typedef Tpetra::MultiVector<RealT,Node> MV;
+#endif
 
 int main(int argc, char *argv[]) {
 
@@ -107,7 +112,11 @@ int main(int argc, char *argv[]) {
 
         // Create ROL vectors
         ROL::TpetraMultiVector<RealT> x(x_ptr); // Testing default parameters here
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         ROL::TpetraMultiVector<RealT,LO,GO,Node> y(y_ptr);
+#else
+        ROL::TpetraMultiVector<RealT,Node> y(y_ptr);
+#endif
 
         // norm of x
         RealT xnorm = x.norm();
@@ -202,14 +211,26 @@ int main(int argc, char *argv[]) {
         d_ptr->randomize();
         v_ptr->randomize();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         ROL::Ptr<ROL::Vector<RealT> > k = ROL::makePtr<ROL::TpetraMultiVector<RealT,LO,GO,Node>>(k_ptr);
+#else
+        ROL::Ptr<ROL::Vector<RealT> > k = ROL::makePtr<ROL::TpetraMultiVector<RealT,Node>>(k_ptr);
+#endif
 
         // Check gradient and Hessian
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         ROL::TpetraMultiVector<RealT,LO,GO,Node> xtest(xtest_ptr);
         ROL::TpetraMultiVector<RealT,LO,GO,Node> d(d_ptr);
         ROL::TpetraMultiVector<RealT,LO,GO,Node> v(v_ptr);
         ROL::TpetraMultiVector<RealT,LO,GO,Node> hv(hv_ptr);
         ROL::TpetraMultiVector<RealT,LO,GO,Node> ihhv(ihhv_ptr);
+#else
+        ROL::TpetraMultiVector<RealT,Node> xtest(xtest_ptr);
+        ROL::TpetraMultiVector<RealT,Node> d(d_ptr);
+        ROL::TpetraMultiVector<RealT,Node> v(v_ptr);
+        ROL::TpetraMultiVector<RealT,Node> hv(hv_ptr);
+        ROL::TpetraMultiVector<RealT,Node> ihhv(ihhv_ptr);
+#endif
 
         // Create Objective function 
         ROL::ZOO::Objective_Zakharov<RealT> obj(k);

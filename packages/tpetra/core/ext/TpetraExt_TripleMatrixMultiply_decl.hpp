@@ -93,17 +93,35 @@ namespace Tpetra {
     ///   defaults to true.  If false, C will <i>not</i> be fill complete
     ///   on output.
     template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LocalOrdinal,
               class GlobalOrdinal,
+#endif
               class Node>
     void MultiplyRAP(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& R,
+#else
+                     const CrsMatrix<Scalar, Node>& R,
+#endif
                      bool transposeR,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+                     const CrsMatrix<Scalar, Node>& A,
+#endif
                      bool transposeA,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& P,
+#else
+                     const CrsMatrix<Scalar, Node>& P,
+#endif
                      bool transposeP,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
+#else
+                     CrsMatrix<Scalar, Node>& Ac,
+#endif
                      bool call_FillComplete_on_result = true,
                      const std::string& label = std::string(),
                      const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
@@ -114,48 +132,82 @@ namespace Tpetra {
   namespace MMdetails{
 
     template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              class LocalOrdinal,
              class GlobalOrdinal,
+#endif
              class Node>
     void mult_R_A_P_newmatrix(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                               CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Rview,
                               CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                               CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Pview,
                               CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
+#else
+                              CrsMatrixStruct<Scalar, Node>& Rview,
+                              CrsMatrixStruct<Scalar, Node>& Aview,
+                              CrsMatrixStruct<Scalar, Node>& Pview,
+                              CrsMatrix<Scalar, Node>& Ac,
+#endif
                               const std::string& label = std::string(),
                               const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
    template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              class LocalOrdinal,
              class GlobalOrdinal,
+#endif
              class Node>
     void mult_R_A_P_reuse(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                               CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Rview,
                               CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                               CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Pview,
                               CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
+#else
+                              CrsMatrixStruct<Scalar, Node>& Rview,
+                              CrsMatrixStruct<Scalar, Node>& Aview,
+                              CrsMatrixStruct<Scalar, Node>& Pview,
+                              CrsMatrix<Scalar, Node>& Ac,
+#endif
                               const std::string& label = std::string(),
                               const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
     template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              class LocalOrdinal,
              class GlobalOrdinal,
+#endif
              class Node>
     void mult_PT_A_P_newmatrix(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Pview,
                                CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
+#else
+                               CrsMatrixStruct<Scalar, Node>& Aview,
+                               CrsMatrixStruct<Scalar, Node>& Pview,
+                               CrsMatrix<Scalar, Node>& Ac,
+#endif
                                const std::string& label = std::string(),
                                const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
     template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              class LocalOrdinal,
              class GlobalOrdinal,
+#endif
              class Node>
     void mult_PT_A_P_reuse(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Pview,
                                CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
+#else
+                               CrsMatrixStruct<Scalar, Node>& Aview,
+                               CrsMatrixStruct<Scalar, Node>& Pview,
+                               CrsMatrix<Scalar, Node>& Ac,
+#endif
                                const std::string& label = std::string(),
                                const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
@@ -164,19 +216,33 @@ namespace Tpetra {
     // Kernel wrappers struct (for non-specialized kernels)
     // Because C++ doesn't support partial template specialization of functions.
     template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              class LocalOrdinal,
              class GlobalOrdinal,
+#endif
              class Node>
     struct KernelWrappers3MMM {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static inline void mult_PT_A_P_newmatrix_kernel_wrapper_2pass(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                                                     CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Pview,
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      static inline void mult_PT_A_P_newmatrix_kernel_wrapper_2pass(CrsMatrixStruct<Scalar, Node>& Aview,
+                                                                    CrsMatrixStruct<Scalar, Node>& Pview,
+#endif
                                                                     const Teuchos::Array<LocalOrdinal> & Acol2PRow,
                                                                     const Teuchos::Array<LocalOrdinal> & Acol2PRowImport,
                                                                     const Teuchos::Array<LocalOrdinal> & Pcol2Accol,
                                                                     const Teuchos::Array<LocalOrdinal> & PIcol2Accol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                     CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Ac,
                                                                     Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Acimport,
+#else
+                                                                    CrsMatrix<Scalar, Node>& Ac,
+                                                                    Teuchos::RCP<const Import<Node> > Acimport,
+#endif
                                                                     const std::string& label = std::string(),
                                                                     const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
     };

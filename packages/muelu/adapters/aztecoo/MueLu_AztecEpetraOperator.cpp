@@ -47,9 +47,15 @@ const Epetra_Comm& AztecEpetraOperator::Comm() const {
 }
 
 const Epetra_Map& AztecEpetraOperator::OperatorDomainMap() const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if(Teuchos::rcp_dynamic_cast<MueLu::RefMaxwell<SC,LO,GO,NO> >(xOp_) != Teuchos::null) {
     RCP<Xpetra::Matrix<SC,LO,GO,NO> > A = Teuchos::rcp_dynamic_cast<MueLu::RefMaxwell<SC,LO,GO,NO> >(xOp_)->getJacobian();
     RCP<const Xpetra::CrsMatrixWrap<SC,LO,GO,NO> > crsOp = rcp_dynamic_cast<const Xpetra::CrsMatrixWrap<SC,LO,GO,NO> >(A);
+#else
+  if(Teuchos::rcp_dynamic_cast<MueLu::RefMaxwell<SC,NO> >(xOp_) != Teuchos::null) {
+    RCP<Xpetra::Matrix<SC,NO> > A = Teuchos::rcp_dynamic_cast<MueLu::RefMaxwell<SC,NO> >(xOp_)->getJacobian();
+    RCP<const Xpetra::CrsMatrixWrap<SC,NO> > crsOp = rcp_dynamic_cast<const Xpetra::CrsMatrixWrap<SC,NO> >(A);
+#endif
     if (crsOp == Teuchos::null)
       throw Exceptions::BadCast("Cast from Xpetra::Matrix to Xpetra::CrsMatrixWrap failed");
     const RCP<const Xpetra::EpetraCrsMatrix> &tmp_ECrsMtx = rcp_dynamic_cast<const Xpetra::EpetraCrsMatrix>(crsOp->getCrsMatrix());
@@ -66,9 +72,15 @@ const Epetra_Map& AztecEpetraOperator::OperatorDomainMap() const {
 
 const Epetra_Map & AztecEpetraOperator::OperatorRangeMap() const {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if(Teuchos::rcp_dynamic_cast<MueLu::RefMaxwell<SC,LO,GO,NO> >(xOp_) != Teuchos::null) {
     RCP<Xpetra::Matrix<SC,LO,GO,NO> > A = Teuchos::rcp_dynamic_cast<MueLu::RefMaxwell<SC,LO,GO,NO> >(xOp_)->getJacobian();
     RCP<const Xpetra::CrsMatrixWrap<SC,LO,GO,NO> > crsOp = rcp_dynamic_cast<const Xpetra::CrsMatrixWrap<SC,LO,GO,NO> >(A);
+#else
+  if(Teuchos::rcp_dynamic_cast<MueLu::RefMaxwell<SC,NO> >(xOp_) != Teuchos::null) {
+    RCP<Xpetra::Matrix<SC,NO> > A = Teuchos::rcp_dynamic_cast<MueLu::RefMaxwell<SC,NO> >(xOp_)->getJacobian();
+    RCP<const Xpetra::CrsMatrixWrap<SC,NO> > crsOp = rcp_dynamic_cast<const Xpetra::CrsMatrixWrap<SC,NO> >(A);
+#endif
     if (crsOp == Teuchos::null)
       throw Exceptions::BadCast("Cast from Xpetra::Matrix to Xpetra::CrsMatrixWrap failed");
     const RCP<const Xpetra::EpetraCrsMatrix> &tmp_ECrsMtx = rcp_dynamic_cast<const Xpetra::EpetraCrsMatrix>(crsOp->getCrsMatrix());

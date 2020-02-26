@@ -31,16 +31,27 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL(
   using GlobalOrdinal = Tpetra::Map<>::global_ordinal_type;
 
   typedef Teuchos::Comm<int> Tpetra_Comm;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Tpetra_Map;
   typedef Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tpetra_Vector;
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tpetra_CrsMatrix;
   typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> Tpetra_CrsGraph;
+#else
+  typedef Tpetra::Map<Node> Tpetra_Map;
+  typedef Tpetra::Vector<Scalar,Node> Tpetra_Vector;
+  typedef Tpetra::CrsMatrix<Scalar,Node> Tpetra_CrsMatrix;
+  typedef Tpetra::CrsGraph<Node> Tpetra_CrsGraph;
+#endif
 
   // Build banded matrix
   GlobalOrdinal nrow = 10;
   RCP<const Tpetra_Comm> comm = Tpetra::getDefaultComm();
   RCP<const Tpetra_Map> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createUniformContigMapWithNode<LocalOrdinal,GlobalOrdinal,Node>(
+#else
+    Tpetra::createUniformContigMapWithNode<Node>(
+#endif
       nrow, comm);
   RCP<Tpetra_CrsGraph> graph =
     rcp(new Tpetra_CrsGraph(map, size_t(2), Tpetra::StaticProfile));
@@ -127,16 +138,27 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL(
   using GlobalOrdinal = Tpetra::Map<>::global_ordinal_type;
 
   typedef Teuchos::Comm<int> Tpetra_Comm;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Tpetra_Map;
   typedef Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tpetra_Vector;
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tpetra_CrsMatrix;
   typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> Tpetra_CrsGraph;
+#else
+  typedef Tpetra::Map<Node> Tpetra_Map;
+  typedef Tpetra::Vector<Scalar,Node> Tpetra_Vector;
+  typedef Tpetra::CrsMatrix<Scalar,Node> Tpetra_CrsMatrix;
+  typedef Tpetra::CrsGraph<Node> Tpetra_CrsGraph;
+#endif
 
   // Build banded matrix
   GlobalOrdinal nrow = 10;
   RCP<const Tpetra_Comm> comm = Tpetra::getDefaultComm();
   RCP<const Tpetra_Map> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createUniformContigMapWithNode<LocalOrdinal,GlobalOrdinal,Node>(
+#else
+    Tpetra::createUniformContigMapWithNode<Node>(
+#endif
       nrow, comm);
   RCP<Tpetra_CrsGraph> graph =
     rcp(new Tpetra_CrsGraph(map, size_t(2), Tpetra::StaticProfile));
@@ -182,8 +204,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL(
 
   // Solve
   typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
   typedef Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> OP;
+#else
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+  typedef Tpetra::Operator<Scalar,Node> OP;
+#endif
   typedef Belos::LinearProblem<Scalar,MV,OP> BLinProb;
   RCP<Tpetra_Vector> x = Tpetra::createVector<Scalar>(map);
   RCP< BLinProb > problem = rcp(new BLinProb(matrix, x, b));

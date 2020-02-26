@@ -57,9 +57,15 @@
 namespace Xpetra {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 BlockedMultiVector(const Teuchos::RCP<const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node>>& map,
+#else
+template<class Scalar, class Node>
+BlockedMultiVector<Scalar, Node>::
+BlockedMultiVector(const Teuchos::RCP<const Xpetra::BlockedMap<Node>>& map,
+#endif
                    size_t                                                                         NumVectors,
                    bool                                                                           zeroOut)
     : map_(map)
@@ -71,7 +77,11 @@ BlockedMultiVector(const Teuchos::RCP<const Xpetra::BlockedMap<LocalOrdinal,Glob
     // add CrsMatrix objects in row,column order
     for(size_t r = 0; r < map->getNumMaps(); ++r)
         vv_.push_back(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(map->getMap(r, map_->getThyraMode()), NumVectors, zeroOut));
+#else
+          Xpetra::MultiVectorFactory<Scalar, Node>::Build(map->getMap(r, map_->getThyraMode()), NumVectors, zeroOut));
+#endif
 }
 
 
@@ -86,9 +96,15 @@ BlockedMultiVector(const Teuchos::RCP<const Xpetra::BlockedMap<LocalOrdinal,Glob
  * \param bmap BlockedMap object containing information about the block splitting
  * \param v MultiVector that is to be splitted into a blocked multi vector
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 BlockedMultiVector(Teuchos::RCP<const Xpetra::BlockedMap<LocalOrdinal, GlobalOrdinal, Node>> bmap,
+#else
+template<class Scalar, class Node>
+BlockedMultiVector<Scalar, Node>::
+BlockedMultiVector(Teuchos::RCP<const Xpetra::BlockedMap<Node>> bmap,
+#endif
                    Teuchos::RCP<const MultiVector>                                           v)
 {
     XPETRA_TEST_FOR_EXCEPTION(bmap->getMap()->getNodeNumElements() != v->getMap()->getNodeNumElements(),
@@ -132,9 +148,15 @@ BlockedMultiVector(Teuchos::RCP<const Xpetra::BlockedMap<LocalOrdinal, GlobalOrd
  * \param mapExtractor MapExtractor object containing information about the block splitting
  * \param v MultiVector that is to be splitted into a blocked multi vector
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 BlockedMultiVector(Teuchos::RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>> mapExtractor,
+#else
+template<class Scalar, class Node>
+BlockedMultiVector<Scalar, Node>::
+BlockedMultiVector(Teuchos::RCP<const Xpetra::MapExtractor<Scalar, Node>> mapExtractor,
+#endif
                    Teuchos::RCP<const MultiVector>                                                     v)
 {
     numVectors_ = v->getNumVectors();
@@ -144,7 +166,11 @@ BlockedMultiVector(Teuchos::RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal,
     maps.reserve(mapExtractor->NumMaps());
     for(size_t r = 0; r < mapExtractor->NumMaps(); ++r)
         maps.push_back(mapExtractor->getMap(r, mapExtractor->getThyraMode()));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map_ = Teuchos::rcp(new Xpetra::BlockedMap<LocalOrdinal, GlobalOrdinal, Node>(mapExtractor->getFullMap(), maps, mapExtractor->getThyraMode()));
+#else
+    map_ = Teuchos::rcp(new Xpetra::BlockedMap<Node>(mapExtractor->getFullMap(), maps, mapExtractor->getThyraMode()));
+#endif
 
     // Extract vector
     vv_.reserve(mapExtractor->NumMaps());
@@ -155,8 +181,13 @@ BlockedMultiVector(Teuchos::RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+BlockedMultiVector<Scalar, Node>::
+#endif
 BlockedMultiVector(const Teuchos::RCP<const BlockedMap>&   map,
                    std::vector<Teuchos::RCP<MultiVector>>& vin)
 {
@@ -168,8 +199,13 @@ BlockedMultiVector(const Teuchos::RCP<const BlockedMap>&   map,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+BlockedMultiVector<Scalar, Node>::
+#endif
 ~BlockedMultiVector()
 {
     for(size_t r = 0; r < vv_.size(); ++r)
@@ -182,9 +218,15 @@ BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+BlockedMultiVector<Scalar, Node>&
+BlockedMultiVector<Scalar, Node>::
+#endif
 operator=(const MultiVector& rhs)
 {
     assign(rhs);      // dispatch to protected virtual method
@@ -192,35 +234,67 @@ operator=(const MultiVector& rhs)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 replaceGlobalValue(GlobalOrdinal /* globalRow */, size_t /* vectorIndex */, const Scalar& /* value */)
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMultiVector::replaceGlobalValue: Not (yet) supported by BlockedMultiVector.");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 sumIntoGlobalValue(GlobalOrdinal /* globalRow */, size_t /* vectorIndex */, const Scalar& /* value */)
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMultiVector::sumIntoGlobalValue: Not (yet) supported by BlockedMultiVector.");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 replaceLocalValue(LocalOrdinal /* myRow */, size_t /* vectorIndex */, const Scalar& /* value */)
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMultiVector::replaceLocalValue: Not supported by BlockedMultiVector.");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 sumIntoLocalValue(LocalOrdinal /* myRow */, size_t /* vectorIndex */, const Scalar& /* value */)
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMultiVector::sumIntoLocalValue:Not (yet) supported by BlockedMultiVector.");
@@ -228,9 +302,17 @@ sumIntoLocalValue(LocalOrdinal /* myRow */, size_t /* vectorIndex */, const Scal
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 putScalar(const Scalar& value)
 {
     XPETRA_MONITOR("BlockedMultiVector::putScalar");
@@ -241,17 +323,32 @@ putScalar(const Scalar& value)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::Vector<Scalar, Node>>
+BlockedMultiVector<Scalar, Node>::
+#endif
 getVector(size_t j) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::BlockedVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> ret =
       Teuchos::rcp(new Xpetra::BlockedVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>(this->getBlockedMap(), false));
+#else
+    RCP<Xpetra::BlockedVector<Scalar, Node>> ret =
+      Teuchos::rcp(new Xpetra::BlockedVector<Scalar, Node>(this->getBlockedMap(), false));
+#endif
 
     for(size_t r = 0; r < getBlockedMap()->getNumMaps(); r++)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> subvec =
+#else
+        RCP<const Xpetra::Vector<Scalar, Node>> subvec =
+#endif
           this->getMultiVector(r, this->getBlockedMap()->getThyraMode())->getVector(j);
         ret->setMultiVector(r, subvec, this->getBlockedMap()->getThyraMode());
     }
@@ -259,20 +356,39 @@ getVector(size_t j) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<Xpetra::Vector<Scalar, Node>>
+BlockedMultiVector<Scalar, Node>::
+#endif
 getVectorNonConst(size_t j)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> ret =
       Teuchos::rcp_const_cast<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>(getVector(j));
+#else
+    RCP<Xpetra::Vector<Scalar, Node>> ret =
+      Teuchos::rcp_const_cast<Xpetra::Vector<Scalar, Node>>(getVector(j));
+#endif
     return ret;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Teuchos::ArrayRCP<const Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 getData(size_t j) const
 {
     if(map_->getNumMaps() == 1)
@@ -284,9 +400,17 @@ getData(size_t j) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 Teuchos::ArrayRCP<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 getDataNonConst(size_t j)
 {
     if(map_->getNumMaps() == 1)
@@ -298,36 +422,68 @@ getDataNonConst(size_t j)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 dot(const MultiVector& /* A */, const Teuchos::ArrayView<Scalar>& /* dots */) const
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMultiVector::dot: Not (yet) supported by BlockedMultiVector.");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 abs(const MultiVector& /* A */)
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMultiVector::abs: Not (yet) supported by BlockedMultiVector.");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 reciprocal(const MultiVector& /* A */)
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMultiVector::reciprocal: Not (yet) supported by BlockedMultiVector.");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 scale(const Scalar& alpha)
 {
     XPETRA_MONITOR("BlockedMultiVector::scale (Scalar)");
@@ -341,9 +497,17 @@ scale(const Scalar& alpha)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 scale(Teuchos::ArrayView<const Scalar> alpha)
 {
     XPETRA_MONITOR("BlockedMultiVector::scale (Array)");
@@ -357,9 +521,17 @@ scale(Teuchos::ArrayView<const Scalar> alpha)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 update(const Scalar& alpha, const MultiVector& A, const Scalar& beta)
 {
     XPETRA_MONITOR("BlockedMultiVector::update");
@@ -462,9 +634,17 @@ update(const Scalar& alpha, const MultiVector& A, const Scalar& beta)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 update(const Scalar& alpha, const MultiVector& A, const Scalar& beta, const MultiVector& B, const Scalar& gamma)
 {
     XPETRA_MONITOR("BlockedMultiVector::update2");
@@ -508,9 +688,17 @@ update(const Scalar& alpha, const MultiVector& A, const Scalar& beta, const Mult
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 norm1(const Teuchos::ArrayView<typename Teuchos::ScalarTraits<Scalar>::magnitudeType>& norms) const
 {
     XPETRA_MONITOR("BlockedMultiVector::norm1");
@@ -531,9 +719,17 @@ norm1(const Teuchos::ArrayView<typename Teuchos::ScalarTraits<Scalar>::magnitude
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 norm2(const Teuchos::ArrayView<typename Teuchos::ScalarTraits<Scalar>::magnitudeType>& norms) const
 {
     XPETRA_MONITOR("BlockedMultiVector::norm2");
@@ -557,9 +753,17 @@ norm2(const Teuchos::ArrayView<typename Teuchos::ScalarTraits<Scalar>::magnitude
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 normInf(const Teuchos::ArrayView<typename Teuchos::ScalarTraits<Scalar>::magnitudeType>& norms) const
 {
     XPETRA_MONITOR("BlockedMultiVector::normInf");
@@ -579,18 +783,34 @@ normInf(const Teuchos::ArrayView<typename Teuchos::ScalarTraits<Scalar>::magnitu
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 meanValue(const Teuchos::ArrayView<Scalar>& /* means */) const
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMultiVector::meanValue: Not (yet) supported by BlockedMultiVector.");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 multiply(Teuchos::ETransp   /* transA */,
          Teuchos::ETransp   /* transB */,
          const Scalar&      /* alpha  */,
@@ -602,11 +822,23 @@ multiply(Teuchos::ETransp   /* transA */,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 elementWiseMultiply(Scalar scalarAB,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+                    const Xpetra::Vector<Scalar, Node>& A,
+#endif
                     const MultiVector&                                               B,
                     Scalar                                                           scalarThis)
 {
@@ -626,9 +858,15 @@ elementWiseMultiply(Scalar scalarAB,
                                                                                 << B.getMap()->getGlobalNumElements() << ".");
 
     RCP<const BlockedMap>                                                       bmap = getBlockedMap();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>        rcpA = Teuchos::rcpFromRef(A);
     RCP<const Xpetra::BlockedVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> bA =
       Teuchos::rcp_dynamic_cast<const Xpetra::BlockedVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>(rcpA);
+#else
+    RCP<const Xpetra::Vector<Scalar, Node>>        rcpA = Teuchos::rcpFromRef(A);
+    RCP<const Xpetra::BlockedVector<Scalar, Node>> bA =
+      Teuchos::rcp_dynamic_cast<const Xpetra::BlockedVector<Scalar, Node>>(rcpA);
+#endif
 
     RCP<const MultiVector>        rcpB = Teuchos::rcpFromRef(B);
     RCP<const BlockedMultiVector> bB   = Teuchos::rcp_dynamic_cast<const BlockedMultiVector>(rcpB);
@@ -640,9 +878,15 @@ elementWiseMultiply(Scalar scalarAB,
 
     for(size_t m = 0; m < bmap->getNumMaps(); m++)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>      partA = bA->getMultiVector(m, bmap->getThyraMode())->getVector(0);
         RCP<const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> partB = bB->getMultiVector(m, bmap->getThyraMode());
         RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>       thisPart = this->getMultiVector(m, bmap->getThyraMode());
+#else
+        RCP<const Xpetra::Vector<Scalar, Node>>      partA = bA->getMultiVector(m, bmap->getThyraMode())->getVector(0);
+        RCP<const Xpetra::MultiVector<Scalar, Node>> partB = bB->getMultiVector(m, bmap->getThyraMode());
+        RCP<Xpetra::MultiVector<Scalar, Node>>       thisPart = this->getMultiVector(m, bmap->getThyraMode());
+#endif
 
         thisPart->elementWiseMultiply(scalarAB, *partA, *partB, scalarThis);
     }
@@ -650,18 +894,34 @@ elementWiseMultiply(Scalar scalarAB,
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 getNumVectors() const
 {
     return numVectors_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 getLocalLength() const
 {
     XPETRA_MONITOR("BlockedMultiVector::getLocalLength()");
@@ -669,9 +929,17 @@ getLocalLength() const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 global_size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 getGlobalLength() const
 {
     XPETRA_MONITOR("BlockedMultiVector::getGlobalLength()");
@@ -679,10 +947,19 @@ getGlobalLength() const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 isSameSize(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& vec) const
+#else
+BlockedMultiVector<Scalar, Node>::
+isSameSize(const Xpetra::MultiVector<Scalar, Node>& vec) const
+#endif
 {
     const BlockedMultiVector* Vb = dynamic_cast<const BlockedMultiVector*>(&vec);
     if(!Vb)
@@ -700,18 +977,34 @@ isSameSize(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 description() const
 {
     return std::string("BlockedMultiVector");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 describe(Teuchos::FancyOStream& out, const Teuchos::EVerbosityLevel verbLevel) const
 {
     out << description() << std::endl;
@@ -720,9 +1013,17 @@ describe(Teuchos::FancyOStream& out, const Teuchos::EVerbosityLevel verbLevel) c
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 replaceMap(const RCP<const Map>& map)
 {
     XPETRA_MONITOR("BlockedMultiVector::replaceMap");
@@ -753,10 +1054,19 @@ replaceMap(const RCP<const Map>& map)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* source */,
+#else
+BlockedMultiVector<Scalar, Node>::
+doImport(const DistObject<Scalar, Node>& /* source */,
+#endif
          const Import& /* importer */,
          CombineMode /* CM */)
 {
@@ -764,10 +1074,19 @@ doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* source 
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* dest */,
+#else
+BlockedMultiVector<Scalar, Node>::
+doExport(const DistObject<Scalar, Node>& /* dest */,
+#endif
          const Import& /* importer */,
          CombineMode /* CM */)
 {
@@ -775,10 +1094,19 @@ doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* dest */
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* source */,
+#else
+BlockedMultiVector<Scalar, Node>::
+doImport(const DistObject<Scalar, Node>& /* source */,
+#endif
          const Export& /* exporter */,
          CombineMode /* CM */)
 {
@@ -786,10 +1114,19 @@ doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* source 
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* dest */,
+#else
+BlockedMultiVector<Scalar, Node>::
+doExport(const DistObject<Scalar, Node>& /* dest */,
+#endif
          const Export& /* exporter */,
          CombineMode /* CM */)
 {
@@ -797,9 +1134,17 @@ doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* dest */
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 setSeed(unsigned int seed)
 {
     for(size_t r = 0; r < map_->getNumMaps(); ++r)
@@ -809,9 +1154,17 @@ setSeed(unsigned int seed)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 randomize(bool bUseXpetraImplementation)
 {
     for(size_t r = 0; r < map_->getNumMaps(); ++r)
@@ -821,18 +1174,36 @@ randomize(bool bUseXpetraImplementation)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 Xpetra_randomize()
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Xpetra_randomize();
+#else
+    Xpetra::MultiVector<Scalar, Node>::Xpetra_randomize();
+#endif
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::Map<Node>>
+BlockedMultiVector<Scalar, Node>::
+#endif
 getMap() const
 {
     XPETRA_MONITOR("BlockedMultiVector::getMap");
@@ -840,9 +1211,15 @@ getMap() const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::BlockedMap<LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::BlockedMap<Node>>
+BlockedMultiVector<Scalar, Node>::
+#endif
 getBlockedMap() const
 {
     XPETRA_MONITOR("BlockedMultiVector::getBlockedMap");
@@ -850,9 +1227,15 @@ getBlockedMap() const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<Xpetra::MultiVector<Scalar, Node>>
+BlockedMultiVector<Scalar, Node>::
+#endif
 getMultiVector(size_t r) const
 {
     XPETRA_MONITOR("BlockedMultiVector::getMultiVector(r)");
@@ -864,9 +1247,15 @@ getMultiVector(size_t r) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<Xpetra::MultiVector<Scalar, Node>>
+BlockedMultiVector<Scalar, Node>::
+#endif
 getMultiVector(size_t r, bool bThyraMode) const
 {
     XPETRA_MONITOR("BlockedMultiVector::getMultiVector(r,bThyraMode)");
@@ -881,11 +1270,23 @@ getMultiVector(size_t r, bool bThyraMode) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMultiVector<Scalar, Node>::
+#endif
 setMultiVector(size_t                                                                             r,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                Teuchos::RCP<const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> v,
+#else
+               Teuchos::RCP<const Xpetra::MultiVector<Scalar, Node>> v,
+#endif
                bool                                                                               bThyraMode)
 {
     // The map of the MultiVector should be the same as the stored submap
@@ -909,15 +1310,25 @@ setMultiVector(size_t                                                           
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<Xpetra::MultiVector<Scalar, Node>>
+BlockedMultiVector<Scalar, Node>::
+#endif
 Merge() const
 {
     XPETRA_MONITOR("BlockedMultiVector::Merge");
     using Teuchos::RCP;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MultiVector> v = Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(map_->getFullMap(), getNumVectors());
+#else
+    RCP<MultiVector> v = Xpetra::MultiVectorFactory<Scalar, Node>::Build(map_->getFullMap(), getNumVectors());
+#endif
     for(size_t r = 0; r < map_->getNumMaps(); ++r)
     {
         RCP<MultiVector>        vi  = getMultiVector(r);
@@ -939,10 +1350,19 @@ Merge() const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 assign(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs)
+#else
+BlockedMultiVector<Scalar, Node>::
+assign(const Xpetra::MultiVector<Scalar, Node>& rhs)
+#endif
 {
     Teuchos::RCP<const MultiVector>        rcpRhs = Teuchos::rcpFromRef(rhs);
     Teuchos::RCP<const BlockedMultiVector> bRhs   = Teuchos::rcp_dynamic_cast<const BlockedMultiVector>(rcpRhs);
@@ -957,7 +1377,11 @@ assign(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs
         RCP<MultiVector> src = bRhs->getMultiVector(r, map_->getThyraMode());
 
         // create new (empty) multivector (is of type MultiVector or BlockedMultiVector)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MultiVector> vv = Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(
+#else
+        RCP<MultiVector> vv = Xpetra::MultiVectorFactory<Scalar, Node>::Build(
+#endif
           map_->getMap(r, bRhs->getBlockedMap()->getThyraMode()), rcpRhs->getNumVectors(), true);
 
         // check type of source and target vector
@@ -1003,32 +1427,65 @@ assign(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 ExtractVector(RCP<const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>& full,
+#else
+BlockedMultiVector<Scalar, Node>::
+ExtractVector(RCP<const Xpetra::MultiVector<Scalar, Node>>& full,
+#endif
               size_t                                                                     block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>&       partial) const
+#else
+              RCP<Xpetra::MultiVector<Scalar, Node>>&       partial) const
+#endif
 {
     ExtractVector(*full, block, *partial);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 ExtractVector(RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>& full,
+#else
+BlockedMultiVector<Scalar, Node>::
+ExtractVector(RCP<Xpetra::MultiVector<Scalar, Node>>& full,
+#endif
               size_t                                                               block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>& partial) const
+#else
+              RCP<Xpetra::MultiVector<Scalar, Node>>& partial) const
+#endif
 {
     ExtractVector(*full, block, *partial);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 ExtractVector(RCP<const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>& full,
+#else
+template<class Scalar, class Node>
+RCP<Xpetra::MultiVector<Scalar, Node>>
+BlockedMultiVector<Scalar, Node>::
+ExtractVector(RCP<const Xpetra::MultiVector<Scalar, Node>>& full,
+#endif
               size_t                                                                     block,
               bool                                                                       bThyraMode) const
 {
@@ -1044,7 +1501,11 @@ ExtractVector(RCP<const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal,
         // standard case: full is not of type BlockedMultiVector
         // first extract partial vector from full vector (using xpetra style GIDs)
         const RCP<MultiVector> vv =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(map_->getMap(block, false), full->getNumVectors(), false);
+#else
+          Xpetra::MultiVectorFactory<Scalar, Node>::Build(map_->getMap(block, false), full->getNumVectors(), false);
+#endif
         // if(bThyraMode == false) {
         //  ExtractVector(*full, block, *vv);
         //  return vv;
@@ -1076,10 +1537,17 @@ ExtractVector(RCP<const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 ExtractVector(RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>& full,
+#else
+template<class Scalar, class Node>
+RCP<Xpetra::MultiVector<Scalar, Node>>
+BlockedMultiVector<Scalar, Node>::
+ExtractVector(RCP<Xpetra::MultiVector<Scalar, Node>>& full,
+#endif
               size_t                                                               block,
               bool                                                                 bThyraMode) const
 {
@@ -1095,7 +1563,11 @@ ExtractVector(RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>
         // standard case: full is not of type BlockedMultiVector
         // first extract partial vector from full vector (using xpetra style GIDs)
         const RCP<MultiVector> vv =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(map_->getMap(block, false), full->getNumVectors(), false);
+#else
+          Xpetra::MultiVectorFactory<Scalar, Node>::Build(map_->getMap(block, false), full->getNumVectors(), false);
+#endif
         // if(bThyraMode == false) {
         //  ExtractVector(*full, block, *vv);
         //  return vv;
@@ -1126,12 +1598,25 @@ ExtractVector(RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 ExtractVector(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& full,
+#else
+BlockedMultiVector<Scalar, Node>::
+ExtractVector(const Xpetra::MultiVector<Scalar, Node>& full,
+#endif
               size_t                                                                block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&       partial) const
+#else
+              Xpetra::MultiVector<Scalar, Node>&       partial) const
+#endif
 {
     XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
                               std::out_of_range,
@@ -1142,12 +1627,25 @@ ExtractVector(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Nod
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 InsertVector(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& partial,
+#else
+BlockedMultiVector<Scalar, Node>::
+InsertVector(const Xpetra::MultiVector<Scalar, Node>& partial,
+#endif
              size_t                                                                block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&       full,
+#else
+             Xpetra::MultiVector<Scalar, Node>&       full,
+#endif
              bool                                                                  bThyraMode) const
 {
     XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
@@ -1203,16 +1701,34 @@ InsertVector(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 InsertVector(RCP<const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> partial,
+#else
+BlockedMultiVector<Scalar, Node>::
+InsertVector(RCP<const Xpetra::MultiVector<Scalar, Node>> partial,
+#endif
              size_t                                                                    block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>       full,
+#else
+             RCP<Xpetra::MultiVector<Scalar, Node>>       full,
+#endif
              bool                                                                      bThyraMode) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> bfull =
       Teuchos::rcp_dynamic_cast<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>(full);
+#else
+    RCP<Xpetra::BlockedMultiVector<Scalar, Node>> bfull =
+      Teuchos::rcp_dynamic_cast<Xpetra::BlockedMultiVector<Scalar, Node>>(full);
+#endif
     if(bfull.is_null() == true)
         InsertVector(*partial, block, *full, bThyraMode);
     else
@@ -1230,16 +1746,34 @@ InsertVector(RCP<const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, 
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 InsertVector(RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> partial,
+#else
+BlockedMultiVector<Scalar, Node>::
+InsertVector(RCP<Xpetra::MultiVector<Scalar, Node>> partial,
+#endif
              size_t                                                              block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> full,
+#else
+             RCP<Xpetra::MultiVector<Scalar, Node>> full,
+#endif
              bool                                                                bThyraMode) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> bfull =
       Teuchos::rcp_dynamic_cast<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>(full);
+#else
+    RCP<Xpetra::BlockedMultiVector<Scalar, Node>> bfull =
+      Teuchos::rcp_dynamic_cast<Xpetra::BlockedMultiVector<Scalar, Node>>(full);
+#endif
     if(bfull.is_null() == true)
         InsertVector(*partial, block, *full, bThyraMode);
     else

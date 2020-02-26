@@ -98,8 +98,10 @@ namespace MueLu {
     | DofStatus | VariableDofLaplacianFactory | Status array for next coarse level
   */
   template<class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
            class Node = DefaultNode>
   class VariableDofLaplacianFactory : public SingleLevelFactoryBase {
 #undef MUELU_VARIABLEDOFLAPLACIANFACTORY_SHORT
@@ -107,6 +109,10 @@ namespace MueLu {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 
@@ -134,7 +140,11 @@ namespace MueLu {
     void buildPaddedMap(const Teuchos::ArrayRCP<const LocalOrdinal> & dofPresent, std::vector<LocalOrdinal> & map, size_t nDofs) const;
     void assignGhostLocalNodeIds(const Teuchos::RCP<const Map> & rowDofMap, const Teuchos::RCP<const Map> & colDofMap, std::vector<LocalOrdinal> & myLocalNodeIds, const std::vector<LocalOrdinal> & dofMap, size_t maxDofPerNode, size_t& nLocalNodes, size_t& nLocalPlusGhostNodes, Teuchos::RCP< const Teuchos::Comm< int > > comm) const;
     void squeezeOutNnzs(Teuchos::ArrayRCP<size_t> & rowPtr, Teuchos::ArrayRCP<LocalOrdinal> & cols, Teuchos::ArrayRCP<Scalar> & vals, const std::vector<bool>& keep) const;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void buildLaplacian(const Teuchos::ArrayRCP<size_t>& rowPtr, const Teuchos::ArrayRCP<LocalOrdinal>& cols, Teuchos::ArrayRCP<Scalar>& vals, const size_t& numdim, const RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> > & ghostedCoords) const;
+#else
+    void buildLaplacian(const Teuchos::ArrayRCP<size_t>& rowPtr, const Teuchos::ArrayRCP<LocalOrdinal>& cols, Teuchos::ArrayRCP<Scalar>& vals, const size_t& numdim, const RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> > & ghostedCoords) const;
+#endif
 
     template <class listType>
     void MueLu_az_sort(listType list[], size_t N, size_t list2[], Scalar list3[]) const {

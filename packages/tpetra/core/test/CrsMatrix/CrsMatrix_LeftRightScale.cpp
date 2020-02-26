@@ -110,9 +110,17 @@ namespace {
   }
 
   // Compute the Frobenius norm of the matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   typename Teuchos::ScalarTraits<Scalar>::magnitudeType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   getNorm (const RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& matrix)
+#else
+  getNorm (const RCP<CrsMatrix<Scalar, Node> >& matrix)
+#endif
   {
     typedef LocalOrdinal LO;
     typedef Scalar ST;
@@ -152,21 +160,37 @@ namespace {
   // result to the known correct matrix.
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, LeftRightScale, LO, GO, Scalar, Node )
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Vector<Scalar,LO,GO,Node> VEC;
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef Vector<Scalar,Node> VEC;
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     // get a comm
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
     int numProcs = comm->getSize();
     int myRank = comm->getRank();
 
     global_size_t numGlobal = 4*numProcs;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > map = createUniformContigMapWithNode<LO,GO,Node>(numGlobal,comm);
     RCP<VEC> vector = createVector<Scalar, LO, GO, Node>(map);
+#else
+    RCP<const Map<Node> > map = createUniformContigMapWithNode<Node>(numGlobal,comm);
+    RCP<VEC> vector = createVector<Scalar, Node>(map);
+#endif
     vector->putScalar(2);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MAT> matrix = createCrsMatrix<Scalar, LO, GO, Node>(map, 3);
     RCP<MAT> matrix2= createCrsMatrix<Scalar, LO, GO, Node>(map, 3);
     RCP<MAT> answerMatrix = createCrsMatrix<Scalar, LO, GO, Node>(map, 3);
+#else
+    RCP<MAT> matrix = createCrsMatrix<Scalar, Node>(map, 3);
+    RCP<MAT> matrix2= createCrsMatrix<Scalar, Node>(map, 3);
+    RCP<MAT> answerMatrix = createCrsMatrix<Scalar, Node>(map, 3);
+#endif
 
     Array<Scalar> vals = tuple<Scalar>(1,2,3);
     Array<Scalar> answerVals = tuple<Scalar>(2,4,6);
@@ -219,7 +243,11 @@ namespace {
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+#endif
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, LeftRightScale, LO, GO, SCALAR, NODE )
 
   TPETRA_ETI_MANGLING_TYPEDEFS()

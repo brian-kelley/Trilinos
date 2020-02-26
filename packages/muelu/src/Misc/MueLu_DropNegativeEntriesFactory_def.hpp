@@ -63,8 +63,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> DropNegativeEntriesFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> DropNegativeEntriesFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -75,13 +80,23 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void DropNegativeEntriesFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void DropNegativeEntriesFactory<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "A");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void DropNegativeEntriesFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void DropNegativeEntriesFactory<Scalar, Node>::Build(Level& currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Matrix filtering (springs)", currentLevel);
 
     RCP<Matrix> Ain = Get< RCP<Matrix> >(currentLevel, "A");

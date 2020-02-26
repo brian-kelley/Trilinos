@@ -126,7 +126,11 @@ private:
   using typename Container<MatrixType>::NO;
 
   using typename Container<MatrixType>::mv_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using local_mv_type = Tpetra::MultiVector<LSC, LO, GO, NO>;
+#else
+  using local_mv_type = Tpetra::MultiVector<LSC, NO>;
+#endif
   using typename Container<MatrixType>::map_type;
   using typename Container<MatrixType>::vector_type;
   using typename Container<MatrixType>::import_type;
@@ -137,7 +141,11 @@ private:
   using typename ContainerImpl<MatrixType, LocalScalarType>::HostViewLocal;
   using typename ContainerImpl<MatrixType, LocalScalarType>::HostSubviewLocal;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static_assert(std::is_same<MatrixType, Tpetra::RowMatrix<SC, LO, GO, NO>>::value,
+#else
+  static_assert(std::is_same<MatrixType, Tpetra::RowMatrix<SC, NO>>::value,
+#endif
                 "Ifpack2::DenseContainer: Please use MatrixType = Tpetra::RowMatrix.");
 
   /// \brief The (base class) type of the input matrix.
@@ -150,7 +158,11 @@ private:
   /// specialization of Tpetra::RowMatrix.
   using typename Container<MatrixType>::row_matrix_type;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using block_crs_matrix_type = Tpetra::BlockCrsMatrix<SC, LO, GO, NO>;
+#else
+  using block_crs_matrix_type = Tpetra::BlockCrsMatrix<SC, NO>;
+#endif
   //@}
 
 public:

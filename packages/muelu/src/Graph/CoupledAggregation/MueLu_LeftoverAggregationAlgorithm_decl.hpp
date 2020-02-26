@@ -60,13 +60,21 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
            class Node = DefaultNode>
+#else
+  template<class Node = DefaultNode>
+#endif
   class LeftoverAggregationAlgorithm : public BaseClass {
 #undef MUELU_LEFTOVERAGGREGATIONALGORITHM_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef GO global_size_t; //TODO
     typedef LO my_size_t;     //TODO
 
@@ -305,7 +313,11 @@ namespace MueLu {
 
       //! @brief Attempt to clean up aggregates that are too small.
     int RemoveSmallAggs(Aggregates& aggregates, int min_size,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         RCP<Xpetra::Vector<double,LO,GO,NO> > & distWeights, const MueLu::CoupledAggregationCommHelper<LO,GO,NO> & myWidget) const; //RemoveSmallAggs
+#else
+                        RCP<Xpetra::Vector<double,NO> > & distWeights, const MueLu::CoupledAggregationCommHelper<NO> & myWidget) const; //RemoveSmallAggs
+#endif
 
     //@}
 

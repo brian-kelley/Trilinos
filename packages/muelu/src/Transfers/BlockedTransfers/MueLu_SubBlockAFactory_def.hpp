@@ -66,8 +66,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> SubBlockAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> SubBlockAFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A",          MueLu::NoFactory::getRCP(), "Generating factory for A.");
@@ -82,13 +87,23 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SubBlockAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SubBlockAFactory<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "A");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SubBlockAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SubBlockAFactory<Scalar, Node>::Build(Level& currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", currentLevel);
 
     const ParameterList& pL = GetParameterList();
@@ -222,8 +237,13 @@ namespace MueLu {
     currentLevel.Set("A", Op, this);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool SubBlockAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CheckForUserSpecifiedBlockInfo(bool bRange, std::vector<size_t>& stridingInfo, LocalOrdinal& stridedBlockId) const {
+#else
+  template <class Scalar, class Node>
+  bool SubBlockAFactory<Scalar, Node>::CheckForUserSpecifiedBlockInfo(bool bRange, std::vector<size_t>& stridingInfo, LocalOrdinal& stridedBlockId) const {
+#endif
     const ParameterList & pL = GetParameterList();
 
     if(bRange == true)

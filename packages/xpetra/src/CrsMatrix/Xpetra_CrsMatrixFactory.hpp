@@ -63,32 +63,52 @@
 namespace Xpetra {
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class CrsMatrixFactory {
   private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Private constructor. This is a static class.
     CrsMatrixFactory() {}
 
   public:
     //! Constructor for empty matrix (intended use is an import/export target - can't insert entries directly)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
     Build (const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &rowMap)
+#else
+    static RCP<CrsMatrix<Scalar, Node> >
+    Build (const RCP<const Map<Node> > &rowMap)
+#endif
     {
       TEUCHOS_TEST_FOR_EXCEPTION(rowMap->lib() == UseEpetra, std::logic_error,
           "Can't create Xpetra::EpetraCrsMatrix with these scalar/LO/GO types");
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, 0) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, 0) );
+#endif
 #endif
 
       XPETRA_FACTORY_END;
     }
 
     //! Constructor specifying fixed number of entries for each row.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
     Build (const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &rowMap,
+#else
+    static RCP<CrsMatrix<Scalar, Node> >
+    Build (const RCP<const Map<Node> > &rowMap,
+#endif
            size_t maxNumEntriesPerRow,
            const Teuchos::RCP<Teuchos::ParameterList>& plist = Teuchos::null)
     {
@@ -96,7 +116,11 @@ namespace Xpetra {
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, maxNumEntriesPerRow, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, maxNumEntriesPerRow, plist) );
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(rowMap->lib());
@@ -104,14 +128,23 @@ namespace Xpetra {
     }
 
     //! Constructor specifying (possibly different) number of entries in each row.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
     Build (const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >& rowMap,
+#else
+    static RCP<CrsMatrix<Scalar, Node> >
+    Build (const Teuchos::RCP< const Map<Node > >& rowMap,
+#endif
            const ArrayRCP<const size_t>& NumEntriesPerRowToAlloc,
            const Teuchos::RCP<Teuchos::ParameterList>& plist = Teuchos::null)
     {
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, NumEntriesPerRowToAlloc, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, NumEntriesPerRowToAlloc, plist) );
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(rowMap->lib());
@@ -119,9 +152,15 @@ namespace Xpetra {
     }
 
     //! Constructor specifying column Map and fixed number of entries for each row.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
     Build (const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& rowMap,
            const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& colMap,
+#else
+    static RCP<CrsMatrix<Scalar, Node> >
+    Build (const Teuchos::RCP<const Map<Node> >& rowMap,
+           const Teuchos::RCP<const Map<Node> >& colMap,
+#endif
            size_t maxNumEntriesPerRow,
            const Teuchos::RCP<Teuchos::ParameterList>& plist = Teuchos::null)
     {
@@ -129,7 +168,11 @@ namespace Xpetra {
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, colMap, maxNumEntriesPerRow, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, colMap, maxNumEntriesPerRow, plist) );
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(rowMap->lib());
@@ -137,12 +180,20 @@ namespace Xpetra {
     }
 
     //! Constructor specifying column Map and number of entries in each row.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &rowMap, const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &colMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const Map<Node > > &rowMap, const Teuchos::RCP< const Map<Node > > &colMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, colMap, NumEntriesPerRowToAlloc, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, colMap, NumEntriesPerRowToAlloc, plist) );
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(rowMap->lib());
@@ -150,12 +201,20 @@ namespace Xpetra {
     }
 
     //! Constructor specifying a previously constructed graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const CrsGraph< LocalOrdinal, GlobalOrdinal, Node > > &graph, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const CrsGraph<Node > > &graph, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (graph->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(graph, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(graph, plist) );
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(graph->getRowMap()->lib());
@@ -163,26 +222,44 @@ namespace Xpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Import<LocalOrdinal,GlobalOrdinal,Node> &importer,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap = Teuchos::null,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap = Teuchos::null,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Import<Node> &importer,
+        const RCP<const Map<Node> > & domainMap = Teuchos::null,
+        const RCP<const Map<Node> > & rangeMap = Teuchos::null,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,importer,domainMap,rangeMap,params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,importer,domainMap,rangeMap,params));
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(sourceMatrix->getRowMap()->lib());
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Export<LocalOrdinal,GlobalOrdinal,Node> &exporter,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Export<Node> &exporter,
+#endif
         const RCP<Map<LocalOrdinal,GlobalOrdinal,Scalar> > & domainMap = Teuchos::null,
         const RCP<Map<LocalOrdinal,GlobalOrdinal,Scalar> > & rangeMap = Teuchos::null,
         const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null) {
@@ -190,35 +267,59 @@ namespace Xpetra {
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,exporter,domainMap,rangeMap,params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,exporter,domainMap,rangeMap,params));
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(sourceMatrix->getRowMap()->lib());
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Import<LocalOrdinal,GlobalOrdinal,Node> &RowImporter,
         const RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > DomainImporter,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Import<Node> &RowImporter,
+        const RCP<const Import<Node> > DomainImporter,
+        const RCP<const Map<Node> > & domainMap,
+        const RCP<const Map<Node> > & rangeMap,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,RowImporter,DomainImporter,domainMap,rangeMap,params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,RowImporter,DomainImporter,domainMap,rangeMap,params));
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(sourceMatrix->getRowMap()->lib());
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Export<LocalOrdinal,GlobalOrdinal,Node> &RowExporter,
         const RCP<const Export<LocalOrdinal,GlobalOrdinal,Node> > DomainExporter,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Export<Node> &RowExporter,
+        const RCP<const Export<Node> > DomainExporter,
+#endif
         const RCP<Map<LocalOrdinal,GlobalOrdinal,Scalar> > & domainMap,
         const RCP<Map<LocalOrdinal,GlobalOrdinal,Scalar> > & rangeMap,
         const Teuchos::RCP<Teuchos::ParameterList>& params) {
@@ -226,7 +327,11 @@ namespace Xpetra {
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,RowExporter,DomainExporter,domainMap,rangeMap,params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,RowExporter,DomainExporter,domainMap,rangeMap,params));
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(sourceMatrix->getRowMap()->lib());
@@ -234,33 +339,57 @@ namespace Xpetra {
     }
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build (
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& rowMap,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& colMap,
         const typename Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_matrix_type& lclMatrix,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build (
+        const Teuchos::RCP<const Map<Node> >& rowMap,
+        const Teuchos::RCP<const Map<Node> >& colMap,
+        const typename Xpetra::CrsMatrix<Scalar, Node>::local_matrix_type& lclMatrix,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = null)  {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, colMap, lclMatrix, params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, colMap, lclMatrix, params));
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(rowMap->lib());
       XPETRA_FACTORY_END;
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build (
         const typename Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_matrix_type& lclMatrix,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& rowMap,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& colMap,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& domainMap = Teuchos::null,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& rangeMap = Teuchos::null,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build (
+        const typename Xpetra::CrsMatrix<Scalar, Node>::local_matrix_type& lclMatrix,
+        const Teuchos::RCP<const Map<Node> >& rowMap,
+        const Teuchos::RCP<const Map<Node> >& colMap,
+        const Teuchos::RCP<const Map<Node> >& domainMap = Teuchos::null,
+        const Teuchos::RCP<const Map<Node> >& rangeMap = Teuchos::null,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = null)  {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(lclMatrix, rowMap, colMap, domainMap, rangeMap, params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(lclMatrix, rowMap, colMap, domainMap, rangeMap, params));
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(rowMap->lib());
@@ -288,13 +417,22 @@ namespace Xpetra {
 
   public:
     //! Constructor for empty matrix (intended use is an import/export target - can't insert entries directly)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
     Build (const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &rowMap)
+#else
+    static RCP<CrsMatrix<Scalar, Node> >
+    Build (const RCP<const Map<Node> > &rowMap)
+#endif
     {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, 0) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, 0) );
+#endif
 #endif
 #ifdef HAVE_XPETRA_EPETRA
       if(rowMap->lib() == UseEpetra)
@@ -303,12 +441,20 @@ namespace Xpetra {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &rowMap, size_t maxNumEntriesPerRow, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const RCP<const Map<Node> > &rowMap, size_t maxNumEntriesPerRow, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, maxNumEntriesPerRow, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, maxNumEntriesPerRow, plist) );
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -317,12 +463,20 @@ namespace Xpetra {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &rowMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const Map<Node > > &rowMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, NumEntriesPerRowToAlloc, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, NumEntriesPerRowToAlloc, plist) );
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -332,12 +486,20 @@ namespace Xpetra {
     }
 
     //! Constructor specifying column Map and fixed number of entries for each row.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &rowMap, const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &colMap, size_t maxNumEntriesPerRow, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const Map<Node > > &rowMap, const Teuchos::RCP< const Map<Node > > &colMap, size_t maxNumEntriesPerRow, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, colMap, maxNumEntriesPerRow, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, colMap, maxNumEntriesPerRow, plist) );
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -347,12 +509,20 @@ namespace Xpetra {
     }
 
     //! Constructor specifying column Map and number of entries in each row.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &rowMap, const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &colMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const Map<Node > > &rowMap, const Teuchos::RCP< const Map<Node > > &colMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, colMap, NumEntriesPerRowToAlloc, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, colMap, NumEntriesPerRowToAlloc, plist) );
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -362,12 +532,20 @@ namespace Xpetra {
     }
 
     //! Constructor specifying a previously constructed graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const CrsGraph< LocalOrdinal, GlobalOrdinal, Node > > &graph, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const CrsGraph<Node > > &graph, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (graph->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(graph, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(graph, plist) );
+#endif
 #endif
 
       if (graph->getRowMap()->lib() == UseEpetra)
@@ -378,17 +556,29 @@ namespace Xpetra {
 
 
     //! Constructor using FusedImport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Import<LocalOrdinal,GlobalOrdinal,Node> &importer,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap = Teuchos::null,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap = Teuchos::null,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Import<Node> &importer,
+        const RCP<const Map<Node> > & domainMap = Teuchos::null,
+        const RCP<const Map<Node> > & rangeMap = Teuchos::null,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,importer,domainMap,rangeMap,params) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,importer,domainMap,rangeMap,params) );
+#endif
 #endif
 
       if (sourceMatrix->getRowMap()->lib() == UseEpetra)
@@ -398,17 +588,29 @@ namespace Xpetra {
     }
 
     //! Constructor using FusedExport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Export<LocalOrdinal,GlobalOrdinal,Node> &exporter,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap = Teuchos::null,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap = Teuchos::null,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Export<Node> &exporter,
+        const RCP<const Map<Node> > & domainMap = Teuchos::null,
+        const RCP<const Map<Node> > & rangeMap = Teuchos::null,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,exporter,domainMap,rangeMap,params) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,exporter,domainMap,rangeMap,params) );
+#endif
 #endif
 
       if (sourceMatrix->getRowMap()->lib() == UseEpetra)
@@ -418,18 +620,31 @@ namespace Xpetra {
     }
 
     //! Constructor using FusedImport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Import<LocalOrdinal,GlobalOrdinal,Node> & RowImporter,
         const RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > DomainImporter,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Import<Node> & RowImporter,
+        const RCP<const Import<Node> > DomainImporter,
+        const RCP<const Map<Node> > & domainMap,
+        const RCP<const Map<Node> > & rangeMap,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,RowImporter,DomainImporter,domainMap,rangeMap,params) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,RowImporter,DomainImporter,domainMap,rangeMap,params) );
+#endif
 #endif
 
       if (sourceMatrix->getRowMap()->lib() == UseEpetra)
@@ -439,18 +654,31 @@ namespace Xpetra {
     }
 
     //! Constructor using FusedExport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Export<LocalOrdinal,GlobalOrdinal,Node> &RowExporter,
         const RCP<const Export<LocalOrdinal,GlobalOrdinal,Node> > DomainExporter,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Export<Node> &RowExporter,
+        const RCP<const Export<Node> > DomainExporter,
+        const RCP<const Map<Node> > & domainMap,
+        const RCP<const Map<Node> > & rangeMap,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,RowExporter,DomainExporter,domainMap,rangeMap,params) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,RowExporter,DomainExporter,domainMap,rangeMap,params) );
+#endif
 #endif
 
       if (sourceMatrix->getRowMap()->lib() == UseEpetra)
@@ -461,16 +689,27 @@ namespace Xpetra {
 
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build (
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& rowMap,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& colMap,
         const typename Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_matrix_type& lclMatrix,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build (
+        const Teuchos::RCP<const Map<Node> >& rowMap,
+        const Teuchos::RCP<const Map<Node> >& colMap,
+        const typename Xpetra::CrsMatrix<Scalar, Node>::local_matrix_type& lclMatrix,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = null)  {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, colMap, lclMatrix, params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, colMap, lclMatrix, params));
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -478,18 +717,31 @@ namespace Xpetra {
 
       XPETRA_FACTORY_END;
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build (
         const typename Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_matrix_type& lclMatrix,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& rowMap,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& colMap,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& domainMap = Teuchos::null,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& rangeMap = Teuchos::null,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build (
+        const typename Xpetra::CrsMatrix<Scalar, Node>::local_matrix_type& lclMatrix,
+        const Teuchos::RCP<const Map<Node> >& rowMap,
+        const Teuchos::RCP<const Map<Node> >& colMap,
+        const Teuchos::RCP<const Map<Node> >& domainMap = Teuchos::null,
+        const Teuchos::RCP<const Map<Node> >& rangeMap = Teuchos::null,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = null)  {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(lclMatrix, rowMap, colMap, domainMap, rangeMap, params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(lclMatrix, rowMap, colMap, domainMap, rangeMap, params));
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -518,13 +770,22 @@ namespace Xpetra {
 
   public:
     //! Constructor for empty matrix (intended use is an import/export target - can't insert entries directly)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
     Build (const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &rowMap)
+#else
+    static RCP<CrsMatrix<Scalar, Node> >
+    Build (const RCP<const Map<Node> > &rowMap)
+#endif
     {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, 0) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, 0) );
+#endif
 #endif
 #ifdef HAVE_XPETRA_EPETRA
       if(rowMap->lib() == UseEpetra)
@@ -533,12 +794,20 @@ namespace Xpetra {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &rowMap, size_t maxNumEntriesPerRow, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const RCP<const Map<Node> > &rowMap, size_t maxNumEntriesPerRow, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, maxNumEntriesPerRow, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, maxNumEntriesPerRow, plist) );
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -547,12 +816,20 @@ namespace Xpetra {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &rowMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const Map<Node > > &rowMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, NumEntriesPerRowToAlloc, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, NumEntriesPerRowToAlloc, plist) );
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -562,12 +839,20 @@ namespace Xpetra {
     }
 
     //! Constructor specifying column Map and fixed number of entries for each row.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &rowMap, const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &colMap, size_t maxNumEntriesPerRow, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const Map<Node > > &rowMap, const Teuchos::RCP< const Map<Node > > &colMap, size_t maxNumEntriesPerRow, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, colMap, maxNumEntriesPerRow, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, colMap, maxNumEntriesPerRow, plist) );
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -577,12 +862,20 @@ namespace Xpetra {
     }
 
     //! Constructor specifying column Map and number of entries in each row.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &rowMap, const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &colMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const Map<Node > > &rowMap, const Teuchos::RCP< const Map<Node > > &colMap, const ArrayRCP< const size_t > &NumEntriesPerRowToAlloc, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, colMap, NumEntriesPerRowToAlloc, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, colMap, NumEntriesPerRowToAlloc, plist) );
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -592,12 +885,20 @@ namespace Xpetra {
     }
 
     //! Constructor specifying a previously constructed graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(const Teuchos::RCP< const CrsGraph< LocalOrdinal, GlobalOrdinal, Node > > &graph, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP< const CrsGraph<Node > > &graph, const Teuchos::RCP< Teuchos::ParameterList > &plist=Teuchos::null) {
+#endif
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (graph->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(graph, plist) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(graph, plist) );
+#endif
 #endif
 
       if (graph->getRowMap()->lib() == UseEpetra)
@@ -608,17 +909,29 @@ namespace Xpetra {
 
 
     //! Constructor using FusedImport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Import<LocalOrdinal,GlobalOrdinal,Node> &importer,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap = Teuchos::null,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap = Teuchos::null,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Import<Node> &importer,
+        const RCP<const Map<Node> > & domainMap = Teuchos::null,
+        const RCP<const Map<Node> > & rangeMap = Teuchos::null,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,importer,domainMap,rangeMap,params) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,importer,domainMap,rangeMap,params) );
+#endif
 #endif
 
       if (sourceMatrix->getRowMap()->lib() == UseEpetra)
@@ -628,17 +941,29 @@ namespace Xpetra {
     }
 
     //! Constructor using FusedExport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Export<LocalOrdinal,GlobalOrdinal,Node> &exporter,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap = Teuchos::null,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap = Teuchos::null,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Export<Node> &exporter,
+        const RCP<const Map<Node> > & domainMap = Teuchos::null,
+        const RCP<const Map<Node> > & rangeMap = Teuchos::null,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,exporter,domainMap,rangeMap,params) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,exporter,domainMap,rangeMap,params) );
+#endif
 #endif
 
       if (sourceMatrix->getRowMap()->lib() == UseEpetra)
@@ -648,18 +973,31 @@ namespace Xpetra {
     }
 
     //! Constructor using FusedImport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Import<LocalOrdinal,GlobalOrdinal,Node> & RowImporter,
         const RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > DomainImporter,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Import<Node> & RowImporter,
+        const RCP<const Import<Node> > DomainImporter,
+        const RCP<const Map<Node> > & domainMap,
+        const RCP<const Map<Node> > & rangeMap,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,RowImporter,DomainImporter,domainMap,rangeMap,params) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,RowImporter,DomainImporter,domainMap,rangeMap,params) );
+#endif
 #endif
 
       if (sourceMatrix->getRowMap()->lib() == UseEpetra)
@@ -669,18 +1007,31 @@ namespace Xpetra {
     }
 
     //! Constructor using FusedExport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build(
         const Teuchos::RCP< const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > > &sourceMatrix,
         const Export<LocalOrdinal,GlobalOrdinal,Node> &RowExporter,
         const RCP<const Export<LocalOrdinal,GlobalOrdinal,Node> > DomainExporter,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap,
         const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build(
+        const Teuchos::RCP< const CrsMatrix< Scalar, Node > > &sourceMatrix,
+        const Export<Node> &RowExporter,
+        const RCP<const Export<Node> > DomainExporter,
+        const RCP<const Map<Node> > & domainMap,
+        const RCP<const Map<Node> > & rangeMap,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params) {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (sourceMatrix->getRowMap()->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(sourceMatrix,RowExporter,DomainExporter,domainMap,rangeMap,params) );
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(sourceMatrix,RowExporter,DomainExporter,domainMap,rangeMap,params) );
+#endif
 #endif
 
       if (sourceMatrix->getRowMap()->lib() == UseEpetra)
@@ -690,16 +1041,27 @@ namespace Xpetra {
     }
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build (
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& rowMap,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& colMap,
         const typename Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_matrix_type& lclMatrix,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build (
+        const Teuchos::RCP<const Map<Node> >& rowMap,
+        const Teuchos::RCP<const Map<Node> >& colMap,
+        const typename Xpetra::CrsMatrix<Scalar, Node>::local_matrix_type& lclMatrix,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = null)  {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowMap, colMap, lclMatrix, params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(rowMap, colMap, lclMatrix, params));
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)
@@ -707,18 +1069,31 @@ namespace Xpetra {
 
       XPETRA_FACTORY_END;
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Build (
         const typename Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::local_matrix_type& lclMatrix,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& rowMap,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& colMap,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& domainMap = Teuchos::null,
         const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> >& rangeMap = Teuchos::null,
+#else
+    static RCP<CrsMatrix<Scalar, Node> > Build (
+        const typename Xpetra::CrsMatrix<Scalar, Node>::local_matrix_type& lclMatrix,
+        const Teuchos::RCP<const Map<Node> >& rowMap,
+        const Teuchos::RCP<const Map<Node> >& colMap,
+        const Teuchos::RCP<const Map<Node> >& domainMap = Teuchos::null,
+        const Teuchos::RCP<const Map<Node> >& rangeMap = Teuchos::null,
+#endif
         const Teuchos::RCP<Teuchos::ParameterList>& params = null)  {
       XPETRA_MONITOR("CrsMatrixFactory::Build");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (rowMap->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(lclMatrix, rowMap, colMap, domainMap, rangeMap, params));
+#else
+        return rcp( new TpetraCrsMatrix<Scalar, Node>(lclMatrix, rowMap, colMap, domainMap, rangeMap, params));
+#endif
 #endif
 
       if (rowMap->lib() == UseEpetra)

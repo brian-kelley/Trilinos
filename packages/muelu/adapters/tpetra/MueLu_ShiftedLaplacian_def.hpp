@@ -76,12 +76,22 @@
 namespace MueLu {
 
 // Destructor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::~ShiftedLaplacian() {}
+#else
+template<class Scalar, class Node>
+ShiftedLaplacian<Scalar,Node>::~ShiftedLaplacian() {}
+#endif
 
 // Input
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setParameters(Teuchos::RCP< Teuchos::ParameterList > paramList) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setParameters(Teuchos::RCP< Teuchos::ParameterList > paramList) {
+#endif
 
   // Parameters
   coarseGridSize_      = paramList->get("MueLu: coarse size", 1000);
@@ -121,8 +131,13 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setParameters(Teu
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setProblemMatrix(RCP<Matrix>& A) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setProblemMatrix(RCP<Matrix>& A) {
+#endif
 
   A_=A;
   if(A_!=Teuchos::null)
@@ -136,8 +151,13 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setProblemMatrix(
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setProblemMatrix(RCP< Tpetra::CrsMatrix<SC,LO,GO,NO> >& TpetraA) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setProblemMatrix(RCP< Tpetra::CrsMatrix<SC,NO> >& TpetraA) {
+#endif
 
   TpetraA_=TpetraA;
 #ifdef HAVE_MUELU_TPETRA_INST_INT_INT
@@ -147,72 +167,135 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setProblemMatrix(
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setPreconditioningMatrix(RCP<Matrix>& P) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setPreconditioningMatrix(RCP<Matrix>& P) {
+#endif
 
   P_=P;
   GridTransfersExist_=false;
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setPreconditioningMatrix(RCP< Tpetra::CrsMatrix<SC,LO,GO,NO> >& TpetraP) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setPreconditioningMatrix(RCP< Tpetra::CrsMatrix<SC,NO> >& TpetraP) {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP< Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Atmp
     = rcp( new Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(TpetraP) );
   P_= rcp( new Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node>(Atmp) );
+#else
+  RCP< Xpetra::CrsMatrix<Scalar, Node> > Atmp
+    = rcp( new Xpetra::TpetraCrsMatrix<Scalar, Node>(TpetraP) );
+  P_= rcp( new Xpetra::CrsMatrixWrap<Scalar, Node>(Atmp) );
+#endif
   GridTransfersExist_=false;
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setstiff(RCP<Matrix>& K) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setstiff(RCP<Matrix>& K) {
+#endif
 
   K_=K;
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setstiff(RCP< Tpetra::CrsMatrix<SC,LO,GO,NO> >& TpetraK) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setstiff(RCP< Tpetra::CrsMatrix<SC,NO> >& TpetraK) {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP< Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Atmp
     = rcp( new Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(TpetraK) );
   K_= rcp( new Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node>(Atmp) );
+#else
+  RCP< Xpetra::CrsMatrix<Scalar, Node> > Atmp
+    = rcp( new Xpetra::TpetraCrsMatrix<Scalar, Node>(TpetraK) );
+  K_= rcp( new Xpetra::CrsMatrixWrap<Scalar, Node>(Atmp) );
+#endif
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setmass(RCP<Matrix>& M) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setmass(RCP<Matrix>& M) {
+#endif
 
   M_=M;
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setmass(RCP< Tpetra::CrsMatrix<SC,LO,GO,NO> >& TpetraM) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setmass(RCP< Tpetra::CrsMatrix<SC,NO> >& TpetraM) {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP< Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Atmp
     = rcp( new Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(TpetraM) );
   M_= rcp( new Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node>(Atmp) );
+#else
+  RCP< Xpetra::CrsMatrix<Scalar, Node> > Atmp
+    = rcp( new Xpetra::TpetraCrsMatrix<Scalar, Node>(TpetraM) );
+  M_= rcp( new Xpetra::CrsMatrixWrap<Scalar, Node>(Atmp) );
+#endif
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setcoords(RCP<MultiVector>& Coords) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setcoords(RCP<MultiVector>& Coords) {
+#endif
 
   Coords_=Coords;
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setNullSpace(RCP<MultiVector> NullSpace) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setNullSpace(RCP<MultiVector> NullSpace) {
+#endif
 
   NullSpace_=NullSpace;
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setLevelShifts(std::vector<Scalar> levelshifts) {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setLevelShifts(std::vector<Scalar> levelshifts) {
+#endif
 
   levelshifts_=levelshifts;
   numLevels_=levelshifts_.size();
@@ -220,8 +303,13 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setLevelShifts(st
 }
 
 // initialize
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initialize() {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::initialize() {
+#endif
 
   TentPfact_     = rcp( new TentativePFactory           );
   Pfact_         = rcp( new SaPFactory                  );
@@ -410,8 +498,13 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initialize() {
 }
 
 // setup coarse grids for new frequency
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setupFastRAP() {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setupFastRAP() {
+#endif
 
   int numLevels = Hierarchy_ -> GetNumLevels();
   Manager_ -> SetFactory("Smoother", smooFact_);
@@ -423,8 +516,13 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setupFastRAP() {
 }
 
 // setup coarse grids for new frequency
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setupSlowRAP() {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setupSlowRAP() {
+#endif
 
   int numLevels = Hierarchy_ -> GetNumLevels();
   Acshift_->SetShifts(levelshifts_);
@@ -442,8 +540,13 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setupSlowRAP() {
 }
 
 // setup coarse grids for new frequency
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setupNormalRAP() {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setupNormalRAP() {
+#endif
 
   // Only setup hierarchy again if preconditioning matrix has changed
   if( GridTransfersExist_ == false ) {
@@ -460,12 +563,21 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setupNormalRAP() 
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setupSolver() {
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::setupSolver() {
+#endif
 
 #ifdef HAVE_MUELU_TPETRA_INST_INT_INT
   // Define Preconditioner and Operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MueLuOp_ = rcp( new MueLu::ShiftedLaplacianOperator<SC,LO,GO,NO>
+#else
+  MueLuOp_ = rcp( new MueLu::ShiftedLaplacianOperator<SC,NO>
+#endif
                   (Hierarchy_, A_, ncycles_, subiters_, option_, tol_) );
   // Belos Linear Problem
   if(LinearProblem_==Teuchos::null)
@@ -486,8 +598,13 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setupSolver() {
 #endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::resetLinearProblem()
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::resetLinearProblem()
+#endif
 {
 #ifdef HAVE_MUELU_TPETRA_INST_INT_INT
   LinearProblem_ -> setOperator (  TpetraA_  );
@@ -497,8 +614,13 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::resetLinearProble
 }
 
 // Solve phase
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 int ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::solve(const RCP<TMV> B, RCP<TMV>& X)
+#else
+template<class Scalar, class Node>
+int ShiftedLaplacian<Scalar,Node>::solve(const RCP<TMV> B, RCP<TMV>& X)
+#endif
 {
 #ifdef HAVE_MUELU_TPETRA_INST_INT_INT
   // Set left and right hand sides for Belos
@@ -512,8 +634,13 @@ int ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::solve(const RCP<TM
 }
 
 // Solve phase
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::multigrid_apply(const RCP<MultiVector> B,
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::multigrid_apply(const RCP<MultiVector> B,
+#endif
                                                                                RCP<MultiVector>& X)
 {
   // Set left and right hand sides for Belos
@@ -521,21 +648,39 @@ void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::multigrid_apply(c
 }
 
 // Solve phase
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::multigrid_apply(const RCP<Tpetra::MultiVector<SC,LO,GO,NO> > B,
                                                                                RCP<Tpetra::MultiVector<SC,LO,GO,NO> >& X)
+#else
+template<class Scalar, class Node>
+void ShiftedLaplacian<Scalar,Node>::multigrid_apply(const RCP<Tpetra::MultiVector<SC,NO> > B,
+                                                                               RCP<Tpetra::MultiVector<SC,NO> >& X)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > XpetraX
     = Teuchos::rcp( new Xpetra::TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>(X) );
   Teuchos::RCP< Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > XpetraB
     = Teuchos::rcp( new Xpetra::TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>(B) );
+#else
+  Teuchos::RCP< Xpetra::MultiVector<Scalar,Node> > XpetraX
+    = Teuchos::rcp( new Xpetra::TpetraMultiVector<Scalar, Node>(X) );
+  Teuchos::RCP< Xpetra::MultiVector<Scalar,Node> > XpetraB
+    = Teuchos::rcp( new Xpetra::TpetraMultiVector<Scalar, Node>(B) );
+#endif
   // Set left and right hand sides for Belos
   Hierarchy_ -> Iterate(*XpetraB, *XpetraX, 1, true, 0);
 }
 
 // Get most recent iteration count
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 int ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::GetIterations()
+#else
+template<class Scalar, class Node>
+int ShiftedLaplacian<Scalar,Node>::GetIterations()
+#endif
 {
 #ifdef HAVE_MUELU_TPETRA_INST_INT_INT
   int numiters = SolverManager_ -> getNumIters();
@@ -547,9 +692,17 @@ int ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::GetIterations()
 }
 
 // Get most recent solver tolerance achieved
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 typename Teuchos::ScalarTraits<Scalar>::magnitudeType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ShiftedLaplacian<Scalar,LocalOrdinal,GlobalOrdinal,Node>::GetResidual()
+#else
+ShiftedLaplacian<Scalar,Node>::GetResidual()
+#endif
 {
   typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
 #ifdef HAVE_MUELU_TPETRA_INST_INT_INT

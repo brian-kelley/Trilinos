@@ -54,11 +54,21 @@ namespace {
 
 // Test that the Experimental::Block* classes are still available. This test
 // passes if this translation unit links.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( ExpNamespaceExists, all, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( ExpNamespaceExists, all, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Experimental::BlockCrsMatrix<Scalar, LO, GO, Node> BCM;
   typedef Tpetra::Experimental::BlockMultiVector<Scalar, LO, GO, Node> BMV;
   typedef Tpetra::Experimental::BlockVector<Scalar, LO, GO, Node> BV;
+#else
+  typedef Tpetra::Experimental::BlockCrsMatrix<Scalar, Node> BCM;
+  typedef Tpetra::Experimental::BlockMultiVector<Scalar, Node> BMV;
+  typedef Tpetra::Experimental::BlockVector<Scalar, Node> BV;
+#endif
   BCM blockMat;
   blockMat.setAllToScalar(static_cast<Scalar>(0));
   BMV blockMV;
@@ -71,8 +81,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( ExpNamespaceExists, all, Scalar, LO, GO, Node
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( ExpNamespaceExists, all, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( ExpNamespaceExists, all, SCALAR,NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

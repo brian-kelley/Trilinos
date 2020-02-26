@@ -58,8 +58,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> GeometricInterpolationPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> GeometricInterpolationPFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -92,8 +97,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory<Scalar, Node>::
+#endif
   DeclareInput(Level& fineLevel, Level& /* coarseLevel */) const {
     const ParameterList& pL = GetParameterList();
 
@@ -112,14 +122,24 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory<Scalar, Node>::
+#endif
   Build(Level& fineLevel, Level &coarseLevel) const {
     return BuildP(fineLevel, coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory<Scalar, Node>::
+#endif
   BuildP(Level &fineLevel, Level &coarseLevel) const {
     FactoryMonitor m(*this, "BuildP", coarseLevel);
 
@@ -154,7 +174,11 @@ namespace MueLu {
       RCP<const Map> coarseCoordsFineMap = Get< RCP<const Map> >(fineLevel, "coarseCoordinatesFineMap");
       RCP<const Map> coarseCoordsMap = Get< RCP<const Map> >(fineLevel, "coarseCoordinatesMap");
       fineCoordinates   = Get< RCP<realvaluedmultivector_type> >(fineLevel, "Coordinates");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       coarseCoordinates = Xpetra::MultiVectorFactory<real_type,LO,GO,Node>::Build(coarseCoordsFineMap,
+#else
+      coarseCoordinates = Xpetra::MultiVectorFactory<real_type,Node>::Build(coarseCoordsFineMap,
+#endif
                                                                                   fineCoordinates->getNumVectors());
       RCP<const Import> coordsImporter = ImportFactory::Build(fineCoordinates->getMap(),
                                                               coarseCoordsFineMap);
@@ -202,7 +226,11 @@ namespace MueLu {
                                                  fineCoordinates->getMap()->getComm());
 
       RCP<realvaluedmultivector_type> ghostCoordinates
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         = Xpetra::MultiVectorFactory<real_type,LO,GO,NO>::Build(ghostCoordMap,
+#else
+        = Xpetra::MultiVectorFactory<real_type,NO>::Build(ghostCoordMap,
+#endif
                                                                 fineCoordinates->getNumVectors());
       RCP<const Import> ghostImporter = ImportFactory::Build(coarseCoordinates->getMap(),
                                                              ghostCoordMap);
@@ -233,8 +261,13 @@ namespace MueLu {
 
   } // BuildP
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory<Scalar, Node>::
+#endif
   BuildConstantP(RCP<Matrix>& P, RCP<const CrsGraph>& prolongatorGraph, RCP<Matrix>& A) const {
 
     // Set debug outputs based on environment variable
@@ -271,8 +304,13 @@ namespace MueLu {
 
   } // BuildConstantP
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory<Scalar, Node>::
+#endif
   BuildLinearP(Level& coarseLevel,
                RCP<Matrix>& A, RCP<const CrsGraph>& prolongatorGraph,
                RCP<realvaluedmultivector_type>& fineCoordinates,
@@ -444,8 +482,13 @@ namespace MueLu {
   } // BuildLinearP
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory<Scalar, Node>::
+#endif
   ComputeLinearInterpolationStencil(const int numDimensions, const int numInterpolationPoints,
                                     const Array<Array<real_type> > coord,
                                     Array<real_type>& stencil) const {
@@ -532,8 +575,13 @@ namespace MueLu {
 
   } // End ComputeLinearInterpolationStencil
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeometricInterpolationPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void GeometricInterpolationPFactory<Scalar, Node>::
+#endif
   GetInterpolationFunctions(const LO numDimensions,
                             const Teuchos::SerialDenseVector<LO, real_type> parametricCoordinates,
                             real_type functions[4][8]) const {

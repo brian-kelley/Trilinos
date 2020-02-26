@@ -60,10 +60,16 @@ namespace Amesos2 {
             class DerivedMat>
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DerivedMat>::AbstractConcreteMatrixAdapter(RCP<Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > m)
+#else
+    DerivedMat>::AbstractConcreteMatrixAdapter(RCP<Tpetra::RowMatrix<Scalar,Node> > m)
+#endif
       : MatrixAdapter<DerivedMat>(Teuchos::rcp_static_cast<DerivedMat>(m))
   {
     // anything else? probs not
@@ -78,8 +84,10 @@ namespace Amesos2 {
   void
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getGlobalRowCopy_impl(global_ordinal_t row,
                                        const ArrayView<global_ordinal_t>& indices,
@@ -97,8 +105,10 @@ namespace Amesos2 {
   void
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getGlobalColCopy_impl(global_ordinal_t col,
                              const ArrayView<global_ordinal_t>& indices,
@@ -119,14 +129,18 @@ namespace Amesos2 {
             class DerivedMat>
   typename AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::global_size_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getGlobalNNZ_impl() const
   {
@@ -136,7 +150,11 @@ namespace Amesos2 {
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node, class DerivedMat>
   size_t
   AbstractConcreteMatrixAdapter<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>,
+#else
+    Tpetra::RowMatrix<Scalar, Node>,
+#endif
     DerivedMat>::getLocalNNZ_impl() const
   {
     return this->mat_->getNodeNumEntries();
@@ -145,12 +163,18 @@ namespace Amesos2 {
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node, class DerivedMat>
   typename AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::global_size_t
   AbstractConcreteMatrixAdapter<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>,
+#else
+    Tpetra::RowMatrix<Scalar, Node>,
+#endif
     DerivedMat>::getGlobalNumRows_impl() const
   {
     return this->mat_->getGlobalNumRows();
@@ -159,12 +183,18 @@ namespace Amesos2 {
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node, class DerivedMat>
   typename AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::global_size_t
   AbstractConcreteMatrixAdapter<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>,
+#else
+    Tpetra::RowMatrix<Scalar, Node>,
+#endif
     DerivedMat>::getGlobalNumCols_impl() const
   {
     return this->mat_->getGlobalNumCols();
@@ -178,8 +208,10 @@ namespace Amesos2 {
   size_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getMaxRowNNZ_impl() const
   {
@@ -194,8 +226,10 @@ namespace Amesos2 {
   size_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getMaxColNNZ_impl() const
   {
@@ -213,8 +247,10 @@ namespace Amesos2 {
   size_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getGlobalRowNNZ_impl(global_ordinal_t row) const
   {
@@ -229,12 +265,18 @@ namespace Amesos2 {
             class DerivedMat>
   typename 
   AbstractConcreteMatrixAdapter<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>, DerivedMat>
+#else
+    Tpetra::RowMatrix<Scalar, Node>, DerivedMat>
+#endif
     ::super_t::spmtx_ptr_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getSparseRowPtr() const
   {
@@ -249,12 +291,18 @@ namespace Amesos2 {
             class DerivedMat>
   typename 
   AbstractConcreteMatrixAdapter<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>, DerivedMat>
+#else
+    Tpetra::RowMatrix<Scalar, Node>, DerivedMat>
+#endif
     ::super_t::spmtx_idx_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getSparseColInd() const
   {
@@ -269,12 +317,18 @@ namespace Amesos2 {
             class DerivedMat>
   typename 
   AbstractConcreteMatrixAdapter<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>, DerivedMat>
+#else
+    Tpetra::RowMatrix<Scalar, Node>, DerivedMat>
+#endif
     ::super_t::spmtx_vals_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getSparseValues() const
   {
@@ -291,8 +345,10 @@ namespace Amesos2 {
   size_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getLocalRowNNZ_impl(local_ordinal_t row) const
   {
@@ -307,8 +363,10 @@ namespace Amesos2 {
   size_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getGlobalColNNZ_impl(global_ordinal_t col) const
   {
@@ -326,8 +384,10 @@ namespace Amesos2 {
   size_t
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getLocalColNNZ_impl(local_ordinal_t col) const
   {
@@ -342,11 +402,17 @@ namespace Amesos2 {
             typename GlobalOrdinal,
             typename Node,
             class DerivedMat>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  const RCP<const Tpetra::Map<Node> >
+#endif
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>:: getMap_impl() const
   {
@@ -358,11 +424,17 @@ namespace Amesos2 {
             typename GlobalOrdinal,
             typename Node,
             class DerivedMat>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  const RCP<const Tpetra::Map<Node> >
+#endif
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>:: getRowMap_impl() const
   {
@@ -374,11 +446,17 @@ namespace Amesos2 {
             typename GlobalOrdinal,
             typename Node,
             class DerivedMat>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  const RCP<const Tpetra::Map<Node> >
+#endif
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getColMap_impl() const
   {
@@ -393,8 +471,10 @@ namespace Amesos2 {
   const RCP<const Teuchos::Comm<int> >
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::getComm_impl() const
   {
@@ -409,8 +489,10 @@ namespace Amesos2 {
   bool
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::isLocallyIndexed_impl() const
   {
@@ -425,8 +507,10 @@ namespace Amesos2 {
   bool
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>,
     DerivedMat>::isGloballyIndexed_impl() const
   {
@@ -437,7 +521,11 @@ namespace Amesos2 {
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node, class DerivedMat>
   RCP<const MatrixAdapter<DerivedMat> >
   AbstractConcreteMatrixAdapter<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>, DerivedMat
+#else
+    Tpetra::RowMatrix<Scalar, Node>, DerivedMat
+#endif
     >::get_impl(const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > map, EDistribution distribution) const
   {
 #ifdef __CUDACC__

@@ -88,9 +88,17 @@ enum EScaling {
 ///
 /// \param scaling [in] If SCALING_DIVIDE, "scale" means "divide by";
 ///   if SCALING_MULTIPLY, it means "multiply by."
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
+#else
+leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, NT>& A,
+#endif
                               const Kokkos::View<
                                 const typename Kokkos::ArithTraits<SC>::mag_type*,
                                 typename NT::device_type>& rowScalingFactors,
@@ -129,13 +137,23 @@ leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
 ///
 /// \param scaling [in] If SCALING_DIVIDE, "scale" means "divide by";
 ///   if SCALING_MULTIPLY, it means "multiply by."
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
                               const Tpetra::Vector<typename Kokkos::ArithTraits<SC>::mag_type,
                                 LO, GO, NT>& rowScalingFactors,
                               const Tpetra::Vector<typename Kokkos::ArithTraits<SC>::mag_type,
                                 LO, GO, NT>& colScalingFactors,
+#else
+leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, NT>& A,
+                              const Tpetra::Vector<typename Kokkos::ArithTraits<SC>::mag_type,NT>& rowScalingFactors,
+                              const Tpetra::Vector<typename Kokkos::ArithTraits<SC>::mag_type,NT>& colScalingFactors,
+#endif
                               const bool leftScale,
                               const bool rightScale,
                               const bool assumeSymmetric,

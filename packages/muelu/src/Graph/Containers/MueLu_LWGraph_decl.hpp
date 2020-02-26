@@ -66,15 +66,24 @@ namespace MueLu {
    fillComplete.
    TODO handle systems
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
            class Node = DefaultNode>
   class LWGraph : public MueLu::GraphBase<LocalOrdinal,GlobalOrdinal,Node> {
+#else
+  template<class Node = DefaultNode>
+  class LWGraph : public MueLu::GraphBase<Node> {
+#endif
 #undef MUELU_LWGRAPH_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 

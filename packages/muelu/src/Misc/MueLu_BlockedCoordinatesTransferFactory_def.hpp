@@ -60,8 +60,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> BlockedCoordinatesTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> BlockedCoordinatesTransferFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set<RCP<const FactoryBase> >("Coordinates",                  Teuchos::null, "Factory for coordinates generation");
@@ -69,8 +74,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlockedCoordinatesTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& /* fineLevel */, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void BlockedCoordinatesTransferFactory<Scalar, Node>::DeclareInput(Level& /* fineLevel */, Level& coarseLevel) const {
+#endif
     Input(coarseLevel, "CoarseMap");
 
     // Make sure the Level knows I need these sub-Factories
@@ -85,12 +95,22 @@ namespace MueLu {
       (*it)->CallDeclareInput(coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlockedCoordinatesTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & /* fineLevel */, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void BlockedCoordinatesTransferFactory<Scalar, Node>::Build(Level & /* fineLevel */, Level &coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,LO,GO,NO> dMV;
     typedef Xpetra::BlockedMultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,LO,GO,NO> dBV;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,NO> dMV;
+    typedef Xpetra::BlockedMultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,NO> dBV;
+#endif
 
     GetOStream(Runtime0) << "Transferring (blocked) coordinates" << std::endl;
 
@@ -123,8 +143,13 @@ namespace MueLu {
     Set<RCP<dMV> >(coarseLevel, "Coordinates", coarseCoords);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlockedCoordinatesTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddFactory(const RCP<const FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void BlockedCoordinatesTransferFactory<Scalar, Node>::AddFactory(const RCP<const FactoryBase>& factory) {
+#endif
     subFactories_.push_back(factory);
   }
 

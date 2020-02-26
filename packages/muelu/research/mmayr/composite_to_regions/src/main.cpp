@@ -97,26 +97,50 @@
 // typedef int GlobalOrdinal;
 // typedef KokkosClassic::DefaultNode::DefaultNodeType Node;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 using LIDregion_type = LocalOrdinal (*) (void*, const LocalOrdinal, int);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LocalOrdinal LIDregion(void *ptr, const LocalOrdinal LIDcomp, int whichGrp);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LocalOrdinal LID2Dregion(void *ptr, const LocalOrdinal LIDcomp, int whichGrp);
 
 extern void edgeGhosts(int ArowPtr[], int Acols[], int &nGhostFound, int ghostCompLIDs[], int edgeLength, int alongX, int ownedEdge, int interiorEdge, int start, int ownedX, int ownedY);
 
 extern void fillCircleSquareData(int ArowPtr[], int Acols[], int ownedX, int ownedY, int Cx, int Cy, int Rx, int Ry, std::vector<int> &appData);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 extern LocalOrdinal LIDregionCircleSquare(void *ptr, const LocalOrdinal compLID,int whichGrp);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 Teuchos::Array<LocalOrdinal> setLocalNodesPerDim(const std::string& problemType,
                                                  const std::string& caseName, const bool doing1D,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                  const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& rowMap,
+#else
+                                                 const Xpetra::Map<Node>& rowMap,
+#endif
                                                  const LocalOrdinal dimX,
                                                  const LocalOrdinal dimY,
                                                  const LocalOrdinal dimZ = 1)
@@ -221,7 +245,11 @@ std::string setAggregationTypePerRegion (const std::string& problemType, const i
  * ``Using Trilinos Capabilities to Facilitate Composite-Regional Transitions''
  * for further information.
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(int argc, char *argv[]) {
 #include "Xpetra_UseShortNames.hpp"
 
@@ -261,7 +289,11 @@ int main_(int argc, char *argv[]) {
   using Teuchos::ArrayView;
 
   typedef typename Teuchos::ScalarTraits<Scalar>::coordinateType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   Comm->barrier();
 
@@ -383,11 +415,19 @@ int main_(int argc, char *argv[]) {
 
   // regionsPerGID[i] lists all regions that share the ith composite GID
   // associated with myRank's composite matrix row Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::MultiVector<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node> > regionsPerGID = Teuchos::null;
+#else
+  Teuchos::RCP<Xpetra::MultiVector<LocalOrdinal, Node> > regionsPerGID = Teuchos::null;
+#endif
 
   // regionsPerGIDWithGhosts[i] lists all regions that share the ith composite GID
   // associated with myRank's composite matrix col Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::MultiVector<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node> > regionsPerGIDWithGhosts = Teuchos::null;
+#else
+  Teuchos::RCP<Xpetra::MultiVector<LocalOrdinal, Node> > regionsPerGIDWithGhosts = Teuchos::null;
+#endif
 
   /* rowMapPerGrp[i] and colMapPerGrp[i] are based on the composite maps, i.e.
    * they don't include duplication of interface DOFs.
@@ -517,7 +557,11 @@ int main_(int argc, char *argv[]) {
   {
     std::cout << myRank << " | Loading and communicating region assignments ..." << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     regionsPerGID = Xpetra::MultiVectorFactory<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node>::Build(AComp->getRowMap(), maxRegPerGID, true);
+#else
+    regionsPerGID = Xpetra::MultiVectorFactory<LocalOrdinal, Node>::Build(AComp->getRowMap(), maxRegPerGID, true);
+#endif
 
     std::stringstream fileNameSS;
     fileNameSS << regionDataDirectory << "/myRegionAssignment_" << myRank;
@@ -525,7 +569,11 @@ int main_(int argc, char *argv[]) {
     TEUCHOS_ASSERT(fp!=NULL);
 
     int k;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node> > jthRegions; // pointer to jth column in regionsPerGID
+#else
+    RCP<Xpetra::Vector<LocalOrdinal, Node> > jthRegions; // pointer to jth column in regionsPerGID
+#endif
     for (LocalOrdinal i = 0; i < Teuchos::as<LocalOrdinal>(mapComp->getNodeNumElements()); i++) {
       for (int j = 0; j < maxRegPerGID; j++) {
         jthRegions = regionsPerGID->getVectorNonConst(j);
@@ -544,7 +592,11 @@ int main_(int argc, char *argv[]) {
 
     // make extended Region Assignments
     RCP<Import> Importer = ImportFactory::Build(mapComp, AComp->getColMap());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     regionsPerGIDWithGhosts = Xpetra::MultiVectorFactory<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node>::Build(AComp->getColMap(), maxRegPerGID, true);
+#else
+    regionsPerGIDWithGhosts = Xpetra::MultiVectorFactory<LocalOrdinal, Node>::Build(AComp->getColMap(), maxRegPerGID, true);
+#endif
     regionsPerGIDWithGhosts->doImport(*regionsPerGID, *Importer, Xpetra::INSERT);
 //    regionsPerGIDWithGhosts->describe(*fos, Teuchos::VERB_EXTREME);
   }
@@ -656,21 +708,41 @@ int main_(int argc, char *argv[]) {
   Comm->barrier();
 
   // Select the appropriate function pointer
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   LIDregion_type<LO, GO, Node> myLIDregion;
+#else
+  LIDregion_type<Node> myLIDregion;
+#endif
   if (problemType == "structured") {
     if (doing1D)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       myLIDregion = &LIDregion<LO, GO, NO>;
+#else
+      myLIDregion = &LIDregion<NO>;
+#endif
     else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       myLIDregion = &LID2Dregion<LO, GO, NO>;
+#else
+      myLIDregion = &LID2Dregion<NO>;
+#endif
   }
   else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     myLIDregion = &LIDregionCircleSquare<LO, GO, NO>;
+#else
+    myLIDregion = &LIDregionCircleSquare<NO>;
+#endif
   }
 
   Comm->barrier();
 
   // Make group region row maps
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MakeGroupRegionRowMaps<SC, LO, GO, NO, widget>(myRank,
+#else
+  MakeGroupRegionRowMaps<SC, NO, widget>(myRank,
+#endif
                                                  AComp,
                                                  myLIDregion,
                                                  appData,
@@ -679,7 +751,11 @@ int main_(int argc, char *argv[]) {
   Comm->barrier();
 
   // Make group region column maps
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MakeGroupRegionColumnMaps<SC, LO, GO, NO, widget>(myRank,
+#else
+  MakeGroupRegionColumnMaps<SC, NO, widget>(myRank,
+#endif
                                                     whichCase,
                                                     AComp,
                                                     myLIDregion,
@@ -690,7 +766,11 @@ int main_(int argc, char *argv[]) {
   Comm->barrier();
 
   // Make extended group region maps
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MakeGroupExtendedMaps<SC, LO, GO, NO, widget>(myRank,
+#else
+  MakeGroupExtendedMaps<SC, NO, widget>(myRank,
+#endif
                                                 whichCase,
                                                 AComp,
                                                 mapComp,
@@ -751,7 +831,11 @@ int main_(int argc, char *argv[]) {
     nullspace[j]->putScalar(scalarOne);
 
     // create dummy coordinates vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     coordinates[j] = Xpetra::MultiVectorFactory<real_type, LocalOrdinal, GlobalOrdinal, Node>::Build(revisedRowMapPerGrp[j], 3);
+#else
+    coordinates[j] = Xpetra::MultiVectorFactory<real_type,Node>::Build(revisedRowMapPerGrp[j], 3);
+#endif
     coordinates[j]->putScalar(scalarOne);
   }
 
@@ -989,7 +1073,11 @@ int main(int argc, char *argv[]) {
  *
  * For fully structured 1D problems only.
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+ template <class Node>
+#endif
 LocalOrdinal LIDregion(void *ptr, const LocalOrdinal LIDcomp, int whichGrp)
 {
 #include "Xpetra_UseShortNamesOrdinal.hpp"
@@ -1000,7 +1088,11 @@ LocalOrdinal LIDregion(void *ptr, const LocalOrdinal LIDcomp, int whichGrp)
    int        *myRegions   = myWidget->myRegions;
    Map        *colMap      = myWidget->colMap;
    int        maxRegPerGID = myWidget->maxRegPerGID;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Xpetra::MultiVector<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node> > regionsPerGIDWithGhosts = myWidget->regionsPerGIDWithGhosts;
+#else
+   Teuchos::RCP<Xpetra::MultiVector<LocalOrdinal, Node> > regionsPerGIDWithGhosts = myWidget->regionsPerGIDWithGhosts;
+#endif
 
    int curRegion = myRegions[whichGrp];
    if (LIDcomp >=  Teuchos::as<int>(colMap->getNodeNumElements())) return(-1);
@@ -1029,7 +1121,11 @@ LocalOrdinal LIDregion(void *ptr, const LocalOrdinal LIDcomp, int whichGrp)
  *
  * For fully structured 2D problems only.
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Node>
+#endif
 LocalOrdinal LID2Dregion(void *ptr, LocalOrdinal LIDcomp, int whichGrp)
 {
 #include "Xpetra_UseShortNamesOrdinal.hpp"
@@ -1047,7 +1143,11 @@ LocalOrdinal LID2Dregion(void *ptr, LocalOrdinal LIDcomp, int whichGrp)
    int       *relcornery   = myWidget->relcornery;  // to region corner
    int       *lDimx        = myWidget->lDimx;
    int       *lDimy        = myWidget->lDimy;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Xpetra::MultiVector<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node> > regionsPerGIDWithGhosts = myWidget->regionsPerGIDWithGhosts;
+#else
+   Teuchos::RCP<Xpetra::MultiVector<LocalOrdinal, Node> > regionsPerGIDWithGhosts = myWidget->regionsPerGIDWithGhosts;
+#endif
 
    int curRegion = myRegions[whichGrp];
    if (LIDcomp >=  Teuchos::as<int>(colMap->getNodeNumElements())) return(-1);
@@ -1397,7 +1497,11 @@ if ( (start==2) && (firstCornerHasGhosts == false)) start--;
   } // for (int ii=1; ii <= edgeLength; ii++)
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Node>
+#endif
 LocalOrdinal LIDregionCircleSquare(void *ptr, const LocalOrdinal compLID, int whichGrp)
 {
    // Maps composite LIDs to region LIDs for the example

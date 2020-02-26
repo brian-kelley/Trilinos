@@ -69,7 +69,11 @@ using Teuchos::RCP;
 using Teuchos::rcp;
 using Teuchos::rcp_dynamic_cast;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedTpetraOperator::StridedTpetraOperator(int numVars,const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & content,
+#else
+StridedTpetraOperator::StridedTpetraOperator(int numVars,const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & content,
+#endif
                                              const std::string & label) 
       : Teko::TpetraHelpers::TpetraOperatorWrapper(), label_(label)
 {
@@ -81,14 +85,22 @@ StridedTpetraOperator::StridedTpetraOperator(int numVars,const Teuchos::RCP<cons
    SetContent(vars,content);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedTpetraOperator::StridedTpetraOperator(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & content,
+#else
+StridedTpetraOperator::StridedTpetraOperator(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & content,
+#endif
                                              const std::string & label) 
       : Teko::TpetraHelpers::TpetraOperatorWrapper(), label_(label)
 {
    SetContent(vars,content);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void StridedTpetraOperator::SetContent(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & content)
+#else
+void StridedTpetraOperator::SetContent(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & content)
+#endif
 { 
    fullContent_ = content;
    stridedMapping_ = rcp(new TpetraStridedMappingStrategy(vars,fullContent_->getDomainMap(),
@@ -104,7 +116,11 @@ void StridedTpetraOperator::BuildBlockedOperator()
    TEUCHOS_ASSERT(stridedMapping_!=Teuchos::null);
 
    // get a CRS matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > crsContent = rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(fullContent_);
+#else
+   const RCP<const Tpetra::CrsMatrix<ST,NT> > crsContent = rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(fullContent_);
+#endif
 
    // ask the strategy to build the Thyra operator for you
    if(stridedOperator_==Teuchos::null) {
@@ -123,12 +139,20 @@ void StridedTpetraOperator::BuildBlockedOperator()
       Reorder(*reorderManager_);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > StridedTpetraOperator::GetBlock(int i,int j) const
+#else
+const Teuchos::RCP<const Tpetra::Operator<ST,NT> > StridedTpetraOperator::GetBlock(int i,int j) const
+#endif
 {
    const RCP<const Thyra::BlockedLinearOpBase<ST> > blkOp 
          = Teuchos::rcp_dynamic_cast<const Thyra::BlockedLinearOpBase<ST> >(getThyraOp());
    
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(blkOp->getBlock(i,j),true);
+#else
+   RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(blkOp->getBlock(i,j),true);
+#endif
    return tOp->getConstTpetraOperator();
 }
 
@@ -176,12 +200,22 @@ void StridedTpetraOperator::WriteBlocks(const std::string & prefix) const
          ss << prefix << "_" << i << j << ".mm";
 
          // get the row matrix object (Note: can't use "GetBlock" method b/c matrix might be reordered)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(blockOp->getBlock(i,j));
          RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > mat
                = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(tOp->getConstTpetraOperator());
+#else
+         RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(blockOp->getBlock(i,j));
+         RCP<const Tpetra::CrsMatrix<ST,NT> > mat
+               = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(tOp->getConstTpetraOperator());
+#endif
 
          // write to file
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          Tpetra::MatrixMarket::Writer<Tpetra::CrsMatrix<ST,LO,GO,NT> >::writeSparseFile(ss.str().c_str(),mat);
+#else
+         Tpetra::MatrixMarket::Writer<Tpetra::CrsMatrix<ST,NT> >::writeSparseFile(ss.str().c_str(),mat);
+#endif
       }
    }
 }
@@ -207,8 +241,13 @@ std::string StridedTpetraOperator::PrintNorm(const eNormType & nrmType,const cha
    for(int row=0;row<rowCount;row++) {
       for(int col=0;col<colCount;col++) {
          // get the row matrix object (Note: can't use "GetBlock" method b/c matrix might be reordered)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > Aij = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(blockOp->getBlock(row,col),true);
          RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > mat = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(Aij->getConstTpetraOperator(),true);
+#else
+         RCP<const Thyra::TpetraLinearOp<ST,NT> > Aij = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(blockOp->getBlock(row,col),true);
+         RCP<const Tpetra::CrsMatrix<ST,NT> > mat = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(Aij->getConstTpetraOperator(),true);
+#endif
 
          // compute the norm
          ST norm = 0.0;
@@ -237,9 +276,15 @@ std::string StridedTpetraOperator::PrintNorm(const eNormType & nrmType,const cha
 
 bool StridedTpetraOperator::testAgainstFullOperator(int count,ST tol) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT>  xf(getRangeMap());
    Tpetra::Vector<ST,LO,GO,NT>  xs(getRangeMap());
    Tpetra::Vector<ST,LO,GO,NT>  y(getDomainMap());
+#else
+   Tpetra::Vector<ST,NT>  xf(getRangeMap());
+   Tpetra::Vector<ST,NT>  xs(getRangeMap());
+   Tpetra::Vector<ST,NT>  y(getDomainMap());
+#endif
 
    // test operator many times
    bool result = true;

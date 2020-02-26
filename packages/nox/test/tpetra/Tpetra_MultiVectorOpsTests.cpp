@@ -16,8 +16,13 @@ typedef Tpetra::MultiVector<>::global_ordinal_type GO;
 typedef Tpetra::MultiVector<>::node_type Node;
 
 typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::Map<LO,GO,Node> Map;
 typedef Tpetra::MultiVector<Scalar,LO,GO,Node> TMV;
+#else
+typedef Tpetra::Map<Node> Map;
+typedef Tpetra::MultiVector<Scalar,Node> TMV;
+#endif
 typedef Thyra::MultiVectorBase<Scalar> TMVB;
 typedef NOX::Thyra::MultiVector NTMV;
 typedef typename TMV::mag_type mag_type;
@@ -95,7 +100,11 @@ TEUCHOS_UNIT_TEST(Tpetra_MultiVectorOps, CopyConstructor)
   Teuchos::RCP<NTMV> y = Teuchos::rcp(new NTMV(*x_thyra));
 
   // Check for correct answer
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Thyra::TpetraOperatorVectorExtraction<Scalar, LO, GO, Node> TOVE;
+#else
+  typedef Thyra::TpetraOperatorVectorExtraction<Scalar, Node> TOVE;
+#endif
   mag_type val = static_cast<mag_type>(ST::squareroot(numGlobalElements));
   auto ans = Teuchos::tuple(val, val, val, val, val, val, val, val, val, val);
   success = checkMultiVectors(x, TOVE::getTpetraMultiVector(y->getThyraMultiVector()), ans, out);

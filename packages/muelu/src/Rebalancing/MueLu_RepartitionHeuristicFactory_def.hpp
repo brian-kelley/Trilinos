@@ -71,8 +71,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> RepartitionHeuristicFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Scalar, class Node>
+ RCP<const ParameterList> RepartitionHeuristicFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -91,8 +96,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RepartitionHeuristicFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RepartitionHeuristicFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     Input(currentLevel, "A");
     const Teuchos::ParameterList & pL = GetParameterList();    
     if(pL.isParameter("repartition: node repartition level")) {
@@ -103,8 +113,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RepartitionHeuristicFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RepartitionHeuristicFactory<Scalar, Node>::Build(Level& currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", currentLevel);
 
     const Teuchos::ParameterList & pL = GetParameterList();

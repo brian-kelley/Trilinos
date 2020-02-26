@@ -52,12 +52,22 @@ namespace mini_em {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > get_Tpetra_CrsMatrix(const Thyra::LinearOpBase<double> & op) {
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,Node> > get_Tpetra_CrsMatrix(const Thyra::LinearOpBase<double> & op) {
+#endif
     using Teuchos::RCP;
     using Teuchos::rcp_dynamic_cast;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<const Thyra::TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(Teuchos::rcpFromRef(op),true);
     RCP<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > crsOp = rcp_dynamic_cast<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(tOp->getConstTpetraOperator(),true);
+#else
+    const RCP<const Thyra::TpetraLinearOp<Scalar,Node> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<Scalar,Node> >(Teuchos::rcpFromRef(op),true);
+    RCP<const Tpetra::CrsMatrix<Scalar,Node> > crsOp = rcp_dynamic_cast<const Tpetra::CrsMatrix<Scalar,Node> >(tOp->getConstTpetraOperator(),true);
+#endif
     return crsOp;
   }
 

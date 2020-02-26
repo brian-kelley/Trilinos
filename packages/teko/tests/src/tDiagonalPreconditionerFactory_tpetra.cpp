@@ -113,12 +113,20 @@ void tDiagonalPreconditionerFactory_tpetra::initializeTest()
    RCP<Epetra_CrsMatrix> epetraF = rcp(new Epetra_CrsMatrix(*FGallery.GetMatrix()));
    epetraF->FillComplete(true);
    tpetraF = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(epetraF,comm_tpetra);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    F_ = Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraF->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraF->getRangeMap()),tpetraF);
+#else
+   F_ = Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraF->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraF->getRangeMap()),tpetraF);
+#endif
 }
 
 
 void tDiagonalPreconditionerFactory_tpetra::buildParameterList(int blocksize){
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Tpetra::CrsMatrix<ST,LO,GO,NT> *F=&*tpetraF;
+#else
+  const Tpetra::CrsMatrix<ST,NT> *F=&*tpetraF;
+#endif
   TEUCHOS_ASSERT(F);
 
   if(blocksize > 0) {
@@ -224,20 +232,36 @@ bool tDiagonalPreconditionerFactory_tpetra::test_createPrec(int verbosity,std::o
 
 bool tDiagonalPreconditionerFactory_tpetra::test_canApply(int verbosity,std::ostream & os)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::Map<LO,GO,NT> > domain_= tpetraF->getDomainMap();
   RCP<const Tpetra::Map<LO,GO,NT> > range_ = tpetraF->getRangeMap();
+#else
+  RCP<const Tpetra::Map<NT> > domain_= tpetraF->getDomainMap();
+  RCP<const Tpetra::Map<NT> > range_ = tpetraF->getRangeMap();
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::Vector<ST,LO,GO,NT> > X = Tpetra::createVector<ST,LO,GO,NT>(domain_);
   RCP<Tpetra::Vector<ST,LO,GO,NT> > Y = Tpetra::createVector<ST,LO,GO,NT>(range_);
   RCP<Tpetra::Vector<ST,LO,GO,NT> > Z = Tpetra::createVector<ST,LO,GO,NT>(range_);
+#else
+  RCP<Tpetra::Vector<ST,NT> > X = Tpetra::createVector<ST,NT>(domain_);
+  RCP<Tpetra::Vector<ST,NT> > Y = Tpetra::createVector<ST,NT>(range_);
+  RCP<Tpetra::Vector<ST,NT> > Z = Tpetra::createVector<ST,NT>(range_);
+#endif
   Y->putScalar(0.0);Z->putScalar(1.0);
 
   // Let X = diag(F). Then applying the preconditioner to X should yield a vector of ones
   tpetraF->getLocalDiagCopy(*X);
 
   // Build Thyra wrappers
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MultiVector tX=Thyra::createVector<ST,LO,GO,NT>(X,Thyra::createVectorSpace<ST,LO,GO,NT>(domain_));
   MultiVector tY=Thyra::createVector<ST,LO,GO,NT>(Y,Thyra::createVectorSpace<ST,LO,GO,NT>(range_));
+#else
+  MultiVector tX=Thyra::createVector<ST,NT>(X,Thyra::createVectorSpace<ST,NT>(domain_));
+  MultiVector tY=Thyra::createVector<ST,NT>(Y,Thyra::createVectorSpace<ST,NT>(range_));
+#endif
   
   // Do the apply via thyra
   Teko::applyOp(pop,tX,tY,1.0,0.0);

@@ -73,11 +73,17 @@ namespace Tpetra {
 ///
 /// This class takes the same template parameters as CrsMatrix.
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node>
 class RowMatrixTransposer {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   //! @name Typedefs
   //@{
   typedef Scalar scalar_type;
@@ -85,8 +91,13 @@ public:
   typedef GlobalOrdinal global_ordinal_type;
   typedef Node node_type;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
   typedef CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> crs_matrix_type;
+#else
+  typedef Map<Node> map_type;
+  typedef CrsMatrix<Scalar, Node> crs_matrix_type;
+#endif
 
   //@}
   //! @name Constructors

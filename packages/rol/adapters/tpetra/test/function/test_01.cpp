@@ -63,8 +63,13 @@ typedef double RealT;
 typedef Tpetra::Map<>::local_ordinal_type LO;
 typedef Tpetra::Map<>::global_ordinal_type GO;
 typedef Tpetra::Map<>::node_type Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::Map<LO, GO, Node> Map;
 typedef Tpetra::MultiVector<RealT, LO, GO, Node> MV;
+#else
+typedef Tpetra::Map<Node> Map;
+typedef Tpetra::MultiVector<RealT,Node> MV;
+#endif
 
 typedef std::vector<RealT> SV;
 typedef ROL::Ptr<MV>            MVP;
@@ -95,9 +100,17 @@ int test(ROL::Ptr<const Teuchos::Comm<int> > comm, int dim) {
     MVP x = ROL::makePtr<MV>(map,1,true);
     x->randomize();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ROL::TpetraBoundConstraint<RealT,LO,GO,Node> tcon(l,u);
+#else
+    ROL::TpetraBoundConstraint<RealT,Node> tcon(l,u);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ROL::TpetraMultiVector<RealT,LO,GO,Node> X(x);
+#else
+    ROL::TpetraMultiVector<RealT,Node> X(x);
+#endif
 
     // Prune the vector
     tcon.project(X);

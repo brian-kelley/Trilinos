@@ -53,11 +53,19 @@ namespace Galeri {
 
   namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<typename Scalar,typename LocalOrdinal,typename GlobalOrdinal>
+#else
+    template<typename Scalar,>
+#endif
     class VelocityModel {
 
     public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       VelocityModel(LocalOrdinal dimension,LocalOrdinal model) {
 	dim_=dimension;
 	modelType_=model;
@@ -88,8 +96,13 @@ namespace Galeri {
 
     };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal>
     Scalar VelocityModel<Scalar,LocalOrdinal,GlobalOrdinal>::getVelocity(double x, double y, double z) {
+#else
+    template <typename Scalar,>
+    Scalar VelocityModel<Scalar>::getVelocity(double x, double y, double z) {
+#endif
       
       Scalar c=(Scalar)1.0;
       if(dim_==2) {

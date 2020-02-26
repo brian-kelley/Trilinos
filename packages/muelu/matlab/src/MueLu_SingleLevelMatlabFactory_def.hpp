@@ -60,12 +60,22 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   SingleLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SingleLevelMatlabFactory()
+#else
+  template <class Scalar, class Node>
+  SingleLevelMatlabFactory<Scalar, Node>::SingleLevelMatlabFactory()
+#endif
     : hasDeclaredInput_(false) { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> SingleLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> SingleLevelMatlabFactory<Scalar, Node>::GetValidParameterList() const
+#endif
   {
     RCP<ParameterList> validParamList = getInputParamList();
     validParamList->set<std::string>("Provides"     , "" ,"A comma-separated list of objects provided by the SingleLevelMatlabFactory");
@@ -74,8 +84,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SingleLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const
+#else
+  template <class Scalar, class Node>
+  void SingleLevelMatlabFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const
+#endif
   {
     const Teuchos::ParameterList& pL = GetParameterList();
     needs_ = tokenizeList(pL.get<std::string>("Needs"));
@@ -88,8 +103,13 @@ namespace MueLu {
     hasDeclaredInput_ = true;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SingleLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const
+#else
+  template <class Scalar, class Node>
+  void SingleLevelMatlabFactory<Scalar, Node>::Build(Level& currentLevel) const
+#endif
   {
     FactoryMonitor m(*this, "Build", currentLevel);
 
@@ -99,7 +119,11 @@ namespace MueLu {
     using namespace std;
     // NOTE: mexOutput[0] is the "Provides."  Might want to modify to allow for additional outputs
     string needsList = pL.get<string>("Needs");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     vector<RCP<MuemexArg>> InputArgs = processNeeds<Scalar, LocalOrdinal, GlobalOrdinal, Node>(this, needsList, currentLevel);
+#else
+    vector<RCP<MuemexArg>> InputArgs = processNeeds<Scalar, Node>(this, needsList, currentLevel);
+#endif
     string providesList = pL.get<std::string>("Provides");
     size_t numProvides = tokenizeList(providesList).size();
     // Call mex function
@@ -108,11 +132,20 @@ namespace MueLu {
       throw std::runtime_error("Invalid matlab function name");
     vector<Teuchos::RCP<MuemexArg> > mexOutput = callMatlab(matlabFunction, numProvides, InputArgs);
     // Set output in level 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     processProvides<Scalar, LocalOrdinal, GlobalOrdinal, Node>(mexOutput, this, providesList, currentLevel);
+#else
+    processProvides<Scalar, Node>(mexOutput, this, providesList, currentLevel);
+#endif
   }
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string SingleLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string SingleLevelMatlabFactory<Scalar, Node>::description() const {
+#endif
     std::ostringstream out;
     const Teuchos::ParameterList& pL = GetParameterList();
     out << "SingleLevelMatlabFactory["<<pL.get<std::string>("Function")<<"]";

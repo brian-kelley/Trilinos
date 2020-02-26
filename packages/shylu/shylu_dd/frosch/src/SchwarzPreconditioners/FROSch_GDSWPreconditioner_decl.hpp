@@ -54,31 +54,72 @@ namespace FROSch {
     using namespace Xpetra;
     
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class GDSWPreconditioner : public AlgebraicOverlappingPreconditioner<SC,LO,GO,NO> {
+#else
+    class GDSWPreconditioner : public AlgebraicOverlappingPreconditioner<SC,NO> {
+#endif
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMapPtr                   = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMapPtr;
         using ConstXMapPtr              = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMapPtr;
         using XMapPtrVecPtr             = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMapPtrVecPtr;
         using ConstXMapPtrVecPtr        = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMapPtrVecPtr;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using XMapPtr                   = typename SchwarzPreconditioner<SC,NO>::XMapPtr;
+        using ConstXMapPtr              = typename SchwarzPreconditioner<SC,NO>::ConstXMapPtr;
+        using XMapPtrVecPtr             = typename SchwarzPreconditioner<SC,NO>::XMapPtrVecPtr;
+        using ConstXMapPtrVecPtr        = typename SchwarzPreconditioner<SC,NO>::ConstXMapPtrVecPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrixPtr                = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMatrixPtr;
         using ConstXMatrixPtr           = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMatrixPtr;
+#else
+        using XMatrixPtr                = typename SchwarzPreconditioner<SC,NO>::XMatrixPtr;
+        using ConstXMatrixPtr           = typename SchwarzPreconditioner<SC,NO>::ConstXMatrixPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVectorPtr           = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMultiVectorPtr;
         using ConstXMultiVectorPtr      = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMultiVectorPtr;
+#else
+        using XMultiVectorPtr           = typename SchwarzPreconditioner<SC,NO>::XMultiVectorPtr;
+        using ConstXMultiVectorPtr      = typename SchwarzPreconditioner<SC,NO>::ConstXMultiVectorPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using ParameterListPtr          = typename SchwarzPreconditioner<SC,LO,GO,NO>::ParameterListPtr;
+#else
+        using ParameterListPtr          = typename SchwarzPreconditioner<SC,NO>::ParameterListPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using GDSWCoarseOperatorPtr     = typename SchwarzPreconditioner<SC,LO,GO,NO>::GDSWCoarseOperatorPtr;
+#else
+        using GDSWCoarseOperatorPtr     = typename SchwarzPreconditioner<SC,NO>::GDSWCoarseOperatorPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using UN                        = typename SchwarzPreconditioner<SC,LO,GO,NO>::UN;
+#else
+        using UN                        = typename SchwarzPreconditioner<SC,NO>::UN;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using GOVecPtr                  = typename SchwarzPreconditioner<SC,LO,GO,NO>::GOVecPtr;
+#else
+        using GOVecPtr                  = typename SchwarzPreconditioner<SC,NO>::GOVecPtr;
+#endif
 
     public:
 

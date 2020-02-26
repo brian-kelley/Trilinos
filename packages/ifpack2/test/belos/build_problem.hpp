@@ -61,22 +61,47 @@
 #include "read_matrix.hpp"
 #include "build_precond.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar,class LocalOrdinal,class GlobalOrdinal,class Node >
+#else
+template< class Scalar,class Node >
+#endif
 Teuchos::RCP<Belos::LinearProblem<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>,
                                   Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > >
+#else
+                                  Tpetra::MultiVector<Scalar,Node>,
+                                  Tpetra::Operator<Scalar,Node> > >
+#endif
 build_problem_mm (Teuchos::ParameterList& test_params,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   const Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& A,
                   Teuchos::RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& b,
                   Teuchos::RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& nullVec)
+#else
+                  const Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,Node> >& A,
+                  Teuchos::RCP<Tpetra::MultiVector<Scalar,Node> >& b,
+                  Teuchos::RCP<Tpetra::MultiVector<Scalar,Node> >& nullVec)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node>             TOP;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>          TMV;
+#else
+  typedef Tpetra::Operator<Scalar,Node>             TOP;
+  typedef Tpetra::MultiVector<Scalar,Node>          TMV;
+#endif
   typedef Belos::OperatorTraits<Scalar,TMV,TOP>                                BOPT;
   typedef Belos::MultiVecTraits<Scalar,TMV>                                    BMVT;
   typedef Belos::LinearProblem<Scalar,TMV,TOP>                                 BLinProb;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::BorderedOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>    IBOP;
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>                         TMap;
+#else
+  typedef Ifpack2::BorderedOperator<Scalar,Node>    IBOP;
+  typedef Tpetra::Map<Node>                         TMap;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   Teuchos::RCP<const TMap> rowmap = A->getRowMap();
@@ -106,7 +131,11 @@ build_problem_mm (Teuchos::ParameterList& test_params,
   std::string tifpack_precond("not specified");
   Ifpack2::getParameter (test_params, "Ifpack2::Preconditioner", tifpack_precond);
   if (tifpack_precond != "not specified") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<TOP> precond = build_precond<Scalar,LocalOrdinal,GlobalOrdinal,Node> (test_params, A);
+#else
+    Teuchos::RCP<TOP> precond = build_precond<Scalar,Node> (test_params, A);
+#endif
     problem->setLeftPrec (precond);
   }
 
@@ -114,11 +143,20 @@ build_problem_mm (Teuchos::ParameterList& test_params,
   return problem;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar,class LocalOrdinal,class GlobalOrdinal,class Node>
+#else
+template<class Scalar,class Node>
+#endif
 Teuchos::RCP<Belos::LinearProblem<
                Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>,
                Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > >
+#else
+               Tpetra::MultiVector<Scalar,Node>,
+               Tpetra::Operator<Scalar,Node> > >
+#endif
 build_problem (Teuchos::ParameterList& test_params,
                const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                const Teuchos::RCP<Node>& node = Teuchos::null)
@@ -130,9 +168,15 @@ build_problem (Teuchos::ParameterList& test_params,
   using Teuchos::rcp;
   typedef LocalOrdinal LO;
   typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node>       crs_matrix_type;
   typedef Tpetra::Map<LO, GO, Node>                     map_type;
   typedef Tpetra::MultiVector<Scalar, LO, GO, Node>     TMV;
+#else
+  typedef Tpetra::CrsMatrix<Scalar, Node>       crs_matrix_type;
+  typedef Tpetra::Map<Node>                     map_type;
+  typedef Tpetra::MultiVector<Scalar, Node>     TMV;
+#endif
   typedef Tpetra::MatrixMarket::Reader<crs_matrix_type> reader_type;
   //typedef Belos::LinearProblem<Scalar, TMV, TOP>        BLinProb; // unused
 
@@ -191,7 +235,11 @@ build_problem (Teuchos::ParameterList& test_params,
     if (comm->getRank() == 0) {
       std::cout << "Harwell-Boeing file: " << hb_file << std::endl;
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     A = read_matrix_hb<Scalar,LO,GO,Node> (hb_file, comm);
+#else
+    A = read_matrix_hb<Scalar,Node> (hb_file, comm);
+#endif
   }
   else {
     throw std::runtime_error("No matrix file specified.");
@@ -217,7 +265,11 @@ build_problem (Teuchos::ParameterList& test_params,
     A = A_constGraph; // Replace A with A_constGraph.
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return build_problem_mm<Scalar,LO,GO,Node> (test_params, A, b, nullVec);
+#else
+  return build_problem_mm<Scalar,Node> (test_params, A, b, nullVec);
+#endif
 }
 
 

@@ -72,7 +72,11 @@ namespace MueLuTests {
     }
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IndexManager_kokkos, IndexManager, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IndexManager_kokkos, IndexManager, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -83,7 +87,11 @@ namespace MueLuTests {
     fout->setShowAllFrontMatter(false).setShowProcRank(true);
 
     typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
     RCP<const Teuchos::Comm<int> > comm = MueLuTests::TestHelpers_kokkos::Parameters::getDefaultComm();
 
@@ -106,7 +114,11 @@ namespace MueLuTests {
     }
 
     RCP<RealValuedMultiVector> coords =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLuTests::TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::BuildGeoCoordinates(numDimensions,
+#else
+      MueLuTests::TestHelpers_kokkos::TestFactory<SC,NO>::BuildGeoCoordinates(numDimensions,
+#endif
                                                                                     gNodesPerDir,
                                                                                     lNodesPerDir,
                                                                                     meshData,
@@ -202,8 +214,13 @@ namespace MueLuTests {
                          myTestFunctor);
   } //Uncoupled
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IndexManager_kokkos, IndexManager, SC, LO, GO, NO)
+#else
+#define MUELU_ETI_GROUP(SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IndexManager_kokkos, IndexManager, SC, NO)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

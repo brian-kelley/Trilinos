@@ -66,9 +66,15 @@ namespace MueLu {
     typedef int                 GO;
     typedef Xpetra::EpetraNode  NO;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Matrix<SC,LO,GO,NO>                     Matrix;
     typedef MueLu::Hierarchy<SC,LO,GO,NO>                   Hierarchy;
     typedef MueLu::Utilities<SC,LO,GO,NO>                       Utils;
+#else
+    typedef Xpetra::Matrix<SC,NO>                     Matrix;
+    typedef MueLu::Hierarchy<SC,NO>                   Hierarchy;
+    typedef MueLu::Utilities<SC,NO>                       Utils;
+#endif
 
   public:
 

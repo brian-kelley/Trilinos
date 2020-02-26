@@ -66,7 +66,11 @@ namespace bddc {
   }
 
   OrthogGCR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     (RCP< PreconditionerBase<SX,SM,LO,GO> > Preconditioner,
+#else
+    (RCP< PreconditionerBase<SX,SM> > Preconditioner,
+#endif
      RCP<Teuchos::ParameterList> Parameters,
      LO vectorLength) :
   m_Preconditioner(Preconditioner),
@@ -231,7 +235,11 @@ namespace bddc {
   }
 
  private: // data
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP< PreconditionerBase<SX,SM,LO,GO> > m_Preconditioner;
+#else
+  RCP< PreconditionerBase<SX,SM> > m_Preconditioner;
+#endif
   RCP<Teuchos::ParameterList> m_Parameters;
   LO m_vectorLength;
   int m_numOrthogSteps, m_maxNumVectors, m_numVectors, m_numVectorsStart;

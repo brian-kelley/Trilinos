@@ -70,7 +70,11 @@ namespace MueLuTests {
 
   // Xpetra version of CreateMap
   template<class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(const std::set<GlobalOrdinal>& gids, const Teuchos::Comm<int>& comm) {
+#else
+  Teuchos::RCP<Xpetra::Map<Node> > CreateMap(const std::set<GlobalOrdinal>& gids, const Teuchos::Comm<int>& comm) {
+#endif
     Teuchos::Array<GlobalOrdinal> mapvec;
     mapvec.reserve(gids.size());
     mapvec.assign(gids.begin(), gids.end());
@@ -78,7 +82,11 @@ namespace MueLuTests {
     GlobalOrdinal gcount;
     Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, count, Teuchos::outArg(gcount));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > map =
+#else
+    Teuchos::RCP<Xpetra::Map<Node> > map =
+#endif
         Teuchos::rcp(new MapType(gcount,
             mapvec(),
             0,
@@ -89,7 +97,11 @@ namespace MueLuTests {
 
   // Xpetra version of SplitMap
   template<class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > SplitMap(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> & Amap, const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> & Agiven) {
+#else
+  Teuchos::RCP<Xpetra::Map<Node> > SplitMap(const Xpetra::Map<Node> & Amap, const Xpetra::Map<Node> & Agiven) {
+#endif
     Teuchos::RCP<const Teuchos::Comm<int> > comm = Amap.getComm();
 
     GlobalOrdinal count=0;
@@ -107,6 +119,7 @@ namespace MueLuTests {
   }
 
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlockDiagonalExampleMatrix(int noBlocks, const Teuchos::Comm<int>& comm) {
     typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> CrsMatrix;
@@ -114,6 +127,15 @@ namespace MueLuTests {
     typedef Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node> MapExtractor;
     typedef Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedCrsMatrix;
     typedef Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node> CrsMatrixWrap;
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlockDiagonalExampleMatrix(int noBlocks, const Teuchos::Comm<int>& comm) {
+    typedef Xpetra::Map<Node> Map;
+    typedef Xpetra::CrsMatrix<Scalar, Node> CrsMatrix;
+    typedef Xpetra::CrsMatrixFactory<Scalar,Node> CrsMatrixFactory;
+    typedef Xpetra::MapExtractor<Scalar,Node> MapExtractor;
+    typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrix;
+    typedef Xpetra::CrsMatrixWrap<Scalar,Node> CrsMatrixWrap;
+#endif
 
     GlobalOrdinal nOverallDOFGidsPerProc = Teuchos::as<GlobalOrdinal>(Teuchos::ScalarTraits<GlobalOrdinal>::pow(2,noBlocks-2)) * 10;
 
@@ -123,7 +145,11 @@ namespace MueLuTests {
     for(GlobalOrdinal i = 0; i < nOverallDOFGidsPerProc; i++)
       myDOFGids.insert(i + procOffset);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Map> fullmap = CreateMap<LocalOrdinal,GlobalOrdinal,Node,MapType>(myDOFGids, comm);
+#else
+    Teuchos::RCP<Map> fullmap = CreateMap<Node,MapType>(myDOFGids, comm);
+#endif
 
     std::vector<Teuchos::RCP<const Map> > maps(noBlocks, Teuchos::null);
     GlobalOrdinal nPartGIDs = nOverallDOFGidsPerProc;
@@ -139,9 +165,17 @@ namespace MueLuTests {
       for(GlobalOrdinal j = 0; j < nPartGIDs; j++)
         myHalfGIDs.insert(j + procOffset);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Map> halfmap = CreateMap<LocalOrdinal,GlobalOrdinal,Node,MapType> (myHalfGIDs, comm);
+#else
+      Teuchos::RCP<Map> halfmap = CreateMap<Node,MapType> (myHalfGIDs, comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Map> secondmap = SplitMap<LocalOrdinal,GlobalOrdinal,Node,MapType>(*remainingpartmap, *halfmap);
+#else
+      Teuchos::RCP<Map> secondmap = SplitMap<Node,MapType>(*remainingpartmap, *halfmap);
+#endif
       remainingpartmap = halfmap;
 
       maps[noBlocks - 1 - it]  = secondmap;
@@ -180,6 +214,7 @@ namespace MueLuTests {
   }
 
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlockDiagonalExampleMatrixThyra(int noBlocks, const Teuchos::Comm<int>& comm) {
     typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Xpetra::MapFactory<LocalOrdinal,GlobalOrdinal,Node> MapFactory;
@@ -188,6 +223,16 @@ namespace MueLuTests {
     typedef Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node> MapExtractor;
     typedef Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedCrsMatrix;
     typedef Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node> CrsMatrixWrap;
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlockDiagonalExampleMatrixThyra(int noBlocks, const Teuchos::Comm<int>& comm) {
+    typedef Xpetra::Map<Node> Map;
+    typedef Xpetra::MapFactory<Node> MapFactory;
+    typedef Xpetra::CrsMatrix<Scalar, Node> CrsMatrix;
+    typedef Xpetra::CrsMatrixFactory<Scalar,Node> CrsMatrixFactory;
+    typedef Xpetra::MapExtractor<Scalar,Node> MapExtractor;
+    typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrix;
+    typedef Xpetra::CrsMatrixWrap<Scalar,Node> CrsMatrixWrap;
+#endif
 
     std::vector<Teuchos::RCP<const Map> > maps(noBlocks, Teuchos::null);
 
@@ -235,14 +280,24 @@ namespace MueLuTests {
     return bop;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlockedMatrixThyra(const Teuchos::Comm<int>& comm, Xpetra::UnderlyingLib lib) {
     typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix;
     typedef Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node> MapExtractor;
     typedef Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedCrsMatrix;
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlockedMatrixThyra(const Teuchos::Comm<int>& comm, Xpetra::UnderlyingLib lib) {
+    typedef Xpetra::Map<Node> Map;
+    typedef Xpetra::Matrix<Scalar, Node> Matrix;
+    typedef Xpetra::MapExtractor<Scalar,Node> MapExtractor;
+    typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrix;
+#endif
 
     std::vector<RCP<const Map> > maps = std::vector<RCP<const Map> >(3, Teuchos::null);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     maps[0] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
     maps[1] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
     maps[2] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
@@ -253,6 +308,18 @@ namespace MueLuTests {
     RCP<Matrix> A12 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
     RCP<Matrix> A21 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[2], -1.0, 0.0, 0.0, lib);
     RCP<Matrix> A22 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[2], 4.0, -1.0, -1.0, lib);
+#else
+    maps[0] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+    maps[1] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+    maps[2] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+    RCP<Matrix> A00 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[0], 4.0, -1.0, -1.0, lib);
+    RCP<Matrix> A01 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[0], -1.0, 0.0, 0.0, lib);
+    RCP<Matrix> A10 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
+    RCP<Matrix> A11 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], 4.0, -1.0, -1.0, lib);
+    RCP<Matrix> A12 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
+    RCP<Matrix> A21 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[2], -1.0, 0.0, 0.0, lib);
+    RCP<Matrix> A22 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[2], 4.0, -1.0, -1.0, lib);
+#endif
 
     // create map extractor
     // To generate the Thyra style map extractor we do not need a full map but only the
@@ -275,7 +342,11 @@ namespace MueLuTests {
     return bop;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Jacobi_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Jacobi_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -285,12 +356,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
       int noBlocks = 4;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node,TpetraMap>(noBlocks, *comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,Node,TpetraMap>(noBlocks, *comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       //////////////////////////////////////////////////////////////////////
@@ -401,7 +480,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, BGS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, BGS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -411,12 +494,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
       int noBlocks = 4;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node,TpetraMap>(noBlocks, *comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,Node,TpetraMap>(noBlocks, *comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       //////////////////////////////////////////////////////////////////////
@@ -527,7 +618,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Reordered_BGS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Reordered_BGS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -537,12 +632,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
       int noBlocks = 4;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node,TpetraMap>(noBlocks, *comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,Node,TpetraMap>(noBlocks, *comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -671,7 +774,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII30II12II_BGS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII30II12II_BGS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -681,12 +788,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
       int noBlocks = 4;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node,TpetraMap>(noBlocks, *comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,Node,TpetraMap>(noBlocks, *comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -890,7 +1005,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Thyra_BGS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Thyra_BGS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -899,7 +1018,11 @@ namespace MueLuTests {
 
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<BlockedCrsMatrix> A = CreateBlockedMatrixThyra<Scalar,LocalOrdinal,GlobalOrdinal,Node>(*comm, Xpetra::UseTpetra);
+#else
+      RCP<BlockedCrsMatrix> A = CreateBlockedMatrixThyra<Scalar,Node>(*comm, Xpetra::UseTpetra);
+#endif
 
       TEST_EQUALITY(A->Rows(), 3);
       TEST_EQUALITY(A->Cols(), 3);
@@ -964,7 +1087,11 @@ namespace MueLuTests {
       TEST_EQUALITY(res->normInf(), 2);
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", Teuchos::rcp_dynamic_cast<Matrix>(A));
 
       //////////////////////////////////////////////////////////////////////
@@ -1077,7 +1204,11 @@ namespace MueLuTests {
     } // end Tpetra only
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Thyra_Nested_BGS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Thyra_Nested_BGS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -1086,10 +1217,18 @@ namespace MueLuTests {
 
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<BlockedCrsMatrix> A = CreateBlockedMatrixThyra<Scalar,LocalOrdinal,GlobalOrdinal,Node>(*comm, Xpetra::UseTpetra);
+#else
+      RCP<BlockedCrsMatrix> A = CreateBlockedMatrixThyra<Scalar,Node>(*comm, Xpetra::UseTpetra);
+#endif
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", Teuchos::rcp_dynamic_cast<Matrix>(A));
 
       // Test ReorderBlockAFactory
@@ -1205,7 +1344,11 @@ namespace MueLuTests {
     } // end Tpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Thyra_Nested_BGS_Setup_Apply2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Thyra_Nested_BGS_Setup_Apply2, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -1215,12 +1358,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
       int noBlocks = 4;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrixThyra<Scalar,LocalOrdinal,GlobalOrdinal,Node,TpetraMap>(noBlocks, *comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,TpetraMap>(noBlocks, *comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -1422,7 +1573,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, SIMPLE_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, SIMPLE_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -1434,12 +1589,20 @@ namespace MueLuTests {
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
       int noBlocks = 2;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib, noBlocks, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib, noBlocks, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       //////////////////////////////////////////////////////////////////////
@@ -1574,7 +1737,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII20I1I_SIMPLE_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII20I1I_SIMPLE_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -1585,12 +1752,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -1760,7 +1935,11 @@ namespace MueLuTests {
     }// end useTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_SIMPLE_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_SIMPLE_Setup_Apply, Scalar, Node)
+#endif
     {
   #   include <MueLu_UseShortNames.hpp>
       MUELU_TESTING_SET_OSTREAM;
@@ -1771,12 +1950,20 @@ namespace MueLuTests {
         RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
         Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#else
+        Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#endif
         Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
         Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
         //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+        Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
         level.Set("A", A);
 
         // Test ReorderBlockAFactory
@@ -1945,7 +2132,11 @@ namespace MueLuTests {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII20I1I_Thyra_SIMPLE_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII20I1I_Thyra_SIMPLE_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -1956,12 +2147,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -2130,7 +2329,11 @@ namespace MueLuTests {
     }// end useTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Thyra_SIMPLE_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Thyra_SIMPLE_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -2141,12 +2344,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -2315,7 +2526,11 @@ namespace MueLuTests {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII01I2I_Thyra_SIMPLE_Setup_Apply2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII01I2I_Thyra_SIMPLE_Setup_Apply2, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -2326,12 +2541,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -2479,7 +2702,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI0I21II_Thyra_SIMPLE_Setup_Apply3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI0I21II_Thyra_SIMPLE_Setup_Apply3, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -2490,12 +2717,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -2643,7 +2878,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, BS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, BS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -2655,12 +2894,20 @@ namespace MueLuTests {
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
       int noBlocks = 2;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib, noBlocks, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib, noBlocks, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       //////////////////////////////////////////////////////////////////////
@@ -2773,7 +3020,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII20I1I_BS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII20I1I_BS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -2784,12 +3035,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -2913,7 +3172,11 @@ namespace MueLuTests {
     }// end useTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I10II_BS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I10II_BS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -2924,12 +3187,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -3071,7 +3342,11 @@ namespace MueLuTests {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII02I1I_Thyra_BS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII02I1I_Thyra_BS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -3082,12 +3357,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -3211,7 +3494,11 @@ namespace MueLuTests {
     }// end useTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Thyra_BS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Thyra_BS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -3222,12 +3509,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -3372,7 +3667,11 @@ namespace MueLuTests {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I10II_Thyra_BS_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I10II_Thyra_BS_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -3383,12 +3682,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -3528,7 +3835,11 @@ namespace MueLuTests {
     }// end useTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII01I2I_Thyra_BS_Setup_Apply2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII01I2I_Thyra_BS_Setup_Apply2, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -3539,12 +3850,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -3649,7 +3968,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI0I21II_Thyra_BS_Setup_Apply3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI0I21II_Thyra_BS_Setup_Apply3, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -3660,12 +3983,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -3790,7 +4121,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Uzawa_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Uzawa_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -3800,12 +4135,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
       int noBlocks = 2;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node,TpetraMap>(noBlocks, *comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,Node,TpetraMap>(noBlocks, *comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       //////////////////////////////////////////////////////////////////////
@@ -3916,7 +4259,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Uzawa_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Uzawa_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -3927,12 +4274,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -4097,7 +4452,11 @@ namespace MueLuTests {
     }// end useTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Thyra_Uzawa_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Thyra_Uzawa_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -4108,12 +4467,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -4278,7 +4645,11 @@ namespace MueLuTests {
     }// end useTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII01I2I_Thyra_Uzawa_Setup_Apply2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII01I2I_Thyra_Uzawa_Setup_Apply2, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -4289,12 +4660,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -4441,7 +4820,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI0I21II_Thyra_Uzawa_Setup_Apply3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI0I21II_Thyra_Uzawa_Setup_Apply3, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -4452,12 +4835,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -4602,7 +4993,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Indef_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, Indef_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -4612,12 +5007,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
       int noBlocks = 2;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node,TpetraMap>(noBlocks, *comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = CreateBlockDiagonalExampleMatrix<Scalar,Node,TpetraMap>(noBlocks, *comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       //////////////////////////////////////////////////////////////////////
@@ -4728,7 +5131,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Indef_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Indef_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -4739,12 +5146,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -4909,7 +5324,11 @@ namespace MueLuTests {
     }// end useTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Thyra_Indef_Setup_Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI2I01II_Thyra_Indef_Setup_Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -4920,12 +5339,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrixThyra(lib,3, comm);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -5090,7 +5517,11 @@ namespace MueLuTests {
     }// end useTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII01I2I_Thyra_Indef_Setup_Apply2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedII01I2I_Thyra_Indef_Setup_Apply2, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -5101,12 +5532,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -5253,7 +5692,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI0I21II_Thyra_Indef_Setup_Apply3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, NestedI0I21II_Thyra_Indef_Setup_Apply3, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -5264,12 +5707,20 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#else
+      Teuchos::RCP<const BlockedCrsMatrix> bop = TestHelpers::TestFactory<Scalar,Node>::CreateBlocked3x3MatrixThyra(*comm, lib);
+#endif
       Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
       Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
 
       // Test ReorderBlockAFactory
@@ -5414,7 +5865,11 @@ namespace MueLuTests {
     } // end UseTpetra
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, SplitReorder, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BlockedSmoother, SplitReorder, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -5425,7 +5880,11 @@ namespace MueLuTests {
       RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
       Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Matrix> Aconst = TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build2DPoisson(comm->getSize() * 3,-1,lib);
+#else
+      Teuchos::RCP<const Matrix> Aconst = TestHelpers::TestFactory<Scalar,Node>::Build2DPoisson(comm->getSize() * 3,-1,lib);
+#endif
       Teuchos::RCP<Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
       // split local parts of row map
@@ -5449,7 +5908,11 @@ namespace MueLuTests {
       Teuchos::RCP<const Map> map2 = MapFactory::Build(lib,gcount2,myGids2(),0,comm);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+      Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
       level.Set("Map1", map1);
       level.Set("Map2", map2);
@@ -5483,6 +5946,7 @@ namespace MueLuTests {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,Jacobi_Setup_Apply,SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,BGS_Setup_Apply,SC,LO,GO,NO) \
@@ -5517,6 +5981,42 @@ namespace MueLuTests {
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII01I2I_Thyra_Indef_Setup_Apply2,SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI0I21II_Thyra_Indef_Setup_Apply3,SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,SplitReorder,SC,LO,GO,NO)
+#else
+#define MUELU_ETI_GROUP(SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,Jacobi_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,BGS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,Reordered_BGS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII30II12II_BGS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,Thyra_BGS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,Thyra_Nested_BGS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,Thyra_Nested_BGS_Setup_Apply2,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,SIMPLE_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII20I1I_SIMPLE_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI2I01II_SIMPLE_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII20I1I_Thyra_SIMPLE_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI2I01II_Thyra_SIMPLE_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII01I2I_Thyra_SIMPLE_Setup_Apply2,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI0I21II_Thyra_SIMPLE_Setup_Apply3,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,BS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII20I1I_BS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI2I10II_BS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII02I1I_Thyra_BS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI2I01II_Thyra_BS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI2I10II_Thyra_BS_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII01I2I_Thyra_BS_Setup_Apply2,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI0I21II_Thyra_BS_Setup_Apply3,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,Uzawa_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI2I01II_Uzawa_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI2I01II_Thyra_Uzawa_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII01I2I_Thyra_Uzawa_Setup_Apply2,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI0I21II_Thyra_Uzawa_Setup_Apply3,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,Indef_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI2I01II_Indef_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI2I01II_Thyra_Indef_Setup_Apply,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedII01I2I_Thyra_Indef_Setup_Apply2,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,NestedI0I21II_Thyra_Indef_Setup_Apply3,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BlockedSmoother,SplitReorder,SC,NO)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

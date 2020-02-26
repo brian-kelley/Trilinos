@@ -295,10 +295,18 @@ namespace MueLu {
   }
 
   template <class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<MueLu::SmootherPrototype<double, int, int, Node> > IfpackSmoother<Node>::Copy() const {
+#else
+  RCP<MueLu::SmootherPrototype<double, Node> > IfpackSmoother<Node>::Copy() const {
+#endif
     RCP<IfpackSmoother<Node> > smoother = rcp(new IfpackSmoother<Node>(*this) );
     smoother->SetParameterList(this->GetParameterList());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return Teuchos::rcp_dynamic_cast<MueLu::SmootherPrototype<double, int, int, Node> >(smoother);
+#else
+    return Teuchos::rcp_dynamic_cast<MueLu::SmootherPrototype<double, Node> >(smoother);
+#endif
   }
 
   template <class Node>

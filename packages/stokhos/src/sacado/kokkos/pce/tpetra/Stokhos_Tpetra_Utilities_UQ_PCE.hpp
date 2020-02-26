@@ -65,12 +65,21 @@ namespace Stokhos {
     using Teuchos::arrayView;
 
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> Graph;
+#else
+    typedef Tpetra::Map<Node> Map;
+    typedef Tpetra::CrsGraph<Node> Graph;
+#endif
 
     const size_t pce_sz = cijk.dimension();
     RCP<const Map> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::createLocalMapWithNode<LocalOrdinal,GlobalOrdinal,Node>(pce_sz, comm);
+#else
+      Tpetra::createLocalMapWithNode<Node>(pce_sz, comm);
+#endif
     RCP<Graph> graph;
     if (matrix_pce_size == 1) {
       graph =  Tpetra::createCrsGraph(map, 1);
@@ -131,8 +140,13 @@ namespace Stokhos {
     using Teuchos::rcp;
 
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> Graph;
+#else
+    typedef Tpetra::Map<Node> Map;
+    typedef Tpetra::CrsGraph<Node> Graph;
+#endif
 
     const LocalOrdinal block_size = cijk.dimension();
 
@@ -240,7 +254,11 @@ namespace Stokhos {
 
     typedef typename Storage::value_type BaseScalar;
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatVector;
+#else
+    typedef Tpetra::MultiVector<BaseScalar,Node> FlatVector;
+#endif
     typedef typename FlatVector::dual_view_type flat_view_type;
 
     // Create flattenend view using special reshaping view assignment operator
@@ -276,7 +294,11 @@ namespace Stokhos {
 
     typedef typename Storage::value_type BaseScalar;
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatVector;
+#else
+    typedef Tpetra::MultiVector<BaseScalar,Node> FlatVector;
+#endif
     typedef typename FlatVector::dual_view_type flat_view_type;
 
     // Create flattenend view using special reshaping view assignment operator
@@ -314,7 +336,11 @@ namespace Stokhos {
         Kokkos::dimension_scalar(vec.template getLocalView<Device>());
       flat_map = create_flat_map(*(vec.getMap()), pce_size);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > const_flat_map = flat_map;
+#else
+    const Teuchos::RCP< const Tpetra::Map<Node> > const_flat_map = flat_map;
+#endif
     return create_flat_vector_view(vec, const_flat_map);
   }
 
@@ -338,7 +364,11 @@ namespace Stokhos {
         Kokkos::dimension_scalar(vec.template getLocalView<Device>());
       flat_map = create_flat_map(*(vec.getMap()), pce_size);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > const_flat_map = flat_map;
+#else
+    const Teuchos::RCP< const Tpetra::Map<Node> > const_flat_map = flat_map;
+#endif
     return create_flat_vector_view(vec, const_flat_map);
   }
 
@@ -356,8 +386,13 @@ namespace Stokhos {
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,
                                           Kokkos::Compat::KokkosDeviceWrapperNode<Device> > >& flat_map) {
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Tpetra::MultiVector<Sacado::UQ::PCE<Storage>,LocalOrdinal,GlobalOrdinal,Node>& mv = vec_const;
     Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,LocalOrdinal,GlobalOrdinal,Node> > flat_mv = create_flat_vector_view(mv, flat_map);
+#else
+    const Tpetra::MultiVector<Sacado::UQ::PCE<Storage>,Node>& mv = vec_const;
+    Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,Node> > flat_mv = create_flat_vector_view(mv, flat_map);
+#endif
     return flat_mv->getVector(0);
   }
 
@@ -381,7 +416,11 @@ namespace Stokhos {
         Kokkos::dimension_scalar(vec.template getLocalView<Device>());
       flat_map = create_flat_map(*(vec.getMap()), pce_size);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > const_flat_map = flat_map;
+#else
+    const Teuchos::RCP< const Tpetra::Map<Node> > const_flat_map = flat_map;
+#endif
     return create_flat_vector_view(vec, const_flat_map);
   }
 
@@ -399,8 +438,13 @@ namespace Stokhos {
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,
                                           Kokkos::Compat::KokkosDeviceWrapperNode<Device> > >& flat_map) {
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::MultiVector<Sacado::UQ::PCE<Storage>,LocalOrdinal,GlobalOrdinal,Node>& mv = vec;
     Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,LocalOrdinal,GlobalOrdinal,Node> > flat_mv = create_flat_vector_view(mv, flat_map);
+#else
+    Tpetra::MultiVector<Sacado::UQ::PCE<Storage>,Node>& mv = vec;
+    Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,Node> > flat_mv = create_flat_vector_view(mv, flat_map);
+#endif
     return flat_mv->getVectorNonConst(0);
   }
 
@@ -424,7 +468,11 @@ namespace Stokhos {
         Kokkos::dimension_scalar(vec.template getLocalView<Device>());
       flat_map = create_flat_map(*(vec.getMap()), pce_size);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > const_flat_map = flat_map;
+#else
+    const Teuchos::RCP< const Tpetra::Map<Node> > const_flat_map = flat_map;
+#endif
     return create_flat_vector_view(vec, const_flat_map);
   }
 
@@ -449,7 +497,11 @@ namespace Stokhos {
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
     typedef Sacado::UQ::PCE<Storage> Scalar;
     typedef typename Storage::value_type BaseScalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatMatrix;
+#else
+    typedef Tpetra::CrsMatrix<BaseScalar,Node> FlatMatrix;
+#endif
 
     const LocalOrdinal block_size = cijk.dimension();
     const LocalOrdinal matrix_pce_size =

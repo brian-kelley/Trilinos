@@ -57,7 +57,11 @@ namespace panzer {
 // Hessian Specialization
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterDirichletResidual_Epetra<panzer::Traits::Hessian,TRAITS,LO,GO>::
+#else
+ScatterDirichletResidual_Epetra<panzer::Traits::Hessian,TRAITS>::
+#endif
 ScatterDirichletResidual_Epetra(const Teuchos::RCP<const GlobalIndexer> & indexer,
                                 const Teuchos::RCP<const panzer::GlobalIndexer> & cIndexer,
                                 const Teuchos::ParameterList& p) 
@@ -115,7 +119,11 @@ ScatterDirichletResidual_Epetra(const Teuchos::RCP<const GlobalIndexer> & indexe
   
 template<typename TRAITS,typename LO,typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterDirichletResidual_Epetra<panzer::Traits::Hessian,TRAITS,LO,GO>::
+#else
+ScatterDirichletResidual_Epetra<panzer::Traits::Hessian,TRAITS>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -135,7 +143,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 template<typename TRAITS,typename LO,typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterDirichletResidual_Epetra<panzer::Traits::Hessian,TRAITS,LO,GO>::
+#else
+ScatterDirichletResidual_Epetra<panzer::Traits::Hessian,TRAITS>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d) 
 {
   // extract linear object container
@@ -160,7 +172,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
   
 template<typename TRAITS,typename LO,typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterDirichletResidual_Epetra<panzer::Traits::Hessian,TRAITS,LO,GO>::
+#else
+ScatterDirichletResidual_Epetra<panzer::Traits::Hessian,TRAITS>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset) 
 {
   using panzer::ptrFromStlVector;

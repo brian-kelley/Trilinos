@@ -82,8 +82,10 @@ namespace Xpetra {
 
 */
 template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal,
           class GlobalOrdinal,
+#endif
           class Node>
 class MatrixUtils {
 #undef XPETRA_MATRIXUTILS_SHORT
@@ -91,8 +93,15 @@ class MatrixUtils {
 
 public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > xpetraGidNumbering2ThyraGidNumbering(
       const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& input) {
+#else
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+  static Teuchos::RCP<Xpetra::MultiVector<Scalar, Node> > xpetraGidNumbering2ThyraGidNumbering(
+      const Xpetra::MultiVector<Scalar, Node>& input) {
+#endif
     RCP<const Map> map = MapUtils::shrinkMapGIDs(*(input.getMap()),*(input.getMap()));
     RCP<MultiVector> ret = MultiVectorFactory::Build(map, input.getNumVectors(), true);
     for (size_t c = 0; c < input.getNumVectors(); c++) {
@@ -105,9 +114,15 @@ public:
     return ret;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > findColumnSubMap(
       const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& input,
       const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& domainMap ) {
+#else
+  static Teuchos::RCP<Xpetra::Map<Node> > findColumnSubMap(
+      const Xpetra::Matrix<Scalar, Node>& input,
+      const Xpetra::Map<Node>& domainMap ) {
+#endif
 
     RCP< const Teuchos::Comm<int> > comm = input.getRowMap()->getComm();
 
@@ -193,11 +208,19 @@ public:
     @param columnMapExtractor (not fully clear whether we need that. is always Teuchos::null)
     @param bThyraMode If true, build a n x n blocked operator using Thyra GIDs
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > SplitMatrix(
                        const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& input,
                        Teuchos::RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node> > rangeMapExtractor,
                        Teuchos::RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node> > domainMapExtractor,
                        Teuchos::RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node> > columnMapExtractor = Teuchos::null,
+#else
+  static Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar, Node> > SplitMatrix(
+                       const Xpetra::Matrix<Scalar, Node>& input,
+                       Teuchos::RCP<const Xpetra::MapExtractor<Scalar, Node> > rangeMapExtractor,
+                       Teuchos::RCP<const Xpetra::MapExtractor<Scalar, Node> > domainMapExtractor,
+                       Teuchos::RCP<const Xpetra::MapExtractor<Scalar, Node> > columnMapExtractor = Teuchos::null,
+#endif
                        bool bThyraMode = false) {
 
     size_t numRows  = rangeMapExtractor->NumMaps();
@@ -321,10 +344,17 @@ public:
     // call colMap.Import(domMap,Importer,Insert)
     // do the same with "Add" to make sure only one processor is responsible for the different GIDs!
 #if 0 // TAW needs to be fixed (does not compile for Scalar=complex)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::VectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>  VectorFactory;
     typedef Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>  Vector;
     typedef Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node> ImportFactory;
     typedef Xpetra::Import<LocalOrdinal, GlobalOrdinal, Node> Import;
+#else
+    typedef Xpetra::VectorFactory<Scalar, Node>  VectorFactory;
+    typedef Xpetra::Vector<Scalar, Node>  Vector;
+    typedef Xpetra::ImportFactory<Node> ImportFactory;
+    typedef Xpetra::Import<Node> Import;
+#endif
 
     RCP<Vector> doCheck = VectorFactory::Build(input.getDomainMap(), true);
     doCheck->putScalar(1.0);
@@ -438,7 +468,11 @@ public:
 
   /** Given a matrix A, detect too small diagonals and replace any found with ones. */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static void CheckRepairMainDiagonal(RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>>& Ac,
+#else
+  static void CheckRepairMainDiagonal(RCP<Xpetra::Matrix<Scalar, Node>>& Ac,
+#endif
                                  bool const &repairZeroDiagonals, Teuchos::FancyOStream &fos,
                                  const typename Teuchos::ScalarTraits<Scalar>::magnitudeType threshold = Teuchos::ScalarTraits<typename Teuchos::ScalarTraits<Scalar>::magnitudeType>::zero())
   {
@@ -496,7 +530,11 @@ public:
       }
 
       RCP<Matrix> newAc;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::TwoMatrixAdd(*Ac, false, 1.0, *fixDiagMatrix, false, 1.0, newAc, fos);
+#else
+      Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixAdd(*Ac, false, 1.0, *fixDiagMatrix, false, 1.0, newAc, fos);
+#endif
       if (Ac->IsView("stridedMaps"))
         newAc->CreateView("stridedMaps", Ac);
 
@@ -539,7 +577,11 @@ public:
       Precondition: A->GetFixedBlockSize() == relativeThreshold.size()  OR relativeThreshold.size() == 1
   **/
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static void RelativeDiagonalBoost(RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& A,
+#else
+  static void RelativeDiagonalBoost(RCP<Xpetra::Matrix<Scalar, Node> >& A,
+#endif
                                     const Teuchos::ArrayView<const double> & relativeThreshold, Teuchos::FancyOStream &fos)
   {
     Teuchos::TimeMonitor m1(*Teuchos::TimeMonitor::getNewTimer("RelativeDiagonalBoost"));
@@ -587,7 +629,11 @@ public:
 
     // FIXME: We really need an add that lets you "add into"
     RCP<Matrix> newA;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::TwoMatrixAdd(*A,false,one, *boostMatrix,false,one,newA,fos);
+#else
+    Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixAdd(*A,false,one, *boostMatrix,false,one,newA,fos);
+#endif
     if (A->IsView("stridedMaps"))
       newA->CreateView("stridedMaps", A);
     A = newA;
@@ -596,8 +642,13 @@ public:
 
 
   // Extracting the block diagonal of a matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static void extractBlockDiagonal(const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & A,
                                    Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> & diagonal) {
+#else
+  static void extractBlockDiagonal(const Xpetra::Matrix<Scalar, Node> & A,
+                                   Xpetra::MultiVector<Scalar, Node> & diagonal) {
+#endif
     const UnderlyingLib lib = A.getRowMap()->lib();
 
       if(lib == Xpetra::UseEpetra) {
@@ -606,17 +657,30 @@ public:
 #endif // HAVE_XPETRA_EPETRA
       } else if(lib == Xpetra::UseTpetra) {
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & At = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
         Tpetra::MultiVector<SC,LO,GO,NO> &     Dt = Xpetra::toTpetra(diagonal);
+#else
+        const Tpetra::CrsMatrix<SC,NO> & At = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+        Tpetra::MultiVector<SC,NO> &     Dt = Xpetra::toTpetra(diagonal);
+#endif
         Tpetra::Details::extractBlockDiagonal(At,Dt);
 #endif // HAVE_XPETRA_TPETRA
       }
   }
 
   // Inverse scaling by a block-diagonal matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static void inverseScaleBlockDiagonal(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>  & blockDiagonal,
+#else
+  static void inverseScaleBlockDiagonal(const Xpetra::MultiVector<Scalar, Node>  & blockDiagonal,
+#endif
 					bool doTranspose,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 					Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> & toBeScaled) {
+#else
+					Xpetra::MultiVector<Scalar, Node> & toBeScaled) {
+#endif
                             
     const UnderlyingLib lib = blockDiagonal.getMap()->lib();
 
@@ -626,14 +690,23 @@ public:
 #endif // HAVE_XPETRA_EPETRA
       } else if(lib == Xpetra::UseTpetra) {
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::MultiVector<SC,LO,GO,NO> & Dt = Xpetra::toTpetra(blockDiagonal);
         Tpetra::MultiVector<SC,LO,GO,NO> &       St = Xpetra::toTpetra(toBeScaled);
+#else
+        const Tpetra::MultiVector<SC,NO> & Dt = Xpetra::toTpetra(blockDiagonal);
+        Tpetra::MultiVector<SC,NO> &       St = Xpetra::toTpetra(toBeScaled);
+#endif
         Tpetra::Details::inverseScaleBlockDiagonal(Dt,doTranspose,St);
 #endif // HAVE_XPETRA_TPETRA
       }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static void checkLocalRowMapMatchesColMap(const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & A) {
+#else
+  static void checkLocalRowMapMatchesColMap(const Xpetra::Matrix<Scalar, Node> & A) {
+#endif
     RCP<const Map> rowMap = A.getRowMap();
     RCP<const Map> colMap = A.getColMap();
     RCP<const Teuchos::Comm<int> > comm = rowMap->getComm();

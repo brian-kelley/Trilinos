@@ -107,12 +107,19 @@ MoertelT::solve33T(const double A[][3], double* x, const double* b)
   |  - A has to be FillComplete, B must NOT be FillComplete()            |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::MatrixMatrixAdd(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, bool transposeA, double scalarA,
     Tpetra::CrsMatrix<ST, LO, GO, N>& B, double scalarB )
+#else
+MoertelT::MatrixMatrixAdd(const Tpetra::CrsMatrix<ST, N>& A, bool transposeA, double scalarA,
+    Tpetra::CrsMatrix<ST, N>& B, double scalarB )
+#endif
 {
   //
   //This method forms the matrix-matrix sum B = scalarA * op(A) + scalarB * B, where
@@ -128,23 +135,43 @@ MoertelT::MatrixMatrixAdd(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, bool transp
   | Multiply matrices A*B                                     mwgee 01/06|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> >
 MoertelT::MatMatMult(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, bool transA,
     const Tpetra::CrsMatrix<ST, LO, GO, N>& B, bool transB,
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST, N> >
+MoertelT::MatMatMult(const Tpetra::CrsMatrix<ST, N>& A, bool transA,
+    const Tpetra::CrsMatrix<ST, N>& B, bool transB,
+#endif
     int outlevel)
 {
 
 
   // create resultmatrix with correct rowmap
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > C;
+#else
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > C;
+#endif
 
   if (!transA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     C = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(A.getRangeMap(), 20));
+#else
+    C = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(A.getRangeMap(), 20));
+#endif
   else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     C = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(A.getDomainMap(), 20));
+#else
+    C = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(A.getDomainMap(), 20));
+#endif
 
   Tpetra::MatrixMatrix::Multiply(A, transA, B, transB, *C);
 
@@ -156,14 +183,26 @@ MoertelT::MatMatMult(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, bool transA,
   | Allocate and return a matrix padded with zeros on the diagonal  06/06|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > 
 MoertelT::PaddedMatrix(const Tpetra::Map<LO, GO, N>& rowmap, double val, const int numentriesperrow)
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > 
+MoertelT::PaddedMatrix(const Tpetra::Map<N>& rowmap, double val, const int numentriesperrow)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > tmp 
        = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(rowmap, numentriesperrow));
+#else
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > tmp 
+       = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(rowmap, numentriesperrow));
+#endif
   const int numrows = tmp->getGlobalNumRows();
   for (int i=0; i<numrows; ++i)
   {
@@ -185,14 +224,26 @@ MoertelT::PaddedMatrix(const Tpetra::Map<LO, GO, N>& rowmap, double val, const i
   | strip out zeros from a matrix                             m.gee 01/06|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > 
 MoertelT::StripZeros(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, double eps)
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > 
+MoertelT::StripZeros(const Tpetra::CrsMatrix<ST, N>& A, double eps)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > out 
       = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(A.getRowMap(),10));
+#else
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > out 
+      = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(A.getRowMap(),10));
+#endif
       // Same as Epetra RowMap()
   for (size_t lrow=0; lrow<A.getNodeNumRows(); ++lrow) // Same as Epetra NumMyRows()
   {
@@ -242,11 +293,17 @@ MoertelT::StripZeros(const Tpetra::CrsMatrix<ST, LO, GO, N>& A, double eps)
   | print matrix                                              m.gee 01/06|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::Print_Matrix(std::string name, const Tpetra::CrsMatrix<ST, LO, GO, N>& A, int ibase)
+#else
+MoertelT::Print_Matrix(std::string name, const Tpetra::CrsMatrix<ST, N>& A, int ibase)
+#endif
 {
   char mypidc[100];
   sprintf(mypidc,"%d",A.Comm().getRank());
@@ -310,11 +367,17 @@ MoertelT::Print_Matrix(std::string name, const Tpetra::CrsMatrix<ST, LO, GO, N>&
   | print vector                                              m.gee 02/06|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::Print_Vector(std::string name, const Tpetra::Vector<ST, LO, GO, N>& v, int ibase)
+#else
+MoertelT::Print_Vector(std::string name, const Tpetra::Vector<ST, N>& v, int ibase)
+#endif
 {
   char mypidc[100];
   sprintf(mypidc,"%d",v.Comm().getRank());
@@ -345,11 +408,19 @@ MoertelT::Print_Vector(std::string name, const Tpetra::Vector<ST, LO, GO, N>& v,
 /*----------------------------------------------------------------------*
   | print graph                                               m.gee 04/06|
  *----------------------------------------------------------------------*/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO,
           class GO,
           class N >
+#else
+template <class N >
+#endif
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::Print_Graph(std::string name, const Tpetra::CrsGraph<LO, GO, N>& A, int ibase)
+#else
+MoertelT::Print_Graph(std::string name, const Tpetra::CrsGraph<N>& A, int ibase)
+#endif
 {
   char mypidc[100];
   sprintf(mypidc,"%d",A.Comm().getRank());
@@ -411,10 +482,13 @@ MoertelT::Print_Graph(std::string name, const Tpetra::CrsGraph<LO, GO, N>& A, in
   | split matrix into 2x2 block system with given rowmap A22rowmap  06/06|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
     Teuchos::RCP<Tpetra::Map<LO, GO, N> >& A11rowmap,
     Teuchos::RCP<Tpetra::Map<LO, GO, N> >& A22rowmap,
@@ -422,6 +496,15 @@ MoertelT::SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
     Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> >& A12,
     Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> >& A21,
     Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> >& A22)
+#else
+MoertelT::SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > A,
+    Teuchos::RCP<Tpetra::Map<N> >& A11rowmap,
+    Teuchos::RCP<Tpetra::Map<N> >& A22rowmap,
+    Teuchos::RCP<Tpetra::CrsMatrix<ST, N> >& A11,
+    Teuchos::RCP<Tpetra::CrsMatrix<ST, N> >& A12,
+    Teuchos::RCP<Tpetra::CrsMatrix<ST, N> >& A21,
+    Teuchos::RCP<Tpetra::CrsMatrix<ST, N> >& A22)
+#endif
 {
   if (A==Teuchos::null)
   {
@@ -446,8 +529,13 @@ MoertelT::SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
   }
 
   const Teuchos::Comm<LO>& Comm   = A->Comm();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Tpetra::Map<LO, GO, N>&  A22map = *(A22rowmap.get());
   const Tpetra::Map<LO, GO, N>&  A11map = *(A11rowmap.get());
+#else
+  const Tpetra::Map<N>&  A22map = *(A22rowmap.get());
+  const Tpetra::Map<N>&  A11map = *(A11rowmap.get());
+#endif
 
   //----------------------------- create a parallel redundant map of A22map
   std::map<int,int> a22gmap;
@@ -484,7 +572,11 @@ MoertelT::SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
   }
 
   //--------------------------------------------------- create matrix A22
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   A22 = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(A22map,100));
+#else
+  A22 = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(A22map,100));
+#endif
   {
     std::vector<int>    a22gcindices(100);
     std::vector<double> a22values(100);
@@ -542,7 +634,11 @@ MoertelT::SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
   A22->OptimizeStorage();
 
   //----------------------------------------------------- create matrix A11
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   A11 = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(A11map,100));
+#else
+  A11 = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(A11map,100));
+#endif
   {
     std::vector<int>    a11gcindices(100);
     std::vector<double> a11values(100);
@@ -595,7 +691,11 @@ MoertelT::SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
   A11->OptimizeStorage();
 
   //---------------------------------------------------- create matrix A12
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   A12 = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(A11map,100));
+#else
+  A12 = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(A11map,100));
+#endif
   {
     std::vector<int>    a12gcindices(100);
     std::vector<double> a12values(100);
@@ -648,7 +748,11 @@ MoertelT::SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
   A12->OptimizeStorage();
 
   //----------------------------------------------------------- create A21
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   A21 = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(A22map,100));
+#else
+  A21 = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(A22map,100));
+#endif
   {
     std::vector<int>    a21gcindices(100);
     std::vector<double> a21values(100);
@@ -709,14 +813,24 @@ MoertelT::SplitMatrix2x2(Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > A,
 /*----------------------------------------------------------------------*
   | split a map into 2 pieces with given Agiven                     06/06|
  *----------------------------------------------------------------------*/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO,
           class GO,
           class N >
 Teuchos::RCP<Tpetra::Map<LO, GO, N> > MoertelT::SplitMap(const Tpetra::Map<LO, GO, N>& Amap,
     const Tpetra::Map<LO, GO, N>& Agiven)
+#else
+template <class N >
+Teuchos::RCP<Tpetra::Map<N> > MoertelT::SplitMap(const Tpetra::Map<N>& Amap,
+    const Tpetra::Map<N>& Agiven)
+#endif
 {
   const Teuchos::Comm<LO>& Comm = Amap.Comm();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Tpetra::Map<LO, GO, N>&  Ag = Agiven;
+#else
+  const Tpetra::Map<N>&  Ag = Agiven;
+#endif
 
   int count=0;
   std::vector<int> myaugids(Amap.NumMyElements());
@@ -730,8 +844,13 @@ Teuchos::RCP<Tpetra::Map<LO, GO, N> > MoertelT::SplitMap(const Tpetra::Map<LO, G
   myaugids.resize(count);
   int gcount;
   Teuchos::reduceAll(Comm, Teuchos::REDUCE_SUM, 1, &count, &gcount);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::Map<LO, GO, N> > Aunknown 
         = Teuchos::rcp(new Tpetra::Map<LO, GO, N>(gcount,count,&myaugids[0],0,Comm));
+#else
+  Teuchos::RCP<Tpetra::Map<N> > Aunknown 
+        = Teuchos::rcp(new Tpetra::Map<N>(gcount,count,&myaugids[0],0,Comm));
+#endif
   myaugids.clear();
   return Aunknown;
 }
@@ -740,22 +859,42 @@ Teuchos::RCP<Tpetra::Map<LO, GO, N> > MoertelT::SplitMap(const Tpetra::Map<LO, G
   | split a vector into 2 pieces with given submaps                 06/06|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::SplitVector(const Tpetra::Vector<ST, LO, GO, N>& x,
     const Tpetra::Map<LO, GO, N>& x1map,
     const Teuchos::RCP<Tpetra::Vector<ST, LO, GO, N> >&   x1,
     const Tpetra::Map<LO, GO, N>& x2map,
     const Teuchos::RCP<Tpetra::Vector<ST, LO, GO, N> >&   x2)
+#else
+MoertelT::SplitVector(const Tpetra::Vector<ST, N>& x,
+    const Tpetra::Map<N>& x1map,
+    const Teuchos::RCP<Tpetra::Vector<ST, N> >&   x1,
+    const Tpetra::Map<N>& x2map,
+    const Teuchos::RCP<Tpetra::Vector<ST, N> >&   x2)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   x1 = Teuchos::rcp(new Tpetra::Vector<ST, LO, GO, N>(x1map,false));
   x2 = Teuchos::rcp(new Tpetra::Vector<ST, LO, GO, N>(x2map,false));
+#else
+  x1 = Teuchos::rcp(new Tpetra::Vector<ST, N>(x1map,false));
+  x2 = Teuchos::rcp(new Tpetra::Vector<ST, N>(x2map,false));
+#endif
 
   //use an exporter or importer object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::Export<LO, GO, N> exporter_x1(x.Map(),x1map);
   Tpetra::Export<LO, GO, N> exporter_x2(x.Map(),x2map);
+#else
+  Tpetra::Export<N> exporter_x1(x.Map(),x1map);
+  Tpetra::Export<N> exporter_x2(x.Map(),x2map);
+#endif
 
   int err = x1->Export(x,exporter_x1,Insert);
   if (err)
@@ -784,17 +923,30 @@ MoertelT::SplitVector(const Tpetra::Vector<ST, LO, GO, N>& x,
   | merge content of 2 vectors into one (assumes matching submaps)  06/06|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::MergeVector(const Tpetra::Vector<ST, LO, GO, N>& x1,
     const Tpetra::Vector<ST, LO, GO, N>& x2,
     Tpetra::Vector<ST, LO, GO, N>& xresult)
+#else
+MoertelT::MergeVector(const Tpetra::Vector<ST, N>& x1,
+    const Tpetra::Vector<ST, N>& x2,
+    Tpetra::Vector<ST, N>& xresult)
+#endif
 {
   //use an exporter or importer object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::Export<LO, GO, N> exporter_x1(x1.Map(),xresult.Map());
   Tpetra::Export<LO, GO, N> exporter_x2(x2.Map(),xresult.Map());
+#else
+  Tpetra::Export<N> exporter_x1(x1.Map(),xresult.Map());
+  Tpetra::Export<N> exporter_x2(x2.Map(),xresult.Map());
+#endif
 
   int err = xresult.Export(x1,exporter_x1,Insert);
   if (err)

@@ -66,15 +66,25 @@ namespace { // (anonymous)
   // that these methods lacked unit tests exercising that case.  This
   // relates to Github Issue #358.  Thus, this test is particularly
   // important for CUDA builds.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( MultiVector, get2dView_noncontig, Scalar, LocalOrdinal, GlobalOrdinal, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( MultiVector, get2dView_noncontig, Scalar, Node )
+#endif
   {
     using Teuchos::RCP;
     using Teuchos::rcp;
     typedef LocalOrdinal LO;
     typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, Node> map_type;
     typedef Tpetra::MultiVector<Scalar, LO, GO, Node> MV;
     typedef Tpetra::Vector<Scalar, LO, GO, Node> V;
+#else
+    typedef Tpetra::Map<Node> map_type;
+    typedef Tpetra::MultiVector<Scalar, Node> MV;
+    typedef Tpetra::Vector<Scalar, Node> V;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> STS;
     typedef typename MV::mag_type mag_type;
     typedef Teuchos::ScalarTraits<mag_type> STM;
@@ -334,8 +344,13 @@ namespace { // (anonymous)
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, get2dView_noncontig, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, get2dView_noncontig, SCALAR,NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

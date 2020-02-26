@@ -166,7 +166,11 @@ namespace MueLu {
   }
 
   template <class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<MueLu::SmootherPrototype<double,int,int,Node> > AmesosSmoother<Node>::Copy() const {
+#else
+  RCP<MueLu::SmootherPrototype<double,Node> > AmesosSmoother<Node>::Copy() const {
+#endif
     return rcp( new AmesosSmoother<Node>(*this) );
   }
 

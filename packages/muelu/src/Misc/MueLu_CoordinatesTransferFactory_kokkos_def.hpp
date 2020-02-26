@@ -61,8 +61,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   RCP<const ParameterList> CoordinatesTransferFactory_kokkos<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::GetValidParameterList() const {
+#else
+  template <class Scalar, class DeviceType>
+  RCP<const ParameterList> CoordinatesTransferFactory_kokkos<Scalar,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("Coordinates",    Teuchos::null, "Factory for coordinates generation");
@@ -77,8 +82,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   void CoordinatesTransferFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class DeviceType>
+  void CoordinatesTransferFactory_kokkos<Scalar, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#endif
     static bool isAvailableCoords = false;
 
     const ParameterList& pL = GetParameterList();
@@ -97,11 +107,20 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   void CoordinatesTransferFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class DeviceType>
+  void CoordinatesTransferFactory_kokkos<Scalar, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> doubleMultiVector;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> doubleMultiVector;
+#endif
 
     GetOStream(Runtime0) << "Transferring coordinates" << std::endl;
 
@@ -158,7 +177,11 @@ namespace MueLu {
     auto uniqueMap      = fineCoords->getMap();
     auto coarseCoordMap = MapFactory::Build(coarseMap->lib(), Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),
                                             elementListView, indexBase, coarseMap->getComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<doubleMultiVector> coarseCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(coarseCoordMap, fineCoords->getNumVectors());
+#else
+    RCP<doubleMultiVector> coarseCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(coarseCoordMap, fineCoords->getNumVectors());
+#endif
 
     // Create overlapped fine coordinates to reduce global communication
     RCP<doubleMultiVector> ghostedCoords = fineCoords;
@@ -166,7 +189,11 @@ namespace MueLu {
       auto nonUniqueMap = aggregates->GetMap();
       auto importer     = ImportFactory::Build(uniqueMap, nonUniqueMap);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(nonUniqueMap, fineCoords->getNumVectors());
+#else
+      ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(nonUniqueMap, fineCoords->getNumVectors());
+#endif
       ghostedCoords->doImport(*fineCoords, *importer, Xpetra::INSERT);
     }
 
@@ -207,11 +234,19 @@ namespace MueLu {
     int writeStart = pL.get<int>("write start"), writeEnd = pL.get<int>("write end");
     if (writeStart == 0 && fineLevel.GetLevelID() == 0 && writeStart <= writeEnd) {
       std::string fileName = "coordinates_before_rebalance_level_" + toString(fineLevel.GetLevelID()) + ".m";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Write(fileName, *fineCoords);
+#else
+      Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Write(fileName, *fineCoords);
+#endif
     }
     if (writeStart <= coarseLevel.GetLevelID() && coarseLevel.GetLevelID() <= writeEnd) {
       std::string fileName = "coordinates_before_rebalance_level_" + toString(coarseLevel.GetLevelID()) + ".m";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Write(fileName,*coarseCoords);
+#else
+      Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Write(fileName,*coarseCoords);
+#endif
     }
   }
 

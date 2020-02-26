@@ -53,8 +53,13 @@
 
 namespace Thyra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define LCLINST(S,LO,GO,NO)                                     \
     IFPACK2_INST(Ifpack2PreconditionerFactory,S,LO,GO,NO)
+#else
+  #define LCLINST(S,NO)                                     \
+    IFPACK2_INST(Ifpack2PreconditionerFactory,S,NO)
+#endif
 
   IFPACK2_ETI_MANGLING_TYPEDEFS()
 

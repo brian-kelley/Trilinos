@@ -170,9 +170,17 @@ class Ifpack2_IC: public Ifpack2_Preconditioner {
     
     \return Integer error code, set to 0 if successful.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   int ApplyInverse(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const;
+#else
+  int ApplyInverse(const Tpetra_MultiVector<Scalar,Node>& X, Tpetra_MultiVector<Scalar,Node>& Y) const;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   int Apply(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const;
+#else
+  int Apply(const Tpetra_MultiVector<Scalar,Node>& X, Tpetra_MultiVector<Scalar,Node>& Y) const;
+#endif
 
   //! Returns the maximum over all the condition number estimate for each local ILU set of factors.
   /*! This functions computes a local condition number estimate on each processor and return the

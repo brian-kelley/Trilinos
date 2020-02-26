@@ -76,8 +76,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL(Ifpack2IlukGraph, IlukGraphTest0, LocalOrdinal
 
   global_size_t num_rows_per_proc = 5;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > crsgraph =
     tif_utest::create_test_graph<LocalOrdinal,GlobalOrdinal,Node> (num_rows_per_proc);
+#else
+  Teuchos::RCP<Tpetra::CrsGraph<Node> > crsgraph =
+    tif_utest::create_test_graph<Node> (num_rows_per_proc);
+#endif
 
   int num_procs = crsgraph->getRowMap()->getComm()->getSize();
   TEST_EQUALITY( crsgraph->getRowMap()->getNodeNumElements(), num_rows_per_proc)
@@ -89,7 +94,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL(Ifpack2IlukGraph, IlukGraphTest0, LocalOrdinal
   LocalOrdinal overlap_levels = 2;
   LocalOrdinal fill_levels = 0;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Ifpack2::IlukGraph<Tpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node> > iluk0_graph(crsgraph, fill_levels, overlap_levels);
+#else
+  Ifpack2::IlukGraph<Tpetra::CrsGraph<Node> > iluk0_graph(crsgraph, fill_levels, overlap_levels);
+#endif
   iluk0_graph.initialize();
 
   //The number of nonzeros in an ILU(0) graph should be the same as the
@@ -101,7 +110,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL(Ifpack2IlukGraph, IlukGraphTest0, LocalOrdinal
 
   fill_levels = 2;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Ifpack2::IlukGraph<Tpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node> > iluk2_graph(crsgraph, fill_levels, overlap_levels);
+#else
+  Ifpack2::IlukGraph<Tpetra::CrsGraph<Node> > iluk2_graph(crsgraph, fill_levels, overlap_levels);
+#endif
 
   iluk2_graph.initialize();
 

@@ -62,22 +62,47 @@ namespace Details
 
 /// \class FastILU_Base
 /// \brief The base class of the Ifpack2 FastILU wrappers (Filu, Fildl and Fic)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   class FastILU_Base : public Ifpack2::Preconditioner<Scalar, LocalOrdinal, GlobalOrdinal, Node>,
+#else
+template<class Scalar, class Node>
+  class FastILU_Base : public Ifpack2::Preconditioner<Scalar, Node>,
+#endif
                        public Ifpack2::Details::CanChangeMatrix<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
+#else
+                         Tpetra::RowMatrix<Scalar, Node>>
+#endif
 {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Kokkos device type
     typedef typename Node::device_type device_type;
     //! Kokkos execution space
     typedef typename device_type::execution_space execution_space;
     //! Tpetra row matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> TRowMatrix;
+#else
+    typedef Tpetra::RowMatrix<Scalar, Node> TRowMatrix;
+#endif
     //! Tpetra CRS matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> TCrsMatrix;
+#else
+    typedef Tpetra::CrsMatrix<Scalar, Node> TCrsMatrix;
+#endif
     //! Tpetra multivector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> TMultiVec;
+#else
+    typedef Tpetra::MultiVector<Scalar, Node> TMultiVec;
+#endif
     //! Kokkos CRS matrix 
     typedef KokkosSparse::CrsMatrix<Scalar, LocalOrdinal, execution_space> KCrsMatrix;
     //! Array of LocalOrdinal on device
@@ -93,11 +118,19 @@ template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     FastILU_Base(Teuchos::RCP<const TRowMatrix> mat_);
 
     //! Get the domain map of the matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+    Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
     getDomainMap () const;
 
     //! Get the range map of the matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+    Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
     getRangeMap () const;
 
     //! Apply the preconditioner

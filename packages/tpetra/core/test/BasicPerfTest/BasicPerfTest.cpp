@@ -107,18 +107,30 @@ template <class LO, class GO, class Scalar>
 void GenerateCrsProblem(int *xoff, int *yoff, int numRHS,
             const RCP<const Teuchos::Comm<int> >& comm,
             RCP<Map<LO,GO> > &map,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             RCP<CrsMatrix<Scalar,LO,GO> > &A,
             RCP<MultiVector<Scalar,LO,GO> > &b,
             RCP<MultiVector<Scalar,LO,GO> > &bt,
             RCP<MultiVector<Scalar,LO,GO> > &xexact,
+#else
+            RCP<CrsMatrix<Scalar> > &A,
+            RCP<MultiVector<Scalar> > &b,
+            RCP<MultiVector<Scalar> > &bt,
+            RCP<MultiVector<Scalar> > &xexact,
+#endif
             FancyOStream &out);
 
 template <class GO>
 ArrayRCP<GO> GenerateMyGlobalElements(int numNodesX, int numNodesY, int numProcsX, int myPID);
 
 template <class LO, class GO, class Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void runMatrixTests(RCP<CrsMatrix<Scalar,LO,GO> > A,  RCP<MultiVector<Scalar,LO,GO> > b, RCP<MultiVector<Scalar,LO,GO> > bt,
                     RCP<MultiVector<Scalar,LO,GO> > xexact, FancyOStream &out);
+#else
+void runMatrixTests(RCP<CrsMatrix<Scalar> > A,  RCP<MultiVector<Scalar> > b, RCP<MultiVector<Scalar> > bt,
+                    RCP<MultiVector<Scalar> > xexact, FancyOStream &out);
+#endif
 
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( BasicPerfTest, MatrixAndMultiVector, LO, GO, Scalar )
 {
@@ -184,10 +196,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( BasicPerfTest, MatrixAndMultiVector, LO, GO, 
   }
 
   RCP<Map<LO,GO> > map;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<CrsMatrix<Scalar,LO,GO> > A;
   RCP<MultiVector<Scalar,LO,GO> > b;
   RCP<MultiVector<Scalar,LO,GO> > bt;
   RCP<MultiVector<Scalar,LO,GO> > xexact;
+#else
+  RCP<CrsMatrix<Scalar> > A;
+  RCP<MultiVector<Scalar> > b;
+  RCP<MultiVector<Scalar> > bt;
+  RCP<MultiVector<Scalar> > xexact;
+#endif
   Array<Scalar> scavec;
   Array<typename ScalarTraits<Scalar>::magnitudeType> magvec;
 
@@ -217,8 +236,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( BasicPerfTest, MatrixAndMultiVector, LO, GO, 
         bt = null;
         xexact = null;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         MultiVector<Scalar,LO,GO> q(*map,nrhs);
         MultiVector<Scalar,LO,GO> z(q), r(q);
+#else
+        MultiVector<Scalar> q(*map,nrhs);
+        MultiVector<Scalar> z(q), r(q);
+#endif
 
         scavec.resize(nrhs);
         magvec.resize(nrhs);
@@ -292,10 +316,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( BasicPerfTest, MatrixAndMultiVector, LO, GO, 
 template <class LO, class GO, class Scalar>
 void GenerateCrsProblem(int * xoff, int * yoff, int nrhs,
             RCP<const Map<LO,GO> > &map,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             RCP<CrsMatrix<Scalar,LO,GO> > &A,
             RCP<MultiVector<Scalar,LO,GO> > &b,
             RCP<MultiVector<Scalar,LO,GO> > &bt,
             RCP<MultiVector<Scalar,LO,GO> > &xexact,
+#else
+            RCP<CrsMatrix<Scalar> > &A,
+            RCP<MultiVector<Scalar> > &b,
+            RCP<MultiVector<Scalar> > &bt,
+            RCP<MultiVector<Scalar> > &xexact,
+#endif
             FancyOStream &out)
 {
   typedef Tpetra::global_size_t global_size_t;
@@ -311,7 +342,11 @@ void GenerateCrsProblem(int * xoff, int * yoff, int nrhs,
   myGlobalElements = null;
   GO numGlobalEquations = map->getNumGlobalEntries();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   A = rcp(new CrsMatrix<Scalar,LO,GO>(map,numPoints));
+#else
+  A = rcp(new CrsMatrix<Scalar>(map,numPoints));
+#endif
 
   Array<GO> indices(numPoints);
   Array<Scalar>   values(numPoints);
@@ -381,12 +416,22 @@ ArrayRCP<GO> GenerateMyGlobalElements(int NumNodesX, int NumNodesY, int NumProcs
 }
 
 template <class LO, class GO, class Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void runMatrixTests(RCP<CrsMatrix<Scalar,LO,GO> > A,  RCP<MultiVector<Scalar,LO,GO> > b, RCP<MultiVector<Scalar,LO,GO> > bt,
                     RCP<MultiVector<Scalar,LO,GO> > xexact, FancyOStream &out)
+#else
+void runMatrixTests(RCP<CrsMatrix<Scalar> > A,  RCP<MultiVector<Scalar> > b, RCP<MultiVector<Scalar> > bt,
+                    RCP<MultiVector<Scalar> > xexact, FancyOStream &out)
+#endif
 {
   typedef ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MultiVector<Scalar,LO,GO> z(*b);
   MultiVector<Scalar,LO,GO> r(*b);
+#else
+  MultiVector<Scalar> z(*b);
+  MultiVector<Scalar> r(*b);
+#endif
   Array<typename ScalarTraits<Scalar>::magnitudeType> resvec(b->numVectors());
 
   Time timer("runMatrixTests");

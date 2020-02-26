@@ -58,10 +58,19 @@ namespace { // (anonymous)
   //
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( MultiVector, TwoArgRandomize, SC, LO, GO, NT )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( MultiVector, TwoArgRandomize, SC, NT )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, NT> map_type;
     typedef Tpetra::MultiVector<SC, LO, GO, NT> MV;
+#else
+    typedef Tpetra::Map<NT> map_type;
+    typedef Tpetra::MultiVector<SC, NT> MV;
+#endif
     typedef Teuchos::ScalarTraits<SC> STS;
     typedef Kokkos::Details::ArithTraits<SC> KAT;
     typedef typename MV::impl_scalar_type IST;
@@ -126,8 +135,13 @@ namespace { // (anonymous)
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, TwoArgRandomize, SC, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP( SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, TwoArgRandomize, SC, NT )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

@@ -105,7 +105,11 @@ const Teuchos::RCP<const Thyra::LinearOpBase<ST> > DiagMatrix_tpetra(GO cnt,ST *
 const Teuchos::RCP<const Thyra::MultiVectorBase<double> > BlockVector(const Epetra_Vector & u, const Epetra_Vector & v,
         const Teuchos::RCP<const Thyra::VectorSpaceBase<double> > & vs);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > BlockVector(const Tpetra::Vector<ST,LO,GO,NT> & u, const Tpetra::Vector<ST,LO,GO,NT> & v,
+#else
+const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > BlockVector(const Tpetra::Vector<ST,NT> & u, const Tpetra::Vector<ST,NT> & v,
+#endif
         const Teuchos::RCP<const Thyra::VectorSpaceBase<ST> > & vs);
 
 class UnitTest {

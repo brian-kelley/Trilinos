@@ -78,12 +78,20 @@ DefaultMappingStrategy::DefaultMappingStrategy(const RCP<const Thyra::LinearOpBa
    rangeMap_ = Teko::TpetraHelpers::thyraVSToTpetraMap(*rangeSpace_,newComm);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void DefaultMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,GO,NT>& x, const Ptr<Thyra::MultiVectorBase<ST> > & thyraVec) const
+#else
+void DefaultMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector<ST,NT>& x, const Ptr<Thyra::MultiVectorBase<ST> > & thyraVec) const
+#endif
 {
    Teko::TpetraHelpers::blockTpetraToThyra(x,thyraVec);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void DefaultMappingStrategy::copyThyraIntoTpetra(const RCP<const Thyra::MultiVectorBase<ST> > & thyraVec, Tpetra::MultiVector<ST,LO,GO,NT>& v) const
+#else
+void DefaultMappingStrategy::copyThyraIntoTpetra(const RCP<const Thyra::MultiVectorBase<ST> > & thyraVec, Tpetra::MultiVector<ST,NT>& v) const
+#endif
 {
    Teko::TpetraHelpers::blockThyraToTpetra(thyraVec,v);
 }
@@ -134,7 +142,11 @@ double TpetraOperatorWrapper::NormInf() const
   return 1.0;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraOperatorWrapper::apply(const Tpetra::MultiVector<ST,LO,GO,NT>& X, Tpetra::MultiVector<ST,LO,GO,NT>& Y,Teuchos::ETransp /* mode */,ST alpha, ST beta) const
+#else
+void TpetraOperatorWrapper::apply(const Tpetra::MultiVector<ST,NT>& X, Tpetra::MultiVector<ST,NT>& Y,Teuchos::ETransp /* mode */,ST alpha, ST beta) const
+#endif
 {
    if (!useTranspose_)
    {
@@ -165,8 +177,13 @@ void TpetraOperatorWrapper::apply(const Tpetra::MultiVector<ST,LO,GO,NT>& X, Tpe
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraOperatorWrapper::applyInverse(const Tpetra::MultiVector<ST,LO,GO,NT>& /* X */, 
                                       Tpetra::MultiVector<ST,LO,GO,NT>& /* Y */, Teuchos::ETransp /* mode */, ST /* alpha */, ST /* beta */) const
+#else
+void TpetraOperatorWrapper::applyInverse(const Tpetra::MultiVector<ST,NT>& /* X */, 
+                                      Tpetra::MultiVector<ST,NT>& /* Y */, Teuchos::ETransp /* mode */, ST /* alpha */, ST /* beta */) const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
                      "TpetraOperatorWrapper::applyInverse not implemented");
@@ -281,12 +298,20 @@ int TpetraOperatorWrapper::GetBlockColCount()
    return blkOp->productDomain()->numBlocks();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > TpetraOperatorWrapper::GetBlock(int i,int j) const
+#else
+Teuchos::RCP<const Tpetra::Operator<ST,NT> > TpetraOperatorWrapper::GetBlock(int i,int j) const
+#endif
 {
    const RCP<const Thyra::BlockedLinearOpBase<ST> > blkOp 
          = Teuchos::rcp_dynamic_cast<const Thyra::BlockedLinearOpBase<ST> >(getThyraOp());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(blkOp->getBlock(i,j));
+#else
+   RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(blkOp->getBlock(i,j));
+#endif
 
    return tOp->getConstTpetraOperator();
 }

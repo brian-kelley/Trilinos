@@ -568,11 +568,21 @@ public:
 /// A_out.doExport (A_in, exporter, Tpetra::ADD);
 /// \endcode
 template<class SC,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LO = ::Tpetra::DistObject<char>::local_ordinal_type,
          class GO = ::Tpetra::DistObject<char>::global_ordinal_type,
+#endif
          class NT = ::Tpetra::DistObject<char>::node_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class CooMatrix : public ::Tpetra::DistObject<char, LO, GO, NT> {
+#else
+class CooMatrix : public ::Tpetra::DistObject<char,NT> {
+#endif
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   //! This class transfers data as bytes (MPI_BYTE).
   typedef char packet_type;
   //! Type of each entry (value) in the sparse matrix.
@@ -975,7 +985,11 @@ protected:
   checkSizes (const ::Tpetra::SrcDistObject& source)
   {
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CooMatrix<SC, LO, GO, NT> this_type;
+#else
+    typedef CooMatrix<SC, NT> this_type;
+#endif
     const char prefix[] = "Tpetra::Details::CooMatrix::checkSizes: ";
 
     const this_type* src = dynamic_cast<const this_type* > (&source);
@@ -996,7 +1010,11 @@ protected:
 
   //! Kokkos::Device specialization for DistObject communication buffers.
   using buffer_device_type =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typename ::Tpetra::DistObject<char, LO, GO, NT>::buffer_device_type;
+#else
+    typename ::Tpetra::DistObject<char,NT>::buffer_device_type;
+#endif
 
   virtual void
   copyAndPermute
@@ -1008,7 +1026,11 @@ protected:
      buffer_device_type>& permuteFromLIDs)
   {
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using this_type = CooMatrix<SC, LO, GO, NT>;
+#else
+    using this_type = CooMatrix<SC, NT>;
+#endif
     const char prefix[] = "Tpetra::Details::CooMatrix::copyAndPermute: ";
 
     // There's no communication in this method, so it's safe just to
@@ -1214,7 +1236,11 @@ protected:
     using Teuchos::Comm;
     using Teuchos::RCP;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using this_type = CooMatrix<SC, LO, GO, NT>;
+#else
+    using this_type = CooMatrix<SC, NT>;
+#endif
     const char prefix[] = "Tpetra::Details::CooMatrix::packAndPrepare: ";
     const char suffix[] = "  This should never happen.  "
       "Please report this bug to the Tpetra developers.";

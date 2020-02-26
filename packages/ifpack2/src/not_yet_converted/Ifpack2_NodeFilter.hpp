@@ -179,7 +179,11 @@ public:
 
     \return Integer error code, set to 0 if successful.
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual int Multiply(bool TransA, const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const
+#else
+  virtual int Multiply(bool TransA, const Tpetra_MultiVector<Scalar,Node>& X, Tpetra_MultiVector<Scalar,Node>& Y) const
+#endif
   {
     if (TransA == true) {
       IFPACK2_CHK_ERR(-1);
@@ -190,17 +194,32 @@ public:
   }
 
   //! Returns result of a local-only solve using a triangular Tpetra_RowMatrix with Tpetra_MultiVectors X and Y (NOT IMPLEMENTED).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual int Solve(bool Upper, bool Trans, bool UnitDiagonal, const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 		    Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const
+#else
+  virtual int Solve(bool Upper, bool Trans, bool UnitDiagonal, const Tpetra_MultiVector<Scalar,Node>& X, 
+		    Tpetra_MultiVector<Scalar,Node>& Y) const
+#endif
   {
     IFPACK2_RETURN(-1); // not implemented 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual int Apply(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X,
 		    Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const;
+#else
+  virtual int Apply(const Tpetra_MultiVector<Scalar,Node>& X,
+		    Tpetra_MultiVector<Scalar,Node>& Y) const;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual int ApplyInverse(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X,
 			   Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const;
+#else
+  virtual int ApplyInverse(const Tpetra_MultiVector<Scalar,Node>& X,
+			   Tpetra_MultiVector<Scalar,Node>& Y) const;
+#endif
   //! Computes the sum of absolute values of the rows of the Tpetra_RowMatrix, results returned in x (NOT IMPLEMENTED).
   virtual int InvRowSums(Tpetra_Vector& x) const
   {

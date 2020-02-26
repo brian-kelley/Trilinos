@@ -333,13 +333,24 @@ Teuchos::RCP<Matrix> BuildMatrix(bool is3D, const Tensor<typename Teuchos::Scala
   return A;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void ConstructData(bool is3D, const Tensor<typename Teuchos::ScalarTraits<Scalar>::magnitudeType>& tensor, const std::string& matrixType, Teuchos::ParameterList& galeriList,
                    Xpetra::UnderlyingLib lib, Teuchos::RCP<const Teuchos::Comm<int> >& comm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    Teuchos::RCP<Xpetra::Matrix      <Scalar,LocalOrdinal,GlobalOrdinal,Node> >& A,
                    Teuchos::RCP<const Xpetra::Map   <LocalOrdinal,GlobalOrdinal, Node> >&       map,
                    Teuchos::RCP<Xpetra::MultiVector <typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> >& coordinates,
                    Teuchos::RCP<Xpetra::MultiVector <Scalar,LocalOrdinal,GlobalOrdinal,Node> >& nullspace) {
+#else
+                   Teuchos::RCP<Xpetra::Matrix      <Scalar,Node> >& A,
+                   Teuchos::RCP<const Xpetra::Map   <Node> >&       map,
+                   Teuchos::RCP<Xpetra::MultiVector <typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> >& coordinates,
+                   Teuchos::RCP<Xpetra::MultiVector <Scalar,Node> >& nullspace) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -347,24 +358,40 @@ void ConstructData(bool is3D, const Tensor<typename Teuchos::ScalarTraits<Scalar
   using Teuchos::RCP;
   using Teuchos::TimeMonitor;
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef typename Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
 
   if (is3D) {
     // 3D
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map         = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian3D", comm, galeriList);
+#else
+    map         = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian3D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<real_type,LO,GO,Map,RealValuedMultiVector>("3D", map, galeriList);
 
   } else {
     // 2D
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map         = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian2D", comm, galeriList);
+#else
+    map         = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian2D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<real_type,LO,GO,Map,RealValuedMultiVector>("2D", map, galeriList);
   }
 
   A = BuildMatrix<SC,LO,GO,Map,CrsMatrixWrap,RealValuedMultiVector>(is3D, tensor, galeriList, map, coordinates);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib,  int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
@@ -440,7 +467,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib,  int a
     Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&paramList), *comm);
 
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef typename Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
   Tensor<real_type> tensor;
   if (paramList.isParameter("sigma")) {
     std::string sigmaString = paramList.get<std::string>("sigma");
@@ -533,8 +564,13 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib,  int a
         typedef Belos::OperatorT<MV> OP;
 
         // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
         Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp <SC, LO, GO, NO>(H)); // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+        Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
+        Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp <SC, NO>(H)); // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
 
         // Construct a Belos LinearProblem object
         RCP<Belos::LinearProblem<SC, MV, OP> > belosProblem = rcp(new Belos::LinearProblem<SC, MV, OP>(belosOp, X, B));

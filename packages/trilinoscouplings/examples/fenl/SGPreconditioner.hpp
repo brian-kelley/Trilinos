@@ -53,10 +53,18 @@ namespace Example {
    * \brief An abstract class to represent a generic stochastic Galerkin
    * preconditioner
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class S, class LO, class GO, class N>
+#else
+  template<class S, class N>
+#endif
   class SGPreconditioner {
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Constructor
     SGPreconditioner() {}
 
@@ -65,11 +73,23 @@ namespace Example {
 
     //! Setup preconditioner
     virtual
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Tpetra::Operator<S,LO,GO,N> >
+#else
+    Teuchos::RCP<Tpetra::Operator<S,N> >
+#endif
     setupPreconditioner(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Teuchos::RCP<Tpetra::CrsMatrix<S,LO,GO,N> >& A,
+#else
+      const Teuchos::RCP<Tpetra::CrsMatrix<S,N> >& A,
+#endif
       const Teuchos::RCP<Teuchos::ParameterList>& precParams,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Teuchos::RCP<Tpetra::MultiVector<double,LO,GO,N> >& coords) = 0;
+#else
+      const Teuchos::RCP<Tpetra::MultiVector<double,N> >& coords) = 0;
+#endif
 
   private:
 

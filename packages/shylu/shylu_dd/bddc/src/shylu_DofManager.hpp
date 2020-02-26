@@ -67,7 +67,11 @@ public:
   //
   typedef Tpetra::Map<LO,GO>                                 Map;
   typedef Tpetra::CrsGraph<LO,GO>                            CrsGraph;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<GO,LO,GO>                        CrsMatrixGO;
+#else
+  typedef Tpetra::CrsMatrix<GO>                        CrsMatrixGO;
+#endif
   typedef Tpetra::Export<LO,GO>                              Export;
   typedef Tpetra::Import<LO,GO>                              Import;
 

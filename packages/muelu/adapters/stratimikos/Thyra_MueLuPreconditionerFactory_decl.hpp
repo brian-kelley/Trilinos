@@ -104,10 +104,18 @@ namespace Thyra {
       The general implementation only handles Tpetra. For Epetra there is a specialization
       on SC=double, LO=int, GO=int and NO=EpetraNode.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Scalar, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class MueLuPreconditionerFactory : public PreconditionerFactoryBase<Scalar> {
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     /** @name Constructors/initializers/accessors */
     //@{
 
@@ -177,7 +185,11 @@ namespace Thyra {
       Specialization for Epetra
   */
   template <>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class MueLuPreconditionerFactory<double,int,int,Xpetra::EpetraNode> : public PreconditionerFactoryBase<double> {
+#else
+  class MueLuPreconditionerFactory<double,Xpetra::EpetraNode> : public PreconditionerFactoryBase<double> {
+#endif
   public:
     typedef double Scalar;
     typedef int LocalOrdinal;
@@ -200,14 +212,26 @@ namespace Thyra {
       const RCP<const LinearOpBase<Scalar> > fwdOp = fwdOpSrc.getOp();
 
 #ifdef HAVE_MUELU_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       if (Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::isTpetra(fwdOp)) return true;
+#else
+      if (Xpetra::ThyraUtils<Scalar,Node>::isTpetra(fwdOp)) return true;
+#endif
 #endif
 
 #ifdef HAVE_MUELU_EPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       if (Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::isEpetra(fwdOp)) return true;
+#else
+      if (Xpetra::ThyraUtils<Scalar,Node>::isEpetra(fwdOp)) return true;
+#endif
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       if (Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::isBlockedOperator(fwdOp)) return true;
+#else
+      if (Xpetra::ThyraUtils<Scalar,Node>::isBlockedOperator(fwdOp)) return true;
+#endif
 
       return false;
     }
@@ -225,6 +249,7 @@ namespace Thyra {
       using Teuchos::rcp_dynamic_cast;
 
       // we are using typedefs here, since we are using objects from different packages (Xpetra, Thyra,...)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>                     XpMap;
       typedef Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node>      XpOp;
       typedef Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>       XpThyUtils;
@@ -233,14 +258,30 @@ namespace Thyra {
       typedef Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>           XpMat;
       typedef Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>      XpMultVec;
       typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node>      XpMultVecDouble;
+#else
+      typedef Xpetra::Map<Node>                     XpMap;
+      typedef Xpetra::Operator<Scalar, Node>      XpOp;
+      typedef Xpetra::ThyraUtils<Scalar,Node>       XpThyUtils;
+      typedef Xpetra::CrsMatrix<Scalar,Node>        XpCrsMat;
+      typedef Xpetra::BlockedCrsMatrix<Scalar,Node> XpBlockedCrsMat;
+      typedef Xpetra::Matrix<Scalar,Node>           XpMat;
+      typedef Xpetra::MultiVector<Scalar,Node>      XpMultVec;
+      typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node>      XpMultVecDouble;
+#endif
       typedef Thyra::LinearOpBase<Scalar>                                      ThyLinOpBase;
 #ifdef HAVE_MUELU_TPETRA
       // TAW 1/26/2016: We deal with Tpetra objects
 #if ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_INT))) || \
     (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_INT))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef MueLu::TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node> MueTpOp;
       typedef Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node>      TpOp;
       typedef Thyra::TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node> ThyTpLinOp;
+#else
+      typedef MueLu::TpetraOperator<Scalar,Node> MueTpOp;
+      typedef Tpetra::Operator<Scalar,Node>      TpOp;
+      typedef Thyra::TpetraLinearOp<Scalar,Node> ThyTpLinOp;
+#endif
 #endif
 #endif
 #if defined(HAVE_MUELU_EPETRA)
@@ -291,7 +332,11 @@ namespace Thyra {
         TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(xpetraFwdCrsMatNonConst00));
 
         // wrap the forward operator as an Xpetra::Matrix that MueLu can work with
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<XpMat> A00 = rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xpetraFwdCrsMatNonConst00));
+#else
+        RCP<XpMat> A00 = rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xpetraFwdCrsMatNonConst00));
+#endif
         TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(A00));
 
         RCP<const XpMap> rowmap00 = A00->getRowMap();
@@ -312,7 +357,11 @@ namespace Thyra {
         TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(xpetraFwdCrsMatNonConst));
 
         // wrap the forward operator as an Xpetra::Matrix that MueLu can work with
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         A = rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xpetraFwdCrsMatNonConst));
+#else
+        A = rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xpetraFwdCrsMatNonConst));
+#endif
       }
       TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(A));
 
@@ -325,7 +374,11 @@ namespace Thyra {
       thyra_precOp = rcp_dynamic_cast<Thyra::LinearOpBase<Scalar> >(defaultPrec->getNonconstUnspecifiedPrecOp(), true);
 
       // Variable for multigrid hierarchy: either build a new one or reuse the existing hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node> > H = Teuchos::null;
+#else
+      RCP<MueLu::Hierarchy<Scalar,Node> > H = Teuchos::null;
+#endif
 
       // make a decision whether to (re)build the multigrid preconditioner or reuse the old one
       // rebuild preconditioner if startingOver == true
@@ -335,7 +388,11 @@ namespace Thyra {
       if (startingOver == true) {
         // extract coordinates from parameter list
         Teuchos::RCP<XpMultVecDouble> coordinates = Teuchos::null;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         coordinates = MueLu::Utilities<Scalar,LocalOrdinal,GlobalOrdinal,Node>::ExtractCoordinatesFromParameterList(paramList);
+#else
+        coordinates = MueLu::Utilities<Scalar,Node>::ExtractCoordinatesFromParameterList(paramList);
+#endif
 
         // TODO check for Xpetra or Thyra vectors?
         RCP<XpMultVec> nullspace = Teuchos::null;
@@ -343,12 +400,20 @@ namespace Thyra {
         if (bIsTpetra) {
 #if ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_INT))) || \
     (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_INT))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typedef Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tMV;
+#else
+          typedef Tpetra::MultiVector<Scalar, Node> tMV;
+#endif
           RCP<tMV> tpetra_nullspace = Teuchos::null;
           if (paramList.isType<Teuchos::RCP<tMV> >("Nullspace")) {
             tpetra_nullspace = paramList.get<RCP<tMV> >("Nullspace");
             paramList.remove("Nullspace");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             nullspace = MueLu::TpetraMultiVector_To_XpetraMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(tpetra_nullspace);
+#else
+            nullspace = MueLu::TpetraMultiVector_To_XpetraMultiVector<Scalar,Node>(tpetra_nullspace);
+#endif
             TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(nullspace));
           }
 #else
@@ -404,7 +469,11 @@ namespace Thyra {
           RCP<ThyEpLinOp> epetr_precOp = rcp_dynamic_cast<ThyEpLinOp>(thyra_precOp);
           RCP<MueEpOp>    muelu_precOp = rcp_dynamic_cast<MueEpOp>(epetr_precOp->epetra_op(),true);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           H = rcp_dynamic_cast<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(muelu_precOp->GetHierarchy());
+#else
+          H = rcp_dynamic_cast<MueLu::Hierarchy<Scalar,Node> >(muelu_precOp->GetHierarchy());
+#endif
         }
 #endif
         // TODO add the blocked matrix case here...
@@ -439,7 +508,11 @@ namespace Thyra {
         RCP<MueTpOp> muelu_tpetraOp = rcp(new MueTpOp(H));
         TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(muelu_tpetraOp));
         RCP<TpOp> tpOp = Teuchos::rcp_dynamic_cast<TpOp>(muelu_tpetraOp);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         thyraPrecOp = Thyra::createLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node>(tpOp);
+#else
+        thyraPrecOp = Thyra::createLinearOp<Scalar, Node>(tpOp);
+#endif
 #else
         TEUCHOS_TEST_FOR_EXCEPTION(true, MueLu::Exceptions::RuntimeError,
                                    "Thyra::MueLuPreconditionerFactory: Tpetra does not support GO=int and or EpetraNode.");
@@ -449,10 +522,19 @@ namespace Thyra {
 
 #if defined(HAVE_MUELU_EPETRA)
       if (bIsEpetra) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MueLu::Hierarchy<double,int,int,Xpetra::EpetraNode> > epetraH =
             rcp_dynamic_cast<MueLu::Hierarchy<double,int,int,Xpetra::EpetraNode> >(H);
+#else
+        RCP<MueLu::Hierarchy<double,Xpetra::EpetraNode> > epetraH =
+            rcp_dynamic_cast<MueLu::Hierarchy<double,Xpetra::EpetraNode> >(H);
+#endif
         TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::is_null(epetraH), MueLu::Exceptions::RuntimeError,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    "Thyra::MueLuPreconditionerFactory: Failed to cast Hierarchy to Hierarchy<double,int,int,Xpetra::EpetraNode>. Epetra runs only on the Serial node.");
+#else
+                                   "Thyra::MueLuPreconditionerFactory: Failed to cast Hierarchy to Hierarchy<double,Xpetra::EpetraNode>. Epetra runs only on the Serial node.");
+#endif
         RCP<MueEpOp> muelu_epetraOp = rcp(new MueEpOp(epetraH));
         TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(muelu_epetraOp));
         // attach fwdOp to muelu_epetraOp to guarantee that it will not go away
@@ -466,14 +548,28 @@ namespace Thyra {
       if(bIsBlocked) {
         TEUCHOS_TEST_FOR_EXCEPT(Teuchos::nonnull(thyraPrecOp));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef MueLu::XpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>    MueXpOp;
+#else
+        typedef MueLu::XpetraOperator<Scalar,Node>    MueXpOp;
+#endif
         const RCP<MueXpOp> muelu_xpetraOp = rcp(new MueXpOp(H));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const VectorSpaceBase<Scalar> > thyraRangeSpace  = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyra(muelu_xpetraOp->getRangeMap());
         RCP<const VectorSpaceBase<Scalar> > thyraDomainSpace = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyra(muelu_xpetraOp->getDomainMap());
+#else
+        RCP<const VectorSpaceBase<Scalar> > thyraRangeSpace  = Xpetra::ThyraUtils<Scalar,Node>::toThyra(muelu_xpetraOp->getRangeMap());
+        RCP<const VectorSpaceBase<Scalar> > thyraDomainSpace = Xpetra::ThyraUtils<Scalar,Node>::toThyra(muelu_xpetraOp->getDomainMap());
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP <Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > xpOp = Teuchos::rcp_dynamic_cast<Xpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(muelu_xpetraOp);
         thyraPrecOp = Thyra::xpetraLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node>(thyraRangeSpace, thyraDomainSpace,xpOp);
+#else
+        RCP <Xpetra::Operator<Scalar, Node> > xpOp = Teuchos::rcp_dynamic_cast<Xpetra::Operator<Scalar,Node> >(muelu_xpetraOp);
+        thyraPrecOp = Thyra::xpetraLinearOp<Scalar, Node>(thyraRangeSpace, thyraDomainSpace,xpOp);
+#endif
       }
 
       TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(thyraPrecOp));

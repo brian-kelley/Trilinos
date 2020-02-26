@@ -155,13 +155,19 @@ Springer, New York, 2001, ISBN 3-540-41083-X
 
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 class ManagerT
 {
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   friend class MOERTEL::Solver;
   
   /*!
@@ -190,7 +196,11 @@ public:
   \param outlevel : The level of output to stdout to be generated ( 0 - 10 )
   */
   explicit ManagerT(const Teuchos::RCP<const Teuchos::Comm<LO> >& comm, 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    MoertelT::ManagerT<ST, LO, GO, N>::DimensionType dimension, 
+#else
+                   MoertelT::ManagerT<ST, N>::DimensionType dimension, 
+#endif
                    int outlevel);
                    
   
@@ -235,7 +245,11 @@ public:
   Query the problem dimension
   
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MoertelT::ManagerT<ST, LO, GO, N>::DimensionType Dimension() { return dimensiontype_; }
+#else
+  MoertelT::ManagerT<ST, N>::DimensionType Dimension() { return dimensiontype_; }
+#endif
   
   /*!
   \brief Query the number of interfaces passed to this class via AddInterface
@@ -264,7 +278,11 @@ public:
   
   \param type : Dimension of the problem
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void SetDimension(MoertelT::ManagerT<ST, LO, GO, N>::DimensionType type) { dimensiontype_ = type; return; }
+#else
+  void SetDimension(MoertelT::ManagerT<ST, N>::DimensionType type) { dimensiontype_ = type; return; }
+#endif
   
   /*!
   \brief Add an interface class to this class
@@ -281,7 +299,11 @@ public:
   
   \return true when adding the interface was successful and false otherwise
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool AddInterface(const Teuchos::RCP<const MoertelT::InterfaceT<ST, LO, GO, N> >& interface);
+#else
+  bool AddInterface(const Teuchos::RCP<const MoertelT::InterfaceT<ST, N> >& interface);
+#endif
 
   /*!
   \brief Obtain a parameter list with default values
@@ -399,7 +421,11 @@ public:
   \sa Mortar_Integrate()
   
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool SetProblemMap(const Teuchos::RCP<const Tpetra::Map<LO, GO, N> >& map){
+#else
+  bool SetProblemMap(const Teuchos::RCP<const Tpetra::Map<N> >& map){
+#endif
 
        problemmap_ = map;
        return true;
@@ -414,7 +440,11 @@ public:
   \sa SetProblemMap
 
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, N> > ProblemMap() const { return problemmap_; }
+#else
+  Teuchos::RCP<const Tpetra::Map<N> > ProblemMap() const { return problemmap_; }
+#endif
   
   /*!
   \brief Set the Matrix of the original uncoupled problem
@@ -432,7 +462,11 @@ public:
   \sa MakeSaddleProblem() 
   
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool SetInputMatrix(Tpetra::CrsMatrix<ST, LO, GO, N>* inputmatrix, bool DeepCopy = false);
+#else
+  bool SetInputMatrix(Tpetra::CrsMatrix<ST, N>* inputmatrix, bool DeepCopy = false);
+#endif
   
   /*!
   \brief Construct a saddle point system of equations
@@ -445,7 +479,11 @@ public:
   user must not destroy it.
   
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::CrsMatrix<ST, LO, GO, N>* MakeSaddleProblem();
+#else
+  Tpetra::CrsMatrix<ST, N>* MakeSaddleProblem();
+#endif
 
   /*!
   \brief Construct a spd system of equations if possible
@@ -457,7 +495,11 @@ public:
   
   \sa GetSPDRHSMatrix()
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::CrsMatrix<ST, LO, GO, N>* MakeSPDProblem();
+#else
+  Tpetra::CrsMatrix<ST, N>* MakeSPDProblem();
+#endif
 
   /*!
   \brief returns the righ hand side matrix of the spd system of equations
@@ -469,7 +511,11 @@ public:
   
   \sa MakeSPDProblem()
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::CrsMatrix<ST, LO, GO, N>* GetRHSMatrix();
+#else
+  Tpetra::CrsMatrix<ST, N>* GetRHSMatrix();
+#endif
 
   /*!
   \brief Set a parameter list holding solver parameters
@@ -574,7 +620,11 @@ public:
   \param sol (out) : The solution
   \param rhs (in) : The right hand side vector
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool Solve(Teuchos::ParameterList& params, Tpetra::Vector<ST, LO, GO, N>& sol, const Tpetra::Vector<ST, LO, GO, N>& rhs);
+#else
+  bool Solve(Teuchos::ParameterList& params, Tpetra::Vector<ST, N>& sol, const Tpetra::Vector<ST, N>& rhs);
+#endif
 
   /*!
   \brief Solve the problem
@@ -589,7 +639,11 @@ public:
   \param sol (out) : The solution
   \param rhs (in) : The right hand side vector
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool Solve(Tpetra::Vector<ST, LO, GO, N>& sol, const Tpetra::Vector<ST, LO, GO, N>& rhs);
+#else
+  bool Solve(Tpetra::Vector<ST, N>& sol, const Tpetra::Vector<ST, N>& rhs);
+#endif
   
   /*!
   \brief Reset the internal solver
@@ -606,13 +660,21 @@ public:
   \brief Get pointer to constraints matrix D
   
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Tpetra::CrsMatrix<ST, LO, GO, N>* D() const { return D_.get();}
+#else
+  const Tpetra::CrsMatrix<ST, N>* D() const { return D_.get();}
+#endif
 
   /*!
   \brief Get pointer to constraints matrix M
   
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Tpetra::CrsMatrix<ST, LO, GO, N>* M() const { return M_.get();}
+#else
+  const Tpetra::CrsMatrix<ST, N>* M() const { return M_.get();}
+#endif
 
   /*!
   \brief Query a managed interface added using AddInterface
@@ -626,18 +688,31 @@ public:
   
   \sa AddInterface, Ninterfaces
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > GetInterface(int idx) { return interface_[idx]; }
+#else
+  Teuchos::RCP<MoertelT::InterfaceT<ST, N> > GetInterface(int idx) { return interface_[idx]; }
+#endif
 
   /*!
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::Map<LO, GO, N> > GetSaddleMap() { return saddlemap_; }
+#else
+  Teuchos::RCP<Tpetra::Map<N> > GetSaddleMap() { return saddlemap_; }
+#endif
 
   //@}
 
 private:  
   // don't want = operator and copy-ctor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   ManagerT operator = (const ManagerT<ST, LO, GO, N>& old);
   ManagerT(MoertelT::ManagerT<ST, LO, GO, N>& old);
+#else
+  ManagerT operator = (const ManagerT<ST, N>& old);
+  ManagerT(MoertelT::ManagerT<ST, N>& old);
+#endif
 
   // Build the M and D matrices 2D case
   bool Build_MD_2D();
@@ -655,12 +730,21 @@ private:
   bool BuildSaddleMap();
 
   // choose the dofs for Lagrange multipliers
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::Map<LO, GO, N> > LagrangeMultiplierDofs();
+#else
+  Teuchos::RCP<Tpetra::Map<N> > LagrangeMultiplierDofs();
+#endif
   
   // automatically choose mortar side (called when mortarside==-2 on any interface)
   bool ChooseMortarSide();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool ChooseMortarSide_2D(std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >& inter);
   bool ChooseMortarSide_3D(std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >& inter);
+#else
+  bool ChooseMortarSide_2D(std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >& inter);
+  bool ChooseMortarSide_3D(std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >& inter);
+#endif
   
 protected:
 
@@ -668,8 +752,13 @@ protected:
   const Teuchos::RCP<const Teuchos::Comm<LO> >&     comm_;                // communicator (global, contains ALL procs)
   DimensionType                 dimensiontype_;       // problem dimension
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >  interface_; // the interfaces
+#else
+  std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >  interface_; // the interfaces
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, N> >       problemmap_;          // the rowmap of the input matrix
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > inputmatrix_;         // the uncoupled matrix on input
   Teuchos::RCP<Tpetra::Map<LO, GO, N> >       constraintsmap_;      // the rowmap of M and D (both of them use comm_)
@@ -679,13 +768,31 @@ protected:
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > saddlematrix_;        // the matrix of the saddle problem;
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > spdmatrix_;           // the spd matrix of the problem;
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > spdrhs_;              // the matrix to left-multiply the rhs vector with for the spd problem
+#else
+  Teuchos::RCP<const Tpetra::Map<N> >       problemmap_;          // the rowmap of the input matrix
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > inputmatrix_;         // the uncoupled matrix on input
+  Teuchos::RCP<Tpetra::Map<N> >       constraintsmap_;      // the rowmap of M and D (both of them use comm_)
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > D_;                   // the coupling matrix D
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > M_;                   // the coupling matrix M
+  Teuchos::RCP<Tpetra::Map<N> >       saddlemap_;           // the rowmap of the saddlepointproblem
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > saddlematrix_;        // the matrix of the saddle problem;
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > spdmatrix_;           // the spd matrix of the problem;
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > spdrhs_;              // the matrix to left-multiply the rhs vector with for the spd problem
+#endif
   
   Teuchos::RCP<std::map<int,int> >    lm_to_dof_;           // maps lagrange multiplier dofs to primary dofs (slave side))
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > I_;
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > WT_;
   Teuchos::RCP<Tpetra::CrsMatrix<ST, LO, GO, N> > B_;
   Teuchos::RCP<Tpetra::Map<LO, GO, N> >       annmap_;
+#else
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > I_;
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > WT_;
+  Teuchos::RCP<Tpetra::CrsMatrix<ST, N> > B_;
+  Teuchos::RCP<Tpetra::Map<N> >       annmap_;
+#endif
 
   Teuchos::RCP<Teuchos::ParameterList> integrationparams_; // parameter list with integration parameters
   Teuchos::RCP<Teuchos::ParameterList> solverparams_;  // solution parameters passed from the user    
@@ -704,10 +811,16 @@ outputs all information stored in the \ref MoertelT::Manager class to std::ostre
 
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 std::ostream& operator << (std::ostream& os, const MoertelT::ManagerT<ST, LO, GO, N>& node);
+#else
+std::ostream& operator << (std::ostream& os, const MoertelT::ManagerT<ST, N>& node);
+#endif
 
 #ifndef HAVE_MOERTEL_EXPLICIT_INSTANTIATION
 #include "Moertel_ManagerT.hpp"

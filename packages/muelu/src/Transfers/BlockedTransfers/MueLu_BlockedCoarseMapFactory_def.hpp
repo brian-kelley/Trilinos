@@ -66,15 +66,30 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   BlockedCoarseMapFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BlockedCoarseMapFactory()
+#else
+  template <class Scalar, class Node>
+  BlockedCoarseMapFactory<Scalar, Node>::BlockedCoarseMapFactory()
+#endif
   {  }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   BlockedCoarseMapFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~BlockedCoarseMapFactory() {}
+#else
+  template <class Scalar, class Node>
+  BlockedCoarseMapFactory<Scalar, Node>::~BlockedCoarseMapFactory() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> BlockedCoarseMapFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> BlockedCoarseMapFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("Aggregates", Teuchos::null, "Generating factory for aggregates.");
@@ -88,8 +103,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlockedCoarseMapFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void BlockedCoarseMapFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     this->Input(currentLevel, "Aggregates");
     this->Input(currentLevel, "Nullspace");
 
@@ -99,8 +119,13 @@ namespace MueLu {
     currentLevel.DeclareInput("CoarseMap", prevCoarseMapFact.get(), this); // --
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlockedCoarseMapFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void BlockedCoarseMapFactory<Scalar, Node>::Build(Level &currentLevel) const {
+#endif
     FactoryMonitor m(*this, "BlockedCoarseMap factory", currentLevel);
 
     RCP<const FactoryBase> prevCoarseMapFact = this->GetFactory("CoarseMap");

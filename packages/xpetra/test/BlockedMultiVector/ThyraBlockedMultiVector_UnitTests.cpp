@@ -95,7 +95,11 @@ TEUCHOS_STATIC_SETUP()
 // Helper routines
 //
 template<class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(const std::set<GlobalOrdinal>& gids, const Teuchos::Comm<int>& comm) {
+#else
+Teuchos::RCP<Xpetra::Map<Node> > CreateMap(const std::set<GlobalOrdinal>& gids, const Teuchos::Comm<int>& comm) {
+#endif
   Teuchos::Array<GlobalOrdinal> mapvec;
   mapvec.reserve(gids.size());
   mapvec.assign(gids.begin(), gids.end());
@@ -103,7 +107,11 @@ Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(const st
   GlobalOrdinal gcount;
   Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, count, Teuchos::outArg(gcount));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > map =
+#else
+  Teuchos::RCP<Xpetra::Map<Node> > map =
+#endif
       Teuchos::rcp(new MapType(gcount,
           mapvec(),
           0,
@@ -113,7 +121,11 @@ Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(const st
 }
 
 template<class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > SplitMap(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> & Amap, const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> & Agiven) {
+#else
+Teuchos::RCP<Xpetra::Map<Node> > SplitMap(const Xpetra::Map<Node> & Amap, const Xpetra::Map<Node> & Agiven) {
+#endif
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Amap.getComm();
 
   GlobalOrdinal count=0;
@@ -131,11 +143,21 @@ Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > SplitMap(const Xpe
 }
 
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > CreateMultiVector(int noBlocks, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
+#else
+Teuchos::RCP<Xpetra::MultiVector<Scalar, Node> > CreateMultiVector(int noBlocks, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> Map;
   typedef Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> MultiVector;
   typedef Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> MultiVectorFactory;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::MultiVector<Scalar, Node> MultiVector;
+  typedef Xpetra::MultiVectorFactory<Scalar, Node> MultiVectorFactory;
+#endif
 
   GlobalOrdinal nOverallDOFGidsPerProc = Teuchos::as<GlobalOrdinal>(Teuchos::ScalarTraits<GlobalOrdinal>::pow(2,noBlocks-2)) * 10;
 
@@ -145,7 +167,11 @@ Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Cr
   for(GlobalOrdinal i = 0; i < nOverallDOFGidsPerProc; i++)
     myDOFGids.insert(i + procOffset);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Map> fullmap = CreateMap<LocalOrdinal,GlobalOrdinal,Node,MapType>(myDOFGids, *comm);
+#else
+  Teuchos::RCP<Map> fullmap = CreateMap<Node,MapType>(myDOFGids, *comm);
+#endif
 
   // create Multivector
   Teuchos::RCP<MultiVector> vv = MultiVectorFactory::Build(fullmap,2,true);
@@ -162,13 +188,25 @@ Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Cr
 }
 
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > CreateBlockedMultiVector(int noBlocks, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
+#else
+Teuchos::RCP<Xpetra::BlockedMultiVector<Scalar, Node> > CreateBlockedMultiVector(int noBlocks, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> Map;
   typedef Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> MultiVector;
   typedef Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> BlockedMultiVector;
   typedef Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> MultiVectorFactory;
   typedef Xpetra::MapExtractor<Scalar,LocalOrdinal, GlobalOrdinal, Node> MapExtractor;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::MultiVector<Scalar, Node> MultiVector;
+  typedef Xpetra::BlockedMultiVector<Scalar, Node> BlockedMultiVector;
+  typedef Xpetra::MultiVectorFactory<Scalar, Node> MultiVectorFactory;
+  typedef Xpetra::MapExtractor<Scalar, Node> MapExtractor;
+#endif
 
   GlobalOrdinal nOverallDOFGidsPerProc = Teuchos::as<GlobalOrdinal>(Teuchos::ScalarTraits<GlobalOrdinal>::pow(2,noBlocks-2)) * 10;
 
@@ -178,7 +216,11 @@ Teuchos::RCP<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Nod
   for(GlobalOrdinal i = 0; i < nOverallDOFGidsPerProc; i++)
     myDOFGids.insert(i + procOffset);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Map> fullmap = CreateMap<LocalOrdinal,GlobalOrdinal,Node,MapType>(myDOFGids, *comm);
+#else
+  Teuchos::RCP<Map> fullmap = CreateMap<Node,MapType>(myDOFGids, *comm);
+#endif
 
   std::vector<Teuchos::RCP<const Map> > maps(noBlocks, Teuchos::null);
   GlobalOrdinal nPartGIDs = nOverallDOFGidsPerProc;
@@ -194,9 +236,17 @@ Teuchos::RCP<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Nod
     for(GlobalOrdinal j = 0; j < nPartGIDs; j++)
       myHalfGIDs.insert(j + procOffset);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Map> halfmap = CreateMap<LocalOrdinal,GlobalOrdinal,Node,MapType> (myHalfGIDs, *comm);
+#else
+    Teuchos::RCP<Map> halfmap = CreateMap<Node,MapType> (myHalfGIDs, *comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Map> secondmap = SplitMap<LocalOrdinal,GlobalOrdinal,Node,MapType>(*remainingpartmap, *halfmap);
+#else
+    Teuchos::RCP<Map> secondmap = SplitMap<Node,MapType>(*remainingpartmap, *halfmap);
+#endif
     remainingpartmap = halfmap;
 
     maps[noBlocks - 1 - it]  = secondmap;
@@ -226,27 +276,51 @@ Teuchos::RCP<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Nod
 // UNIT TESTS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, Constructor, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, Constructor, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> Map;
   typedef Xpetra::BlockedMap<LO, GO, Node> BlockedMap;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactory;
   typedef Xpetra::MultiVector<Scalar, LO, GO, Node> MultiVector;
   typedef Xpetra::BlockedMultiVector<Scalar, LO, GO, Node> BlockedMultiVector;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+  typedef Xpetra::MapFactory<Node> MapFactory;
+  typedef Xpetra::MultiVector<Scalar, Node> MultiVector;
+  typedef Xpetra::BlockedMultiVector<Scalar, Node> BlockedMultiVector;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::ThyraUtils<Scalar,LO,GO,Node> ThyraUtils;
+#else
+  typedef Xpetra::ThyraUtils<Scalar,Node> ThyraUtils;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 5;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MultiVector>         vv = CreateMultiVector<Scalar, LO, GO, Node, M>(noBlocks, comm);
+#else
+  Teuchos::RCP<MultiVector>         vv = CreateMultiVector<Scalar, Node, M>(noBlocks, comm);
+#endif
 
   // create BlockedMultiVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<BlockedMultiVector> bvv = CreateBlockedMultiVector<Scalar, LO, GO, Node, M>(noBlocks, comm);
+#else
+  Teuchos::RCP<BlockedMultiVector> bvv = CreateBlockedMultiVector<Scalar, Node, M>(noBlocks, comm);
+#endif
 
   TEST_EQUALITY(bvv->getBlockedMap()->getNumMaps(),Teuchos::as<size_t>(noBlocks));
   for (size_t r = 0; r<bvv->getBlockedMap()->getNumMaps(); ++r) {
@@ -327,17 +401,34 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, Constructor, M, MA, 
 #endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, ConstructorNested, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, ConstructorNested, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> Map;
   typedef Xpetra::BlockedMap<LO, GO, Node> BlockedMap;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactory;
   typedef Xpetra::MultiVector<Scalar, LO, GO, Node> MultiVector;
   typedef Xpetra::MultiVectorFactory<Scalar, LO, GO, Node> MultiVectorFactory;
   typedef Xpetra::BlockedMultiVector<Scalar, LO, GO, Node> BlockedMultiVector;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+  typedef Xpetra::MapFactory<Node> MapFactory;
+  typedef Xpetra::MultiVector<Scalar, Node> MultiVector;
+  typedef Xpetra::MultiVectorFactory<Scalar, Node> MultiVectorFactory;
+  typedef Xpetra::BlockedMultiVector<Scalar, Node> BlockedMultiVector;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::ThyraUtils<Scalar,LO,GO,Node> ThyraUtils;
+#else
+  typedef Xpetra::ThyraUtils<Scalar,Node> ThyraUtils;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -491,14 +582,28 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, ConstructorNested, M
 #endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, BlockedMapDeepCopy, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, BlockedMapDeepCopy, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> Map;
   typedef Xpetra::BlockedMap<LO, GO, Node> BlockedMap;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactory;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+  typedef Xpetra::MapFactory<Node> MapFactory;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::ThyraUtils<Scalar,LO,GO,Node> ThyraUtils;
+#else
+  typedef Xpetra::ThyraUtils<Scalar,Node> ThyraUtils;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -574,18 +679,35 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, BlockedMapDeepCopy, 
 #endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, BlockedVectorDeepCopy, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, BlockedVectorDeepCopy, M, MA, Scalar, Node )
+#endif
 {
 #ifdef HAVE_XPETRA_THYRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> Map;
   typedef Xpetra::BlockedMap<LO, GO, Node> BlockedMap;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactory;
   typedef Xpetra::MultiVector<Scalar, LO, GO, Node> MultiVector;
   typedef Xpetra::MultiVectorFactory<Scalar, LO, GO, Node> MultiVectorFactory;
   typedef Xpetra::BlockedMultiVector<Scalar, LO, GO, Node> BlockedMultiVector;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+  typedef Xpetra::MapFactory<Node> MapFactory;
+  typedef Xpetra::MultiVector<Scalar, Node> MultiVector;
+  typedef Xpetra::MultiVectorFactory<Scalar, Node> MultiVectorFactory;
+  typedef Xpetra::BlockedMultiVector<Scalar, Node> BlockedMultiVector;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::ThyraUtils<Scalar,LO,GO,Node> ThyraUtils;
+#else
+  typedef Xpetra::ThyraUtils<Scalar,Node> ThyraUtils;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -722,25 +844,43 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, BlockedVectorDeepCop
 //
 #ifdef HAVE_XPETRA_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_TPETRA_TYPES( S, LO, GO, N) \
     typedef typename Xpetra::TpetraMap<LO,GO,N> M##LO##GO##N; \
     typedef typename Xpetra::TpetraMultiVector<S,LO,GO,N> MV##S##LO##GO##N;
+#else
+  #define XPETRA_TPETRA_TYPES( S, N) \
+    typedef typename Xpetra::TpetraMap<N> M##LO##GO##N; \
+    typedef typename Xpetra::TpetraMultiVector<S,N> MV##S##LO##GO##N;
+#endif
 
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_EPETRA_TYPES( S, LO, GO, N) \
+#else
+  #define XPETRA_EPETRA_TYPES( S, N) \
+#endif
     typedef typename Xpetra::EpetraMapT<GO,N> M##LO##GO##N; \
     typedef typename Xpetra::EpetraMultiVectorT<GO,N> MV##S##LO##GO##N;
 
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_BLOCKEDMULTIVECTOR_INSTANT(S,LO,GO,N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedMultiVector, Constructor, M##LO##GO##N , MV##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedMultiVector, ConstructorNested, M##LO##GO##N , MV##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedMultiVector, BlockedMapDeepCopy, M##LO##GO##N , MV##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedMultiVector, BlockedVectorDeepCopy, M##LO##GO##N , MV##S##LO##GO##N, S, LO, GO, N ) \
+#else
+#define XP_BLOCKEDMULTIVECTOR_INSTANT(S,N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedMultiVector, Constructor, M##LO##GO##N , MV##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedMultiVector, ConstructorNested, M##LO##GO##N , MV##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedMultiVector, BlockedMapDeepCopy, M##LO##GO##N , MV##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( ThyraBlockedMultiVector, BlockedVectorDeepCopy, M##LO##GO##N , MV##S##LO##GO##N, S,N ) \
+#endif
 
 
 //TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedMultiVector, ExtractVector, M##LO##GO##N , MV##S##LO##GO##N, S, LO, GO, N )
@@ -750,10 +890,18 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( ThyraBlockedMultiVector, BlockedVectorDeepCop
 
 
 // List of tests which run only with Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_TPETRA_BLOCKEDMULTIVECTOR_INSTANT(S,LO,GO,N)
+#else
+#define XP_TPETRA_BLOCKEDMULTIVECTOR_INSTANT(S,N)
+#endif
 
 // List of tests which run only with Epetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_EPETRA_BLOCKEDMULTIVECTOR_INSTANT(S,LO,GO,N)
+#else
+#define XP_EPETRA_BLOCKEDMULTIVECTOR_INSTANT(S,N)
+#endif
 
 #if defined(HAVE_XPETRA_TPETRA)
 

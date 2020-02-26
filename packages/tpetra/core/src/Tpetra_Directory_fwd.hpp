@@ -49,9 +49,13 @@
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 namespace Tpetra {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal = ::Tpetra::Details::DefaultTypes::local_ordinal_type,
          class GlobalOrdinal = ::Tpetra::Details::DefaultTypes::global_ordinal_type,
          class Node = ::Tpetra::Details::DefaultTypes::node_type>
+#else
+template<class Node = ::Tpetra::Details::DefaultTypes::node_type>
+#endif
 class Directory;
 } // namespace Tpetra
 #endif // DOXYGEN_SHOULD_SKIP_THIS

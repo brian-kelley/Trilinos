@@ -84,7 +84,11 @@ template<typename EvalT, typename TRAITS,typename LO,typename GO> class ScatterD
 // Residual 
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterDirichletResidual_Epetra<panzer::Traits::Residual,TRAITS,LO,GO>
+#else
+class ScatterDirichletResidual_Epetra<panzer::Traits::Residual,TRAITS>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Residual, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -106,7 +110,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterDirichletResidual_Epetra<panzer::Traits::Residual,TRAITS,LO,GO>(globalIndexer_,Teuchos::null,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterDirichletResidual_Epetra<panzer::Traits::Residual,TRAITS>(globalIndexer_,Teuchos::null,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Residual::ScalarT ScalarT;
@@ -154,7 +162,11 @@ private:
 // Tangent 
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterDirichletResidual_Epetra<panzer::Traits::Tangent,TRAITS,LO,GO>
+#else
+class ScatterDirichletResidual_Epetra<panzer::Traits::Tangent,TRAITS>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Tangent, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -176,7 +188,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterDirichletResidual_Epetra<panzer::Traits::Tangent,TRAITS,LO,GO>(globalIndexer_,Teuchos::null,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterDirichletResidual_Epetra<panzer::Traits::Tangent,TRAITS>(globalIndexer_,Teuchos::null,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Tangent::ScalarT ScalarT;
@@ -226,7 +242,11 @@ private:
 // Jacobian
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterDirichletResidual_Epetra<panzer::Traits::Jacobian,TRAITS,LO,GO>
+#else
+class ScatterDirichletResidual_Epetra<panzer::Traits::Jacobian,TRAITS>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Jacobian, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -248,7 +268,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
 
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterDirichletResidual_Epetra<panzer::Traits::Jacobian,TRAITS,LO,GO>(globalIndexer_,colGlobalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterDirichletResidual_Epetra<panzer::Traits::Jacobian,TRAITS>(globalIndexer_,colGlobalIndexer_,pl)); }
+#endif
   
 private:
 

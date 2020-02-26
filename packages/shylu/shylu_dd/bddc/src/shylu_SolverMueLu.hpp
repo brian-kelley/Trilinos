@@ -70,11 +70,21 @@ public:
   typedef int LO; // Local Ordinal
   typedef Tpetra::Map<>::global_ordinal_type GO; // Global Ordinal
   typedef Tpetra::Map<LO,GO>                                 Map;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<double,LO,GO>                  MV;
+#else
+  typedef Tpetra::MultiVector<double>                  MV;
+#endif
   typedef Tpetra::CrsGraph<LO,GO>                            CrsGraph;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<double,LO,GO>                    CrsMatrix;
   typedef Tpetra::Operator<double,LO,GO>                     Operator;
   typedef MueLu::TpetraOperator<double,LO,GO>                MTOperator;
+#else
+  typedef Tpetra::CrsMatrix<double>                    CrsMatrix;
+  typedef Tpetra::Operator<double>                     Operator;
+  typedef MueLu::TpetraOperator<double>                MTOperator;
+#endif
 
   SolverMueLu(int numRows,
 	      int* rowBegin,

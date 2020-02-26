@@ -108,7 +108,11 @@ const RCP<const Thyra::LinearOpBase<double> > build2x2(const Epetra_Comm & comm,
 
 const RCP<const Thyra::LinearOpBase<ST> > build2x2(const RCP<const Teuchos::Comm<int> > comm,ST a,ST b,ST c,ST d)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(2,0,comm));
+#else
+   RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(2,0,comm));
+#endif
 
    GO indices[2];
    ST row0[2];
@@ -118,14 +122,22 @@ const RCP<const Thyra::LinearOpBase<ST> > build2x2(const RCP<const Teuchos::Comm
    indices[1] = 1;
 
    // build a CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > blk  = Tpetra::createCrsMatrix<ST,LO,GO,NT>(map,2);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > blk  = Tpetra::createCrsMatrix<ST,NT>(map,2);
+#endif
    row0[0] = a; row0[1] = b;  // do a transpose here!
    row1[0] = c; row1[1] = d;
    blk->insertGlobalValues(0,Teuchos::ArrayView<GO>(indices,2),Teuchos::ArrayView<ST>(row0,2));
    blk->insertGlobalValues(1,Teuchos::ArrayView<GO>(indices,2),Teuchos::ArrayView<ST>(row1,2));
    blk->fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    return Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(blk->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(blk->getRangeMap()),blk);
+#else
+   return Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(blk->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(blk->getRangeMap()),blk);
+#endif
 }
 
 const RCP<const Thyra::MultiVectorBase<double> > BlockVector(const Epetra_Vector & eu, const Epetra_Vector & ev,
@@ -154,7 +166,11 @@ const RCP<const Thyra::MultiVectorBase<double> > BlockVector(const Epetra_Vector
    return buildBlockedMultiVector(blocks);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const RCP<const Thyra::MultiVectorBase<ST> > BlockVector(const Tpetra::Vector<ST,LO,GO,NT> & tu, const Tpetra::Vector<ST,LO,GO,NT> & tv,
+#else
+const RCP<const Thyra::MultiVectorBase<ST> > BlockVector(const Tpetra::Vector<ST,NT> & tu, const Tpetra::Vector<ST,NT> & tv,
+#endif
         const RCP<const Thyra::VectorSpaceBase<ST> > & vs)
 {
    typedef RCP<const Thyra::MultiVectorBase<ST> > Vector;
@@ -162,10 +178,17 @@ const RCP<const Thyra::MultiVectorBase<ST> > BlockVector(const Tpetra::Vector<ST
    const RCP<const Thyra::ProductVectorSpaceBase<ST> > pvs 
          = rcp_dynamic_cast<const Thyra::ProductVectorSpaceBase<ST> >(vs);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > mtu = rcpFromRef(tu);
    RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > mtv = rcpFromRef(tv);
    const Vector u = Thyra::createConstMultiVector<ST,LO,GO,NT>(mtu,pvs->getBlock(0)); 
    const Vector v = Thyra::createConstMultiVector<ST,LO,GO,NT>(mtv,pvs->getBlock(1)); 
+#else
+   RCP<const Tpetra::MultiVector<ST,NT> > mtu = rcpFromRef(tu);
+   RCP<const Tpetra::MultiVector<ST,NT> > mtv = rcpFromRef(tv);
+   const Vector u = Thyra::createConstMultiVector<ST,NT>(mtu,pvs->getBlock(0)); 
+   const Vector v = Thyra::createConstMultiVector<ST,NT>(mtv,pvs->getBlock(1)); 
+#endif
 
    // build rhs: this is ugly...in 2 steps
    // (i). allocate space for rhs "Product" vector, this is the range of A
@@ -274,8 +297,13 @@ const Teuchos::RCP<const Thyra::LinearOpBase<double> > DiagMatrix(int cnt,double
 const Teuchos::RCP<const Thyra::LinearOpBase<double> > DiagMatrix_tpetra(GO cnt,ST * vec,std::string label)
 {
    const RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm ();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::Map<LO,GO,NT> > map = rcp(new const Tpetra::Map<LO,GO,NT>(cnt,0,comm));
    const RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> >ptrF  = Tpetra::createCrsMatrix<ST,LO,GO,NT>(map, 1);
+#else
+   const RCP<const Tpetra::Map<NT> > map = rcp(new const Tpetra::Map<NT>(cnt,0,comm));
+   const RCP<Tpetra::CrsMatrix<ST,NT> >ptrF  = Tpetra::createCrsMatrix<ST,NT>(map, 1);
+#endif
 
    // construct a diagonal matrix
    GO indices[1];
@@ -288,7 +316,11 @@ const Teuchos::RCP<const Thyra::LinearOpBase<double> > DiagMatrix_tpetra(GO cnt,
    ptrF->fillComplete();
 
    // return thyra object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    return Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrF->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrF->getRangeMap()),ptrF);
+#else
+   return Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(ptrF->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(ptrF->getRangeMap()),ptrF);
+#endif
 }
 
 // declare static allocation

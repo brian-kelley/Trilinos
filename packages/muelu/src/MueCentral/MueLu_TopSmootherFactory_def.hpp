@@ -23,8 +23,13 @@
 //#include "MueLu_HierarchyManager_fwd.hpp"
 
 namespace MueLu {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   TopSmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TopSmootherFactory(RCP<const FactoryManagerBase> parentFactoryManager, const std::string& varName) {
+#else
+  template <class Scalar, class Node>
+  TopSmootherFactory<Scalar, Node>::TopSmootherFactory(RCP<const FactoryManagerBase> parentFactoryManager, const std::string& varName) {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(varName != "CoarseSolver" && varName != "Smoother", Exceptions::RuntimeError, "varName should be either \"CoarseSolver\" or \"Smoother\"");
 
     if (varName == "CoarseSolver") {
@@ -57,19 +62,34 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   TopSmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~TopSmootherFactory() { }
+#else
+  template <class Scalar, class Node>
+  TopSmootherFactory<Scalar, Node>::~TopSmootherFactory() { }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TopSmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level & level) const {
+#else
+  template <class Scalar, class Node>
+  void TopSmootherFactory<Scalar, Node>::DeclareInput(Level & level) const {
+#endif
     if (preSmootherFact_  != Teuchos::null)
       level.DeclareInput("PreSmoother",  preSmootherFact_.get());
     if (postSmootherFact_ != Teuchos::null)
       level.DeclareInput("PostSmoother", postSmootherFact_.get());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TopSmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & level) const {
+#else
+  template <class Scalar, class Node>
+  void TopSmootherFactory<Scalar, Node>::Build(Level & level) const {
+#endif
     if (preSmootherFact_.is_null() && postSmootherFact_.is_null())
       return;
 

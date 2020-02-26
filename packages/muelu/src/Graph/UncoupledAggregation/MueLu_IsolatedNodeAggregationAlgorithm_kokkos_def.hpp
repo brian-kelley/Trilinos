@@ -62,8 +62,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void IsolatedNodeAggregationAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void IsolatedNodeAggregationAlgorithm_kokkos<Node>::
+#endif
   BuildAggregates(const ParameterList& /* params */,
                   const LWGraph_kokkos& graph,
                   Aggregates_kokkos& /* aggregates */,

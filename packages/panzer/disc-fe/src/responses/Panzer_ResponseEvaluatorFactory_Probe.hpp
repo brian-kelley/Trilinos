@@ -171,7 +171,11 @@ struct ProbeResponse_Builder : public ResponseMESupportBuilderBase {
 
   template <typename T>
   Teuchos::RCP<panzer::ResponseEvaluatorFactoryBase> build() const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ResponseEvaluatorFactory_Probe<T,LO,GO>(comm,point,fieldComponent,cubatureDegree,fieldName,
+#else
+  { return Teuchos::rcp(new ResponseEvaluatorFactory_Probe<T>(comm,point,fieldComponent,cubatureDegree,fieldName,
+#endif
                                                                     linearObjFactory,globalIndexer,
                                                                     applyDirichletToDerivative)); }
 

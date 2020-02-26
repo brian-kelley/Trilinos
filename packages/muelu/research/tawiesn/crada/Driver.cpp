@@ -87,21 +87,43 @@
 #include <BelosMueLuAdapter.hpp>      // => This header defines Belos::MueLuOp
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   class ExportVTK : public MueLu::VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+  template <class Scalar, class Node>
+  class ExportVTK : public MueLu::VisualizationHelpers<Scalar, Node> {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     using real_type = typename Teuchos::ScalarTraits<Scalar>::coordinateType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using RealValuedMultiVector = typename Xpetra::MultiVector<real_type, LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using RealValuedMultiVector = typename Xpetra::MultiVector<real_type,Node>;
+#endif
 
     ExportVTK() {};
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void writeFile(std::ofstream& fout, Teuchos::RCP<RealValuedMultiVector>& coordinates, Teuchos::RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& sol)
+#else
+    void writeFile(std::ofstream& fout, Teuchos::RCP<RealValuedMultiVector>& coordinates, Teuchos::RCP<Xpetra::Vector<Scalar, Node> >& sol)
+#endif
     {
       using namespace std;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef MueLu::VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node> VH;
       Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > nodeMap = coordinates->getMap();
+#else
+      typedef MueLu::VisualizationHelpers<Scalar, Node> VH;
+      Teuchos::RCP<const Xpetra::Map<Node> > nodeMap = coordinates->getMap();
+#endif
       std::vector<LocalOrdinal> vertices;
       std::vector<LocalOrdinal> geomSize;
       LocalOrdinal numFineNodes = Teuchos::as<LocalOrdinal>(coordinates->getLocalLength());
@@ -162,7 +184,11 @@
 
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -172,7 +198,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
   using TST       = Teuchos::ScalarTraits<SC>;
   using MT        = typename Teuchos::ScalarTraits<SC>::magnitudeType;
   using real_type = typename Teuchos::ScalarTraits<SC>::coordinateType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using RealValuedMultiVector = Xpetra::MultiVector<real_type, LO, GO, NO>;
+#else
+  using RealValuedMultiVector = Xpetra::MultiVector<real_type,NO>;
+#endif
   // =========================================================================
   // MPI initialization using Teuchos
   // =========================================================================
@@ -240,7 +270,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
     RCP<Matrix> A = Teuchos::null;
     if (matrixFileName != "") {
       fancyout << "Read matrix from file " << matrixFileName << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Matrix> Atest = Xpetra::IO<SC,LO,GO,Node>::Read(std::string(matrixFileName), xpetraParameters.GetLib(), comm);
+#else
+      RCP<Matrix> Atest = Xpetra::IO<SC,Node>::Read(std::string(matrixFileName), xpetraParameters.GetLib(), comm);
+#endif
       RCP<const Map>   maptest = Atest->getRowMap();
 
       // re-read matrix and make sure it is properly distributed over all processors
@@ -262,7 +296,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       }
       RCP<const Map> Arowmap = MapFactory::Build (xpetraParameters.GetLib(),Teuchos::OrdinalTraits<GlobalOrdinal>::invalid(),myDofGIDs(),0,comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       A = Xpetra::IO<SC,LO,GO,Node>::Read(matrixFileName,Arowmap);
+#else
+      A = Xpetra::IO<SC,Node>::Read(matrixFileName,Arowmap);
+#endif
       A->SetFixedBlockSize(Teuchos::as<LocalOrdinal>(nPDE));
     }
     RCP<const Map>   map = A->getRowMap();
@@ -274,7 +312,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       fancyout << "Read null space from file " << nspFileName << std::endl;
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       nullspace = Xpetra::IO<SC,LO,GO,Node>::ReadMultiVector(std::string(nspFileName), A->getRowMap());
+#else
+      nullspace = Xpetra::IO<SC,Node>::ReadMultiVector(std::string(nspFileName), A->getRowMap());
+#endif
             //nullspace = MultiVectorFactory::Build(A->getRowMap(),6);//haq
       fancyout << "Found " << nullspace->getNumVectors() << " null space vectors" << std::endl;
       if (nNspVectors > Teuchos::as<int>(nullspace->getNumVectors())) {
@@ -338,7 +380,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       RCP<const Map> myCoordMap = MapFactory::Build (xpetraParameters.GetLib(),gCntGIDs,nodeList(),indexBase,comm);
 
       fancyout << "Read fine level coordinates from file " << cooFileName << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       coordinates = Xpetra::IO<real_type,LO,GO,Node>::ReadMultiVector(std::string(cooFileName), myCoordMap);
+#else
+      coordinates = Xpetra::IO<real_type,Node>::ReadMultiVector(std::string(cooFileName), myCoordMap);
+#endif
       fancyout << "Found " << coordinates->getNumVectors() << " coordinate vectors of length " << myCoordMap->getGlobalNumElements() << std::endl;
       /*TEUCHOS_TEST_FOR_EXCEPTION(myCoordMap->getMinGlobalIndex() != map->getMinGlobalIndex() / blkSize, MueLu::Exceptions::RuntimeError,
           "Driver: Inconsistent minGlobalIndex on proc " << comm->getRank());
@@ -417,7 +463,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
     RCP<MultiVector> B = VectorFactory::Build(map,1);
 
     if (rhsFileName != "")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       B = Xpetra::IO<SC,LO,GO,Node>::ReadMultiVector(std::string(rhsFileName), A->getRowMap());
+#else
+      B = Xpetra::IO<SC,Node>::ReadMultiVector(std::string(rhsFileName), A->getRowMap());
+#endif
     else
     {
       // we set seed for reproducibility
@@ -493,15 +543,24 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       xmaps.push_back(myStridedSpecialMap);
 
       // Xpetra mode
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node> > map_extractor = Xpetra::MapExtractorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(map,xmaps);
+#else
+      Teuchos::RCP<const Xpetra::MapExtractor<Scalar,Node> > map_extractor = Xpetra::MapExtractorFactory<Scalar, Node>::Build(map,xmaps);
+#endif
 
       // split null space vectors
       RCP<MultiVector> nullspace1 = map_extractor->ExtractVector(nullspace,0);
       RCP<MultiVector> nullspace2 = map_extractor->ExtractVector(nullspace,1);
 
       bool bThyraMode = (useThyraGIDs==1) ? true : false;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > bOp =
           Xpetra::MatrixUtils<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SplitMatrix(*A,map_extractor,map_extractor,Teuchos::null,bThyraMode);
+#else
+      Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp =
+          Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*A,map_extractor,map_extractor,Teuchos::null,bThyraMode);
+#endif
 
       // TODO plausibility checks
       // TODO set number of dofs per node
@@ -544,7 +603,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
         nodexmaps.push_back(myNonSpecialCoordsMap);
         nodexmaps.push_back(mySpecialCoordsMap);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<const Xpetra::MapExtractor<real_type,LO,GO,NO> > nodemap_extractor = Xpetra::MapExtractorFactory<real_type,LO,GO,NO>::Build(coordinates->getMap(),nodexmaps);
+#else
+        Teuchos::RCP<const Xpetra::MapExtractor<real_type,NO> > nodemap_extractor = Xpetra::MapExtractorFactory<real_type,NO>::Build(coordinates->getMap(),nodexmaps);
+#endif
 
         // split coordinate vectors
         coordinates1 = nodemap_extractor->ExtractVector(coordinates,0);
@@ -565,21 +628,35 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
         if(mySpecialMap!=Teuchos::null) H->GetLevel(0)->Set("map SpecialMap", mySpecialMap);
       } else {
         // use Thyra style GIDs
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MultiVector> nsp1shrinked             = Xpetra::MatrixUtils<SC,LO,GO,NO>::xpetraGidNumbering2ThyraGidNumbering(*nullspace1);
         RCP<MultiVector> nsp2shrinked             = Xpetra::MatrixUtils<SC,LO,GO,NO>::xpetraGidNumbering2ThyraGidNumbering(*nullspace2);
         RCP<RealValuedMultiVector> coordsshrinked = Xpetra::MatrixUtils<real_type,LO,GO,NO>::xpetraGidNumbering2ThyraGidNumbering(*coordinates);
+#else
+        RCP<MultiVector> nsp1shrinked             = Xpetra::MatrixUtils<SC,NO>::xpetraGidNumbering2ThyraGidNumbering(*nullspace1);
+        RCP<MultiVector> nsp2shrinked             = Xpetra::MatrixUtils<SC,NO>::xpetraGidNumbering2ThyraGidNumbering(*nullspace2);
+        RCP<RealValuedMultiVector> coordsshrinked = Xpetra::MatrixUtils<real_type,NO>::xpetraGidNumbering2ThyraGidNumbering(*coordinates);
+#endif
         H->GetLevel(0)->Set("A",           Teuchos::rcp_dynamic_cast<Matrix>(bOp));
         H->GetLevel(0)->Set("Nullspace1",  nsp1shrinked);
         H->GetLevel(0)->Set("Nullspace2",  nsp2shrinked);
         H->GetLevel(0)->Set("Coordinates", coordsshrinked);  // TODO split coordinates for rebalancing! (or provide the full vector in the right map and split it in the factories!)
         if(mySpecialMap!=Teuchos::null) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<const Map> specialmapshrinked = Xpetra::MapUtils<LocalOrdinal, GlobalOrdinal, Node>::shrinkMapGIDs(*mySpecialMap,*mySpecialMap);
+#else
+          RCP<const Map> specialmapshrinked = Xpetra::MapUtils<Node>::shrinkMapGIDs(*mySpecialMap,*mySpecialMap);
+#endif
           H->GetLevel(0)->Set("map SpecialMap", Teuchos::rcp_const_cast<Map>(specialmapshrinked));
         }
 
         // rearrange contents of rhs vector B
         RCP<const MapExtractor> thy_map_extractor = bOp->getRangeMapExtractor();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MultiVector> Bshrinked = Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(thy_map_extractor->getFullMap(),B->getNumVectors(),true);
+#else
+        RCP<MultiVector> Bshrinked = Xpetra::MultiVectorFactory<Scalar, Node>::Build(thy_map_extractor->getFullMap(),B->getNumVectors(),true);
+#endif
 
         size_t numMaps = map_extractor->NumMaps();
         for(size_t k = 0; k < numMaps; k++) {
@@ -653,8 +730,13 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       H->IsPreconditioner(true);
 
       // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
       Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, LO, GO, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+      Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
+      Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
       // Construct a Belos LinearProblem object
       RCP< Belos::LinearProblem<SC, MV, OP> > belosProblem = rcp(new Belos::LinearProblem<SC, MV, OP>(belosOp, X, B));
       belosProblem->setRightPrec(belosPrec);
@@ -751,13 +833,21 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       strOutputFilename.append(".vtu");
 
       std::ofstream fout(strOutputFilename);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ExportVTK<Scalar,LocalOrdinal,GlobalOrdinal,Node> expVTK;
+#else
+      ExportVTK<Scalar,Node> expVTK;
+#endif
       expVTK.writeFile(fout,coordinates,X);
       fout.close();
 
       size_t start_pos = strOutputFilename.find(".vtu");
       strOutputFilename.replace(start_pos, 4, ".m");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Write(strOutputFilename,*X);
+#else
+      Xpetra::IO<Scalar,Node>::Write(strOutputFilename,*X);
+#endif
     }
 
     // print timings

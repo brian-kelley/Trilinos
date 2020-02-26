@@ -72,7 +72,11 @@ public:
    bool test_multi_array(int verbosity,std::ostream & os);
 
 protected:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    bool compareMatrix(const Tpetra::CrsMatrix<ST,LO,GO,NT> & gl,const std::string & name,int verbosity,std::ostream & os) const;
+#else
+   bool compareMatrix(const Tpetra::CrsMatrix<ST,NT> & gl,const std::string & name,int verbosity,std::ostream & os) const;
+#endif
    ST tolerance_;
 };
 

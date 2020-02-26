@@ -61,7 +61,11 @@
 #include "Tpetra_Map.hpp"
 
 template <typename EvalT,typename TRAITS,typename S,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_BlockedTpetra<EvalT, TRAITS,S,LO,GO,NodeT>::
+#else
+panzer::GatherTangent_BlockedTpetra<EvalT, TRAITS,S,NodeT>::
+#endif
 GatherTangent_BlockedTpetra(
   const Teuchos::RCP<const BlockedDOFManager> & indexer,
   const Teuchos::ParameterList& p)
@@ -95,7 +99,11 @@ GatherTangent_BlockedTpetra(
 
 // **********************************************************************
 template <typename EvalT,typename TRAITS,typename S,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherTangent_BlockedTpetra<EvalT, TRAITS,S,LO,GO,NodeT>::
+#else
+void panzer::GatherTangent_BlockedTpetra<EvalT, TRAITS,S,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -114,7 +122,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template <typename EvalT,typename TRAITS,typename S,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherTangent_BlockedTpetra<EvalT, TRAITS,S,LO,GO,NodeT>::
+#else
+void panzer::GatherTangent_BlockedTpetra<EvalT, TRAITS,S,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
   // try to extract linear object container
@@ -125,7 +137,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template <typename EvalT,typename TRAITS,typename S,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherTangent_BlockedTpetra<EvalT, TRAITS,S,LO,GO,NodeT>::
+#else
+void panzer::GatherTangent_BlockedTpetra<EvalT, TRAITS,S,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
    using Teuchos::RCP;

@@ -65,20 +65,38 @@ namespace MueLuTests {
   /////////////////////////
   // helper function
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlocked2x2MatrixThyra(const Teuchos::Comm<int>& comm, Xpetra::UnderlyingLib lib) {
   typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
   typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix;
   typedef Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node> MapExtractor;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedCrsMatrix;
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlocked2x2MatrixThyra(const Teuchos::Comm<int>& comm, Xpetra::UnderlyingLib lib) {
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::Matrix<Scalar, Node> Matrix;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractor;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrix;
+#endif
 
   std::vector<RCP<const Map> > maps = std::vector<RCP<const Map> >(2, Teuchos::null);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   maps[0] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
   maps[1] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
   RCP<Matrix> A00 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[0], 4.0, -1.0, -1.0, lib);
   RCP<Matrix> A01 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[0], -1.0, 0.0, 0.0, lib);
   RCP<Matrix> A10 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
   RCP<Matrix> A11 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[1], 4.0, -1.0, -1.0, lib);
+#else
+  maps[0] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+  maps[1] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+  RCP<Matrix> A00 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[0], 4.0, -1.0, -1.0, lib);
+  RCP<Matrix> A01 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[0], -1.0, 0.0, 0.0, lib);
+  RCP<Matrix> A10 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
+  RCP<Matrix> A11 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], 4.0, -1.0, -1.0, lib);
+#endif
 
   // create map extractor
   // To generate the Thyra style map extractor we do not need a full map but only the
@@ -98,14 +116,24 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
   return bop;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlocked3x3MatrixThyra(const Teuchos::Comm<int>& comm, Xpetra::UnderlyingLib lib) {
   typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
   typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix;
   typedef Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node> MapExtractor;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedCrsMatrix;
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlocked3x3MatrixThyra(const Teuchos::Comm<int>& comm, Xpetra::UnderlyingLib lib) {
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::Matrix<Scalar, Node> Matrix;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractor;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrix;
+#endif
 
   std::vector<RCP<const Map> > maps = std::vector<RCP<const Map> >(3, Teuchos::null);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   maps[0] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
   maps[1] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
   maps[2] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
@@ -116,6 +144,18 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
   RCP<Matrix> A12 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
   RCP<Matrix> A21 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[2], -1.0, 0.0, 0.0, lib);
   RCP<Matrix> A22 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[2], 4.0, -1.0, -1.0, lib);
+#else
+  maps[0] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+  maps[1] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+  maps[2] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+  RCP<Matrix> A00 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[0], 4.0, -1.0, -1.0, lib);
+  RCP<Matrix> A01 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[0], -1.0, 0.0, 0.0, lib);
+  RCP<Matrix> A10 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
+  RCP<Matrix> A11 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], 4.0, -1.0, -1.0, lib);
+  RCP<Matrix> A12 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
+  RCP<Matrix> A21 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[2], -1.0, 0.0, 0.0, lib);
+  RCP<Matrix> A22 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[2], 4.0, -1.0, -1.0, lib);
+#endif
 
   // create map extractor
   // To generate the Thyra style map extractor we do not need a full map but only the
@@ -138,7 +178,11 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
   return bop;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SchurComplementFactory, SchurConstructor2x2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SchurComplementFactory, SchurConstructor2x2, Scalar, Node)
+#endif
   {
   #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -148,11 +192,19 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
     RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
     Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const BlockedCrsMatrix> bop = MueLuTests::CreateBlocked2x2MatrixThyra<Scalar,LocalOrdinal,GlobalOrdinal,Node>(*comm, lib);
+#else
+    Teuchos::RCP<const BlockedCrsMatrix> bop = MueLuTests::CreateBlocked2x2MatrixThyra<Scalar,Node>(*comm, lib);
+#endif
     Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
     Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+    Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
     level.Set("A", A);
 
     RCP<SchurComplementFactory> schurFact = rcp( new SchurComplementFactory() );
@@ -222,7 +274,11 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
     TEST_EQUALITY(bCheck, true);*/
   } //Constructor2x2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SchurComplementFactory, SchurConstructorXpetra2x2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SchurComplementFactory, SchurConstructorXpetra2x2, Scalar, Node)
+#endif
   {
   #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -232,10 +288,18 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
     RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
     Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<BlockedCrsMatrix> bop = MueLuTests::TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib, 2, comm);
+#else
+    Teuchos::RCP<BlockedCrsMatrix> bop = MueLuTests::TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib, 2, comm);
+#endif
     Teuchos::RCP<Matrix> A = Teuchos::rcp_dynamic_cast<Matrix>(bop);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+    Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
     level.Set("A", A);
 
     RCP<SchurComplementFactory> schurFact = rcp( new SchurComplementFactory() );
@@ -269,7 +333,11 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
     TEST_EQUALITY(bCheck, true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SchurComplementFactory, SchurConstructor3x3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SchurComplementFactory, SchurConstructor3x3, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -279,11 +347,19 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
     RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
     Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const BlockedCrsMatrix> bop = MueLuTests::CreateBlocked3x3MatrixThyra<Scalar,LocalOrdinal,GlobalOrdinal,Node>(*comm, lib);
+#else
+    Teuchos::RCP<const BlockedCrsMatrix> bop = MueLuTests::CreateBlocked3x3MatrixThyra<Scalar,Node>(*comm, lib);
+#endif
     Teuchos::RCP<const Matrix> Aconst = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
     Teuchos::RCP<      Matrix> A = Teuchos::rcp_const_cast<Matrix>(Aconst);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+    Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
     level.Set("A", A);
 
     RCP<SchurComplementFactory> schurFact = rcp( new SchurComplementFactory() );
@@ -341,7 +417,11 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
     TEST_EQUALITY(bCheck, true);
   } // SchurConstructor3x3
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SchurComplementFactory, SchurConstructorXpetra4x4, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SchurComplementFactory, SchurConstructorXpetra4x4, Scalar, Node)
+#endif
   {
   #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -351,11 +431,19 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
     RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
     Xpetra::UnderlyingLib lib = MueLuTests::TestHelpers::Parameters::getLib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const BlockedCrsMatrix> bop = MueLuTests::TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::CreateBlockDiagonalExampleMatrix(lib, 4, comm);
+#else
+    Teuchos::RCP<const BlockedCrsMatrix> bop = MueLuTests::TestHelpers::TestFactory<Scalar,Node>::CreateBlockDiagonalExampleMatrix(lib, 4, comm);
+#endif
     Teuchos::RCP<const Matrix> cA = Teuchos::rcp_dynamic_cast<const Matrix>(bop);
     Teuchos::RCP<Matrix> A = Teuchos::rcp_const_cast<Matrix>(cA);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Level level; TestHelpers::TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createSingleLevelHierarchy(level);
+#else
+    Level level; TestHelpers::TestFactory<Scalar,Node>::createSingleLevelHierarchy(level);
+#endif
     level.Set("A", A);
 
     RCP<SchurComplementFactory> schurFact = rcp( new SchurComplementFactory() );
@@ -408,11 +496,19 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SchurComplementFactory, SchurConstructor2x2, SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SchurComplementFactory, SchurConstructorXpetra2x2, SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SchurComplementFactory, SchurConstructor3x3, SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SchurComplementFactory, SchurConstructorXpetra4x4, SC, LO, GO, Node) \
+#else
+#  define MUELU_ETI_GROUP(SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SchurComplementFactory, SchurConstructor2x2, SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SchurComplementFactory, SchurConstructorXpetra2x2, SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SchurComplementFactory, SchurConstructor3x3, SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SchurComplementFactory, SchurConstructorXpetra4x4, SC, Node) \
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 }

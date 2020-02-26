@@ -55,7 +55,11 @@ namespace { // (anonymous)
 
 
   // Unit test of replacing the diagonal of a Tpetra::CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, ReplaceDiagonal, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, ReplaceDiagonal, Scalar, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::outArg;
@@ -67,9 +71,15 @@ namespace { // (anonymous)
     using std::cerr;
     using std::endl;
     using std::size_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, Node> map_type;
     typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> crs_matrix_type;
     typedef Tpetra::Vector<Scalar, LO, GO, Node> vec_type;
+#else
+    typedef Tpetra::Map<Node> map_type;
+    typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+    typedef Tpetra::Vector<Scalar, Node> vec_type;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> STS;
     typedef typename STS::magnitudeType MT;
     const Scalar SC_ONE = STS::one();
@@ -90,7 +100,11 @@ namespace { // (anonymous)
     }
 
     // create a Map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const map_type> map = Tpetra::createContigMapWithNode<LO,GO,Node> (LO_INVALID,
+#else
+    RCP<const map_type> map = Tpetra::createContigMapWithNode<Node> (LO_INVALID,
+#endif
                                                                            LO_ONE + LO_ONE,
                                                                            comm);
 
@@ -145,7 +159,11 @@ namespace { // (anonymous)
       newDiag->putScalar(rankAsScalar);
 
       // Replace the diagonal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       LO numReplacedDiagEntries = ::Tpetra::replaceDiagonalCrsMatrix<Scalar,LO,GO,Node>(*matrix, *newDiag);
+#else
+      LO numReplacedDiagEntries = ::Tpetra::replaceDiagonalCrsMatrix<Scalar,Node>(*matrix, *newDiag);
+#endif
 
       // Tests
       {
@@ -200,8 +218,13 @@ namespace { // (anonymous)
   // INSTANTIATIONS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, ReplaceDiagonal, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, ReplaceDiagonal, SCALAR,NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

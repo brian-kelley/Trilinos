@@ -108,15 +108,31 @@ void tJacobi2x2PreconditionerFactory_tpetra::initializeTest()
    tolerance_ = 1.0e-14;
 
    comm = GetComm_tpetra();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(2,0,comm));
+#else
+   const RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(2,0,comm));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > ptrF  = rcp(new Tpetra::CrsMatrix<ST,LO,GO,NT> (map,2));
    const RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > ptrG  = rcp(new Tpetra::CrsMatrix<ST,LO,GO,NT> (map,2));
    const RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > ptrD  = rcp(new Tpetra::CrsMatrix<ST,LO,GO,NT> (map,2));
    const RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > ptrC  = rcp(new Tpetra::CrsMatrix<ST,LO,GO,NT> (map,2));
+#else
+   const RCP<Tpetra::CrsMatrix<ST,NT> > ptrF  = rcp(new Tpetra::CrsMatrix<ST,NT> (map,2));
+   const RCP<Tpetra::CrsMatrix<ST,NT> > ptrG  = rcp(new Tpetra::CrsMatrix<ST,NT> (map,2));
+   const RCP<Tpetra::CrsMatrix<ST,NT> > ptrD  = rcp(new Tpetra::CrsMatrix<ST,NT> (map,2));
+   const RCP<Tpetra::CrsMatrix<ST,NT> > ptrC  = rcp(new Tpetra::CrsMatrix<ST,NT> (map,2));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > ptrInvF = rcp(new Tpetra::CrsMatrix<ST,LO,GO,NT> (map,2));
    const RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > ptrInvC = rcp(new Tpetra::CrsMatrix<ST,LO,GO,NT> (map,2));
+#else
+   const RCP<Tpetra::CrsMatrix<ST,NT> > ptrInvF = rcp(new Tpetra::CrsMatrix<ST,NT> (map,2));
+   const RCP<Tpetra::CrsMatrix<ST,NT> > ptrInvC = rcp(new Tpetra::CrsMatrix<ST,NT> (map,2));
+#endif
 
    indices[0] = 0;
    indices[1] = 1;
@@ -127,7 +143,11 @@ void tJacobi2x2PreconditionerFactory_tpetra::initializeTest()
    ptrF->insertGlobalValues(0,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row0));
    ptrF->insertGlobalValues(1,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row1));
    ptrF->fillComplete();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    F_ = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrF->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrF->getRangeMap()),ptrF);
+#else
+   F_ = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(ptrF->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(ptrF->getRangeMap()),ptrF);
+#endif
 
    // build D matrix
    row0[0] =  1.0; row0[1] = -3.0; 
@@ -135,7 +155,11 @@ void tJacobi2x2PreconditionerFactory_tpetra::initializeTest()
    ptrD->insertGlobalValues(0,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row0));
    ptrD->insertGlobalValues(1,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row1));
    ptrD->fillComplete();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    D_ = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrD->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrD->getRangeMap()),ptrD);
+#else
+   D_ = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(ptrD->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(ptrD->getRangeMap()),ptrD);
+#endif
    
    // build G matrix
    row0[0] =  1.0; row0[1] = -1.0; 
@@ -143,7 +167,11 @@ void tJacobi2x2PreconditionerFactory_tpetra::initializeTest()
    ptrG->insertGlobalValues(0,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row0));
    ptrG->insertGlobalValues(1,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row1));
    ptrG->fillComplete();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    G_ = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrG->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrG->getRangeMap()),ptrG);
+#else
+   G_ = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(ptrG->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(ptrG->getRangeMap()),ptrG);
+#endif
 
    // build C matrix
    row0[0] =  9.0; row0[1] =  2.0; 
@@ -151,7 +179,11 @@ void tJacobi2x2PreconditionerFactory_tpetra::initializeTest()
    ptrC->insertGlobalValues(0,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row0));
    ptrC->insertGlobalValues(1,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row1));
    ptrC->fillComplete();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    C_ = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrC->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrC->getRangeMap()),ptrC);
+#else
+   C_ = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(ptrC->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(ptrC->getRangeMap()),ptrC);
+#endif
 
    // build inv(F) matrix
    row0[0] = -1.0/3.0; row0[1] =  2.0/3.0;
@@ -159,7 +191,11 @@ void tJacobi2x2PreconditionerFactory_tpetra::initializeTest()
    ptrInvF->insertGlobalValues(0,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row0));
    ptrInvF->insertGlobalValues(1,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row1));
    ptrInvF->fillComplete();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    invF_ = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrInvF->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrInvF->getRangeMap()),ptrInvF);
+#else
+   invF_ = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(ptrInvF->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(ptrInvF->getRangeMap()),ptrInvF);
+#endif
 
    // build inv(C) matrix
    row0[0] =  0.151515151515151; row0[1] = -0.060606060606061;
@@ -167,7 +203,11 @@ void tJacobi2x2PreconditionerFactory_tpetra::initializeTest()
    ptrInvC->insertGlobalValues(0,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row0));
    ptrInvC->insertGlobalValues(1,Teuchos::ArrayView<GO>(indices),Teuchos::ArrayView<ST>(row1));
    ptrInvC->fillComplete();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    invC_ = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrInvC->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrInvC->getRangeMap()),ptrInvC);
+#else
+   invC_ = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(ptrInvC->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(ptrInvC->getRangeMap()),ptrInvC);
+#endif
 
    A_ = Thyra::block2x2<ST>(F_,G_,D_,C_,"A");
 }
@@ -332,9 +372,17 @@ bool tJacobi2x2PreconditionerFactory_tpetra::test_identity(int verbosity,std::os
    // build linear operator
    RCP<const Thyra::LinearOpBase<ST> > precOp = prec->getUnspecifiedPrecOp();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(2,0,comm));
+#else
+   const RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(2,0,comm));
+#endif
    // construct a couple of vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT> ea(map),eb(map);
+#else
+   Tpetra::Vector<ST,NT> ea(map),eb(map);
+#endif
    const RCP<const Thyra::MultiVectorBase<ST> > x = BlockVector(ea,eb,A->domain());
    const RCP<Thyra::MultiVectorBase<ST> > y = Thyra::createMembers(A->range(),1); 
 
@@ -445,10 +493,19 @@ bool tJacobi2x2PreconditionerFactory_tpetra::test_diagonal(int verbosity,std::os
    // build linear operator
    RCP<const Thyra::LinearOpBase<ST> > precOp = prec->getUnspecifiedPrecOp();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(2,0,comm));
+#else
+   const RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(2,0,comm));
+#endif
    // construct a couple of vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT> ea(map),eb(map);
    Tpetra::Vector<ST,LO,GO,NT> ef(map),eg(map);
+#else
+   Tpetra::Vector<ST,NT> ea(map),eb(map);
+   Tpetra::Vector<ST,NT> ef(map),eg(map);
+#endif
    const RCP<const Thyra::MultiVectorBase<ST> > x = BlockVector(ea,eb,A->domain());
    const RCP<const Thyra::MultiVectorBase<ST> > z = BlockVector(ef,eg,A->domain());
    const RCP<Thyra::MultiVectorBase<ST> > y = Thyra::createMembers(A->range(),1); 
@@ -553,10 +610,19 @@ bool tJacobi2x2PreconditionerFactory_tpetra::test_result(int verbosity,std::ostr
    // build linear operator
    RCP<const Thyra::LinearOpBase<ST> > precOp = prec->getUnspecifiedPrecOp();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(2,0,comm));
+#else
+   const RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(2,0,comm));
+#endif
    // construct a couple of vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT> ea(map),eb(map);
    Tpetra::Vector<ST,LO,GO,NT> ef(map),eg(map);
+#else
+   Tpetra::Vector<ST,NT> ea(map),eb(map);
+   Tpetra::Vector<ST,NT> ef(map),eg(map);
+#endif
    
    const RCP<const Thyra::MultiVectorBase<ST> > x = BlockVector(ea,eb,A_->domain());
    const RCP<const Thyra::MultiVectorBase<ST> > z = BlockVector(ef,eg,A_->domain());

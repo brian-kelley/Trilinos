@@ -815,7 +815,12 @@ void TriDiSolver<MatrixType, true>::describe(Teuchos::FancyOStream& out,
 }// namespace Details
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_TRIDISOLVER_INSTANT(S,LO,GO,N)                  \
   template class Ifpack2::Details::TriDiSolver< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_DETAILS_TRIDISOLVER_INSTANT(S,N)                  \
+  template class Ifpack2::Details::TriDiSolver< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif // IFPACK2_DETAILS_TRIDISOLVER_HPP

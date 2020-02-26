@@ -72,14 +72,20 @@ namespace MueLu {
            matrix K and mass matrix M separately.
   */
   template<class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
            class Node = DefaultNode>
   class RAPShiftFactory : public TwoLevelFactoryBase {
 #undef MUELU_RAPSHIFTFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 

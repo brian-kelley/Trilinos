@@ -54,8 +54,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> MultiVectorTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> MultiVectorTransferFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< std::string >           ("Vector name",      "undefined", "Name of the vector that will be transferred on the coarse grid (level key)"); // TODO: how to set a validator without default value?
@@ -65,13 +70,23 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   MultiVectorTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MultiVectorTransferFactory(std::string const & vectorName) {
+#else
+  template <class Scalar, class Node>
+  MultiVectorTransferFactory<Scalar, Node>::MultiVectorTransferFactory(std::string const & vectorName) {
+#endif
     SetParameter("Vector name", ParameterEntry(vectorName));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MultiVectorTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void MultiVectorTransferFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     const ParameterList & pL = GetParameterList();
     std::string vectorName   = pL.get<std::string>("Vector name");
 
@@ -79,8 +94,13 @@ namespace MueLu {
     Input(coarseLevel, "R");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MultiVectorTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void MultiVectorTransferFactory<Scalar, Node>::Build(Level & fineLevel, Level &coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
 
     const ParameterList & pL = GetParameterList();
@@ -105,8 +125,13 @@ namespace MueLu {
 
   } // Build
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   ArrayRCP<Scalar> MultiVectorTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::expandCoordinates(ArrayRCP<SC> coordinates, LocalOrdinal blksize) {
+#else
+  template <class Scalar, class Node>
+  ArrayRCP<Scalar> MultiVectorTransferFactory<Scalar, Node>::expandCoordinates(ArrayRCP<SC> coordinates, LocalOrdinal blksize) {
+#endif
     if (blksize == 1)
       return coordinates;
 

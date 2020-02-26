@@ -56,8 +56,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> CoarseningVisualizationFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
 
     RCP<ParameterList> validParamList = VisualizationHelpers::GetValidParameterList();
 
@@ -71,8 +76,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void CoarseningVisualizationFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     this->Input(fineLevel, "Coordinates");
 
     const ParameterList & pL = this->GetParameterList();
@@ -97,8 +107,13 @@ namespace MueLu {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoarseningVisualizationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void CoarseningVisualizationFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#endif
 
     RCP<GraphBase> fineGraph = Teuchos::null;
     RCP<Matrix>    P         = Teuchos::null;
@@ -185,7 +200,11 @@ namespace MueLu {
     }*/
 
     // get fine level coordinate information
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > coords = Get<RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > >(fineLevel, "Coordinates");
+#else
+    Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > coords = Get<RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > >(fineLevel, "Coordinates");
+#endif
 
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::as<LO>(P->getRowMap()->getNodeNumElements()) / dofsPerNode != Teuchos::as<LocalOrdinal>(coords->getLocalLength()), Exceptions::RuntimeError,
                                            "Number of fine level nodes in coordinates is inconsistent with dof based information");
@@ -194,8 +213,13 @@ namespace MueLu {
     if (pL.get<bool>("visualization: fine graph edges")) {
       fineGraph = Get<RCP<GraphBase> >(fineLevel, "Graph");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Import> coordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coords->getMap(), fineGraph->GetImportMap());
       RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node>::Build(fineGraph->GetImportMap(), coords->getNumVectors());
+#else
+      RCP<Import> coordImporter = Xpetra::ImportFactory<Node>::Build(coords->getMap(), fineGraph->GetImportMap());
+      RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node>::Build(fineGraph->GetImportMap(), coords->getNumVectors());
+#endif
       ghostedCoords->doImport(*coords, *coordImporter, Xpetra::INSERT);
       coords = ghostedCoords;
     }
@@ -325,10 +349,19 @@ namespace MueLu {
     if (pL.get<bool>("visualization: coarse graph edges")) {
       RCP<GraphBase> coarseGraph = Get<RCP<GraphBase> >(coarseLevel, "Graph");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > coarsecoords = Get<RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > >(coarseLevel, "Coordinates");
+#else
+      Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > coarsecoords = Get<RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > >(coarseLevel, "Coordinates");
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Import> coarsecoordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coarsecoords->getMap(), coarseGraph->GetImportMap());
       RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > coarseghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node>::Build(coarseGraph->GetImportMap(), coarsecoords->getNumVectors());
+#else
+      RCP<Import> coarsecoordImporter = Xpetra::ImportFactory<Node>::Build(coarsecoords->getMap(), coarseGraph->GetImportMap());
+      RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > coarseghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node>::Build(coarseGraph->GetImportMap(), coarsecoords->getNumVectors());
+#endif
       coarseghostedCoords->doImport(*coarsecoords, *coarsecoordImporter, Xpetra::INSERT);
       coarsecoords = coarseghostedCoords;
 

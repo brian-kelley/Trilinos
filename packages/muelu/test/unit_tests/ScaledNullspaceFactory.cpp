@@ -67,7 +67,11 @@
 namespace MueLuTests {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(ScaledNullspaceFactory, Test0, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(ScaledNullspaceFactory, Test0, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -190,8 +194,13 @@ namespace MueLuTests {
 
   } 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(ScaledNullspaceFactory, Test0, SC, LO, GO, Node)
+#else
+#  define MUELU_ETI_GROUP(SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(ScaledNullspaceFactory, Test0, SC, Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

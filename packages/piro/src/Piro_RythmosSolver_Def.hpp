@@ -94,8 +94,13 @@
 #include <iostream>
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RythmosSolver() :
+#else
+template <typename Scalar, typename Node>
+Piro::RythmosSolver<Scalar, Node>::RythmosSolver() :
+#endif
 #else
 template <typename Scalar>
 Piro::RythmosSolver<Scalar>::RythmosSolver() :
@@ -106,8 +111,13 @@ Piro::RythmosSolver<Scalar>::RythmosSolver() :
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RythmosSolver(
+#else
+template <typename Scalar, typename Node>
+Piro::RythmosSolver<Scalar, Node>::RythmosSolver(
+#endif
 #else
 template <typename Scalar>
 Piro::RythmosSolver<Scalar>::RythmosSolver(
@@ -133,8 +143,13 @@ Piro::RythmosSolver<Scalar>::RythmosSolver(
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::initialize(
+#else
+template <typename Scalar, typename Node>
+void Piro::RythmosSolver<Scalar, Node>::initialize(
+#endif
 #else
 template <typename Scalar>
 void Piro::RythmosSolver<Scalar>::initialize(
@@ -362,7 +377,11 @@ void Piro::RythmosSolver<Scalar>::initialize(
 #ifdef HAVE_PIRO_IFPACK2
      typedef Thyra::PreconditionerFactoryBase<double> Base;
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<double, LocalOrdinal, GlobalOrdinal, Node> > Impl;
+#else
+     typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<double, Node> > Impl;
+#endif
 #else
      typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<double> > Impl;
 #endif
@@ -370,7 +389,11 @@ void Piro::RythmosSolver<Scalar>::initialize(
 #endif
 #ifdef HAVE_PIRO_MUELU
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      Stratimikos::enableMueLu<LocalOrdinal, GlobalOrdinal, Node>(linearSolverBuilder);
+#else
+     Stratimikos::enableMueLu<Node>(linearSolverBuilder);
+#endif
 #else
      Stratimikos::enableMueLu(linearSolverBuilder);
 #endif
@@ -400,7 +423,11 @@ void Piro::RythmosSolver<Scalar>::initialize(
         Teuchos::RCP<Thyra::ModelEvaluator<Scalar> > origModel = model;
         rythmosSolverPL->get("Lump Mass Matrix", false);  //JF line does not do anything
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar, LocalOrdinal, GlobalOrdinal, Node>(
+#else
+        model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar, Node>(
+#endif
 #else
         model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar>(
 #endif
@@ -453,8 +480,13 @@ else {
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RythmosSolver(
+#else
+template <typename Scalar, typename Node>
+Piro::RythmosSolver<Scalar, Node>::RythmosSolver(
+#endif
 #else
 template <typename Scalar>
 Piro::RythmosSolver<Scalar>::RythmosSolver(
@@ -485,8 +517,13 @@ Piro::RythmosSolver<Scalar>::RythmosSolver(
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RythmosSolver(
+#else
+template <typename Scalar, typename Node>
+Piro::RythmosSolver<Scalar, Node>::RythmosSolver(
+#endif
 #else
 template <typename Scalar>
 Piro::RythmosSolver<Scalar>::RythmosSolver(
@@ -518,9 +555,17 @@ Piro::RythmosSolver<Scalar>::RythmosSolver(
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Rythmos::IntegratorBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getRythmosIntegrator() const
+#else
+Piro::RythmosSolver<Scalar, Node>::getRythmosIntegrator() const
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<const Rythmos::IntegratorBase<Scalar> >
@@ -532,9 +577,17 @@ Piro::RythmosSolver<Scalar>::getRythmosIntegrator() const
 
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Thyra::NonlinearSolverBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getTimeStepSolver() const
+#else
+Piro::RythmosSolver<Scalar, Node>::getTimeStepSolver() const
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<const Thyra::NonlinearSolverBase<Scalar> >
@@ -545,9 +598,17 @@ Piro::RythmosSolver<Scalar>::getTimeStepSolver() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_p_space(int l) const
+#else
+Piro::RythmosSolver<Scalar, Node>::get_p_space(int l) const
+#endif
 #else
 template<typename Scalar>
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
@@ -566,9 +627,17 @@ Piro::RythmosSolver<Scalar>::get_p_space(int l) const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_g_space(int j) const
+#else
+Piro::RythmosSolver<Scalar, Node>::get_g_space(int j) const
+#endif
 #else
 template<typename Scalar>
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
@@ -592,9 +661,17 @@ Piro::RythmosSolver<Scalar>::get_g_space(int j) const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNominalValues() const
+#else
+Piro::RythmosSolver<Scalar, Node>::getNominalValues() const
+#endif
 #else
 template<typename Scalar>
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
@@ -610,9 +687,17 @@ Piro::RythmosSolver<Scalar>::getNominalValues() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::createInArgs() const
+#else
+Piro::RythmosSolver<Scalar, Node>::createInArgs() const
+#endif
 #else
 template <typename Scalar>
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
@@ -626,9 +711,17 @@ Piro::RythmosSolver<Scalar>::createInArgs() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Thyra::ModelEvaluatorBase::OutArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::createOutArgsImpl() const
+#else
+Piro::RythmosSolver<Scalar, Node>::createOutArgsImpl() const
+#endif
 #else
 template <typename Scalar>
 Thyra::ModelEvaluatorBase::OutArgs<Scalar>
@@ -704,8 +797,13 @@ Piro::RythmosSolver<Scalar>::createOutArgsImpl() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::evalModelImpl(
+#else
+template <typename Scalar, typename Node>
+void Piro::RythmosSolver<Scalar, Node>::evalModelImpl(
+#endif
 #else
 template <typename Scalar>
 void Piro::RythmosSolver<Scalar>::evalModelImpl(
@@ -1028,9 +1126,17 @@ void Piro::RythmosSolver<Scalar>::evalModelImpl(
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<Thyra::LinearOpBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::create_DgDp_op_impl(int j, int l) const
+#else
+Piro::RythmosSolver<Scalar, Node>::create_DgDp_op_impl(int j, int l) const
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<Thyra::LinearOpBase<Scalar> >
@@ -1044,9 +1150,17 @@ Piro::RythmosSolver<Scalar>::create_DgDp_op_impl(int j, int l) const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Teuchos::ParameterList>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getValidRythmosParameters() const
+#else
+Piro::RythmosSolver<Scalar, Node>::getValidRythmosParameters() const
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<const Teuchos::ParameterList>
@@ -1092,9 +1206,17 @@ Piro::RythmosSolver<Scalar>::getValidRythmosParameters() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Teuchos::ParameterList>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getValidRythmosSolverParameters() const
+#else
+Piro::RythmosSolver<Scalar, Node>::getValidRythmosSolverParameters() const
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<const Teuchos::ParameterList>
@@ -1113,8 +1235,13 @@ Piro::RythmosSolver<Scalar>::getValidRythmosSolverParameters() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::RythmosSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::RythmosSolver<Scalar>::
@@ -1125,8 +1252,13 @@ addStepperFactory(const std::string & stepperName,const Teuchos::RCP<Piro::Rythm
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::RythmosSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::RythmosSolver<Scalar>::
@@ -1138,8 +1270,13 @@ addStepControlFactory(const std::string & stepControlName,
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Teuchos::RCP<Piro::RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+template <typename Scalar, typename Node>
+Teuchos::RCP<Piro::RythmosSolver<Scalar, Node> >
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<Piro::RythmosSolver<Scalar> >
@@ -1156,7 +1293,11 @@ Piro::rythmosSolver(
   }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Teuchos::rcp(new RythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(appParams, in_model, observer));
+#else
+  return Teuchos::rcp(new RythmosSolver<Scalar, Node>(appParams, in_model, observer));
+#endif
 #else
   return Teuchos::rcp(new RythmosSolver<Scalar>(appParams, in_model, observer));
 #endif

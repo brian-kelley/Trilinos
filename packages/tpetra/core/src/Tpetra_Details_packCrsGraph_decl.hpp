@@ -119,10 +119,19 @@ namespace Details {
 /// copies back in to the Teuchos::ArrayView objects, if needed).  When
 /// CrsGraph migrates fully to adopting Kokkos::DualView objects for its storage
 /// of data, this procedure could be bypassed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename LO, typename GO, typename NT>
+#else
+template<typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsGraph (const CrsGraph<LO, GO, NT>& sourceGraph,
                Teuchos::Array<typename CrsGraph<LO,GO,NT>::packet_type>& exports,
+#else
+packCrsGraph (const CrsGraph<NT>& sourceGraph,
+               Teuchos::Array<typename CrsGraph<NT>::packet_type>& exports,
+#endif
                const Teuchos::ArrayView<size_t>& numPacketsPerLID,
                const Teuchos::ArrayView<const LO>& exportLIDs,
                size_t& constantNumPackets,
@@ -157,24 +166,49 @@ packCrsGraph (const CrsGraph<LO, GO, NT>& sourceGraph,
 /// This method implements CrsGraph::packNew, and thus
 /// CrsGraph::packAndPrepare, for the case where the graph to
 /// pack has a valid KokkosSparse::CrsGraph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename LO, typename GO, typename NT>
+#else
+template<typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsGraphNew (const CrsGraph<LO, GO, NT>& sourceGraph,
+#else
+packCrsGraphNew (const CrsGraph<NT>& sourceGraph,
+#endif
                  const Kokkos::DualView<
                    const LO*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    typename CrsGraph<LO, GO, NT>::buffer_device_type
+#else
+                   typename CrsGraph<NT>::buffer_device_type
+#endif
                  >& exportLIDs,
                  const Kokkos::DualView<
                    const int*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    typename CrsGraph<LO, GO, NT>::buffer_device_type
+#else
+                   typename CrsGraph<NT>::buffer_device_type
+#endif
                  >& exportPIDs,
                  Kokkos::DualView<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    typename CrsGraph<LO, GO, NT>::packet_type*,
                    typename CrsGraph<LO, GO, NT>::buffer_device_type
+#else
+                   typename CrsGraph<NT>::packet_type*,
+                   typename CrsGraph<NT>::buffer_device_type
+#endif
                  >& exports,
                  Kokkos::DualView<
                    size_t*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    typename CrsGraph<LO, GO, NT>::buffer_device_type
+#else
+                   typename CrsGraph<NT>::buffer_device_type
+#endif
                  > numPacketsPerLID,
                  size_t& constantNumPackets,
                  const bool pack_pids,
@@ -210,11 +244,21 @@ packCrsGraphNew (const CrsGraph<LO, GO, NT>& sourceGraph,
 /// copies back in to the Teuchos::ArrayView objects, if needed).  When
 /// CrsGraph migrates fully to adopting Kokkos::DualView objects for its storage
 /// of data, this procedure could be bypassed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename LO, typename GO, typename NT>
+#else
+template<typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsGraphWithOwningPIDs (const CrsGraph<LO,GO,NT>& sourceGraph,
                             Kokkos::DualView<typename CrsGraph<LO,GO,NT>::packet_type*,
                                              typename CrsGraph<LO,GO,NT>::buffer_device_type>&
+#else
+packCrsGraphWithOwningPIDs (const CrsGraph<NT>& sourceGraph,
+                            Kokkos::DualView<typename CrsGraph<NT>::packet_type*,
+                                             typename CrsGraph<NT>::buffer_device_type>&
+#endif
                                              exports_dv,
                             const Teuchos::ArrayView<size_t>& numPacketsPerLID,
                             const Teuchos::ArrayView<const LO>& exportLIDs,

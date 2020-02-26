@@ -58,8 +58,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> ScaledNullspaceFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> ScaledNullspaceFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
     validParamList->set< std::string >("Fine level nullspace", "Nullspace", "Variable name which is used to store null space multi vector on the finest level (default=\"Nullspace\").");
   
@@ -69,15 +74,25 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ScaledNullspaceFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ScaledNullspaceFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     // Scaled Nullspace always needs A & a Nullspace from somewhere
     Input(currentLevel, "A");
     Input(currentLevel, "Nullspace");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ScaledNullspaceFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ScaledNullspaceFactory<Scalar, Node>::Build(Level &currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", currentLevel);
 
     RCP<MultiVector> nullspace, tentativeNullspace;
@@ -116,8 +131,13 @@ namespace MueLu {
     *nullspace = *tentativeNullspace;  // Copy the tentative nullspace
     RCP<MultiVector> blockDiagonal = MultiVectorFactory::Build(A->getDomainMap(), numPDEs);
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Xpetra::MatrixUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::extractBlockDiagonal(*A,*blockDiagonal);
     Xpetra::MatrixUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::inverseScaleBlockDiagonal(*blockDiagonal,true,*nullspace);
+#else
+    Xpetra::MatrixUtils<Scalar,Node>::extractBlockDiagonal(*A,*blockDiagonal);
+    Xpetra::MatrixUtils<Scalar,Node>::inverseScaleBlockDiagonal(*blockDiagonal,true,*nullspace);
+#endif
 
     // provide "Scaled Nullspace" variable on current level (used by TentativePFactory)
     Set(currentLevel, "Scaled Nullspace", nullspace);

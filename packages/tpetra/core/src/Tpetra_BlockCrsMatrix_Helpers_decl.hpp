@@ -58,16 +58,31 @@ namespace Teuchos {
 namespace Tpetra {
 
   /// \brief Helper function to write a BlockCrsMatrix.  Calls the 3-argument version.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::string const &fileName);
+#else
+  template<class Scalar, class Node>
+  void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,Node> const &A, std::string const &fileName);
+#endif
 
   /// \brief Helper function to write a BlockCrsMatrix.  Calls the 3-argument version.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::string const &fileName, Teuchos::ParameterList const &params);
+#else
+  template<class Scalar, class Node>
+  void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,Node> const &A, std::string const &fileName, Teuchos::ParameterList const &params);
+#endif
 
   /// \brief Helper function to write a BlockCrsMatrix.  Calls the 3-argument version.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::ostream &os);
+#else
+  template<class Scalar, class Node>
+  void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,Node> const &A, std::ostream &os);
+#endif
 
   /*! \brief Helper function to write a BlockCrsMatrix.
 
@@ -78,15 +93,25 @@ namespace Tpetra {
     - "precision"                     : precision to be used in printing matrix entries (default=C++ default)
     - "zero-based indexing"           : if true, print the matrix with 0-based indexing (default=false)
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::ostream &os, Teuchos::ParameterList const &params);
+#else
+  template<class Scalar, class Node>
+  void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,Node> const &A, std::ostream &os, Teuchos::ParameterList const &params);
+#endif
 
   /*! @brief Helper function called by blockCrsMatrixWriter.
 
   This function should not be called directly.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void writeMatrixStrip(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::ostream &os, Teuchos::ParameterList const &params);
+#else
+  template<class Scalar, class Node>
+  void writeMatrixStrip(BlockCrsMatrix<Scalar,Node> const &A, std::ostream &os, Teuchos::ParameterList const &params);
+#endif
 
   /// \brief Non-member constructor that creates a BlockCrsMatrix from an existing point CrsMatrix.
   ///
@@ -95,15 +120,27 @@ namespace Tpetra {
   ///   - All point entries in a logical block must be stored in the CrsMatrix, even
   ///     if the values are zero.
   ///   - Point rows corresponding to a particular mesh node must be stored consecutively.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   Teuchos::RCP<BlockCrsMatrix<Scalar, LO, GO, Node>>
   convertToBlockCrsMatrix(const Tpetra::CrsMatrix<Scalar, LO, GO, Node>& pointMatrix, const LO &blockSize);
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<BlockCrsMatrix<Scalar, Node>>
+  convertToBlockCrsMatrix(const Tpetra::CrsMatrix<Scalar, Node>& pointMatrix, const LO &blockSize);
+#endif
 
   /// @brief Helper function to generate a mesh map from a point map.
   /// Important! It's assumed that point GIDs associated with a single mesh GID appear consecutively in pointMap.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class Node>
   Teuchos::RCP<const Tpetra::Map<LO,GO,Node>>
   createMeshMap(LO const &blockSize, const Tpetra::Map<LO,GO,Node> &pointMap);
+#else
+  template<class Node>
+  Teuchos::RCP<const Tpetra::Map<Node>>
+  createMeshMap(LO const &blockSize, const Tpetra::Map<Node> &pointMap);
+#endif
 
 } // namespace Tpetra
 

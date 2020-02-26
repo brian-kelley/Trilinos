@@ -53,11 +53,21 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   UnsmooshFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::UnsmooshFactory() { }
+#else
+  template <class Scalar, class Node>
+  UnsmooshFactory<Scalar, Node>::UnsmooshFactory() { }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> UnsmooshFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> UnsmooshFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
     validParamList->set< RCP<const FactoryBase> >("A",                  Teuchos::null, "Generating factory for unamalgamated matrix. Row map of (unamalgamted) output prolongation operator should match row map of this A.");
     validParamList->set< RCP<const FactoryBase> >("P",                  Teuchos::null, "Generating factory of the (amalgamated) prolongator P");
@@ -69,8 +79,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void UnsmooshFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void UnsmooshFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     //const ParameterList& pL = GetParameterList();
     Input(fineLevel, "A");
     Input(coarseLevel, "P");
@@ -81,8 +96,13 @@ namespace MueLu {
       Input(fineLevel, "DofStatus");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void UnsmooshFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void UnsmooshFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
     typedef Teuchos::ScalarTraits<SC> STS;
 
@@ -107,7 +127,11 @@ namespace MueLu {
       dofStatus = Teuchos::Array<char>(unamalgA->getRowMap()->getNodeNumElements() /*amalgP->getRowMap()->getNodeNumElements() * maxDofPerNode*/,'s');
 
       bool bHasZeroDiagonal = false;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::ArrayRCP<const bool> dirOrNot = MueLu::Utilities<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DetectDirichletRowsExt(*unamalgA,bHasZeroDiagonal,STS::magnitude(0.5));
+#else
+      Teuchos::ArrayRCP<const bool> dirOrNot = MueLu::Utilities<Scalar, Node>::DetectDirichletRowsExt(*unamalgA,bHasZeroDiagonal,STS::magnitude(0.5));
+#endif
 
       TEUCHOS_TEST_FOR_EXCEPTION(dirOrNot.size() != dofStatus.size(), MueLu::Exceptions::RuntimeError,"MueLu::UnsmooshFactory::Build: inconsistent number of coarse DBC array and dofStatus array. dirOrNot.size() = " << dirOrNot.size() << " dofStatus.size() = " << dofStatus.size());
       for(decltype(dirOrNot.size()) i = 0; i < dirOrNot.size(); ++i) {

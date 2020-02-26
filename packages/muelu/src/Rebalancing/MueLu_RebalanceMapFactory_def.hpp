@@ -59,8 +59,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> RebalanceMapFactory<LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Node>
+ RCP<const ParameterList> RebalanceMapFactory<Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -78,8 +83,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void RebalanceMapFactory<LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level & currentLevel) const {
+#else
+  template <class Node>
+  void RebalanceMapFactory<Node>::DeclareInput(Level & currentLevel) const {
+#endif
     const Teuchos::ParameterList & pL = GetParameterList();
     std::string mapName                        = pL.get<std::string> ("Map name");
     Teuchos::RCP<const FactoryBase> mapFactory = GetFactory          ("Map factory");
@@ -88,8 +98,13 @@ namespace MueLu {
     Input(currentLevel, "Importer");
   } //DeclareInput()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void RebalanceMapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(Level &level) const {
+#else
+  template <class Node>
+  void RebalanceMapFactory<Node>::Build(Level &level) const {
+#endif
     FactoryMonitor m(*this, "Build", level);
 
     //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::getFancyOStream(Teuchos::rcpFromRef(std::cout));

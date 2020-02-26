@@ -71,16 +71,26 @@ namespace {
   //
   // UNIT TESTS
   //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(ImportExport,ImportConstructExpert,LO,GO,NT) {
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(ImportExport,ImportConstructExpert,NT) {
+#endif
     //
     using Teuchos::RCP;
     using Teuchos::rcp;
     using std::endl;
     typedef Teuchos::Array<int>::size_type size_type;
     typedef Tpetra::BlockCrsMatrix<>::scalar_type Scalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockCrsMatrix<Scalar,LO,GO,NT> matrix_type;
     typedef Tpetra::Map<LO,GO,NT> map_type;
     typedef Tpetra::CrsGraph<LO,GO,NT>  graph_type;
+#else
+    typedef Tpetra::BlockCrsMatrix<Scalar,NT> matrix_type;
+    typedef Tpetra::Map<NT> map_type;
+    typedef Tpetra::CrsGraph<NT>  graph_type;
+#endif
     typedef Tpetra::global_size_t GST;
     typedef typename matrix_type::device_type device_type;
     typedef typename Kokkos::View<Scalar**, Kokkos::LayoutRight, device_type>::HostMirror block_type;
@@ -181,7 +191,11 @@ namespace {
     const Teuchos::ArrayView<const LO> exportLIDs      = G->getImporter()->getExportLIDs();
     const Teuchos::ArrayView<const int> userExportPIDs = G->getImporter()->getExportPIDs();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Import<LO,GO,NT> newimport(source,
+#else
+    Tpetra::Import<NT> newimport(source,
+#endif
                                        target,
                                        userRemotePIDs,
                                        exportLIDs,
@@ -269,8 +283,13 @@ namespace {
   // INSTANTIATIONS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_3( LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ImportExport,ImportConstructExpert,LO,GO,NT)
+#else
+#define UNIT_TEST_3(NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ImportExport,ImportConstructExpert,NT)
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

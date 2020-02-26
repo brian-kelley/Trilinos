@@ -448,11 +448,20 @@ struct solution_checker {
 
 // Partial specialization of solution_checker for Tpetra::MultiVector.
 template <typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typename LocalOrdinal,
           typename GlobalOrdinal,
+#endif
           typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct solution_checker<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > {
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> t_mv;
+#else
+struct solution_checker<Tpetra::MultiVector<Scalar,Node> > {
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::MultiVector<Scalar,Node> t_mv;
+#endif
   bool operator()(RCP<t_mv> true_solution, RCP<t_mv> given_solution)
   {
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType mag_t;
@@ -871,8 +880,10 @@ bool test_epetra(const string& mm_file,
 //////////////////////////
 
 template<typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          typename LocalOrdinal,
          typename GlobalOrdinal,
+#endif
          typename Node>
 bool do_tpetra_test_with_types(const string& mm_file,
                                const string& solver_name,
@@ -886,8 +897,13 @@ bool do_tpetra_test_with_types(const string& mm_file,
   using std::endl;
   using std::flush;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> MAT;
   typedef MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+  typedef CrsMatrix<Scalar,Node> MAT;
+  typedef MultiVector<Scalar,Node> MV;
+#endif
   const size_t numVecs = 5;     // arbitrary number
   const size_t numRHS = 5;        // also arbitrary
 
@@ -914,8 +930,13 @@ bool do_tpetra_test_with_types(const string& mm_file,
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > dmnmap = A->getDomainMap();
   RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > rngmap = A->getRangeMap();
+#else
+  RCP<const Map<Node> > dmnmap = A->getDomainMap();
+  RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
   ETransp trans = transpose ? CONJ_TRANS : NO_TRANS;
 
@@ -1078,7 +1099,11 @@ bool test_tpetra(const string& mm_file,
 
       bool test_done = false;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define AMESOS2_SOLVER_TPETRA_TEST(S,LO,GO,N)                           \
+#else
+#define AMESOS2_SOLVER_TPETRA_TEST(S,N)                           \
+#endif
       test_done = true;                                                 \
       if (verbosity > 1) {                                              \
         *fos << std::endl                                               \
@@ -1089,7 +1114,11 @@ bool test_tpetra(const string& mm_file,
              << ", N=" << Teuchos::TypeNameTraits<N>::name ()           \
              << std::endl;                                              \
       }                                                                 \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       bool run_success = do_tpetra_test_with_types<S,LO,GO,N>(mm_file,solver_name, \
+#else
+      bool run_success = do_tpetra_test_with_types<S,N>(mm_file,solver_name, \
+#endif
                                                               solve_params_copy); \
       if (verbosity > 1) {                                              \
         if (!run_success)                                               \

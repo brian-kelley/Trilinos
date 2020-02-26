@@ -148,14 +148,26 @@ namespace {
   //
 
   /// unit test for matrix-matrix multiplication (both for Epetra and Tpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( MatrixMatrix, Multiply_Epetra, M, MA, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( MatrixMatrix, Multiply_Epetra, M, MA, Scalar, Node )
+#endif
   {
 #if defined(HAVE_XPETRA_EPETRA) && defined(HAVE_XPETRA_EPETRAEXT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
     typedef Xpetra::CrsMatrix<Scalar,LO,GO,Node> CrsMatrixClass;
     typedef Xpetra::Matrix<Scalar,LO,GO,Node> MatrixClass;
     typedef Xpetra::CrsMatrixWrap<Scalar,LO,GO,Node> CrsMatrixWrapClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+    typedef Xpetra::CrsMatrix<Scalar,Node> CrsMatrixClass;
+    typedef Xpetra::Matrix<Scalar,Node> MatrixClass;
+    typedef Xpetra::CrsMatrixWrap<Scalar,Node> CrsMatrixWrapClass;
+#endif
 
     //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::getFancyOStream(Teuchos::rcpFromRef(std::cout));
     //yAB->describe(*fos, Teuchos::VERB_EXTREME);
@@ -222,7 +234,11 @@ namespace {
 
 
       //Xpetra::MatrixMatrix::Multiply<Scalar, LO, GO, Node> (
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
         *xA,
         false,
         *xB,
@@ -231,7 +247,11 @@ namespace {
       //Xpetra::MatrixMatrix::Add<Scalar, LO, GO, Node>(*xAB,false,1.0,*yAB,-1.0);
       TEUCHOS_TEST_EQUALITY(yAB->getFrobeniusNorm(), xAB->getFrobeniusNorm(), out, success );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
         *xA,
         true,
         *xB,
@@ -240,7 +260,11 @@ namespace {
       //Xpetra::MatrixMatrix::Add<Scalar, LO, GO, Node>(*xAtB,false,1.0,*yAB,-1.0);
       TEUCHOS_TEST_EQUALITY(yAB->getFrobeniusNorm(), xAtB->getFrobeniusNorm(), out, success );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
         *xA,
         false,
         *xB,
@@ -249,7 +273,11 @@ namespace {
       //Xpetra::MatrixMatrix::Add<Scalar, LO, GO, Node> (*xABt,false,1.0,*yAB,-1.0);
       TEUCHOS_TEST_EQUALITY(yAB->getFrobeniusNorm(), xABt->getFrobeniusNorm(), out, success );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
         *xA,
         true,
         *xB,
@@ -261,14 +289,26 @@ namespace {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( MatrixMatrix, Multiply_Epetra64, M, MA, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( MatrixMatrix, Multiply_Epetra64, M, MA, Scalar, Node )
+#endif
   {
 #if defined(HAVE_XPETRA_EPETRA) && defined(HAVE_XPETRA_EPETRAEXT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
     typedef Xpetra::CrsMatrix<Scalar,LO,GO,Node> CrsMatrixClass;
     typedef Xpetra::Matrix<Scalar,LO,GO,Node> MatrixClass;
     typedef Xpetra::CrsMatrixWrap<Scalar,LO,GO,Node> CrsMatrixWrapClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+    typedef Xpetra::CrsMatrix<Scalar,Node> CrsMatrixClass;
+    typedef Xpetra::Matrix<Scalar,Node> MatrixClass;
+    typedef Xpetra::CrsMatrixWrap<Scalar,Node> CrsMatrixWrapClass;
+#endif
 
     //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::getFancyOStream(Teuchos::rcpFromRef(std::cout));
     //yAB->describe(*fos, Teuchos::VERB_EXTREME);
@@ -329,7 +369,11 @@ namespace {
       Teuchos::RCP<MatrixClass> yAB= Teuchos::rcp(new CrsMatrixWrapClass(map, 6));
 
       //Xpetra::MatrixMatrix::Multiply<Scalar, LO, GO, Node> (
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
         *xA,
         false,
         *xB,
@@ -338,7 +382,11 @@ namespace {
       //Xpetra::MatrixMatrix::Add<Scalar, LO, GO, Node>(*xAB,false,1.0,*yAB,-1.0);
       TEUCHOS_TEST_EQUALITY(yAB->getFrobeniusNorm(), xAB->getFrobeniusNorm(), out, success );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
         *xA,
         true,
         *xB,
@@ -347,7 +395,11 @@ namespace {
       //Xpetra::MatrixMatrix::Add<Scalar, LO, GO, Node>(*xAtB,false,1.0,*yAB,-1.0);
       TEUCHOS_TEST_EQUALITY(yAB->getFrobeniusNorm(), xAtB->getFrobeniusNorm(), out, success );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
         *xA,
         false,
         *xB,
@@ -356,7 +408,11 @@ namespace {
       //Xpetra::MatrixMatrix::Add<Scalar, LO, GO, Node> (*xABt,false,1.0,*yAB,-1.0);
       TEUCHOS_TEST_EQUALITY(yAB->getFrobeniusNorm(), xABt->getFrobeniusNorm(), out, success );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
         *xA,
         true,
         *xB,
@@ -368,18 +424,30 @@ namespace {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( MatrixMatrix, Multiply_Tpetra, M, MA, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( MatrixMatrix, Multiply_Tpetra, M, MA, Scalar, Node )
+#endif
   {
 #if defined(HAVE_TPETRA_INST_COMPLEX_FLOAT) || defined(HAVE_TPETRA_INST_COMPLEX_DOUBLE)
     // The matrix reader does not work with complex scalars. Skip all tests then.
     return;
 #endif
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
     typedef Xpetra::CrsMatrix<Scalar,LO,GO,Node> CrsMatrixClass;
     typedef Xpetra::Matrix<Scalar,LO,GO,Node> MatrixClass;
     typedef Xpetra::CrsMatrixWrap<Scalar,LO,GO,Node> CrsMatrixWrapClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+    typedef Xpetra::CrsMatrix<Scalar,Node> CrsMatrixClass;
+    typedef Xpetra::Matrix<Scalar,Node> MatrixClass;
+    typedef Xpetra::CrsMatrixWrap<Scalar,Node> CrsMatrixWrapClass;
+#endif
 
     //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::getFancyOStream(Teuchos::rcpFromRef(std::cout));
     //yAB->describe(*fos, Teuchos::VERB_EXTREME);
@@ -395,14 +463,27 @@ namespace {
       const RCP<const MapClass> map = MapFactoryClass::Build(lib, nEle, 0, comm);
 
       // read in matrices
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<Scalar, LO, GO, Node> > reader_type;
+#else
+      typedef Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<Scalar, Node> > reader_type;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LO,GO,Node> > tpA = reader_type::readSparseFile("A.mat",comm);
       Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LO,GO,Node> > tpB = reader_type::readSparseFile("B.mat",comm);
       Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LO,GO,Node> > tpAB = reader_type::readSparseFile("AB.mat",comm);
       Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LO,GO,Node> > tpAtB = reader_type::readSparseFile("AtB.mat",comm);
       Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LO,GO,Node> > tpABt = reader_type::readSparseFile("ABt.mat",comm);
       Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LO,GO,Node> > tpAtBt = reader_type::readSparseFile("AtBt.mat",comm);
+#else
+      Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node> > tpA = reader_type::readSparseFile("A.mat",comm);
+      Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node> > tpB = reader_type::readSparseFile("B.mat",comm);
+      Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node> > tpAB = reader_type::readSparseFile("AB.mat",comm);
+      Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node> > tpAtB = reader_type::readSparseFile("AtB.mat",comm);
+      Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node> > tpABt = reader_type::readSparseFile("ABt.mat",comm);
+      Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node> > tpAtBt = reader_type::readSparseFile("AtBt.mat",comm);
+#endif
 
       // transform to Xpetra
       Teuchos::RCP<CrsMatrixClass> xAmat = Teuchos::rcp(new MA(tpA));
@@ -424,7 +505,11 @@ namespace {
       Teuchos::RCP<MatrixClass> yABt= Teuchos::rcp(new CrsMatrixWrapClass(map, 10));
       Teuchos::RCP<MatrixClass> yAtBt= Teuchos::rcp(new CrsMatrixWrapClass(map, 10));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
         *xA,
         false,
         *xB,
@@ -433,7 +518,11 @@ namespace {
       TEUCHOS_TEST_EQUALITY(xAB->getFrobeniusNorm(), yAB->getFrobeniusNorm(), out, success );
       TEUCHOS_TEST_EQUALITY(xAB->getNodeNumEntries(), yAB->getNodeNumEntries(), out, success );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
           *xA,
           true,
           *xB,
@@ -442,7 +531,11 @@ namespace {
         TEUCHOS_TEST_EQUALITY(xAtB->getFrobeniusNorm(), yAtB->getFrobeniusNorm(), out, success );
         TEUCHOS_TEST_EQUALITY(xAtB->getNodeNumEntries(), yAtB->getNodeNumEntries(), out, success );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
           *xA,
           false,
           *xB,
@@ -451,7 +544,11 @@ namespace {
         TEUCHOS_TEST_EQUALITY(xABt->getFrobeniusNorm(), yABt->getFrobeniusNorm(), out, success );
         TEUCHOS_TEST_EQUALITY(xABt->getNodeNumEntries(), yABt->getNodeNumEntries(), out, success );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LO, GO, Node>::Multiply (
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::Multiply (
+#endif
           *xA,
           true,
           *xB,
@@ -468,31 +565,56 @@ namespace {
   //
 #ifdef HAVE_XPETRA_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_TPETRA_TYPES( S, LO, GO, N) \
     typedef typename Xpetra::TpetraMap<LO,GO,N> M##LO##GO##N; \
     typedef typename Xpetra::TpetraCrsMatrix<S,LO,GO,N> MA##S##LO##GO##N;
+#else
+  #define XPETRA_TPETRA_TYPES( S, N) \
+    typedef typename Xpetra::TpetraMap<N> M##LO##GO##N; \
+    typedef typename Xpetra::TpetraCrsMatrix<S,N> MA##S##LO##GO##N;
+#endif
 
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_EPETRA_TYPES( S, LO, GO, N) \
+#else
+  #define XPETRA_EPETRA_TYPES( S, N) \
+#endif
     typedef typename Xpetra::EpetraMapT<GO,N> M##LO##GO##N; \
     typedef typename Xpetra::EpetraCrsMatrixT<GO,N> MA##S##LO##GO##N;
 
 #endif
 
   // List of tests which run only with Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_TPETRA_MATRIX_INSTANT(S,LO,GO,N) \
       TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( MatrixMatrix, Multiply_Tpetra, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N )
+#else
+#define XP_TPETRA_MATRIX_INSTANT(S,N) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( MatrixMatrix, Multiply_Tpetra, M##LO##GO##N , MA##S##LO##GO##N, S,N )
+#endif
 
   // List of tests which run only with Epetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_EPETRA_MATRIX_INSTANT(S,LO,GO,N) \
       TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( MatrixMatrix, Multiply_Epetra, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N )
+#else
+#define XP_EPETRA_MATRIX_INSTANT(S,N) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( MatrixMatrix, Multiply_Epetra, M##LO##GO##N , MA##S##LO##GO##N, S,N )
+#endif
 
   // List of tests which run only with Epetra64
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_EPETRA64_MATRIX_INSTANT(S,LO,GO,N) \
       TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( MatrixMatrix, Multiply_Epetra64, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N )
+#else
+#define XP_EPETRA64_MATRIX_INSTANT(S,N) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( MatrixMatrix, Multiply_Epetra64, M##LO##GO##N , MA##S##LO##GO##N, S,N )
+#endif
 
 #if defined(HAVE_XPETRA_TPETRA)
 

@@ -69,8 +69,10 @@
 namespace Xpetra {
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal  /*= int*/,
             class GlobalOrdinal /*= LocalOrdinal*/,
+#endif
             class Node          /*= KokkosClassic::DefaultNode::DefaultNodeType*/>
   class TripleMatrixMultiply {
 #undef XPETRA_TRIPLEMATRIXMULTIPLY_SHORT
@@ -78,6 +80,10 @@ namespace Xpetra {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal  /*= int*/ = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal /*= LocalOrdinal*/ = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     /** Given CrsMatrix objects A, B and C, form the product C = A*B.
       In a parallel setting, A and B need not have matching distributions,
       but C needs to have the same row-map as A (if transposeA is false).
@@ -126,10 +132,17 @@ namespace Xpetra {
         throw(Xpetra::Exceptions::RuntimeError("Xpetra::TripleMatrixMultiply::MultiplyRAP is only implemented for Tpetra"));
       } else if (Ac.getRowMap()->lib() == Xpetra::UseTpetra) {
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpR = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(R);
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpP = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(P);
         Tpetra::CrsMatrix<SC,LO,GO,NO> &       tpAc = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(Ac);
+#else
+        const Tpetra::CrsMatrix<SC,NO> & tpR = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(R);
+        const Tpetra::CrsMatrix<SC,NO> & tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+        const Tpetra::CrsMatrix<SC,NO> & tpP = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(P);
+        Tpetra::CrsMatrix<SC,NO> &       tpAc = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(Ac);
+#endif
 
         // 18Feb2013 JJH I'm reenabling the code that allows the matrix matrix multiply to do the fillComplete.
         // Previously, Tpetra's matrix matrix multiply did not support fillComplete.
@@ -215,10 +228,17 @@ namespace Xpetra {
       (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
         throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra <double,int,int> ETI enabled."));
 # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpR = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(R);
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpP = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(P);
         Tpetra::CrsMatrix<SC,LO,GO,NO> &       tpAc = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(Ac);
+#else
+        const Tpetra::CrsMatrix<SC,NO> & tpR = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(R);
+        const Tpetra::CrsMatrix<SC,NO> & tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+        const Tpetra::CrsMatrix<SC,NO> & tpP = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(P);
+        Tpetra::CrsMatrix<SC,NO> &       tpAc = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(Ac);
+#endif
 
         // 18Feb2013 JJH I'm reenabling the code that allows the matrix matrix multiply to do the fillComplete.
         // Previously, Tpetra's matrix matrix multiply did not support fillComplete.
@@ -303,10 +323,17 @@ namespace Xpetra {
       (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
         throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra <double,int,long long,EpetraNode> ETI enabled."));
 # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpR = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(R);
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpP = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(P);
         Tpetra::CrsMatrix<SC,LO,GO,NO> &       tpAc = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(Ac);
+#else
+        const Tpetra::CrsMatrix<SC,NO> & tpR = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(R);
+        const Tpetra::CrsMatrix<SC,NO> & tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+        const Tpetra::CrsMatrix<SC,NO> & tpP = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(P);
+        Tpetra::CrsMatrix<SC,NO> &       tpAc = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(Ac);
+#endif
 
         // 18Feb2013 JJH I'm reenabling the code that allows the matrix matrix multiply to do the fillComplete.
         // Previously, Tpetra's matrix matrix multiply did not support fillComplete.

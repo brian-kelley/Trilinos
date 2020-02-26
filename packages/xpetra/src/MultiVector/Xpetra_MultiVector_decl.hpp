@@ -67,20 +67,34 @@ namespace Xpetra {
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 // forward declaration of Vector, needed to prevent circular inclusions
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class S, class LO, class GO, class N> class Vector;
+#else
+template<class S, class N> class Vector;
+#endif
 #endif
 
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node = KokkosClassic::DefaultNode::DefaultNodeType>
 class MultiVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+    : public DistObject<Scalar, Node>
+#endif
 {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar        scalar_type;
     typedef LocalOrdinal  local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
@@ -103,8 +117,13 @@ class MultiVector
     ///   not currently allow assignment between an
     ///   Xpetra::TpetraMultiVector and an Xpetra::EpetraMultiVector,
     ///   or vice versa, for example.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&
     operator=(const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs);
+#else
+    MultiVector<Scalar, Node>&
+    operator=(const MultiVector<Scalar, Node>& rhs);
+#endif
 
 
     //@}
@@ -139,11 +158,19 @@ class MultiVector
 
 
     //! Return a Vector which is a const view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> getVector(size_t j) const = 0;
+#else
+    virtual Teuchos::RCP<const Vector<Scalar, Node>> getVector(size_t j) const = 0;
+#endif
 
 
     //! Return a Vector which is a nonconst view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> getVectorNonConst(size_t j) = 0;
+#else
+    virtual Teuchos::RCP<Vector<Scalar, Node>> getVectorNonConst(size_t j) = 0;
+#endif
 
 
     //! Const view of the local values in a particular vector of this multivector.
@@ -161,15 +188,27 @@ class MultiVector
 
 
     //! Compute dot product of each corresponding pair of vectors, dots[i] = this[i].dot(A[i]).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void dot(const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A, const Teuchos::ArrayView<Scalar>& dots) const = 0;
+#else
+    virtual void dot(const MultiVector<Scalar, Node>& A, const Teuchos::ArrayView<Scalar>& dots) const = 0;
+#endif
 
 
     //! Put element-wise absolute values of input Multi-vector in target: A = abs(this).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void abs(const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A) = 0;
+#else
+    virtual void abs(const MultiVector<Scalar, Node>& A) = 0;
+#endif
 
 
     //! Put element-wise reciprocal values of input Multi-vector in target, this(i,j) = 1/A(i,j).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void reciprocal(const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A) = 0;
+#else
+    virtual void reciprocal(const MultiVector<Scalar, Node>& A) = 0;
+#endif
 
 
     //! Scale the current values of a multi-vector, this = alpha*this.
@@ -181,12 +220,21 @@ class MultiVector
 
 
     //! Update multi-vector values with scaled values of A, this = beta*this + alpha*A.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void update(const Scalar& alpha, const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A, const Scalar& beta) = 0;
+#else
+    virtual void update(const Scalar& alpha, const MultiVector<Scalar, Node>& A, const Scalar& beta) = 0;
+#endif
 
 
     //! Update multi-vector with scaled values of A and B, this = gamma*this + alpha*A + beta*B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void update(const Scalar& alpha,  const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
                         const Scalar& beta,   const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+    virtual void update(const Scalar& alpha,  const MultiVector<Scalar, Node>& A,
+                        const Scalar& beta,   const MultiVector<Scalar, Node>& B,
+#endif
                         const Scalar& gamma) = 0;
 
 
@@ -211,8 +259,13 @@ class MultiVector
     virtual void multiply(Teuchos::ETransp                                              transA,
                           Teuchos::ETransp                                              transB,
                           const Scalar&                                                 alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
                           const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+                          const MultiVector<Scalar, Node>& A,
+                          const MultiVector<Scalar, Node>& B,
+#endif
                           const Scalar&                                                 beta) = 0;
 
 
@@ -244,8 +297,13 @@ class MultiVector
     \param[in] scalarThis Scaling factor for existing values in <tt>*this<\tt> MultiVector C
     */
     virtual void elementWiseMultiply(Scalar                                                        scalarAB,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&      A,
                                      const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+                                     const Vector<Scalar, Node>&      A,
+                                     const MultiVector<Scalar, Node>& B,
+#endif
                                      Scalar                                                        scalarThis) = 0;
 
 
@@ -268,7 +326,11 @@ class MultiVector
 
 
     // \brief Checks to see if the local length, number of vectors and size of Scalar type match
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual bool isSameSize(const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& vec) const = 0;
+#else
+    virtual bool isSameSize(const MultiVector<Scalar, Node>& vec) const = 0;
+#endif
 
 
     //@}
@@ -285,7 +347,11 @@ class MultiVector
     virtual void describe(Teuchos::FancyOStream& out, const Teuchos::EVerbosityLevel verbLevel = Teuchos::Describable::verbLevel_default) const = 0;
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void replaceMap(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node>>& map) = 0;
+#else
+    virtual void replaceMap(const RCP<const Map<Node>>& map) = 0;
+#endif
 
 
     //@}
@@ -373,7 +439,11 @@ class MultiVector
     ///
     /// Each subclass must implement this.  This includes
     /// Xpetra::EpetraMultiVector and Xpetra::TpetraMultiVector.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void assign(const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs) = 0;
+#else
+    virtual void assign(const MultiVector<Scalar, Node>& rhs) = 0;
+#endif
 
 
 };      // MultiVector class

@@ -96,7 +96,11 @@ void TpetraBlockPreconditioner::initPreconditioner(bool clearOld)
   * 
   * \note This will clear any internal state stored by the state object
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraBlockPreconditioner::buildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A,bool clear)
+#else
+void TpetraBlockPreconditioner::buildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A,bool clear)
+#endif
 {
    Teko_DEBUG_SCOPE("TBP::buildPreconditioner",10);
 
@@ -140,7 +144,11 @@ void TpetraBlockPreconditioner::buildPreconditioner(const Teuchos::RCP<const Tpe
   *
   * \note This will clear any internal state stored by the state object
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraBlockPreconditioner::buildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A,const Tpetra::MultiVector<ST,LO,GO,NT> & tpetra_mv,bool clear)
+#else
+void TpetraBlockPreconditioner::buildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A,const Tpetra::MultiVector<ST,NT> & tpetra_mv,bool clear)
+#endif
 {
    Teko_DEBUG_SCOPE("TBP::buildPreconditioner - with solution",10);
 
@@ -186,7 +194,11 @@ void TpetraBlockPreconditioner::buildPreconditioner(const Teuchos::RCP<const Tpe
   * \param[in] A The Epetra source operator. (Should be a EpetraOperatorWrapper!)
   * \param[in] mv A vector that was used to build the source operator.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraBlockPreconditioner::rebuildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A)
+#else
+void TpetraBlockPreconditioner::rebuildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A)
+#endif
 {
    Teko_DEBUG_SCOPE("TBP::rebuildPreconditioner",10);
 
@@ -233,7 +245,11 @@ void TpetraBlockPreconditioner::rebuildPreconditioner(const Teuchos::RCP<const T
   * \param[in] A The Epetra source operator. (Should be a EpetraOperatorWrapper!)
   * \param[in] mv A vector that was used to build the source operator.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraBlockPreconditioner::rebuildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A,const Tpetra::MultiVector<ST,LO,GO,NT> & tpetra_mv)
+#else
+void TpetraBlockPreconditioner::rebuildPreconditioner(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A,const Tpetra::MultiVector<ST,NT> & tpetra_mv)
+#endif
 {
    Teko_DEBUG_SCOPE("TBP::rebuildPreconditioner - with solution",10);
 
@@ -312,7 +328,11 @@ Teuchos::RCP<const PreconditionerState> TpetraBlockPreconditioner::getPreconditi
    return Teuchos::null;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Thyra::LinearOpBase<ST> > TpetraBlockPreconditioner::extractLinearOp(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A) const
+#else
+Teuchos::RCP<const Thyra::LinearOpBase<ST> > TpetraBlockPreconditioner::extractLinearOp(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A) const
+#endif
 {
    // extract EpetraOperatorWrapper (throw on failure) and corresponding thyra operator
    const RCP<const TpetraOperatorWrapper> & tow = rcp_dynamic_cast<const TpetraOperatorWrapper>(A);
@@ -322,10 +342,18 @@ Teuchos::RCP<const Thyra::LinearOpBase<ST> > TpetraBlockPreconditioner::extractL
       return tow->getThyraOp(); 
 
    // otherwise wrap it up as a thyra operator 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    return Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(A->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(A->getRangeMap()),A); 
+#else
+   return Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(A->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(A->getRangeMap()),A); 
+#endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const MappingStrategy> TpetraBlockPreconditioner::extractMappingStrategy(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A) const
+#else
+Teuchos::RCP<const MappingStrategy> TpetraBlockPreconditioner::extractMappingStrategy(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A) const
+#endif
 {
    // extract EpetraOperatorWrapper (throw on failure) and corresponding thyra operator
    const RCP<const TpetraOperatorWrapper> & tow = rcp_dynamic_cast<const TpetraOperatorWrapper>(A);
@@ -335,8 +363,13 @@ Teuchos::RCP<const MappingStrategy> TpetraBlockPreconditioner::extractMappingStr
       return tow->getMapStrategy(); 
 
    // otherwise wrap it up as a thyra operator 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::Map<LO,GO,NT> > range = A->getRangeMap();
    RCP<const Tpetra::Map<LO,GO,NT> > domain = A->getDomainMap();
+#else
+   RCP<const Tpetra::Map<NT> > range = A->getRangeMap();
+   RCP<const Tpetra::Map<NT> > domain = A->getDomainMap();
+#endif
    return rcp(new BasicMappingStrategy(range,domain,*Thyra::convertTpetraToThyraComm(range->getComm())));
 }
 

@@ -55,10 +55,16 @@
  |  ctor (public)                                            mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::InterfaceT(int Id,  
+#else
+MoertelT::InterfaceT<ST, N>::InterfaceT(int Id,  
+#endif
        bool oneD, const Teuchos::RCP<const Teuchos::Comm<LO> >& comm, int outlevel) :
 Id_(Id),
 outlevel_(outlevel),
@@ -68,7 +74,11 @@ isIntegrated_(false),
 gcomm_(comm),
 lcomm_(Teuchos::null),
 mortarside_(-1),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ptype_(MoertelT::InterfaceT<ST, LO, GO, N>::proj_continousnormalfield),
+#else
+ptype_(MoertelT::InterfaceT<ST, N>::proj_continousnormalfield),
+#endif
 primal_(MOERTEL::Function::func_none),
 dual_(MOERTEL::Function::func_none)
 {
@@ -79,10 +89,16 @@ dual_(MOERTEL::Function::func_none)
  |  copy-ctor (public)                                       mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::InterfaceT(const MoertelT::InterfaceT<ST, LO, GO, N>& old) :
+#else
+MoertelT::InterfaceT<ST, N>::InterfaceT(const MoertelT::InterfaceT<ST, N>& old) :
+#endif
 Id_(old.Id_),
 outlevel_(old.outlevel_),
 oneD_(old.oneD_),
@@ -139,10 +155,16 @@ dual_(old.dual_)
  |  dtor (public)                                            mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::~InterfaceT()
+#else
+MoertelT::InterfaceT<ST, N>::~InterfaceT()
+#endif
 { 
   // delete segments
   for (int i=0; i<2; ++i)
@@ -167,10 +189,16 @@ MoertelT::InterfaceT<ST, LO, GO, N>::~InterfaceT()
  |  print segments of this interface to std::cout                  (public)  |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::PrintSegments() const
+#else
+bool MoertelT::InterfaceT<ST, N>::PrintSegments() const
+#endif
 { 
   if (lcomm_ == Teuchos::null) return true;
   
@@ -210,11 +238,17 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::PrintSegments() const
  |  print nodes of this interface to std::cout                     (public)  |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::PrintNodes() const
+#else
+MoertelT::InterfaceT<ST, N>::PrintNodes() const
+#endif
 { 
   if (lcomm_ == Teuchos::null) return true;
   
@@ -255,10 +289,16 @@ MoertelT::InterfaceT<ST, LO, GO, N>::PrintNodes() const
  |  print interface to std::cout                                   (public)  |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::Print() const
+#else
+bool MoertelT::InterfaceT<ST, N>::Print() const
+#endif
 { 
   
   if (!IsComplete())
@@ -278,11 +318,23 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::Print() const
       std::cout << "Dimension: 1D\n";
     else
       std::cout << "Dimension: 2D\n";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     if (GetProjectionType()==MoertelT::InterfaceT<ST, LO, GO, N>::proj_none)
+#else
+    if (GetProjectionType()==MoertelT::InterfaceT<ST, N>::proj_none)
+#endif
       std::cout << "ProjectionType: none\n";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     else if (GetProjectionType()==MoertelT::InterfaceT<ST, LO, GO, N>::proj_continousnormalfield)
+#else
+    else if (GetProjectionType()==MoertelT::InterfaceT<ST, N>::proj_continousnormalfield)
+#endif
       std::cout << "ProjectionType: continousnormalfield\n";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     else if (GetProjectionType()==MoertelT::InterfaceT<ST, LO, GO, N>::proj_orthogonal)
+#else
+    else if (GetProjectionType()==MoertelT::InterfaceT<ST, N>::proj_orthogonal)
+#endif
       std::cout << "ProjectionType: orthogonal\n";
     int mside = MortarSide();
     int sside = MortarSide();
@@ -309,10 +361,16 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::Print() const
  |  << operator                                              mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 std::ostream& operator << (std::ostream& os, const MoertelT::InterfaceT<ST, LO, GO, N>& inter)
+#else
+std::ostream& operator << (std::ostream& os, const MoertelT::InterfaceT<ST, N>& inter)
+#endif
 { 
   inter.Print();
   return (os);
@@ -322,11 +380,17 @@ std::ostream& operator << (std::ostream& os, const MoertelT::InterfaceT<ST, LO, 
  |  add a single segment to a specified side of the interface (public)  |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::AddSegment(MOERTEL::Segment& seg, int side)
+#else
+MoertelT::InterfaceT<ST, N>::AddSegment(MOERTEL::Segment& seg, int side)
+#endif
 { 
   // check whether this interface has been finalized before
   if (IsComplete())
@@ -406,11 +470,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::AddSegment(MOERTEL::Segment& seg, int side)
  |  add a single node to a specified side of the interface (public)     |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::AddNode(MOERTEL::Node& node, int side)
+#else
+MoertelT::InterfaceT<ST, N>::AddNode(MOERTEL::Node& node, int side)
+#endif
 { 
   // check whether this interface has been finalized before
   if (IsComplete())
@@ -452,11 +522,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::AddNode(MOERTEL::Node& node, int side)
  |  func      (in)    ptr to function class to set to segments          |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::SetFunctionAllSegmentsSide(int side, 
+#else
+MoertelT::InterfaceT<ST, N>::SetFunctionAllSegmentsSide(int side, 
+#endif
                                                  int id, MOERTEL::Function* func)
 { 
   if (side!=0 && side!=1)
@@ -501,11 +577,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::SetFunctionAllSegmentsSide(int side,
  |        segments of a side over all procs                             |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::SetMortarSide(int side)
+#else
+MoertelT::InterfaceT<ST, N>::SetMortarSide(int side)
+#endif
 { 
   if (side!=0 && side!=1 && side!=-2)
   {
@@ -530,11 +612,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::SetMortarSide(int side)
  |        Complete() needs to be called before using this method        |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GlobalNsegment(int side)
+#else
+MoertelT::InterfaceT<ST, N>::GlobalNsegment(int side)
+#endif
 { 
   if (!IsComplete())
   {
@@ -567,11 +655,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GlobalNsegment(int side)
  |        Complete() needs to be called before using this method        |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GlobalNsegment()
+#else
+MoertelT::InterfaceT<ST, N>::GlobalNsegment()
+#endif
 { 
   if (!IsComplete())
   {
@@ -597,11 +691,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GlobalNsegment()
  |        Complete() needs to be called before using this method        |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GlobalNnode(int side)
+#else
+MoertelT::InterfaceT<ST, N>::GlobalNnode(int side)
+#endif
 { 
   if (!IsComplete())
   {
@@ -632,11 +732,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GlobalNnode(int side)
  |        Complete() needs to be called before using this method        |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GlobalNnode()
+#else
+MoertelT::InterfaceT<ST, N>::GlobalNnode()
+#endif
 { 
   if (!IsComplete())
   {
@@ -659,11 +765,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GlobalNnode()
  |  intra-communicator, the method returns -1                           |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::NodePID(int nid) const
+#else
+MoertelT::InterfaceT<ST, N>::NodePID(int nid) const
+#endif
 { 
   if (!IsComplete())
   {
@@ -697,11 +809,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::NodePID(int nid) const
  |  find PID (process id) for given segment id sid                      |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::SegPID(int sid) const
+#else
+MoertelT::InterfaceT<ST, N>::SegPID(int sid) const
+#endif
 { 
   if (!IsComplete())
   {
@@ -735,11 +853,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::SegPID(int sid) const
  |  find PID (process id) for given segment id sid                      |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::OtherSide(int side) const
+#else
+MoertelT::InterfaceT<ST, N>::OtherSide(int side) const
+#endif
 { 
   if (side==0) return 1;
   else if (side==1) return 0;
@@ -757,11 +881,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::OtherSide(int side) const
  |  if sid is not a local node will return NULL                         |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 Teuchos::RCP<MOERTEL::Node> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GetNodeViewLocal(int nid)
+#else
+MoertelT::InterfaceT<ST, N>::GetNodeViewLocal(int nid)
+#endif
 { 
   std::map<int,Teuchos::RCP<MOERTEL::Node> >::iterator curr = node_[0].find(nid);
   if (curr != node_[0].end())
@@ -776,11 +906,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GetNodeViewLocal(int nid)
  |  get view of a node with node id nid                                 |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 Teuchos::RCP<MOERTEL::Node> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GetNodeView(int nid)
+#else
+MoertelT::InterfaceT<ST, N>::GetNodeView(int nid)
+#endif
 { 
   if (!IsComplete())
   {
@@ -808,11 +944,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GetNodeView(int nid)
  | returns NULL if proc is not part of the local communicator            |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 MOERTEL::Node** 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GetNodeView()
+#else
+MoertelT::InterfaceT<ST, N>::GetNodeView()
+#endif
 { 
   if (!IsComplete())
   {
@@ -839,11 +981,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GetNodeView()
  |  get view of ALL nodes on this interface                             |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GetNodeView(std::vector<MOERTEL::Node*>& nodes)
+#else
+MoertelT::InterfaceT<ST, N>::GetNodeView(std::vector<MOERTEL::Node*>& nodes)
+#endif
 { 
   if (!IsComplete())
   {
@@ -870,11 +1018,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GetNodeView(std::vector<MOERTEL::Node*>& no
  |  get view of a local segment with id sid                             |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 Teuchos::RCP<MOERTEL::Segment>  
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GetSegmentView(int sid)
+#else
+MoertelT::InterfaceT<ST, N>::GetSegmentView(int sid)
+#endif
 { 
   if (!IsComplete())
   {
@@ -901,11 +1055,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GetSegmentView(int sid)
  | charge of deleteing it                                               |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 MOERTEL::Segment** 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GetSegmentView()
+#else
+MoertelT::InterfaceT<ST, N>::GetSegmentView()
+#endif
 { 
   if (!IsComplete())
   {
@@ -933,11 +1093,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GetSegmentView()
  | returns -1 if it can't find the segment on either side               |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GetSide(MOERTEL::Segment* seg)
+#else
+MoertelT::InterfaceT<ST, N>::GetSide(MOERTEL::Segment* seg)
+#endif
 { 
   if (lcomm_ == Teuchos::null) return -1;
   if (!IsComplete())
@@ -968,11 +1134,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GetSide(MOERTEL::Segment* seg)
  | returns -1 if it can't find the node on either side                  |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GetSide(MOERTEL::Node* node)
+#else
+MoertelT::InterfaceT<ST, N>::GetSide(MOERTEL::Node* node)
+#endif
 { 
   if (!IsComplete())
   {
@@ -1002,11 +1174,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GetSide(MOERTEL::Node* node)
  | returns -1 if it can't find the node on either side                  |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::GetSide(int nodeid)
+#else
+MoertelT::InterfaceT<ST, N>::GetSide(int nodeid)
+#endif
 { 
   if (!IsComplete())
   {
@@ -1040,11 +1218,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::GetSide(int nodeid)
  |       the construction of redundant nodes/segments
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::RedundantSegments(int side)
+#else
+MoertelT::InterfaceT<ST, N>::RedundantSegments(int side)
+#endif
 { 
   if (side != 0 && side != 1)
   {
@@ -1155,11 +1339,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::RedundantSegments(int side)
  |       the construction of redundant nodes/segments
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::RedundantNodes(int side)
+#else
+MoertelT::InterfaceT<ST, N>::RedundantNodes(int side)
+#endif
 { 
   if (side != 0 && side != 1)
   {
@@ -1261,10 +1451,16 @@ MoertelT::InterfaceT<ST, LO, GO, N>::RedundantNodes(int side)
  | (re)build the topology info between nodes and segments               |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::BuildNodeSegmentTopology()
+#else
+bool MoertelT::InterfaceT<ST, N>::BuildNodeSegmentTopology()
+#endif
 { 
   if (!IsComplete())
   {
@@ -1304,11 +1500,17 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::BuildNodeSegmentTopology()
  | Note that this is collective for ALL procs                           |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 int 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::SetLMDofs(int minLMGID)
+#else
+MoertelT::InterfaceT<ST, N>::SetLMDofs(int minLMGID)
+#endif
 { 
   if (!IsComplete())
   {
@@ -1535,11 +1737,17 @@ int MoertelT::Interface::SetLMDofs(int minLMGID)
  | The calling routine is responsible for destroying this list          |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 std::vector<GO>* 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::MyLMIds()
+#else
+MoertelT::InterfaceT<ST, N>::MyLMIds()
+#endif
 { 
   if (!IsComplete())
   {
@@ -1591,11 +1799,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::MyLMIds()
  | on these end segments                                                |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::DetectEndSegmentsandReduceOrder()
+#else
+MoertelT::InterfaceT<ST, N>::DetectEndSegmentsandReduceOrder()
+#endif
 { 
   if (!IsComplete())
   {
@@ -1701,11 +1915,17 @@ bool MoertelT::Interface::DetectEndSegmentsandReduceOrder_2D()
  | on these end segments                                                |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::DetectEndSegmentsandReduceOrder_2D()
+#else
+MoertelT::InterfaceT<ST, N>::DetectEndSegmentsandReduceOrder_2D()
+#endif
 { 
   if (!IsComplete())
   {
@@ -1768,11 +1988,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::DetectEndSegmentsandReduceOrder_2D()
   // is then arbitrary
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::DetectEndSegmentsandReduceOrder_3D()
+#else
+MoertelT::InterfaceT<ST, N>::DetectEndSegmentsandReduceOrder_3D()
+#endif
 { 
   if (!IsComplete())
   {
@@ -1904,11 +2130,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::DetectEndSegmentsandReduceOrder_3D()
  | dual:   type of shape function for the LM space                      |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::SetFunctionTypes(MOERTEL::Function::FunctionType primal,
+#else
+MoertelT::InterfaceT<ST, N>::SetFunctionTypes(MOERTEL::Function::FunctionType primal,
+#endif
                                        MOERTEL::Function::FunctionType dual)
 { 
   primal_ = primal;
@@ -1921,11 +2153,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::SetFunctionTypes(MOERTEL::Function::Functio
  | and dual_
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::SetFunctionsFromFunctionTypes()
+#else
+MoertelT::InterfaceT<ST, N>::SetFunctionsFromFunctionTypes()
+#endif
 { 
   if (lcomm_ == Teuchos::null) return true;
   if (!IsComplete())

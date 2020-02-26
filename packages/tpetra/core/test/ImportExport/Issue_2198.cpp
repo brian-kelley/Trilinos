@@ -85,10 +85,18 @@ trueEverywhere (const bool localTruthValue,
 //   return ! trueEverywhere (localTruthValue, comm);
 // }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 void
 printMapCompactly (Teuchos::FancyOStream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    const Tpetra::Map<LO, GO, NT>& map)
+#else
+                   const Tpetra::Map<NT>& map)
+#endif
 {
   const Teuchos::Comm<int>& comm = * (map.getComm ());
   const int myRank = comm.getRank ();
@@ -108,12 +116,24 @@ printMapCompactly (Teuchos::FancyOStream& out,
   Tpetra::Details::gathervPrint (out, lclOut.str (), comm);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 bool
 importsLocallySame (Teuchos::FancyOStream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     const Tpetra::Import<LO, GO, NT>& X,
+#else
+                    const Tpetra::Import<NT>& X,
+#endif
                     const std::string& X_name,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     const Tpetra::Import<LO, GO, NT>& Y,
+#else
+                    const Tpetra::Import<NT>& Y,
+#endif
                     const std::string& Y_name,
                     const int myRank)
 {
@@ -316,12 +336,24 @@ importsLocallySame (Teuchos::FancyOStream& out,
   return same;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 bool
 importsGloballySame (Teuchos::FancyOStream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      const Tpetra::Import<LO, GO, NT>& X,
+#else
+                     const Tpetra::Import<NT>& X,
+#endif
                      const std::string& X_name,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      const Tpetra::Import<LO, GO, NT>& Y,
+#else
+                     const Tpetra::Import<NT>& Y,
+#endif
                      const std::string& Y_name)
 {
   std::ostringstream lclOut;
@@ -372,8 +404,16 @@ importsGloballySame (Teuchos::FancyOStream& out,
   return gblImportsSame;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 struct Issue2198TestInput {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   Teuchos::RCP<const Teuchos::Comm<int> > comm;
   bool contiguous;
   LO localNumSourceMapGlobalIndices; // only valid if contiguous is true
@@ -386,11 +426,21 @@ struct Issue2198TestInput {
   const GO indexBase;
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
 Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >
 makeSourceMapFromTestInput (const Issue2198TestInput<LO, GO, NT>& test)
+#else
+template<class NT>
+Teuchos::RCP<const Tpetra::Map<NT> >
+makeSourceMapFromTestInput (const Issue2198TestInput<NT>& test)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+#endif
   if (test.contiguous) {
     return rcp (new map_type (test.globalNumSourceMapGlobalIndices,
                               test.localNumSourceMapGlobalIndices,
@@ -406,13 +456,24 @@ makeSourceMapFromTestInput (const Issue2198TestInput<LO, GO, NT>& test)
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
 Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >
 makeTargetMapFromTestInput (const Issue2198TestInput<LO, GO, NT>& testInput,
                             const ::Tpetra::Map<LO, GO, NT>& sourceMap,
+#else
+template<class NT>
+Teuchos::RCP<const Tpetra::Map<NT> >
+makeTargetMapFromTestInput (const Issue2198TestInput<NT>& testInput,
+                            const ::Tpetra::Map<NT>& sourceMap,
+#endif
                             const bool optimized)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
 
   const std::vector<GO>& remoteGlobalIndices = optimized ?
     testInput.optimizedRemoteGlobalIndices : testInput.remoteGlobalIndices;
@@ -444,8 +505,13 @@ makeTargetMapFromTestInput (const Issue2198TestInput<LO, GO, NT>& testInput,
                             testInput.comm));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
 Issue2198TestInput<LO, GO, NT>
+#else
+template<class NT>
+Issue2198TestInput<NT>
+#endif
 makeTest_A (const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
 {
   const int numProcs = comm->getSize ();
@@ -535,8 +601,13 @@ makeTest_A (const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
       indexBase};
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
 Issue2198TestInput<LO, GO, NT>
+#else
+template<class NT>
+Issue2198TestInput<NT>
+#endif
 makeTest_B (const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
 {
   const int numProcs = comm->getSize ();
@@ -606,15 +677,28 @@ makeTest_B (const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
       indexBase};
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 void
 runTest (Teuchos::FancyOStream& out,
          bool& success,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const Issue2198TestInput<LO, GO, NT>& testInput,
+#else
+         const Issue2198TestInput<NT>& testInput,
+#endif
          const std::string& testName)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = ::Tpetra::Map<LO, GO, NT>;
   using import_type = ::Tpetra::Import<LO, GO, NT>;
+#else
+  using map_type = ::Tpetra::Map<NT>;
+  using import_type = ::Tpetra::Import<NT>;
+#endif
 
   out << "Test " << testName << endl;
   Teuchos::OSTab tab1 (out);
@@ -735,7 +819,11 @@ runTest (Teuchos::FancyOStream& out,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, Issue2198, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, Issue2198, NT )
+#endif
 {
   int lclSuccess = 1;
   int gblSuccess = 1;
@@ -761,11 +849,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, Issue2198, LO, GO, NT )
   // test into two separate cases, depending on the number of MPI
   // processes that the user gives us.
   if (numProcs >= minNumProcsForTestA && ! didSomeTestRun) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     runTest (out, success, makeTest_A<LO, GO, NT> (comm), "A");
+#else
+    runTest (out, success, makeTest_A<NT> (comm), "A");
+#endif
     didSomeTestRun = true;
   }
   if (numProcs >= minNumProcsForTestB && ! didSomeTestRun) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     runTest (out, success, makeTest_B<LO, GO, NT> (comm), "B");
+#else
+    runTest (out, success, makeTest_B<NT> (comm), "B");
+#endif
     didSomeTestRun = true;
   }
 
@@ -785,8 +881,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, Issue2198, LO, GO, NT )
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ImportExport, Issue2198, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP(NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ImportExport, Issue2198, NT )
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

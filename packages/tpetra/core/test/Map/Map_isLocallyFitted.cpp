@@ -59,9 +59,17 @@ namespace { // (anonymous)
   // UNIT TESTS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, LocallyFitted, LO, GO, NT )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, LocallyFitted, NT )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+    typedef Tpetra::Map<NT> map_type;
+#endif
     int lclSuccess = 1;
     int gblSuccess = 0; // output argument
 
@@ -340,8 +348,13 @@ namespace { // (anonymous)
   // INSTANTIATIONS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, LocallyFitted, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP(NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, LocallyFitted, NT )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

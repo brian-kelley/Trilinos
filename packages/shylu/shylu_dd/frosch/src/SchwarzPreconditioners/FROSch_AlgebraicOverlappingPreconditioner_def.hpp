@@ -50,43 +50,80 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::AlgebraicOverlappingPreconditioner(ConstXMatrixPtr k,
+#else
+    template <class SC,class NO>
+    AlgebraicOverlappingPreconditioner<SC,NO>::AlgebraicOverlappingPreconditioner(ConstXMatrixPtr k,
+#endif
                                                                                         ParameterListPtr parameterList) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     SchwarzPreconditioner<SC,LO,GO,NO> (parameterList,k->getRangeMap()->getComm()),
+#else
+    SchwarzPreconditioner<SC,NO> (parameterList,k->getRangeMap()->getComm()),
+#endif
     K_ (k),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     SumOperator_ (new SumOperator<SC,LO,GO,NO>(k->getRangeMap()->getComm()))
+#else
+    SumOperator_ (new SumOperator<SC,NO>(k->getRangeMap()->getComm()))
+#endif
     {
         FROSCH_TIMER_START_LEVELID(algebraicOverlappingPreconditionerTime,"AlgebraicOverlappingPreconditioner::AlgebraicOverlappingPreconditioner");
         // Set the LevelID in the sublist
         parameterList->sublist("AlgebraicOverlappingOperator").set("Level ID",this->LevelID_);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         OverlappingOperator_.reset(new AlgebraicOverlappingOperator<SC,LO,GO,NO>(k,sublist(parameterList,"AlgebraicOverlappingOperator")));
+#else
+        OverlappingOperator_.reset(new AlgebraicOverlappingOperator<SC,NO>(k,sublist(parameterList,"AlgebraicOverlappingOperator")));
+#endif
         SumOperator_->addOperator(OverlappingOperator_);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::initialize(bool useDefaultParameters)
+#else
+    template <class SC,class NO>
+    int AlgebraicOverlappingPreconditioner<SC,NO>::initialize(bool useDefaultParameters)
+#endif
     {
         return initialize(1,null);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::initialize(int overlap,
+#else
+    template <class SC,class NO>
+    int AlgebraicOverlappingPreconditioner<SC,NO>::initialize(int overlap,
+#endif
                                                                     ConstXMapPtr repeatedMap)
     {
         FROSCH_TIMER_START_LEVELID(initializeTime,"AlgebraicOverlappingPreconditioner::initialize");
         return OverlappingOperator_->initialize(overlap,repeatedMap);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::compute()
+#else
+    template <class SC,class NO>
+    int AlgebraicOverlappingPreconditioner<SC,NO>::compute()
+#endif
     {
         FROSCH_TIMER_START_LEVELID(computeTime,"AlgebraicOverlappingPreconditioner::compute");
         return OverlappingOperator_->compute();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     void AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::apply(const XMultiVector &x,
+#else
+    template <class SC,class NO>
+    void AlgebraicOverlappingPreconditioner<SC,NO>::apply(const XMultiVector &x,
+#endif
                                                                 XMultiVector &y,
                                                                 ETransp mode,
                                                                 SC alpha,
@@ -96,33 +133,58 @@ namespace FROSch {
         return SumOperator_->apply(x,y,true,mode,alpha,beta);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::ConstXMapPtr AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::getDomainMap() const
+#else
+    template <class SC,class NO>
+    typename AlgebraicOverlappingPreconditioner<SC,NO>::ConstXMapPtr AlgebraicOverlappingPreconditioner<SC,NO>::getDomainMap() const
+#endif
     {
         return K_->getDomainMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::ConstXMapPtr AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::getRangeMap() const
+#else
+    template <class SC,class NO>
+    typename AlgebraicOverlappingPreconditioner<SC,NO>::ConstXMapPtr AlgebraicOverlappingPreconditioner<SC,NO>::getRangeMap() const
+#endif
     {
         return K_->getRangeMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     void AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::describe(FancyOStream &out,
+#else
+    template <class SC,class NO>
+    void AlgebraicOverlappingPreconditioner<SC,NO>::describe(FancyOStream &out,
+#endif
                                                                    const EVerbosityLevel verbLevel) const
     {
         SumOperator_->describe(out,verbLevel);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     std::string AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::description() const
+#else
+    template <class SC,class NO>
+    std::string AlgebraicOverlappingPreconditioner<SC,NO>::description() const
+#endif
     {
         return "Algebraic Overlapping Preconditioner";
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::resetMatrix(ConstXMatrixPtr &k)
+#else
+    template <class SC,class NO>
+    int AlgebraicOverlappingPreconditioner<SC,NO>::resetMatrix(ConstXMatrixPtr &k)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(resetMatrixTime,"TwoLevelPreconditioner::resetMatrix");
         this->K_ = k;

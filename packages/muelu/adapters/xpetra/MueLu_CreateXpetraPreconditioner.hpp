@@ -37,20 +37,34 @@ namespace MueLu {
     @param[in] inParamList Parameter list
   */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   CreateXpetraPreconditioner(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > op,
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<MueLu::Hierarchy<Scalar,Node> >
+  CreateXpetraPreconditioner(Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > op,
+#endif
                              const Teuchos::ParameterList& inParamList) {
     using SC = Scalar;
     using LO = LocalOrdinal;
     using GO = GlobalOrdinal;
     using NO = Node;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using HierarchyManager = MueLu::HierarchyManager<SC, LO, GO, NO>;
     using HierarchyUtils = MueLu::HierarchyUtils<SC, LO, GO, NO>;
     using Hierarchy = MueLu::Hierarchy<SC, LO, GO, NO>;
     using MLParameterListInterpreter = MLParameterListInterpreter<SC, LO, GO, NO>;
     using ParameterListInterpreter = ParameterListInterpreter<SC, LO, GO, NO>;
+#else
+    using HierarchyManager = MueLu::HierarchyManager<SC, NO>;
+    using HierarchyUtils = MueLu::HierarchyUtils<SC, NO>;
+    using Hierarchy = MueLu::Hierarchy<SC, NO>;
+    using MLParameterListInterpreter = MLParameterListInterpreter<SC, NO>;
+    using ParameterListInterpreter = ParameterListInterpreter<SC, NO>;
+#endif
 
     bool hasParamList = inParamList.numParams();
 
@@ -122,13 +136,23 @@ namespace MueLu {
     @param[in] xmlFileName std::string
   */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   CreateXpetraPreconditioner(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > op,
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<MueLu::Hierarchy<Scalar,Node> >
+  CreateXpetraPreconditioner(Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > op,
+#endif
                              const std::string& xmlFileName) {
     Teuchos::ParameterList paramList;
     Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&paramList), *op->getDomainMap()->getComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return CreateXpetraPreconditioner<Scalar, LocalOrdinal, GlobalOrdinal, Node>(op, paramList);
+#else
+    return CreateXpetraPreconditioner<Scalar, Node>(op, paramList);
+#endif
   }
 
   /*!
@@ -138,11 +162,21 @@ namespace MueLu {
     @param[in] inA Matrix
   */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   CreateXpetraPreconditioner(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > op) {
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<MueLu::Hierarchy<Scalar,Node> >
+  CreateXpetraPreconditioner(Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > op) {
+#endif
     Teuchos::ParameterList paramList;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return CreateXpetraPreconditioner<Scalar, LocalOrdinal, GlobalOrdinal, Node>(op, paramList);
+#else
+    return CreateXpetraPreconditioner<Scalar, Node>(op, paramList);
+#endif
   }
 
   /*!
@@ -152,9 +186,15 @@ namespace MueLu {
     @param[in] inA Matrix
     @param[in] Op  Existing MueLu preconditioner.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ReuseXpetraPreconditioner(const Teuchos::RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& A,
                                  Teuchos::RCP<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node>>& H) {
+#else
+  template <class Scalar, class Node>
+  void ReuseXpetraPreconditioner(const Teuchos::RCP<Xpetra::Matrix<Scalar, Node> >& A,
+                                 Teuchos::RCP<MueLu::Hierarchy<Scalar,Node>>& H) {
+#endif
     std::string label = H->GetLevel(0)->getObjectLabel();
 
     std::string timerName;
@@ -170,8 +210,13 @@ namespace MueLu {
     typedef GlobalOrdinal   GO;
     typedef Node            NO;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Matrix<SC,LO,GO,NO>     Matrix;
     typedef Xpetra::Operator<SC,LO,GO,NO>   Operator;
+#else
+    typedef Xpetra::Matrix<SC,NO>     Matrix;
+    typedef Xpetra::Operator<SC,NO>   Operator;
+#endif
 
     TEUCHOS_TEST_FOR_EXCEPTION(!H->GetNumLevels(), Exceptions::RuntimeError,
                                "MueLu::ReuseXpetraPreconditioner: Hierarchy has no levels in it");

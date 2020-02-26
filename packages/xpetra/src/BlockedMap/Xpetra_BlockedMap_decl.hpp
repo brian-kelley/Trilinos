@@ -58,13 +58,22 @@ namespace Xpetra {
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal,
          class GlobalOrdinal,
          class Node = KokkosClassic::DefaultNode::DefaultNodeType>
 class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
+#else
+template<class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+class BlockedMap : public Map<Node>
+#endif
 {
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef LocalOrdinal  local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node          node_type;
@@ -200,11 +209,19 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
 
 
     //! True if and only if map is compatible with this Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual bool isCompatible(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& map) const;
+#else
+    virtual bool isCompatible(const Xpetra::Map<Node>& map) const;
+#endif
 
 
     //! True if and only if map is identical to this Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual bool isSameAs(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& map) const;
+#else
+    virtual bool isSameAs(const Xpetra::Map<Node>& map) const;
+#endif
 
 
     //@}
@@ -228,7 +245,11 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
     ///
     /// \note This currently only works if both <tt>*this</tt> and the
     ///   input argument are instances of the same subclass.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlockedMap<LocalOrdinal, GlobalOrdinal, Node>& operator=(const BlockedMap& rhs);
+#else
+    BlockedMap<Node>& operator=(const BlockedMap& rhs);
+#endif
 
 
     //@}
@@ -261,11 +282,19 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
 
 
     //! Return a new Map with processes with zero elements removed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>> removeEmptyProcesses() const;
+#else
+    virtual RCP<const Xpetra::Map<Node>> removeEmptyProcesses() const;
+#endif
 
 
     //! Replace this Map's communicator with a subset communicator.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
+#else
+    virtual RCP<const Xpetra::Map<Node>>
+#endif
     replaceCommWithSubset(const Teuchos::RCP<const Teuchos::Comm<int>>& /* newComm */) const;
 
 
@@ -284,7 +313,11 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
     // need to understand the type of underlying matrix. But in src/Map we have no knowledge of StridedMaps, so
     // we cannot check for it by casting. This function allows us to avoid the restriction, as StridedMap redefines
     // it to return the base map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
+#else
+    virtual RCP<const Xpetra::Map<Node>>
+#endif
     getMap() const;
 
 
@@ -299,17 +332,29 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
     /// returns the sub map i from list of sub maps
     /// depending on the parameter bThyraMode the sub map that is returned uses Thyra or Xpetra numbering
     /// Note: Thyra-numbering is only allowed if the BlockedMap is also constructed using Thyra numbering
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>
+#else
+    const RCP<const Xpetra::Map<Node>>
+#endif
     getMap(size_t i, bool bThyraMode = false) const;
 
 
     /// get the importer between full map and partial map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<Xpetra::Import<LocalOrdinal,GlobalOrdinal,Node>>
+#else
+    const RCP<Xpetra::Import<Node>>
+#endif
     getImporter(size_t i) const;
 
 
     /// the full map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>
+#else
+    const RCP<const Xpetra::Map<Node>>
+#endif
     getFullMap() const;
 
 
@@ -319,7 +364,11 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
     #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using local_map_type = typename Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>::local_map_type;
+#else
+        using local_map_type = typename Xpetra::Map<Node>::local_map_type;
+#endif
 
         /// \brief Get the local Map for Kokkos kernels.
         local_map_type getLocalMap() const { return fullmap_->getLocalMap(); }
@@ -371,8 +420,13 @@ class BlockedMap : public Map<LocalOrdinal, GlobalOrdinal, Node>
                subMap[1] = { 2, 5 };
                concatenated map = { 0, 1, 3, 4, 2 ,5 };
       */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
     concatenateMaps(const std::vector<Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>>& subMaps);
+#else
+    static Teuchos::RCP<const Xpetra::Map<Node>>
+    concatenateMaps(const std::vector<Teuchos::RCP<const Xpetra::Map<Node>>>& subMaps);
+#endif
 
 
   private:

@@ -238,9 +238,13 @@ LocalFilter<MatrixType>::getComm () const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 LocalFilter<MatrixType>::getRowMap () const
 {
   return localRowMap_;
@@ -248,9 +252,13 @@ LocalFilter<MatrixType>::getRowMap () const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 LocalFilter<MatrixType>::getColMap() const
 {
   return localRowMap_; // FIXME (mfh 20 Nov 2013)
@@ -258,9 +266,13 @@ LocalFilter<MatrixType>::getColMap() const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 LocalFilter<MatrixType>::getDomainMap() const
 {
   return localDomainMap_;
@@ -268,9 +280,13 @@ LocalFilter<MatrixType>::getDomainMap() const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 LocalFilter<MatrixType>::getRangeMap() const
 {
   return localRangeMap_;
@@ -278,9 +294,13 @@ LocalFilter<MatrixType>::getRangeMap() const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::local_ordinal_type,
                                      typename MatrixType::global_ordinal_type,
                                      typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::node_type> >
+#endif
 LocalFilter<MatrixType>::getGraph () const
 {
   // FIXME (mfh 20 Nov 2013) This is not what the documentation says
@@ -915,8 +935,10 @@ describe (Teuchos::FancyOStream &out,
 
 template<class MatrixType>
 Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      typename MatrixType::local_ordinal_type,
                                      typename MatrixType::global_ordinal_type,
+#endif
                                      typename MatrixType::node_type> >
 LocalFilter<MatrixType>::getUnderlyingMatrix() const
 {
@@ -926,7 +948,12 @@ LocalFilter<MatrixType>::getUnderlyingMatrix() const
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_LOCALFILTER_INSTANT(S,LO,GO,N) \
   template class Ifpack2::LocalFilter< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_LOCALFILTER_INSTANT(S,N) \
+  template class Ifpack2::LocalFilter< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif

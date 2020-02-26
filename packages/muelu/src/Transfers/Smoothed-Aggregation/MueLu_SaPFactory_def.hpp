@@ -63,8 +63,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> SaPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> SaPFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -85,8 +90,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SaPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SaPFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     Input(fineLevel, "A");
 
     // Get default tentative prolongator factory
@@ -96,13 +106,23 @@ namespace MueLu {
     coarseLevel.DeclareInput("P", initialPFact.get(), this); // --
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SaPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SaPFactory<Scalar, Node>::Build(Level& fineLevel, Level &coarseLevel) const {
+#endif
     return BuildP(fineLevel, coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SaPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SaPFactory<Scalar, Node>::BuildP(Level &fineLevel, Level &coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Prolongator smoothing", coarseLevel);
 
     std::string levelIDs = toString(coarseLevel.GetLevelID());
@@ -175,7 +195,11 @@ namespace MueLu {
         TEUCHOS_TEST_FOR_EXCEPTION(!std::isfinite(Teuchos::ScalarTraits<SC>::magnitude(omega)), Exceptions::RuntimeError, "Prolongator damping factor needs to be finite.");
 
         // finalP = Ptent + (I - \omega D^{-1}A) Ptent
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         finalP = Xpetra::IteratorOps<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Jacobi(omega, *invDiag, *A, *Ptent, finalP,
+#else
+        finalP = Xpetra::IteratorOps<Scalar,Node>::Jacobi(omega, *invDiag, *A, *Ptent, finalP,
+#endif
                     GetOStream(Statistics2), std::string("MueLu::SaP-")+levelIDs, APparams);
       }
 

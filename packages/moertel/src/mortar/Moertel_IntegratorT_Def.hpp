@@ -58,10 +58,16 @@
   |  ctor (public)                                            mwgee 07/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::IntegratorT(int ngp, bool oneD, int outlevel) :
+#else
+MoertelT::IntegratorT<ST, N>::IntegratorT(int ngp, bool oneD, int outlevel) :
+#endif
   oneD_(oneD),
   ngp_(ngp),
   outputlevel_(outlevel)
@@ -538,10 +544,16 @@ MoertelT::IntegratorT<ST, LO, GO, N>::IntegratorT(int ngp, bool oneD, int outlev
   |  dtor (public)                                            mwgee 07/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::~IntegratorT()
+#else
+MoertelT::IntegratorT<ST, N>::~IntegratorT()
+#endif
 {
   coords_.clear();
   weights_.clear();
@@ -565,11 +577,17 @@ MoertelT::IntegratorT<ST, LO, GO, N>::~IntegratorT()
  *----------------------------------------------------------------------*/
 
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 Teuchos::SerialDenseMatrix<LO, ST>* 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::Integrate(MOERTEL::Segment& sseg,
+#else
+MoertelT::IntegratorT<ST, N>::Integrate(MOERTEL::Segment& sseg,
+#endif
     double sxia, double sxib,
     MOERTEL::Segment& mseg,
     double mxia, double mxib)
@@ -630,14 +648,24 @@ MoertelT::IntegratorT<ST, LO, GO, N>::Integrate(MOERTEL::Segment& sseg,
   |  assemble the result -Mdense into M (public)              mwgee 08/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::Assemble(MoertelT::InterfaceT<ST, LO, GO, N>& inter,
+#else
+MoertelT::IntegratorT<ST, N>::Assemble(MoertelT::InterfaceT<ST, N>& inter,
+#endif
     MOERTEL::Segment& sseg,
     MOERTEL::Segment& mseg,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrix<ST, LO, GO, N>& M,
+#else
+    Tpetra::CrsMatrix<ST, N>& M,
+#endif
     Teuchos::SerialDenseMatrix<LO, ST>& Mdense)
 {
   MOERTEL::Node** snodes = sseg.Nodes();
@@ -712,13 +740,23 @@ MoertelT::IntegratorT<ST, LO, GO, N>::Assemble(MoertelT::InterfaceT<ST, LO, GO, 
   |  assemble the result Ddense into D (public)               mwgee 08/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::Assemble(MoertelT::InterfaceT<ST, LO, GO, N>& inter,
+#else
+MoertelT::IntegratorT<ST, N>::Assemble(MoertelT::InterfaceT<ST, N>& inter,
+#endif
     MOERTEL::Segment& sseg,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrix<ST, LO, GO, N>& D,
+#else
+    Tpetra::CrsMatrix<ST, N>& D,
+#endif
     Teuchos::SerialDenseMatrix<LO, ST>& Ddense)
 {
   MOERTEL::Node** snodes = sseg.Nodes();
@@ -796,11 +834,17 @@ MoertelT::IntegratorT<ST, LO, GO, N>::Assemble(MoertelT::InterfaceT<ST, LO, GO, 
   | Teuchos::SerialDenseMatrix object                                    |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 Teuchos::SerialDenseMatrix<LO, ST>* 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::Integrate(MOERTEL::Segment& sseg,
+#else
+MoertelT::IntegratorT<ST, N>::Integrate(MOERTEL::Segment& sseg,
+#endif
     double sxia, double sxib)
 {
   int nrow = sseg.Nnode();
@@ -858,11 +902,17 @@ MoertelT::IntegratorT<ST, LO, GO, N>::Integrate(MOERTEL::Segment& sseg,
   | integrate the modification of the master side                        |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 Teuchos::SerialDenseMatrix<LO, ST>* 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::Integrate_2D_Mmod(
+#else
+MoertelT::IntegratorT<ST, N>::Integrate_2D_Mmod(
+#endif
     MOERTEL::Segment& sseg,
     double sxia, double sxib,
     MOERTEL::Segment& mseg,
@@ -996,11 +1046,17 @@ MoertelT::IntegratorT<LocalOrdinal, Scalar>::Assemble_2D_Mod(MoertelT::Interface
   |  Note that this is not scalar as the other assemble routines         |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::Assemble_2D_Mod(MoertelT::InterfaceT<ST, LO, GO, N>& inter,
+#else
+MoertelT::IntegratorT<ST, N>::Assemble_2D_Mod(MoertelT::InterfaceT<ST, N>& inter,
+#endif
     MOERTEL::Segment& sseg,
     MOERTEL::Segment& mseg,
     Teuchos::SerialDenseMatrix<LO, ST>& Mmod)
@@ -1078,16 +1134,26 @@ MoertelT::IntegratorT<ST, LO, GO, N>::Assemble_2D_Mod(MoertelT::InterfaceT<ST, L
   |  contribution from the master/slave side M/D                         |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::Integrate(Teuchos::RCP<MOERTEL::Segment> actseg,
+#else
+MoertelT::IntegratorT<ST, N>::Integrate(Teuchos::RCP<MOERTEL::Segment> actseg,
+#endif
     MOERTEL::Segment& sseg,
     MOERTEL::Segment& mseg,
     Teuchos::SerialDenseMatrix<LO, ST>** Ddense,
     Teuchos::SerialDenseMatrix<LO, ST>** Mdense,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MOERTEL::Overlap<MoertelT::InterfaceT<ST, LO, GO, N> >& overlap, double eps,
+#else
+    MOERTEL::Overlap<MoertelT::InterfaceT<ST, N> >& overlap, double eps,
+#endif
     bool exactvalues)
 {
   //  static int cnt = 0;
@@ -1335,11 +1401,17 @@ MoertelT::IntegratorT<ST, LO, GO, N>::Integrate(Teuchos::RCP<MOERTEL::Segment> a
  *----------------------------------------------------------------------*/
 
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::Assemble(MoertelT::InterfaceT<ST, LO, GO, N>& inter, MOERTEL::Segment& sseg,
+#else
+MoertelT::IntegratorT<ST, N>::Assemble(MoertelT::InterfaceT<ST, N>& inter, MOERTEL::Segment& sseg,
+#endif
     Teuchos::SerialDenseMatrix<LO, ST>& Ddense) {
 
   // get nodes
@@ -1412,11 +1484,17 @@ MoertelT::IntegratorT<ST, LO, GO, N>::Assemble(MoertelT::InterfaceT<ST, LO, GO, 
  *----------------------------------------------------------------------*/
 
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::IntegratorT<ST, LO, GO, N>::Assemble(MoertelT::InterfaceT<ST, LO, GO, N>& inter,
+#else
+MoertelT::IntegratorT<ST, N>::Assemble(MoertelT::InterfaceT<ST, N>& inter,
+#endif
     MOERTEL::Segment& sseg,
     MOERTEL::Segment& mseg,
     Teuchos::SerialDenseMatrix<LO, ST>& Mdense) {

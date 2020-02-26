@@ -90,23 +90,41 @@ namespace Belos {
    *        This is the general implementation for Tpetra only.
    */
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   class XpetraOp :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public OperatorT<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    public OperatorT<Xpetra::MultiVector<Scalar, Node> >
+#endif
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     , public OperatorT<Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    , public OperatorT<Tpetra::MultiVector<Scalar, Node> >
+#endif
 #endif
   {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructor/Destructor
     //@{
 
     //! Default constructor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     XpetraOp (const RCP<Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > & Op) : Op_(Op) {}
+#else
+    XpetraOp (const RCP<Xpetra::Operator<Scalar, Node> > & Op) : Op_(Op) {}
+#endif
 
     //! Destructor.
     virtual ~XpetraOp() {};
@@ -120,7 +138,11 @@ namespace Belos {
       \note It is expected that any problem with applying this operator to \c x will be
       indicated by an std::exception being thrown.
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void Apply ( const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x, Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& y, ETrans trans=NOTRANS ) const {
+#else
+    void Apply ( const Xpetra::MultiVector<Scalar, Node>& x, Xpetra::MultiVector<Scalar, Node>& y, ETrans trans=NOTRANS ) const {
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(trans!=NOTRANS, XpetraOpFailure,
                          "Belos::XpetraOp::Apply, transpose mode != NOTRANS not supported.");
 
@@ -137,15 +159,28 @@ namespace Belos {
       \note It is expected that any problem with applying this operator to \c x will be
       indicated by an std::exception being thrown.
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void Apply ( const Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x, Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& y, ETrans trans=NOTRANS ) const {
+#else
+    void Apply ( const Tpetra::MultiVector<Scalar, Node>& x, Tpetra::MultiVector<Scalar, Node>& y, ETrans trans=NOTRANS ) const {
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(trans!=NOTRANS, XpetraOpFailure,
                          "Belos::MueLuTpetraOp::Apply, transpose mode != NOTRANS not supported.");
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> & temp_x = const_cast<Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &>(x);
+#else
+      Tpetra::MultiVector<Scalar, Node> & temp_x = const_cast<Tpetra::MultiVector<Scalar, Node> &>(x);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Xpetra::TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tX(rcpFromRef(temp_x));
       Xpetra::TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tY(rcpFromRef(y));
+#else
+      const Xpetra::TpetraMultiVector<Scalar, Node> tX(rcpFromRef(temp_x));
+      Xpetra::TpetraMultiVector<Scalar, Node> tY(rcpFromRef(y));
+#endif
 
       //FIXME InitialGuessIsZero currently does nothing in MueLu::Hierarchy.Iterate().
       tY.putScalar(0.0);
@@ -154,11 +189,19 @@ namespace Belos {
     }
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > getOperator() const { return Op_; }
+#else
+    RCP<const Xpetra::Operator<Scalar, Node> > getOperator() const { return Op_; }
+#endif
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Op_;
+#else
+    RCP<Xpetra::Operator<Scalar, Node> > Op_;
+#endif
   };
 
 #ifdef HAVE_XPETRA_EPETRA
@@ -172,13 +215,25 @@ namespace Belos {
    *        This is the specialization for <double,int,int,Xpetra::EpetraNode>
    */
   template <>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class XpetraOp<double, int, int, Xpetra::EpetraNode>
+#else
+  class XpetraOp<double, Xpetra::EpetraNode>
+#endif
     :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public OperatorT<Xpetra::MultiVector<double, int, int, Xpetra::EpetraNode> >
+#else
+    public OperatorT<Xpetra::MultiVector<double, Xpetra::EpetraNode> >
+#endif
 #ifdef HAVE_XPETRA_TPETRA
 #if !((defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_OPENMP) || !defined(HAVE_TPETRA_INST_INT_INT))) || \
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     , public OperatorT<Tpetra::MultiVector<double, int, int, Xpetra::EpetraNode> >
+#else
+    , public OperatorT<Tpetra::MultiVector<double, Xpetra::EpetraNode> >
+#endif
 #endif
 #endif
 #ifdef HAVE_XPETRA_EPETRA
@@ -192,11 +247,19 @@ namespace Belos {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     XpetraOp(const RCP<Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > & Op) : Op_(Op) {}
+#else
+    XpetraOp(const RCP<Xpetra::Operator<Scalar, Node> > & Op) : Op_(Op) {}
+#endif
 
     virtual ~XpetraOp() {};
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void Apply ( const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x, Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& y, ETrans trans=NOTRANS ) const {
+#else
+    void Apply ( const Xpetra::MultiVector<Scalar, Node>& x, Xpetra::MultiVector<Scalar, Node>& y, ETrans trans=NOTRANS ) const {
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(trans!=NOTRANS, XpetraOpFailure,
                          "Belos::XpetraOp::Apply, transpose mode != NOTRANS not supported.");
 
@@ -209,14 +272,27 @@ namespace Belos {
 #ifdef HAVE_XPETRA_TPETRA
 #if !((defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_OPENMP) || !defined(HAVE_TPETRA_INST_INT_INT))) || \
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void Apply ( const Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x, Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& y, ETrans trans=NOTRANS ) const {
+#else
+    void Apply ( const Tpetra::MultiVector<Scalar, Node>& x, Tpetra::MultiVector<Scalar, Node>& y, ETrans trans=NOTRANS ) const {
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(trans!=NOTRANS, XpetraOpFailure,
                          "Belos::MueLuTpetraOp::Apply, transpose mode != NOTRANS not supported.");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> & temp_x = const_cast<Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &>(x);
+#else
+      Tpetra::MultiVector<Scalar, Node> & temp_x = const_cast<Tpetra::MultiVector<Scalar, Node> &>(x);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Xpetra::TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tX(rcpFromRef(temp_x));
       Xpetra::TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tY(rcpFromRef(y));
+#else
+      const Xpetra::TpetraMultiVector<Scalar, Node> tX(rcpFromRef(temp_x));
+      Xpetra::TpetraMultiVector<Scalar, Node> tY(rcpFromRef(y));
+#endif
 
       //FIXME InitialGuessIsZero currently does nothing in MueLu::Hierarchy.Iterate().
       tY.putScalar(0.0);
@@ -249,11 +325,19 @@ namespace Belos {
     }
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > getOperator() const { return Op_; }
+#else
+    RCP<const Xpetra::Operator<Scalar, Node> > getOperator() const { return Op_; }
+#endif
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Op_;
+#else
+    RCP<Xpetra::Operator<Scalar, Node> > Op_;
+#endif
   };
 #endif // !EPETRA_NO_32BIT_GLOBAL_INDICES
 #endif // HAVE_XPETRA_EPETRA
@@ -270,13 +354,25 @@ namespace Belos {
    *        This is the specialization for <double,int,long long,Xpetra::EpetraNode>
    */
   template <>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class XpetraOp<double, int, long long, Xpetra::EpetraNode>
+#else
+  class XpetraOp<double, Xpetra::EpetraNode>
+#endif
     :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public OperatorT<Xpetra::MultiVector<double, int, long long, Xpetra::EpetraNode> >
+#else
+    public OperatorT<Xpetra::MultiVector<double, Xpetra::EpetraNode> >
+#endif
 #ifdef HAVE_XPETRA_TPETRA
 #if !((defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_OPENMP) || !defined(HAVE_TPETRA_INST_INT_LONG_LONG))) || \
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     , public OperatorT<Tpetra::MultiVector<double, int, long long, Xpetra::EpetraNode> >
+#else
+    , public OperatorT<Tpetra::MultiVector<double, Xpetra::EpetraNode> >
+#endif
 #endif
 #endif
 #ifdef HAVE_XPETRA_EPETRA
@@ -290,11 +386,19 @@ namespace Belos {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     XpetraOp(const RCP<Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > & Op) : Op_(Op) {}
+#else
+    XpetraOp(const RCP<Xpetra::Operator<Scalar, Node> > & Op) : Op_(Op) {}
+#endif
 
     virtual ~XpetraOp() {};
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void Apply ( const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x, Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& y, ETrans trans=NOTRANS ) const {
+#else
+    void Apply ( const Xpetra::MultiVector<Scalar, Node>& x, Xpetra::MultiVector<Scalar, Node>& y, ETrans trans=NOTRANS ) const {
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(trans!=NOTRANS, XpetraOpFailure,
                          "Belos::XpetraOp::Apply, transpose mode != NOTRANS not supported.");
 
@@ -307,14 +411,27 @@ namespace Belos {
 #ifdef HAVE_XPETRA_TPETRA
 #if !((defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_OPENMP) || !defined(HAVE_TPETRA_INST_INT_LONG_LONG))) || \
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void Apply ( const Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x, Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& y, ETrans trans=NOTRANS ) const {
+#else
+    void Apply ( const Tpetra::MultiVector<Scalar, Node>& x, Tpetra::MultiVector<Scalar, Node>& y, ETrans trans=NOTRANS ) const {
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(trans!=NOTRANS, XpetraOpFailure,
                          "Belos::MueLuTpetraOp::Apply, transpose mode != NOTRANS not supported.");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> & temp_x = const_cast<Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &>(x);
+#else
+      Tpetra::MultiVector<Scalar, Node> & temp_x = const_cast<Tpetra::MultiVector<Scalar, Node> &>(x);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Xpetra::TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tX(rcpFromRef(temp_x));
       Xpetra::TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tY(rcpFromRef(y));
+#else
+      const Xpetra::TpetraMultiVector<Scalar, Node> tX(rcpFromRef(temp_x));
+      Xpetra::TpetraMultiVector<Scalar, Node> tY(rcpFromRef(y));
+#endif
 
       //FIXME InitialGuessIsZero currently does nothing in MueLu::Hierarchy.Iterate().
       tY.putScalar(0.0);
@@ -347,11 +464,19 @@ namespace Belos {
     }
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > getOperator() const { return Op_; }
+#else
+    RCP<const Xpetra::Operator<Scalar, Node> > getOperator() const { return Op_; }
+#endif
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Op_;
+#else
+    RCP<Xpetra::Operator<Scalar, Node> > Op_;
+#endif
   };
 #endif // !EPETRA_NO_64BIT_GLOBAL_INDICES
 #endif // HAVE_XPETRA_EPETRA

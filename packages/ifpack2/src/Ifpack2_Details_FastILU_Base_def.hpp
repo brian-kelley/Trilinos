@@ -56,8 +56,13 @@ namespace Ifpack2
 namespace Details
 {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+FastILU_Base<Scalar, Node>::
+#endif
 FastILU_Base(Teuchos::RCP<const TRowMatrix> A) :
   mat_(A),
   initFlag_(false),
@@ -71,26 +76,45 @@ FastILU_Base(Teuchos::RCP<const TRowMatrix> A) :
   crsCopyTime_(0.0),
   params_(Params::getDefaults()) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
 FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Tpetra::Map<Node> >
+FastILU_Base<Scalar, Node>::
+#endif
 getDomainMap () const
 {
   return mat_->getDomainMap();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
 FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Tpetra::Map<Node> >
+FastILU_Base<Scalar, Node>::
+#endif
 getRangeMap () const
 {
   return mat_->getRangeMap();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 apply (const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
        Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+template<class Scalar, class Node>
+void FastILU_Base<Scalar, Node>::
+apply (const Tpetra::MultiVector<Scalar,Node> &X,
+       Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
        Teuchos::ETransp mode,
        Scalar alpha,
        Scalar beta) const
@@ -141,16 +165,26 @@ apply (const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+void FastILU_Base<Scalar, Node>::
+#endif
 setParameters (const Teuchos::ParameterList& List)
 {
   //Params constructor does all parameter validation, and sets default values
   params_ = Params(List, getName());
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+void FastILU_Base<Scalar, Node>::
+#endif
 initialize()
 {
 
@@ -165,22 +199,36 @@ initialize()
     throw std::runtime_error(std::string("Called ") + getName() + "::initialize() but matrix was null (call setMatrix() with a non-null matrix first)");
   }
   Kokkos::Impl::Timer copyTimer;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CrsArrayReader<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getStructure(mat_.get(), localRowPtrsHost_, localRowPtrs_, localColInds_);
+#else
+  CrsArrayReader<Scalar, Node>::getStructure(mat_.get(), localRowPtrsHost_, localRowPtrs_, localColInds_);
+#endif
   crsCopyTime_ = copyTimer.seconds();
   initLocalPrec();  //note: initLocalPrec updates initTime
   initFlag_ = true;
   nInit_++;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 bool FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+bool FastILU_Base<Scalar, Node>::
+#endif
 isInitialized() const 
 {
   return initFlag_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+void FastILU_Base<Scalar, Node>::
+#endif
 compute()
 {
   if(!initFlag_)
@@ -197,95 +245,160 @@ compute()
 
   //get copy of values array from matrix
   Kokkos::Impl::Timer copyTimer;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CrsArrayReader<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getValues(mat_.get(), localValues_, localRowPtrsHost_);
+#else
+  CrsArrayReader<Scalar, Node>::getValues(mat_.get(), localValues_, localRowPtrsHost_);
+#endif
   crsCopyTime_ += copyTimer.seconds(); //add to the time spent getting rowptrs/colinds
   computeLocalPrec(); //this updates computeTime_
   computedFlag_ = true;
   nComputed_++;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 bool FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+bool FastILU_Base<Scalar, Node>::
+#endif
 isComputed() const
 {
   return computedFlag_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> >
+FastILU_Base<Scalar, Node>::
+#endif
 getMatrix() const
 {
   return mat_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 int FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+int FastILU_Base<Scalar, Node>::
+#endif
 getNumInitialize() const
 {
   return nInit_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 int FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+int FastILU_Base<Scalar, Node>::
+#endif
 getNumCompute() const
 {
   return nComputed_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 int FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+int FastILU_Base<Scalar, Node>::
+#endif
 getNumApply() const
 {
   return nApply_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 double FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+double FastILU_Base<Scalar, Node>::
+#endif
 getInitializeTime() const 
 {
   return initTime_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 double FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+double FastILU_Base<Scalar, Node>::
+#endif
 getComputeTime() const
 {
   return computeTime_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 double FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+double FastILU_Base<Scalar, Node>::
+#endif
 getApplyTime() const
 {
   return applyTime_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 double FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+double FastILU_Base<Scalar, Node>::
+#endif
 getCopyTime() const
 {
   return crsCopyTime_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+void FastILU_Base<Scalar, Node>::
+#endif
 checkLocalILU() const
 {
   //if the underlying type of this doesn't implement checkLocalILU, it's an illegal operation
   throw std::runtime_error(std::string("Preconditioner type Ifpack2::Details::") + getName() + " doesn't support checkLocalILU().");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+void FastILU_Base<Scalar, Node>::
+#endif
 checkLocalIC() const
 {
   //if the underlying type of this doesn't implement checkLocalIC, it's an illegal operation
   throw std::runtime_error(std::string("Preconditioner type Ifpack2::Details::") + getName() + " doesn't support checkLocalIC().");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 std::string FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const
+#else
+template<typename Scalar, typename Node>
+std::string FastILU_Base<Scalar, Node>::description() const
+#endif
 {
   std::ostringstream os;
   //Output is a YAML dictionary
@@ -306,15 +419,24 @@ std::string FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description
   return os.str();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+void FastILU_Base<Scalar, Node>::
+#endif
 setMatrix(const Teuchos::RCP<const TRowMatrix>& A)
 {
   if(A.is_null())
   {
     throw std::invalid_argument(std::string("Ifpack2::Details::") + getName() + "::setMatrix() called with a null matrix. Pass a non-null matrix.");
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowGraph<LocalOrdinal, GlobalOrdinal, Node> RGraph;
+#else
+  typedef Tpetra::RowGraph<Node> RGraph;
+#endif
   Teuchos::RCP<const RGraph> aGraph;    //graph of A
   Teuchos::RCP<const RGraph> matGraph;  //graph of current mat_
   try
@@ -349,9 +471,15 @@ setMatrix(const Teuchos::RCP<const TRowMatrix>& A)
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 typename FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Params
 FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+typename FastILU_Base<Scalar, Node>::Params
+FastILU_Base<Scalar, Node>::
+#endif
 Params::getDefaults()
 {
   Params p;
@@ -365,8 +493,13 @@ Params::getDefaults()
   return p;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+FastILU_Base<Scalar, Node>::
+#endif
 Params::Params(const Teuchos::ParameterList& pL, std::string precType)
 {
   *this = getDefaults();
@@ -463,8 +596,13 @@ Params::Params(const Teuchos::ParameterList& pL, std::string precType)
   #undef TYPE_ERROR
 } 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_FASTILU_BASE_INSTANT(S, L, G, N) \
 template class Ifpack2::Details::FastILU_Base<S, L, G, N>;
+#else
+#define IFPACK2_DETAILS_FASTILU_BASE_INSTANT(S, N) \
+template class Ifpack2::Details::FastILU_Base<S, N>;
+#endif
 
 } //namespace Details
 } //namespace Ifpack2

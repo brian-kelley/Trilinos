@@ -57,7 +57,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TransPFactory, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TransPFactory, Constructor, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -71,7 +75,11 @@ namespace MueLuTests {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TransPFactory, Correctness, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TransPFactory, Correctness, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -81,7 +89,11 @@ namespace MueLuTests {
     RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
 
     Level fineLevel, coarseLevel;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers::TestFactory<SC, LO, GO, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#else
+    TestHelpers::TestFactory<SC, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#endif
 
     // Test of createTwoLevelHierarchy: to be moved...
     TEST_EQUALITY(fineLevel.GetLevelID(), 0);
@@ -90,7 +102,11 @@ namespace MueLuTests {
     //TEST_EQUALITY(coarseLevel.GetPreviousLevel().get(), &fineLevel);
     // --
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> Op = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(27*comm->getSize());
+#else
+    RCP<Matrix> Op = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(27*comm->getSize());
+#endif
     fineLevel.Set("A",Op);
 
     SaPFactory sapFactory;
@@ -128,9 +144,15 @@ namespace MueLuTests {
 
   } //Correctness test
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(Scalar, LocalOrdinal, GlobalOrdinal, Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TransPFactory, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TransPFactory, Correctness, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+#define MUELU_ETI_GROUP(Scalar, Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TransPFactory, Constructor, Scalar, Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TransPFactory, Correctness, Scalar, Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

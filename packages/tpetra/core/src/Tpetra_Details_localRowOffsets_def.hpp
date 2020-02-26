@@ -54,9 +54,17 @@ namespace Tpetra {
 namespace Details {
 namespace Impl {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 std::pair<typename LocalRowOffsetsResult<NT>::offsets_type, size_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowCounts (const RowGraph<LO, GO, NT>& G)
+#else
+localRowCounts (const RowGraph<NT>& G)
+#endif
 {
   using result_type = LocalRowOffsetsResult<NT>;
   using offsets_type = typename result_type::offsets_type;
@@ -88,9 +96,17 @@ localRowCounts (const RowGraph<LO, GO, NT>& G)
   return {entPerRow, maxNumEnt};
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 LocalRowOffsetsResult<NT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowOffsetsFromRowGraph (const RowGraph<LO, GO, NT>& G)
+#else
+localRowOffsetsFromRowGraph (const RowGraph<NT>& G)
+#endif
 {
   using result_type = LocalRowOffsetsResult<NT>;
   using offsets_type = typename result_type::offsets_type;
@@ -118,9 +134,17 @@ localRowOffsetsFromRowGraph (const RowGraph<LO, GO, NT>& G)
   return {ptr, nnz, maxNumEnt};
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 LocalRowOffsetsResult<NT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowOffsetsFromFillCompleteCrsGraph (const CrsGraph<LO, GO, NT>& G)
+#else
+localRowOffsetsFromFillCompleteCrsGraph (const CrsGraph<NT>& G)
+#endif
 {
   using Kokkos::view_alloc;
   using Kokkos::WithoutInitializing;
@@ -140,12 +164,24 @@ localRowOffsetsFromFillCompleteCrsGraph (const CrsGraph<LO, GO, NT>& G)
 
 } // namespace Impl
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 LocalRowOffsetsResult<NT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowOffsets (const RowGraph<LO, GO, NT>& G)
+#else
+localRowOffsets (const RowGraph<NT>& G)
+#endif
 {
   if (G.isFillComplete ()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using crs_graph_type = CrsGraph<LO, GO, NT>;
+#else
+    using crs_graph_type = CrsGraph<NT>;
+#endif
     const crs_graph_type* G_crs =
       dynamic_cast<const crs_graph_type*> (&G);
     if (G_crs != nullptr) {
@@ -163,23 +199,43 @@ localRowOffsets (const RowGraph<LO, GO, NT>& G)
 //
 // Must be expanded from within the Tpetra namespace!
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DETAILS_LOCALROWOFFSETS_INSTANT(LO, GO, NT) \
+#else
+#define TPETRA_DETAILS_LOCALROWOFFSETS_INSTANT(NT) \
+#endif
 namespace Details { \
 namespace Impl { \
   \
 template std::pair<LocalRowOffsetsResult<NT>::offsets_type, size_t> \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowCounts (const RowGraph<LO, GO, NT>& G); \
+#else
+localRowCounts (const RowGraph<NT>& G); \
+#endif
   \
 template LocalRowOffsetsResult<NT> \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowOffsetsFromRowGraph (const RowGraph<LO, GO, NT>& G); \
+#else
+localRowOffsetsFromRowGraph (const RowGraph<NT>& G); \
+#endif
   \
 template LocalRowOffsetsResult<NT> \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowOffsetsFromFillCompleteCrsGraph (const CrsGraph<LO, GO, NT>& G); \
+#else
+localRowOffsetsFromFillCompleteCrsGraph (const CrsGraph<NT>& G); \
+#endif
   \
 } \
   \
 template LocalRowOffsetsResult<NT> \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localRowOffsets (const RowGraph<LO, GO, NT>& A); \
+#else
+localRowOffsets (const RowGraph<NT>& A); \
+#endif
 }
 
 #endif // TPETRA_DETAILS_LOCALROWOFFSETS_DEF_HPP

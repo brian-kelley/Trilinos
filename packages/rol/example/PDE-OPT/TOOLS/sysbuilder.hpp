@@ -77,7 +77,11 @@ class SysBuilder {
   typedef Tpetra::Map<>::local_ordinal_type   LO;
   typedef Tpetra::Map<>::global_ordinal_type  GO;
   typedef Tpetra::Map<>::node_type            NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Real,LO,GO,NO>  MV;
+#else
+  typedef Tpetra::MultiVector<Real,NO>  MV;
+#endif
   typedef Teuchos::ArrayView<GO>::size_type   SZ;
   typedef Tpetra::global_size_t              GSZ;
 

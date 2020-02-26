@@ -68,11 +68,19 @@ using Teuchos::Array;
 /*! \brief Find common regions of two nodes
  *
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 Teuchos::Array<int> findCommonRegions(const GlobalOrdinal nodeA, ///< GID of first node
                                       const GlobalOrdinal nodeB, ///< GID of second node
                                       const Array<ArrayRCP<const LocalOrdinal> > nodesToRegions, ///< mapping of nodes to regions
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                       RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > nodesToRegionsMap
+#else
+                                      RCP<const Xpetra::Map<Node> > nodesToRegionsMap
+#endif
                                       )
 {
 #include "Xpetra_UseShortNamesOrdinal.hpp"
@@ -123,11 +131,19 @@ Teuchos::Array<int> findCommonRegions(const GlobalOrdinal nodeA, ///< GID of fir
 
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class widget>
 void MakeGroupRegionRowMaps(const int myRank,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                             const RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> > AComp,
+#else
+                            const RCP<Xpetra::CrsMatrixWrap<Scalar, Node> > AComp,
+#endif
                             LocalOrdinal (*LIDregion)(void*, const LocalOrdinal, int),
                             widget appData,
                             const std::vector<LocalOrdinal> myRegions,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                             std::vector<Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& rowMapPerGrp) {
+#else
+                            std::vector<Teuchos::RCP<Xpetra::Map<Node> > >& rowMapPerGrp) {
+#endif
 #include "Xpetra_UseShortNames.hpp"
   // Make group region row maps
   // std::cout << myRank << " | Creating region group row maps ..." << std::endl;
@@ -169,12 +185,21 @@ void MakeGroupRegionRowMaps(const int myRank,
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class widget>
 void MakeGroupRegionColumnMaps(const int myRank,
                                const int whichCase,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                const RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> > AComp,
+#else
+                               const RCP<Xpetra::CrsMatrixWrap<Scalar, Node> > AComp,
+#endif
                                LocalOrdinal (*LIDregion)(void*, const LocalOrdinal, int),
                                widget appData,
                                const std::vector<LocalOrdinal> myRegions,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                std::vector<Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& rowMapPerGrp,
                                std::vector<Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& colMapPerGrp) {
+#else
+                               std::vector<Teuchos::RCP<Xpetra::Map<Node> > >& rowMapPerGrp,
+                               std::vector<Teuchos::RCP<Xpetra::Map<Node> > >& colMapPerGrp) {
+#endif
 #include "Xpetra_UseShortNames.hpp"
   // std::cout << myRank << " | Creating region group column maps ..." << std::endl;
 
@@ -240,15 +265,27 @@ void MakeGroupRegionColumnMaps(const int myRank,
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class widget>
 void MakeGroupExtendedMaps(const int myRank,
                            const int whichCase,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                            const RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> > AComp,
                            const RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > mapComp,
+#else
+                           const RCP<Xpetra::CrsMatrixWrap<Scalar, Node> > AComp,
+                           const RCP<Xpetra::Map<Node> > mapComp,
+#endif
                            LocalOrdinal (*LIDregion)(void*, const LocalOrdinal, int),
                            widget appData,
                            const std::vector<LocalOrdinal> myRegions,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                            std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& rowMapPerGrp,
                            std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& colMapPerGrp,
                            std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& revisedRowMapPerGrp,
                            std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& revisedColMapPerGrp) {
+#else
+                           std::vector<RCP<Xpetra::Map<Node> > >& rowMapPerGrp,
+                           std::vector<RCP<Xpetra::Map<Node> > >& colMapPerGrp,
+                           std::vector<RCP<Xpetra::Map<Node> > >& revisedRowMapPerGrp,
+                           std::vector<RCP<Xpetra::Map<Node> > >& revisedColMapPerGrp) {
+#endif
 #include "Xpetra_UseShortNames.hpp"
   // std::cout << myRank << " | Creating extended group region maps ..." << std::endl;
 
@@ -390,14 +427,27 @@ void MakeGroupExtendedMaps(const int myRank,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MakeQuasiregionMatrices(const RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> > AComp,
+#else
+template <class Scalar, class Node>
+void MakeQuasiregionMatrices(const RCP<Xpetra::CrsMatrixWrap<Scalar, Node> > AComp,
+#endif
                              const int maxRegPerProc,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                              RCP<Xpetra::MultiVector<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node> > regionsPerGIDWithGhosts,
                              std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& rowMapPerGrp,
                              std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& colMapPerGrp,
                              std::vector<RCP<Xpetra::Import<LocalOrdinal, GlobalOrdinal, Node> > >& rowImportPerGrp,
                              std::vector<RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& quasiRegionGrpMats) {
+#else
+                             RCP<Xpetra::MultiVector<LocalOrdinal, Node> > regionsPerGIDWithGhosts,
+                             std::vector<RCP<Xpetra::Map<Node> > >& rowMapPerGrp,
+                             std::vector<RCP<Xpetra::Map<Node> > >& colMapPerGrp,
+                             std::vector<RCP<Xpetra::Import<Node> > >& rowImportPerGrp,
+                             std::vector<RCP<Xpetra::Matrix<Scalar, Node> > >& quasiRegionGrpMats) {
+#endif
 #include "Xpetra_UseShortNames.hpp"
   using Teuchos::RCP;
   using Teuchos::TimeMonitor;
@@ -472,6 +522,7 @@ void MakeQuasiregionMatrices(const RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdina
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MakeRegionMatrices(const RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> > AComp,
                         const RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > mapComp,
@@ -479,9 +530,23 @@ void MakeRegionMatrices(const RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, Gl
                         std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& revisedRowMapPerGrp,
                         std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >& revisedColMapPerGrp,
                         std::vector<RCP<Xpetra::Import<LocalOrdinal, GlobalOrdinal, Node> > >& rowImportPerGrp,
+#else
+template <class Scalar, class Node>
+void MakeRegionMatrices(const RCP<Xpetra::CrsMatrixWrap<Scalar, Node> > AComp,
+                        const RCP<const Xpetra::Map<Node> > mapComp,
+                        std::vector<RCP<Xpetra::Map<Node> > >& rowMapPerGrp,
+                        std::vector<RCP<Xpetra::Map<Node> > >& revisedRowMapPerGrp,
+                        std::vector<RCP<Xpetra::Map<Node> > >& revisedColMapPerGrp,
+                        std::vector<RCP<Xpetra::Import<Node> > >& rowImportPerGrp,
+#endif
                         const LocalOrdinal maxRegPerProc,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         std::vector<RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& quasiRegionGrpMats,
                         std::vector<RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& regionGrpMats) {
+#else
+                        std::vector<RCP<Xpetra::Matrix<Scalar, Node> > >& quasiRegionGrpMats,
+                        std::vector<RCP<Xpetra::Matrix<Scalar, Node> > >& regionGrpMats) {
+#endif
 #include "Xpetra_UseShortNames.hpp"
   using Teuchos::RCP;
   using Teuchos::TimeMonitor;
@@ -626,13 +691,25 @@ void MakeRegionMatrices(const RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, Gl
  *
  *  \return Composite matrix that is fill-completed
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void regionalToComposite(const std::vector<RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& regMat, ///< Matrix in region layout [in]
                          const std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > > rowMapPerGrp, ///< row maps in quasiRegion layout [in]
                          const std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > > colMapPerGrp, ///< col maps in quasiRegion layout [in]
                          const std::vector<RCP<Xpetra::Import<LocalOrdinal, GlobalOrdinal, Node> > > rowImportPerGrp, ///< row importer in region layout [in]
+#else
+template <class Scalar, class Node>
+void regionalToComposite(const std::vector<RCP<Xpetra::Matrix<Scalar, Node> > >& regMat, ///< Matrix in region layout [in]
+                         const std::vector<RCP<Xpetra::Map<Node> > > rowMapPerGrp, ///< row maps in quasiRegion layout [in]
+                         const std::vector<RCP<Xpetra::Map<Node> > > colMapPerGrp, ///< col maps in quasiRegion layout [in]
+                         const std::vector<RCP<Xpetra::Import<Node> > > rowImportPerGrp, ///< row importer in region layout [in]
+#endif
                          const Xpetra::CombineMode combineMode, ///< Combine mode for import/export [in]
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& compMat ///< Matrix in composite layout [in/out]
+#else
+                         RCP<Xpetra::Matrix<Scalar, Node> >& compMat ///< Matrix in composite layout [in/out]
+#endif
                          )
 {
 #include "Xpetra_UseShortNames.hpp"
@@ -725,6 +802,7 @@ void regionalToComposite(const std::vector<RCP<Xpetra::Matrix<Scalar, LocalOrdin
  *  2. Sum interface values of y to account for duplication of interface DOFs.
  *  3. Compute r = b - y
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >
 computeResidual(Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& regRes, ///< residual (to be evaluated)
@@ -733,6 +811,16 @@ computeResidual(Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, No
                 const std::vector<RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > > regionGrpMats,
                 const std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > > revisedRowMapPerGrp, ///< revised row maps in region layout [in] (actually extracted from regionGrpMats)
                 const std::vector<RCP<Xpetra::Import<LocalOrdinal, GlobalOrdinal, Node> > > rowImportPerGrp ///< row importer in region layout [in]
+#else
+template <class Scalar, class Node>
+Array<RCP<Xpetra::Vector<Scalar, Node> > >
+computeResidual(Array<RCP<Xpetra::Vector<Scalar, Node> > >& regRes, ///< residual (to be evaluated)
+                const Array<RCP<Xpetra::Vector<Scalar, Node> > > regX, ///< left-hand side (solution)
+                const Array<RCP<Xpetra::Vector<Scalar, Node> > > regB, ///< right-hand side (forcing term)
+                const std::vector<RCP<Xpetra::Matrix<Scalar, Node> > > regionGrpMats,
+                const std::vector<RCP<Xpetra::Map<Node> > > revisedRowMapPerGrp, ///< revised row maps in region layout [in] (actually extracted from regionGrpMats)
+                const std::vector<RCP<Xpetra::Import<Node> > > rowImportPerGrp ///< row importer in region layout [in]
+#endif
     )
 {
 #include "Xpetra_UseShortNames.hpp"

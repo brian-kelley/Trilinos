@@ -95,16 +95,26 @@ TEUCHOS_STATIC_SETUP(){
     "Whether or not to use verbose output");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO,class NT>
 RCP<CrsMatrix<SC, LO, GO, NT> >
+#else
+template<class SC,class NT>
+RCP<CrsMatrix<SC, NT> >
+#endif
 getIdentityMatrix (Teuchos::FancyOStream& out,
                    const Tpetra::global_size_t globalNumRows,
                    const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
 {
   using Teuchos::RCP;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SC, LO, GO, NT> Matrix_t;
   typedef Tpetra::Map<LO, GO, NT> Map_t;
+#else
+  typedef Tpetra::CrsMatrix<SC, NT> Matrix_t;
+  typedef Tpetra::Map<NT> Map_t;
+#endif
 
   Teuchos::OSTab tab0 (out);
   out << "getIdentityMatrix" << endl;
@@ -112,11 +122,19 @@ getIdentityMatrix (Teuchos::FancyOStream& out,
 
   out << "Create row Map" << endl;
   RCP<const Map_t> identityRowMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createUniformContigMapWithNode<LO, GO, NT> (globalNumRows, comm);
+#else
+    Tpetra::createUniformContigMapWithNode<NT> (globalNumRows, comm);
+#endif
 
   out << "Create CrsMatrix" << endl;
   RCP<Matrix_t> identityMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC, LO, GO, NT> (identityRowMap, 1);
+#else
+    Tpetra::createCrsMatrix<SC, NT> (identityRowMap, 1);
+#endif
 
   out << "Fill CrsMatrix" << endl;
   Teuchos::ArrayView<const GO> gblRows = identityRowMap->getNodeElementList ();
@@ -133,15 +151,28 @@ getIdentityMatrix (Teuchos::FancyOStream& out,
   return identityMatrix;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO,class NT>
 RCP<CrsMatrix<SC, LO, GO, NT> >
+#else
+template<class SC,class NT>
+RCP<CrsMatrix<SC, NT> >
+#endif
 getIdentityMatrixWithMap (Teuchos::FancyOStream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 			  Teuchos::RCP<const Tpetra::Map<LO,GO,NT> >& identityRowMap,
+#else
+			  Teuchos::RCP<const Tpetra::Map<NT> >& identityRowMap,
+#endif
 			  const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
 {
   using Teuchos::RCP;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SC, LO, GO, NT> Matrix_t;
+#else
+  typedef Tpetra::CrsMatrix<SC, NT> Matrix_t;
+#endif
 
   Teuchos::OSTab tab0 (out);
   out << "getIdentityMatrix" << endl;
@@ -149,7 +180,11 @@ getIdentityMatrixWithMap (Teuchos::FancyOStream& out,
 
   out << "Create CrsMatrix" << endl;
   RCP<Matrix_t> identityMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC, LO, GO, NT> (identityRowMap, 1);
+#else
+    Tpetra::createCrsMatrix<SC, NT> (identityRowMap, 1);
+#endif
 
   out << "Fill CrsMatrix" << endl;
   Teuchos::ArrayView<const GO> gblRows = identityRowMap->getNodeElementList ();
@@ -201,7 +236,11 @@ add_test_results regular_add_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Map<NT> Map_t;
+#endif
 
   add_test_results toReturn;
   toReturn.correctNorm = C->getFrobeniusNorm ();
@@ -304,7 +343,11 @@ add_test_results add_into_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Map<NT> Map_t;
+#endif
 
   add_test_results toReturn;
   toReturn.correctNorm = C->getFrobeniusNorm ();
@@ -336,8 +379,13 @@ mult_test_results multiply_test_kernel(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef RowMatrixTransposer<SC,LO,GO,NO>  transposer_type;
   typedef Map<LO,GO,NO> Map_t;
+#else
+  typedef RowMatrixTransposer<SC,NO>  transposer_type;
+  typedef Map<NO> Map_t;
+#endif
   RCP<const Map_t> map = C->getRowMap();
   LO LO_INVALID = Teuchos::OrdinalTraits<LO>::invalid();
 
@@ -405,7 +453,11 @@ mult_test_results multiply_test_kernel(
   }
 
   // Extract Kokkos CrsMatrices
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::CrsMatrix<SC,LO,GO,NO>::local_matrix_type KCRS;
+#else
+  typedef typename Tpetra::CrsMatrix<SC,NO>::local_matrix_type KCRS;
+#endif
   typedef typename KCRS::device_type device_t;
   typedef typename KCRS::StaticCrsGraphType graph_t;
   typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -594,8 +646,13 @@ mult_test_results multiply_reuse_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
   typedef Vector<SC,LO,GO,NT> Vector_t;
+#else
+  typedef Map<NT> Map_t;
+  typedef Vector<SC,NT> Vector_t;
+#endif
 
   RCP<const Map_t> map = C->getRowMap();
 
@@ -642,7 +699,11 @@ mult_test_results multiply_reuse_test(
 
   // diffMatrix = computedC2 - computedC1
   SC one = Teuchos::ScalarTraits<SC>::one();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Matrix_t> diffMatrix = Tpetra::createCrsMatrix<SC,LO,GO,NT>(C->getRowMap());
+#else
+  RCP<Matrix_t> diffMatrix = Tpetra::createCrsMatrix<SC,NT>(C->getRowMap());
+#endif
   Tpetra::MatrixMatrix::Add(*computedC1, false, -one, *computedC2, false, one, diffMatrix);
   diffMatrix->fillComplete(C->getDomainMap(), C->getRangeMap());
 
@@ -667,8 +728,13 @@ mult_test_results jacobi_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Vector<SC,LO,GO,NT> Vector_t;
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Vector<SC,NT> Vector_t;
+  typedef Map<NT> Map_t;
+#endif
   RCP<const Map_t> map = A->getRowMap();
 
   SC omega=Teuchos::ScalarTraits<SC>::one();
@@ -715,8 +781,13 @@ mult_test_results jacobi_reuse_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Vector<SC,LO,GO,NT> Vector_t;
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Vector<SC,NT> Vector_t;
+  typedef Map<NT> Map_t;
+#endif
 
   RCP<const Map_t> map = A->getRowMap();
 
@@ -747,7 +818,11 @@ mult_test_results jacobi_reuse_test(
 
   // diffMatrix = computedC2 - computedC1
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Matrix_t> diffMatrix = Tpetra::createCrsMatrix<SC,LO,GO,NT>(computedC1->getRowMap());
+#else
+  RCP<Matrix_t> diffMatrix = Tpetra::createCrsMatrix<SC,NT>(computedC1->getRowMap());
+#endif
   Tpetra::MatrixMatrix::Add(*computedC1, false, -one, *computedC2, false, one, diffMatrix);
   diffMatrix->fillComplete(computedC1->getDomainMap(), computedC1->getRangeMap());
 
@@ -760,12 +835,20 @@ mult_test_results jacobi_reuse_test(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatKernels, operations_test,SC,LO, GO, NT)  {
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatKernels, operations_test,SC, NT)  {
+#endif
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
   
   // NOTE: The matrix reader doesn't read real matrices into a complex data type, so we just swap down to MT here
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType MT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef CrsMatrix<MT,LO,GO,NT> Matrix_t;
+#else
+  typedef CrsMatrix<MT,NT> Matrix_t;
+#endif
   const int myRank = comm->getRank ();
   //const int numProcs = comm->getSize();
 
@@ -945,8 +1028,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatKernels, operations_test,SC,LO, G
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, LO, GO, NT )			\
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatKernels, operations_test,SC, LO, GO, NT)
+#else
+#define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, NT )			\
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatKernels, operations_test,SC, NT)
+#endif
 
 
   TPETRA_ETI_MANGLING_TYPEDEFS()

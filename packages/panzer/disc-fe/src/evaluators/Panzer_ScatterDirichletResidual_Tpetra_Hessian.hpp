@@ -55,7 +55,11 @@ namespace panzer {
 // Hessian Specialization
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>
+#else
+class ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Hessian, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -75,11 +79,19 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS>(globalIndexer_,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Hessian::ScalarT ScalarT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
   // dummy field so that the evaluator will have something to do
   Teuchos::RCP<PHX::FieldTag> scatterHolder_;

@@ -90,8 +90,14 @@ void LinearPartitioner<GraphType>::computePartitions()
 
 }// namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_LINEARPARTITIONER_INSTANT(LO,GO,N) \
   template class Ifpack2::LinearPartitioner<Tpetra::CrsGraph< LO, GO, N > >; \
   template class Ifpack2::LinearPartitioner<Tpetra::RowGraph< LO, GO, N > >;
+#else
+#define IFPACK2_LINEARPARTITIONER_INSTANT(N) \
+  template class Ifpack2::LinearPartitioner<Tpetra::CrsGraph<N > >; \
+  template class Ifpack2::LinearPartitioner<Tpetra::RowGraph<N > >;
+#endif
 
 #endif // IFPACK2_LINEARPARTITIONER_DEF_HPP

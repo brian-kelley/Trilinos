@@ -200,14 +200,23 @@ void findInterface(const int numDimensions, Teuchos::Array<LocalOrdinal> nodesPe
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 void createRegionData(const int numDimensions,
                       const bool useUnstructured, const int numDofsPerNode,
                       const Teuchos::ArrayView<GlobalOrdinal> gNodesPerDim,
                       const Teuchos::ArrayView<LocalOrdinal>  lNodesPerDim,
                       const Teuchos::ArrayView<GlobalOrdinal> procsPerDim,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       const Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > nodeMap,
                       const Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > dofMap,
+#else
+                      const Teuchos::RCP<Xpetra::Map<Node> > nodeMap,
+                      const Teuchos::RCP<Xpetra::Map<Node> > dofMap,
+#endif
                       int& maxRegPerGID, LocalOrdinal& numLocalRegionNodes,
                       Teuchos::Array<int>& boundaryConditions,
                       Teuchos::Array<GlobalOrdinal>& sendGIDs,

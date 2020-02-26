@@ -110,15 +110,24 @@ namespace { // (anonymous)
   // UNIT TESTS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, EmptyFillComplete, LO, GO , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, EmptyFillComplete, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::outArg;
     using Teuchos::RCP;
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> GRAPH;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> GRAPH;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid();
     // get a comm
@@ -149,15 +158,24 @@ namespace { // (anonymous)
 
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, SortingTests, LO, GO , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, SortingTests, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::outArg;
     using Teuchos::RCP;
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> GRAPH;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> GRAPH;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
     RCP<const Comm<int> > comm = getDefaultComm();
@@ -244,15 +262,24 @@ namespace { // (anonymous)
   }
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, Bug20100622K, LO, GO , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, Bug20100622K, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::outArg;
     using Teuchos::RCP;
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> GRAPH;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> GRAPH;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
     // get a comm
@@ -322,15 +349,24 @@ namespace { // (anonymous)
 
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, WithColMap, LO, GO , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, WithColMap, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::outArg;
     using Teuchos::RCP;
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> GRAPH;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> GRAPH;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
     RCP<const Comm<int> > comm = getDefaultComm();
@@ -377,10 +413,19 @@ namespace { // (anonymous)
 
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, Describable, LO, GO , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, Describable, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> GRAPH;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> GRAPH;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
     // get a comm
@@ -430,7 +475,11 @@ namespace { // (anonymous)
   }
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, Typedefs, LO, GO , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, Typedefs, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::outArg;
@@ -438,7 +487,11 @@ namespace { // (anonymous)
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> GRAPH;
+#else
+    typedef Tpetra::CrsGraph<Node> GRAPH;
+#endif
     typedef typename GRAPH::local_ordinal_type  local_ordinal_type;
     typedef typename GRAPH::global_ordinal_type global_ordinal_type;
     typedef typename GRAPH::node_type           node_type;
@@ -452,7 +505,11 @@ namespace { // (anonymous)
       TEST_ASSERT( Node_same );
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::RowGraph<LO,GO,Node> RGRAPH;
+#else
+    typedef Tpetra::RowGraph<Node> RGRAPH;
+#endif
     typedef typename RGRAPH::local_ordinal_type  rgraph_local_ordinal_type;
     typedef typename RGRAPH::global_ordinal_type rgraph_global_ordinal_type;
     typedef typename RGRAPH::node_type           rgraph_node_type;
@@ -480,15 +537,24 @@ namespace { // (anonymous)
 
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, TwoArraysESFC, LO, GO , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, TwoArraysESFC, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::outArg;
     using Teuchos::RCP;
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> GRAPH;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> GRAPH;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
     // get a comm
@@ -526,10 +592,19 @@ namespace { // (anonymous)
   }
 
  ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, SetAllIndices, LO, GO , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, SetAllIndices, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> GRAPH;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> GRAPH;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
     // get a comm
@@ -561,10 +636,19 @@ namespace { // (anonymous)
     TEST_EQUALITY_CONST( globalSuccess_int, 0 );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, StaticProfileMultiInsert, LO, GO, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, StaticProfileMultiInsert, Node)
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const GST Invalid = Teuchos::OrdinalTraits<GST>::invalid();
     RCP<const Comm<int>> comm = getDefaultComm();
@@ -590,6 +674,7 @@ namespace { // (anonymous)
 // Tests to build and run in both debug and release modes.  We will
 // instantiate them over all enabled local ordinal (LO), global
 // ordinal (GO), and Kokkos Node (NODE) types.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_DEBUG_AND_RELEASE( LO, GO, NODE ) \
       TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, WithColMap,        LO, GO, NODE ) \
       TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, Describable,       LO, GO, NODE ) \
@@ -600,6 +685,18 @@ namespace { // (anonymous)
       TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, TwoArraysESFC,     LO, GO, NODE ) \
       TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, SetAllIndices,     LO, GO, NODE ) \
       TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, StaticProfileMultiInsert, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP_DEBUG_AND_RELEASE(NODE ) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, WithColMap, NODE ) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, Describable, NODE ) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, EmptyFillComplete, NODE ) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, Typedefs, NODE ) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, Bug20100622K, NODE ) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, SortingTests, NODE ) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, TwoArraysESFC, NODE ) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, SetAllIndices, NODE ) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, StaticProfileMultiInsert, NODE )
+#endif
 
     TPETRA_ETI_MANGLING_TYPEDEFS()
 

@@ -62,8 +62,13 @@
 namespace MueLuTests {
   namespace TestHelpers {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     void AllocateEpetraFECrsMatrix(RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > & pn_rowmap,  RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > pn_colmap, Teuchos::RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > & B)
+#else
+    template <class Scalar, class Node>
+    void AllocateEpetraFECrsMatrix(RCP<const Xpetra::Map<Node> > & pn_rowmap,  RCP<const Xpetra::Map<Node> > pn_colmap, Teuchos::RCP<Xpetra::Matrix<Scalar, Node> > & B)
+#endif
     {
       throw MueLu::Exceptions::RuntimeError("MueLuTests::TestHelpers::AllocateEpetraFECrsMatrix only works for Kokkos::Compat::KokkosSerialWrapperNode");
     }
@@ -73,14 +78,22 @@ namespace MueLuTests {
             (defined(HAVE_MUELU_EXPLICIT_INSTANTIATION) && defined(HAVE_TPETRA_INST_SERIAL)) \
            )
     template <>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void AllocateEpetraFECrsMatrix<double,int,int,Kokkos::Compat::KokkosSerialWrapperNode>(RCP<const Xpetra::Map<int,int,Kokkos::Compat::KokkosSerialWrapperNode> > & pn_rowmap,  RCP<const Xpetra::Map<int,int,Kokkos::Compat::KokkosSerialWrapperNode> > pn_colmap, Teuchos::RCP<Xpetra::Matrix<double,int,int,Kokkos::Compat::KokkosSerialWrapperNode > > & B)
+#else
+    void AllocateEpetraFECrsMatrix<double,Kokkos::Compat::KokkosSerialWrapperNode>(RCP<const Xpetra::Map<Kokkos::Compat::KokkosSerialWrapperNode> > & pn_rowmap,  RCP<const Xpetra::Map<Kokkos::Compat::KokkosSerialWrapperNode> > pn_colmap, Teuchos::RCP<Xpetra::Matrix<double,Kokkos::Compat::KokkosSerialWrapperNode > > & B)
+#endif
 
     {
       // Epetra is hard
       const Epetra_Map & pn_rowmap_epetra = Xpetra::toEpetra(*pn_rowmap);
       const Epetra_Map & pn_colmap_epetra = Xpetra::toEpetra(*pn_colmap);
       RCP<Epetra_CrsMatrix> B_epetra = rcp(new Epetra_FECrsMatrix(Copy,pn_rowmap_epetra,pn_colmap_epetra,0));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       B = MueLu::Convert_Epetra_CrsMatrix_ToXpetra_CrsMatrixWrap<double,int,int,Kokkos::Compat::KokkosSerialWrapperNode>(B_epetra);
+#else
+      B = MueLu::Convert_Epetra_CrsMatrix_ToXpetra_CrsMatrixWrap<double,Kokkos::Compat::KokkosSerialWrapperNode>(B_epetra);
+#endif
     }
 #endif
 
@@ -90,8 +103,13 @@ namespace MueLuTests {
     // Here nx is the number of nodes on the underlying (p=1) mesh.
     // This mesh is then promoted up to degree
     //Teuchos::RCP<Matrix>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     Teuchos::RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    template <class Scalar, class Node>
+    Teuchos::RCP<Xpetra::Matrix<Scalar, Node> >
+#endif
     Build1DPseudoPoissonHigherOrder(GlobalOrdinal nx, int degree,
                                     Kokkos::DynRankView<LocalOrdinal,typename Node::device_type>
                                     & elem_to_node,
@@ -117,7 +135,11 @@ namespace MueLuTests {
       matrixList.set("nx", nx);
       matrixList.set("matrixType","Laplace1D");
       // Build a lower order matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Matrix> A = MueLuTests::TestHelpers::TestFactory<SC,LO,GO,NO>::BuildMatrix(matrixList,lib);
+#else
+      RCP<Matrix> A = MueLuTests::TestHelpers::TestFactory<SC,NO>::BuildMatrix(matrixList,lib);
+#endif
       RCP<const Teuchos::Comm<int> > comm = A->getRowMap()->getComm();
       int MyPID = comm->getRank();
       int Nproc = comm->getSize();

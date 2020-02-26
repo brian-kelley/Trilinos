@@ -49,30 +49,57 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   Directory<LO, GO, NT>::Directory () :
+#else
+  template<class NT>
+  Directory<NT>::Directory () :
+#endif
     impl_ (NULL)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   Directory<LO, GO, NT>::~Directory () {
+#else
+  template<class NT>
+  Directory<NT>::~Directory () {
+#endif
     if (impl_ != NULL) {
       delete impl_;
       impl_ = NULL;
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
+#else
+  template<class NT>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Directory<LO, GO, NT>::initialized () const {
+#else
+  Directory<NT>::initialized () const {
+#endif
     return impl_ != NULL;
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
+#else
+  template<class NT>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Directory<LO, GO, NT>::
   initialize (const Map<LO, GO, NT>& map,
+#else
+  Directory<NT>::
+  initialize (const Map<NT>& map,
+#endif
               const Tpetra::Details::TieBreak<LO,GO>& tieBreak)
   {
     if (initialized ()) {
@@ -111,22 +138,42 @@ namespace Tpetra {
       // process, and interface of TieBreak allows side effects.
       // Users may wish to exploit them regardless of the kind of Map
       // they pass in.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const ::Tpetra::Details::Directory<LO, GO, NT>* dir = NULL;
+#else
+      const ::Tpetra::Details::Directory<NT>* dir = NULL;
+#endif
       bool usedTieBreak = false;
       if (map.isDistributed ()) {
         if (map.isUniform ()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           dir = new ::Tpetra::Details::ContiguousUniformDirectory<LO, GO, NT> (map);
+#else
+          dir = new ::Tpetra::Details::ContiguousUniformDirectory<NT> (map);
+#endif
         }
         else if (map.isContiguous ()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           dir = new ::Tpetra::Details::DistributedContiguousDirectory<LO, GO, NT> (map);
+#else
+          dir = new ::Tpetra::Details::DistributedContiguousDirectory<NT> (map);
+#endif
         }
         else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           dir = new ::Tpetra::Details::DistributedNoncontiguousDirectory<LO, GO, NT> (map, tieBreak);
+#else
+          dir = new ::Tpetra::Details::DistributedNoncontiguousDirectory<NT> (map, tieBreak);
+#endif
           usedTieBreak = true;
         }
       }
       else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         dir = new ::Tpetra::Details::ReplicatedDirectory<LO, GO, NT> (map);
+#else
+        dir = new ::Tpetra::Details::ReplicatedDirectory<NT> (map);
+#endif
 
         if (tieBreak.mayHaveSideEffects () && map.getNodeNumElements () != 0) {
           // We need the second clause in the above test because Map's
@@ -175,9 +222,17 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
+#else
+  template<class NT>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Directory<LO, GO, NT>::initialize (const Map<LO, GO, NT>& map)
+#else
+  Directory<NT>::initialize (const Map<NT>& map)
+#endif
   {
     if (initialized ()) {
       TEUCHOS_TEST_FOR_EXCEPTION(
@@ -196,20 +251,40 @@ namespace Tpetra {
       // Create an implementation object of the appropriate type,
       // depending on whether the Map is distributed or replicated,
       // and contiguous or noncontiguous.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const ::Tpetra::Details::Directory<LO, GO, NT>* dir = NULL;
+#else
+      const ::Tpetra::Details::Directory<NT>* dir = NULL;
+#endif
       if (map.isDistributed ()) {
         if (map.isUniform ()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           dir = new ::Tpetra::Details::ContiguousUniformDirectory<LO, GO, NT> (map);
+#else
+          dir = new ::Tpetra::Details::ContiguousUniformDirectory<NT> (map);
+#endif
         }
         else if (map.isContiguous ()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           dir = new ::Tpetra::Details::DistributedContiguousDirectory<LO, GO, NT> (map);
+#else
+          dir = new ::Tpetra::Details::DistributedContiguousDirectory<NT> (map);
+#endif
         }
         else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           dir = new ::Tpetra::Details::DistributedNoncontiguousDirectory<LO, GO, NT> (map);
+#else
+          dir = new ::Tpetra::Details::DistributedNoncontiguousDirectory<NT> (map);
+#endif
         }
       }
       else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         dir = new ::Tpetra::Details::ReplicatedDirectory<LO, GO, NT> (map);
+#else
+        dir = new ::Tpetra::Details::ReplicatedDirectory<NT> (map);
+#endif
       }
       TEUCHOS_TEST_FOR_EXCEPTION(
         dir == NULL, std::logic_error, "Tpetra::Directory::initialize: "
@@ -219,10 +294,19 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
+#else
+  template<class NT>
+#endif
   LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Directory<LO, GO, NT>::
   getDirectoryEntries (const Map<LO, GO, NT>& map,
+#else
+  Directory<NT>::
+  getDirectoryEntries (const Map<NT>& map,
+#endif
                        const Teuchos::ArrayView<const GO>& globalIDs,
                        const Teuchos::ArrayView<int>& nodeIDs) const
   {
@@ -230,16 +314,29 @@ namespace Tpetra {
       // This const_cast is super wrong, but "mutable" is also a lie,
       // and Map's interface needs this method to be marked const for
       // some reason.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const_cast<Directory<LO, GO, NT>* > (this)->initialize (map);
+#else
+      const_cast<Directory<NT>* > (this)->initialize (map);
+#endif
     }
     const bool computeLIDs = false;
     return impl_->getEntries (map, globalIDs, nodeIDs, Teuchos::null, computeLIDs);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
+#else
+  template<class NT>
+#endif
   LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Directory<LO, GO, NT>::
   getDirectoryEntries (const Map<LO, GO, NT>& map,
+#else
+  Directory<NT>::
+  getDirectoryEntries (const Map<NT>& map,
+#endif
                        const Teuchos::ArrayView<const GO>& globalIDs,
                        const Teuchos::ArrayView<int>& nodeIDs,
                        const Teuchos::ArrayView<LO>& localIDs) const
@@ -248,26 +345,47 @@ namespace Tpetra {
       // This const_cast is super wrong, but "mutable" is also a lie,
       // and Map's interface needs this method to be marked const for
       // some reason.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const_cast<Directory<LO, GO, NT>* > (this)->initialize (map);
+#else
+      const_cast<Directory<NT>* > (this)->initialize (map);
+#endif
     }
     const bool computeLIDs = true;
     return impl_->getEntries (map, globalIDs, nodeIDs, localIDs, computeLIDs);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   bool Directory<LO, GO, NT>::isOneToOne (const Map<LO, GO, NT>& map) const {
+#else
+  template<class NT>
+  bool Directory<NT>::isOneToOne (const Map<NT>& map) const {
+#endif
     if (! initialized ()) {
       // This const_cast is super wrong, but "mutable" is also a lie,
       // and Map's interface needs this method to be marked const for
       // some reason.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const_cast<Directory<LO, GO, NT>* > (this)->initialize (map);
+#else
+      const_cast<Directory<NT>* > (this)->initialize (map);
+#endif
     }
     return impl_->isOneToOne (* (map.getComm ()));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
+#else
+  template<class NT>
+#endif
   std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Directory<LO, GO, NT>::description () const
+#else
+  Directory<NT>::description () const
+#endif
   {
     using Teuchos::TypeNameTraits;
 
@@ -287,7 +405,12 @@ namespace Tpetra {
 // Must be expanded from within the Tpetra namespace!
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DIRECTORY_INSTANT(LO,GO,NODE) \
   template class Directory< LO , GO , NODE >;
+#else
+#define TPETRA_DIRECTORY_INSTANT(NODE) \
+  template class Directory<NODE >;
+#endif
 
 #endif // TPETRA_DIRECTORY_HPP

@@ -72,12 +72,20 @@ namespace MueLu {
     @ingroup MueMexClasses 
     @brief Factory for interacting with Matlab
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar = double, class LocalOrdinal = int, class GlobalOrdinal = LocalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Scalar = double, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class SingleLevelMatlabFactory : public SingleLevelFactoryBase {
 #undef MUELU_SINGLELEVELMATLABFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 

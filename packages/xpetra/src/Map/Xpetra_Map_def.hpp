@@ -52,15 +52,26 @@
 namespace Xpetra {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LocalOrdinal, class GlobalOrdinal, class Node>
     Map<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template<class Node>
+    Map<Node>::
+#endif
     ~Map()
     {  }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> >
     Map<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template<class Node>
+    RCP<const Xpetra::Map<Node> >
+    Map<Node>::
+#endif
     getMap() const
     {
         return rcpFromRef(*this);

@@ -78,8 +78,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Hierarchy()
+#else
+  template <class Scalar, class Node>
+  Hierarchy<Scalar, Node>::Hierarchy()
+#endif
     : maxCoarseSize_(GetDefaultMaxCoarseSize()), implicitTranspose_(GetDefaultImplicitTranspose()),
       fuseProlongationAndUpdate_(GetDefaultFuseProlongationAndUpdate()),
       doPRrebalance_(GetDefaultPRrebalance()), isPreconditioner_(true), Cycle_(GetDefaultCycle()),
@@ -89,16 +94,26 @@ namespace MueLu {
     AddLevel(rcp(new Level));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Hierarchy(const std::string& label)
+#else
+  template <class Scalar, class Node>
+  Hierarchy<Scalar, Node>::Hierarchy(const std::string& label)
+#endif
     : Hierarchy()
   {
     setObjectLabel(label);
     Levels_[0]->setObjectLabel(label);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Hierarchy(const RCP<Matrix>& A)
+#else
+  template <class Scalar, class Node>
+  Hierarchy<Scalar, Node>::Hierarchy(const RCP<Matrix>& A)
+#endif
     : maxCoarseSize_(GetDefaultMaxCoarseSize()), implicitTranspose_(GetDefaultImplicitTranspose()),
       fuseProlongationAndUpdate_(GetDefaultFuseProlongationAndUpdate()),
       doPRrebalance_(GetDefaultPRrebalance()), isPreconditioner_(true), Cycle_(GetDefaultCycle()),
@@ -113,16 +128,26 @@ namespace MueLu {
     Finest->Set("A", A);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Hierarchy(const RCP<Matrix>& A, const std::string& label)
+#else
+  template <class Scalar, class Node>
+  Hierarchy<Scalar, Node>::Hierarchy(const RCP<Matrix>& A, const std::string& label)
+#endif
     : Hierarchy(A)
   {
     setObjectLabel(label);
     Levels_[0]->setObjectLabel(label);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddLevel(const RCP<Level>& level) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::AddLevel(const RCP<Level>& level) {
+#endif
     int levelID = LastLevelID() + 1; // ID of the inserted level
 
     if (level->GetLevelID() != -1 && (level->GetLevelID() != levelID))
@@ -138,27 +163,47 @@ namespace MueLu {
     level->setObjectLabel(this->getObjectLabel());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddNewLevel() {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::AddNewLevel() {
+#endif
     RCP<Level> newLevel = Levels_[LastLevelID()]->Build(); // new coarse level, using copy constructor
     newLevel->setlib(lib_);
     this->AddLevel(newLevel);                              // add to hierarchy
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<Level> & Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetLevel(const int levelID) {
+#else
+  template <class Scalar, class Node>
+  RCP<Level> & Hierarchy<Scalar, Node>::GetLevel(const int levelID) {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(levelID < 0 || levelID > LastLevelID(), Exceptions::RuntimeError,
                                "MueLu::Hierarchy::GetLevel(): invalid input parameter value: LevelID = " << levelID);
     return Levels_[levelID];
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   int Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetNumLevels() const {
+#else
+  template <class Scalar, class Node>
+  int Hierarchy<Scalar, Node>::GetNumLevels() const {
+#endif
     return Levels_.size();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   int Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetGlobalNumLevels() const {
+#else
+  template <class Scalar, class Node>
+  int Hierarchy<Scalar, Node>::GetGlobalNumLevels() const {
+#endif
     RCP<Operator> A = Levels_[0]->template Get<RCP<Operator> >("A");
     RCP<const Teuchos::Comm<int> > comm = A->getDomainMap()->getComm();
 
@@ -169,8 +214,13 @@ namespace MueLu {
     return numGlobalLevels;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   double Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetOperatorComplexity() const {
+#else
+  template <class Scalar, class Node>
+  double Hierarchy<Scalar, Node>::GetOperatorComplexity() const {
+#endif
     double totalNnz = 0, lev0Nnz = 1;
     for (int i = 0; i < GetNumLevels(); ++i) {
       TEUCHOS_TEST_FOR_EXCEPTION(!(Levels_[i]->IsAvailable("A")) , Exceptions::RuntimeError,
@@ -192,8 +242,13 @@ namespace MueLu {
     return totalNnz / lev0Nnz;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   double Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetSmootherComplexity() const {
+#else
+  template <class Scalar, class Node>
+  double Hierarchy<Scalar, Node>::GetSmootherComplexity() const {
+#endif
     double node_sc = 0, global_sc=0;
     double a0_nnz =0;
     const size_t INVALID = Teuchos::OrdinalTraits<size_t>::invalid();
@@ -232,8 +287,13 @@ namespace MueLu {
 
 
   // Coherence checks todo in Setup() (using an helper function):
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CheckLevel(Level& level, int levelID) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::CheckLevel(Level& level, int levelID) {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(level.lib() != lib_, Exceptions::RuntimeError,
                                "MueLu::Hierarchy::CheckLevel(): wrong underlying linear algebra library.");
     TEUCHOS_TEST_FOR_EXCEPTION(level.GetLevelID() != levelID, Exceptions::RuntimeError,
@@ -242,8 +302,13 @@ namespace MueLu {
                                "MueLu::Hierarchy::Setup(): wrong level parent");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetMatvecParams(RCP<ParameterList> matvecParams) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::SetMatvecParams(RCP<ParameterList> matvecParams) {
+#endif
     for (int i = 0; i < GetNumLevels(); ++i) {
       RCP<Level> level = Levels_[i];
       if (level->IsAvailable("A")) {
@@ -286,8 +351,13 @@ namespace MueLu {
 
   // The function uses three managers: fine, coarse and next coarse
   // We construct the data for the coarse level, and do requests for the next coarse
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(int coarseLevelID,
+#else
+  template <class Scalar, class Node>
+  bool Hierarchy<Scalar, Node>::Setup(int coarseLevelID,
+#endif
                                                                    const RCP<const FactoryManagerBase> fineLevelManager,
                                                                    const RCP<const FactoryManagerBase> coarseLevelManager,
                                                                    const RCP<const FactoryManagerBase> nextLevelManager) {
@@ -308,8 +378,13 @@ namespace MueLu {
     TEUCHOS_TEST_FOR_EXCEPTION(coarseLevelManager == Teuchos::null, Exceptions::RuntimeError,
                                "MueLu::Hierarchy::Setup(): argument coarseLevelManager cannot be null");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MueLu::TopRAPFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>      TopRAPFactory;
     typedef MueLu::TopSmootherFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node> TopSmootherFactory;
+#else
+    typedef MueLu::TopRAPFactory<Scalar,Node>      TopRAPFactory;
+    typedef MueLu::TopSmootherFactory<Scalar,Node> TopSmootherFactory;
+#endif
 
     if (levelManagers_.size() < coarseLevelID+1)
       levelManagers_.resize(coarseLevelID+1);
@@ -522,8 +597,13 @@ namespace MueLu {
     return isLastLevel;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetupRe() {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::SetupRe() {
+#endif
     int numLevels = Levels_.size();
     TEUCHOS_TEST_FOR_EXCEPTION(levelManagers_.size() != numLevels, Exceptions::RuntimeError,
                                "Hierarchy::SetupRe: " << Levels_.size() << " levels, but  " << levelManagers_.size() << " level factory managers");
@@ -562,8 +642,13 @@ namespace MueLu {
     describe(GetOStream(Statistics0), GetVerbLevel());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(const FactoryManagerBase& manager, int startLevel, int numDesiredLevels) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::Setup(const FactoryManagerBase& manager, int startLevel, int numDesiredLevels) {
+#endif
     // Use MueLu::BaseClass::description() to avoid printing "{numLevels = 1}" (numLevels is increasing...)
     PrintMonitor m0(*this, "Setup (" + this->MueLu::BaseClass::description() + ")", Runtime0);
 
@@ -634,8 +719,13 @@ namespace MueLu {
     describe(GetOStream(Statistics0), GetVerbLevel());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Clear(int startLevel) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::Clear(int startLevel) {
+#endif
     if (startLevel < GetNumLevels())
       GetOStream(Runtime0) << "Clearing old data (if any)" << std::endl;
 
@@ -643,16 +733,26 @@ namespace MueLu {
       Levels_[iLevel]->Clear();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ExpertClear() {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::ExpertClear() {
+#endif
     GetOStream(Runtime0) << "Clearing old data (expert)" << std::endl;
     for (int iLevel = 0; iLevel < GetNumLevels(); iLevel++)
       Levels_[iLevel]->ExpertClear();
   }
 
 #if defined(HAVE_MUELU_EXPERIMENTAL) && defined(HAVE_MUELU_ADDITIVE_VARIANT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   ReturnType Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Iterate(const MultiVector& B, MultiVector& X, ConvData conv,
+#else
+  template <class Scalar, class Node>
+  ReturnType Hierarchy<Scalar, Node>::Iterate(const MultiVector& B, MultiVector& X, ConvData conv,
+#endif
                                                                            bool InitialGuessIsZero, LO startLevel) {
     LO            nIts = conv.maxIts_;
     MagnitudeType tol  = conv.tol_;
@@ -855,8 +955,13 @@ namespace MueLu {
 }
 #else
   // ---------------------------------------- Iterate -------------------------------------------------------
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   ReturnType Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Iterate(const MultiVector& B, MultiVector& X, ConvData conv,
+#else
+  template <class Scalar, class Node>
+  ReturnType Hierarchy<Scalar, Node>::Iterate(const MultiVector& B, MultiVector& X, ConvData conv,
+#endif
                                                                            bool InitialGuessIsZero, LO startLevel) {
     LO            nIts = conv.maxIts_;
     MagnitudeType tol  = conv.tol_;
@@ -1171,8 +1276,13 @@ namespace MueLu {
 #endif
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Write(const LO& start, const LO& end, const std::string &suffix) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::Write(const LO& start, const LO& end, const std::string &suffix) {
+#endif
     LO startLevel = (start != -1 ? start : 0);
     LO   endLevel = (end   != -1 ? end   : Levels_.size()-1);
 
@@ -1190,42 +1300,79 @@ namespace MueLu {
           R = rcp_dynamic_cast<Matrix>(Levels_[i]-> template Get< RCP< Operator> >("R"));
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       if (!A.is_null()) Xpetra::IO<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Write("A_" + toString(i) + suffix + ".m", *A);
+#else
+      if (!A.is_null()) Xpetra::IO<Scalar, Node>::Write("A_" + toString(i) + suffix + ".m", *A);
+#endif
       if (!P.is_null()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::IO<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Write("P_" + toString(i) + suffix + ".m", *P);
+#else
+        Xpetra::IO<Scalar, Node>::Write("P_" + toString(i) + suffix + ".m", *P);
+#endif
       }
       if (!R.is_null()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::IO<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Write("R_" + toString(i) + suffix + ".m", *R);
+#else
+        Xpetra::IO<Scalar, Node>::Write("R_" + toString(i) + suffix + ".m", *R);
+#endif
       }
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Keep(const std::string & ename, const FactoryBase* factory) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::Keep(const std::string & ename, const FactoryBase* factory) {
+#endif
     for (Array<RCP<Level> >::iterator it = Levels_.begin(); it != Levels_.end(); ++it)
       (*it)->Keep(ename, factory);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Delete(const std::string& ename, const FactoryBase* factory) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::Delete(const std::string& ename, const FactoryBase* factory) {
+#endif
     for (Array<RCP<Level> >::iterator it = Levels_.begin(); it != Levels_.end(); ++it)
       (*it)->Delete(ename, factory);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddKeepFlag(const std::string & ename, const FactoryBase* factory, KeepType keep) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::AddKeepFlag(const std::string & ename, const FactoryBase* factory, KeepType keep) {
+#endif
     for (Array<RCP<Level> >::iterator it = Levels_.begin(); it != Levels_.end(); ++it)
       (*it)->AddKeepFlag(ename, factory, keep);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RemoveKeepFlag(const std::string & ename, const FactoryBase* factory, KeepType keep) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::RemoveKeepFlag(const std::string & ename, const FactoryBase* factory, KeepType keep) {
+#endif
     for (Array<RCP<Level> >::iterator it = Levels_.begin(); it != Levels_.end(); ++it)
       (*it)->RemoveKeepFlag(ename, factory, keep);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string Hierarchy<Scalar, Node>::description() const {
+#endif
     if ( description_.empty() )
     {
       std::ostringstream out;
@@ -1236,13 +1383,23 @@ namespace MueLu {
     return description_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::describe(Teuchos::FancyOStream& out, const Teuchos::EVerbosityLevel tVerbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::describe(Teuchos::FancyOStream& out, const Teuchos::EVerbosityLevel tVerbLevel) const {
+#endif
     describe(out, toMueLuVerbLevel(tVerbLevel));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::describe(Teuchos::FancyOStream& out, const VerbLevel verbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::describe(Teuchos::FancyOStream& out, const VerbLevel verbLevel) const {
+#endif
     RCP<Operator> A0 = Levels_[0]->template Get<RCP<Operator> >("A");
     RCP<const Teuchos::Comm<int> > comm = A0->getDomainMap()->getComm();
 
@@ -1378,20 +1535,35 @@ namespace MueLu {
   }
 
   // NOTE: at some point this should be replaced by a friend operator <<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::print(std::ostream& out, const VerbLevel verbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::print(std::ostream& out, const VerbLevel verbLevel) const {
+#endif
     Teuchos::OSTab tab2(out);
     for (int i = 0; i < GetNumLevels(); ++i)
       Levels_[i]->print(out, verbLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::IsPreconditioner(const bool flag) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::IsPreconditioner(const bool flag) {
+#endif
     isPreconditioner_ = flag;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DumpCurrentGraph() const {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::DumpCurrentGraph() const {
+#endif
     if (GetProcRankVerbose() != 0)
       return;
 #if defined(HAVE_MUELU_BOOST) && defined(HAVE_MUELU_BOOST_FOR_REAL) && defined(BOOST_VERSION) && (BOOST_VERSION >= 104400)
@@ -1450,8 +1622,13 @@ namespace MueLu {
   }
 
   // Enforce that coordinate vector's map is consistent with that of A
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ReplaceCoordinateMap(Level& level) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::ReplaceCoordinateMap(Level& level) {
+#endif
     RCP<Operator> Ao = level.Get<RCP<Operator> >("A");
     RCP<Matrix>   A  = rcp_dynamic_cast<Matrix>(Ao);
     if (A.is_null()) {
@@ -1463,7 +1640,11 @@ namespace MueLu {
       return;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,LO,GO,NO> xdMV;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,NO> xdMV;
+#endif
 
     RCP<xdMV> coords = level.Get<RCP<xdMV> >("Coordinates");
 
@@ -1519,12 +1700,21 @@ namespace MueLu {
       coordDataView.push_back(coordData[i]());
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<xdMV> newCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType,LO,GO,NO>::Build(nodeMap, coordDataView(), coords->getNumVectors());
+#else
+    RCP<xdMV> newCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType,NO>::Build(nodeMap, coordDataView(), coords->getNumVectors());
+#endif
     level.Set("Coordinates", newCoords);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AllocateLevelMultiVectors(int numvecs) {
+#else
+  template <class Scalar, class Node>
+  void Hierarchy<Scalar, Node>::AllocateLevelMultiVectors(int numvecs) {
+#endif
     int N = Levels_.size();  
     if( (sizeOfAllocatedLevelMultiVectors_ == numvecs && residual_.size() == N) || numvecs<=0 ) return;
 
@@ -1583,8 +1773,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeleteLevelMultiVectors() {
+#else
+template <class Scalar, class Node>
+void Hierarchy<Scalar, Node>::DeleteLevelMultiVectors() {
+#endif
   if(sizeOfAllocatedLevelMultiVectors_==0) return;
   residual_.resize(0);
   coarseRhs_.resize(0);

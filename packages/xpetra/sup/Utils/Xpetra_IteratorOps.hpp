@@ -64,13 +64,24 @@ namespace Xpetra {
 
   // General implementation
   // Epetra variant throws
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void Jacobi(
               Scalar omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               const Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & Dinv,
               const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
               const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
               Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
+#else
+              const Xpetra::Vector<Scalar,Node> & Dinv,
+              const Xpetra::Matrix<Scalar, Node>& A,
+              const Xpetra::Matrix<Scalar, Node>& B,
+              Xpetra::Matrix<Scalar, Node>& C,
+#endif
               bool call_FillComplete_on_result = true,
               bool doOptimizeStorage = true,
               const std::string & label = std::string(),
@@ -97,10 +108,17 @@ namespace Xpetra {
 #endif
     } else if (C.getRowMap()->lib() == Xpetra::UseTpetra) {
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::CrsMatrix<SC,LO,GO,NO>    & tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
       const Tpetra::CrsMatrix<SC,LO,GO,NO>    & tpB = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(B);
             Tpetra::CrsMatrix<SC,LO,GO,NO>    & tpC = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(C);
       const RCP<Tpetra::Vector<SC,LO,GO,NO> > & tpD = toTpetra(Dinv);
+#else
+      const Tpetra::CrsMatrix<SC,NO>    & tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+      const Tpetra::CrsMatrix<SC,NO>    & tpB = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(B);
+            Tpetra::CrsMatrix<SC,NO>    & tpC = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(C);
+      const RCP<Tpetra::Vector<SC,NO> > & tpD = toTpetra(Dinv);
+#endif
       Tpetra::MatrixMatrix::Jacobi(omega, *tpD, tpA, tpB, tpC, haveMultiplyDoFillComplete, label, params);
 #else
       throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra."));
@@ -114,8 +132,13 @@ namespace Xpetra {
     }
 
     // transfer striding information
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<SC,LO,GO,NO> > rcpA = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,LO,GO,NO> >(Teuchos::rcpFromRef(A));
     RCP<Xpetra::Matrix<SC,LO,GO,NO> > rcpB = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,LO,GO,NO> >(Teuchos::rcpFromRef(B));
+#else
+    RCP<Xpetra::Matrix<SC,NO> > rcpA = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,NO> >(Teuchos::rcpFromRef(A));
+    RCP<Xpetra::Matrix<SC,NO> > rcpB = Teuchos::rcp_const_cast<Xpetra::Matrix<SC,NO> >(Teuchos::rcpFromRef(B));
+#endif
     C.CreateView("stridedMaps", rcpA, false, rcpB, false); // TODO use references instead of RCPs
   } // end Jacobi
 
@@ -152,12 +175,20 @@ namespace Xpetra {
     Currently it only contains routines to generate the Jacobi iteration operator
 
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class IteratorOps {
 #undef XPETRA_ITERATOROPS_SHORT
 #include "Xpetra_UseShortNames.hpp"
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     static RCP<Matrix>
     Jacobi(SC omega, const Vector& Dinv, const Matrix& A, const Matrix& B, RCP<Matrix> C_in, Teuchos::FancyOStream &fos, const std::string& label, RCP<ParameterList>& params) {
       TEUCHOS_TEST_FOR_EXCEPTION(!A.isFillComplete(), Exceptions::RuntimeError, "A is not fill-completed");
@@ -172,7 +203,11 @@ namespace Xpetra {
       }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::Jacobi<Scalar,LocalOrdinal,GlobalOrdinal,Node>(omega, Dinv, A, B, *C, true, true,label,params);
+#else
+      Xpetra::Jacobi<Scalar,Node>(omega, Dinv, A, B, *C, true, true,label,params);
+#endif
       C->CreateView("stridedMaps", rcpFromRef(A), false, rcpFromRef(B), false);
 
       return C;

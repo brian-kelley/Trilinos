@@ -81,7 +81,11 @@
 
 // Default problem is Laplace1D with nx = 8748. Use --help to list available options.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -244,8 +248,13 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
         //
         RCP<Epetra_CrsMatrix> eA; //duplicate code
         { // TODO: simplify this
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> > xCrsOp  = Teuchos::rcp_dynamic_cast<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(A, true);
           RCP<Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > xCrsMtx = xCrsOp->getCrsMatrix();
+#else
+          RCP<Xpetra::CrsMatrixWrap<Scalar, Node> > xCrsOp  = Teuchos::rcp_dynamic_cast<Xpetra::CrsMatrixWrap<Scalar, Node> >(A, true);
+          RCP<Xpetra::CrsMatrix<Scalar, Node> > xCrsMtx = xCrsOp->getCrsMatrix();
+#endif
           RCP<Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node> > eCrsMtx = Teuchos::rcp_dynamic_cast<Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node> >(xCrsMtx, true);
           eA = eCrsMtx->getEpetra_CrsMatrixNonConst();
         }
@@ -500,7 +509,11 @@ int main(int argc, char* argv[]) {
 
     if (lib == Xpetra::UseEpetra) {
 #ifdef HAVE_MUELU_EPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return main_<double,int,int,Xpetra::EpetraNode>(clp, lib, argc, argv);
+#else
+      return main_<double,Xpetra::EpetraNode>(clp, lib, argc, argv);
+#endif
 #else
       throw MueLu::Exceptions::RuntimeError("Epetra is not available");
 #endif

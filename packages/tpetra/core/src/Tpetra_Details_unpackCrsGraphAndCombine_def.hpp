@@ -338,8 +338,12 @@ unpackAndCombine
    Kokkos::MemoryUnmanaged>& num_packets_per_lid,
  const Kokkos::View<const LocalOrdinal*, BufferDevice,
    Kokkos::MemoryUnmanaged>& import_lids,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  const typename CrsGraph<LocalOrdinal, GlobalOrdinal,
    Node>::padding_type& padding,
+#else
+ const typename CrsGraph<Node>::padding_type& padding,
+#endif
  const bool unpack_pids,
  const int myRank,
  const bool verbose)
@@ -886,12 +890,24 @@ unpackAndCombineIntoCrsArrays(
 /// copies back in to the Teuchos::ArrayView objects, if needed).  When
 /// CrsGraph migrates fully to adopting Kokkos::DualView objects for its storage
 /// of data, this procedure could be bypassed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 size_t
 unpackAndCombineWithOwningPIDsCount(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const CrsGraph<LocalOrdinal, GlobalOrdinal, Node> & sourceGraph,
+#else
+    const CrsGraph<Node> & sourceGraph,
+#endif
     const Teuchos::ArrayView<const LocalOrdinal> &importLIDs,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::ArrayView<const typename CrsGraph<LocalOrdinal,GlobalOrdinal,Node>::packet_type> &imports,
+#else
+    const Teuchos::ArrayView<const typename CrsGraph<Node>::packet_type> &imports,
+#endif
     const Teuchos::ArrayView<const size_t>& numPacketsPerLID,
     size_t /* constantNumPackets */,
     Distributor &/* distor */,
@@ -903,9 +919,15 @@ unpackAndCombineWithOwningPIDsCount(
   using Kokkos::MemoryUnmanaged;
   using Kokkos::View;
   using device_type = typename Node::device_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using packet_type = typename CrsGraph<LocalOrdinal,GlobalOrdinal,Node>::packet_type;
   using local_graph_type = typename CrsGraph<LocalOrdinal,GlobalOrdinal,Node>::local_graph_type;
   using buffer_device_type = typename CrsGraph<LocalOrdinal,GlobalOrdinal,Node>::buffer_device_type;
+#else
+  using packet_type = typename CrsGraph<Node>::packet_type;
+  using local_graph_type = typename CrsGraph<Node>::local_graph_type;
+  using buffer_device_type = typename CrsGraph<Node>::buffer_device_type;
+#endif
   const char prefix[] = "unpackAndCombineWithOwningPIDsCount: ";
 
   TEUCHOS_TEST_FOR_EXCEPTION
@@ -958,12 +980,24 @@ unpackAndCombineWithOwningPIDsCount(
 /// Note: The TargetPids vector (on output) will contain owning PIDs
 /// for each entry in the graph, with the "-1 for local" for locally
 /// owned entries.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 void
 unpackAndCombineIntoCrsArrays(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const CrsGraph<LocalOrdinal, GlobalOrdinal, Node> & sourceGraph,
+#else
+    const CrsGraph<Node> & sourceGraph,
+#endif
     const Teuchos::ArrayView<const LocalOrdinal>& importLIDs,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::ArrayView<const typename CrsGraph<LocalOrdinal,GlobalOrdinal,Node>::packet_type>& imports,
+#else
+    const Teuchos::ArrayView<const typename CrsGraph<Node>::packet_type>& imports,
+#endif
     const Teuchos::ArrayView<const size_t>& numPacketsPerLID,
     const size_t /* constantNumPackets */,
     Distributor& /* distor */,
@@ -986,7 +1020,11 @@ unpackAndCombineIntoCrsArrays(
   using Teuchos::reduceAll;
   using LO = LocalOrdinal;
   using GO = GlobalOrdinal;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_graph_type = CrsGraph<LO, GO, Node>;
+#else
+  using crs_graph_type = CrsGraph<Node>;
+#endif
   using packet_type = typename crs_graph_type::packet_type;
   using local_graph_type = typename crs_graph_type::local_graph_type;
   using buffer_device_type = typename crs_graph_type::buffer_device_type;
@@ -1097,12 +1135,25 @@ unpackAndCombineIntoCrsArrays(
 } // namespace Details
 } // namespace Tpetra
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DETAILS_UNPACKCRSGRAPHANDCOMBINE_INSTANT( LO, GO, NT ) \
+#else
+#define TPETRA_DETAILS_UNPACKCRSGRAPHANDCOMBINE_INSTANT(NT ) \
+#endif
   template void \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::unpackAndCombineIntoCrsArrays<LO, GO, NT>( \
     const CrsGraph<LO, GO, NT> &, \
+#else
+  Details::unpackAndCombineIntoCrsArrays<NT>( \
+    const CrsGraph<NT> &, \
+#endif
     const Teuchos::ArrayView<const LO>&, \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::ArrayView<const typename CrsGraph<LO,GO,NT>::packet_type>&, \
+#else
+    const Teuchos::ArrayView<const typename CrsGraph<NT>::packet_type>&, \
+#endif
     const Teuchos::ArrayView<const size_t>&, \
     const size_t, \
     Distributor&, \
@@ -1118,10 +1169,19 @@ unpackAndCombineIntoCrsArrays(
     const Teuchos::ArrayView<const int>&, \
     Teuchos::Array<int>&); \
   template size_t \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::unpackAndCombineWithOwningPIDsCount<LO, GO, NT>( \
     const CrsGraph<LO, GO, NT> &, \
+#else
+  Details::unpackAndCombineWithOwningPIDsCount<NT>( \
+    const CrsGraph<NT> &, \
+#endif
     const Teuchos::ArrayView<const LO> &, \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::ArrayView<const typename CrsGraph<LO,GO,NT>::packet_type> &, \
+#else
+    const Teuchos::ArrayView<const typename CrsGraph<NT>::packet_type> &, \
+#endif
     const Teuchos::ArrayView<const size_t>&, \
     size_t, \
     Distributor &, \

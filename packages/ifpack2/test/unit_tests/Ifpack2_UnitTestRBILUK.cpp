@@ -96,17 +96,28 @@ namespace { // (anonymous)
   } \
 } while (false)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, LowerTriangularBlockCrsMatrix, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, LowerTriangularBlockCrsMatrix, Scalar)
+#endif
 {
   using Teuchos::outArg;
   using Teuchos::RCP;
   using Teuchos::REDUCE_MIN;
   using Teuchos::reduceAll;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockCrsMatrix<Scalar,LO,GO,Node> block_crs_matrix_type;
   typedef Tpetra::CrsGraph<LO,GO,Node> crs_graph_type;
   typedef Tpetra::BlockMultiVector<Scalar,LO,GO,Node> BMV;
   typedef Tpetra::MultiVector<Scalar,LO,GO,Node> MV;
+#else
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+  typedef Tpetra::CrsGraph<Node> crs_graph_type;
+  typedef Tpetra::BlockMultiVector<Scalar,Node> BMV;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
   typedef Ifpack2::Experimental::RBILUK<block_crs_matrix_type> prec_type;
   int lclSuccess = 1;
   int gblSuccess = 1;
@@ -121,7 +132,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, LowerTriangularBlockCrsMatrix, Scalar,
   const size_t num_rows_per_proc = 3;
   RCP<crs_graph_type> crsgraph;
   try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     crsgraph = tif_utest::create_dense_local_graph<LO, GO, Node> (num_rows_per_proc);
+#else
+    crsgraph = tif_utest::create_dense_local_graph<Node> (num_rows_per_proc);
+#endif
   } catch (std::exception& e) {
     lclSuccess = 0;
     errStrm << "Process " << myRank << ": create_dense_local_graph threw exception: "
@@ -132,7 +147,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, LowerTriangularBlockCrsMatrix, Scalar,
   const int blockSize = 5;
   RCP<block_crs_matrix_type> bcrsmatrix;
   try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bcrsmatrix = rcp_const_cast<block_crs_matrix_type> (tif_utest::create_triangular_matrix<Scalar, LO, GO, Node, true> (crsgraph, blockSize));
+#else
+    bcrsmatrix = rcp_const_cast<block_crs_matrix_type> (tif_utest::create_triangular_matrix<Scalar, Node, true> (crsgraph, blockSize));
+#endif
   } catch (std::exception& e) {
     lclSuccess = 0;
     errStrm << "Process " << myRank << ": create_triangular_matrix threw exception: "
@@ -215,12 +234,23 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, LowerTriangularBlockCrsMatrix, Scalar,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, UpperTriangularBlockCrsMatrix, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, UpperTriangularBlockCrsMatrix, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> block_crs_matrix_type;
   typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> crs_graph_type;
   typedef Tpetra::BlockMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> BMV;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+  typedef Tpetra::CrsGraph<Node> crs_graph_type;
+  typedef Tpetra::BlockMultiVector<Scalar,Node> BMV;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
   typedef Ifpack2::Experimental::RBILUK<block_crs_matrix_type> prec_type;
 
   out << "Ifpack2::Version(): " << Ifpack2::Version () << std::endl;
@@ -230,9 +260,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, UpperTriangularBlockCrsMatrix, Scalar,
 
   RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
   RCP<crs_graph_type> crsgraph =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_dense_local_graph<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
+#else
+    tif_utest::create_dense_local_graph<Node>(num_rows_per_proc);
+#endif
   RCP<block_crs_matrix_type> bcrsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     rcp_const_cast<block_crs_matrix_type> (tif_utest::create_triangular_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node,false> (crsgraph, blockSize));
+#else
+    rcp_const_cast<block_crs_matrix_type> (tif_utest::create_triangular_matrix<Scalar,Node,false> (crsgraph, blockSize));
+#endif
 
   RCP<const block_crs_matrix_type> const_bcrsmatrix(bcrsmatrix);
   prec_type prec (const_bcrsmatrix);
@@ -269,12 +307,23 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, UpperTriangularBlockCrsMatrix, Scalar,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, FullLocalBlockCrsMatrix, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, FullLocalBlockCrsMatrix, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> block_crs_matrix_type;
   typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> crs_graph_type;
   typedef Tpetra::BlockMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> BMV;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+  typedef Tpetra::CrsGraph<Node> crs_graph_type;
+  typedef Tpetra::BlockMultiVector<Scalar,Node> BMV;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
   typedef Ifpack2::Experimental::RBILUK<block_crs_matrix_type> prec_type;
 
   out << "Ifpack2::Version(): " << Ifpack2::Version () << std::endl;
@@ -284,9 +333,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, FullLocalBlockCrsMatrix, Scalar, Local
 
   RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
   RCP<crs_graph_type> crsgraph =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_dense_local_graph<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
+#else
+    tif_utest::create_dense_local_graph<Node>(num_rows_per_proc);
+#endif
   RCP<block_crs_matrix_type> bcrsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     rcp_const_cast<block_crs_matrix_type> (tif_utest::create_full_local_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> (crsgraph, blockSize));
+#else
+    rcp_const_cast<block_crs_matrix_type> (tif_utest::create_full_local_matrix<Scalar,Node> (crsgraph, blockSize));
+#endif
 
   RCP<const block_crs_matrix_type> const_bcrsmatrix(bcrsmatrix);
   prec_type prec (const_bcrsmatrix);
@@ -323,14 +380,29 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, FullLocalBlockCrsMatrix, Scalar, Local
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, BandedBlockCrsMatrixWithDropping, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, BandedBlockCrsMatrixWithDropping, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> block_crs_matrix_type;
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
+#else
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+#endif
   //typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> crs_graph_type; // unused
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> BMV;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+  typedef Tpetra::BlockMultiVector<Scalar,Node> BMV;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
   //typedef Ifpack2::Experimental::RBILUK<block_crs_matrix_type> prec_type; // unused
   typedef Ifpack2::RILUK<row_matrix_type> prec_crs_type;
 
@@ -342,10 +414,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, BandedBlockCrsMatrixWithDropping, Scal
   const int lof = 0;
   const size_t rbandwidth = lof+2+2;
   RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > crsgraph =
     tif_utest::create_banded_graph<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc, rbandwidth);
+#else
+  RCP<Tpetra::CrsGraph<Node> > crsgraph =
+    tif_utest::create_banded_graph<Node>(num_rows_per_proc, rbandwidth);
+#endif
   RCP<block_crs_matrix_type> bcrsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     rcp_const_cast<block_crs_matrix_type> (tif_utest::create_banded_block_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> (crsgraph, blockSize, rbandwidth));
+#else
+    rcp_const_cast<block_crs_matrix_type> (tif_utest::create_banded_block_matrix<Scalar,Node> (crsgraph, blockSize, rbandwidth));
+#endif
 
   RCP<const block_crs_matrix_type> const_bcrsmatrix(bcrsmatrix);
   Ifpack2::Experimental::RBILUK<block_crs_matrix_type> prec (const_bcrsmatrix);
@@ -371,7 +452,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, BandedBlockCrsMatrixWithDropping, Scal
   TEST_EQUALITY(y.getMap()->getNodeNumElements(), blockSize*num_rows_per_proc);
   TEST_NOTHROW(prec.apply(x, y));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const crs_matrix_type > crsmatrix = tif_utest::create_banded_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(crsgraph->getRowMap(),rbandwidth);
+#else
+  RCP<const crs_matrix_type > crsmatrix = tif_utest::create_banded_matrix<Scalar,Node>(crsgraph->getRowMap(),rbandwidth);
+#endif
 
   prec_crs_type prec_crs (crsmatrix);
   prec_crs.setParameters(params);
@@ -393,7 +478,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, BandedBlockCrsMatrixWithDropping, Scal
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, BlockMatrixOps, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, BlockMatrixOps, Scalar)
+#endif
 {
   typedef Kokkos::View<Scalar**,Kokkos::LayoutRight,Kokkos::MemoryTraits<Kokkos::Unmanaged> > little_block_type;
   typedef Kokkos::View<Scalar*,Kokkos::LayoutRight,Kokkos::MemoryTraits<Kokkos::Unmanaged> > little_vec_type;
@@ -569,7 +658,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, BlockMatrixOps, Scalar, LocalOrdinal, 
     TEST_FLOATING_EQUALITY(exactSolution[i], computeSolution[i], 1e-13);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, DiagonalBlockCrsMatrix, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, DiagonalBlockCrsMatrix, Scalar)
+#endif
 {
   using Teuchos::outArg;
   using Teuchos::RCP;
@@ -577,10 +670,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, DiagonalBlockCrsMatrix, Scalar, LocalO
   using Teuchos::REDUCE_MIN;
   using Teuchos::reduceAll;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> block_crs_matrix_type;
   typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> crs_graph_type;
   typedef Tpetra::BlockMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> BMV;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+  typedef Tpetra::CrsGraph<Node> crs_graph_type;
+  typedef Tpetra::BlockMultiVector<Scalar,Node> BMV;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
   //typedef Ifpack2::Experimental::RBILUK<block_crs_matrix_type> prec_type; // unused
   std::ostringstream errStrm; // for error collection
   int lclSuccess = 1;
@@ -607,11 +707,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, DiagonalBlockCrsMatrix, Scalar, LocalO
   const int num_rows_per_proc = 5;
   const int blockSize = 3;
   RCP<crs_graph_type> crsgraph =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_diagonal_graph<LocalOrdinal,GlobalOrdinal,Node> (num_rows_per_proc);
+#else
+    tif_utest::create_diagonal_graph<Node> (num_rows_per_proc);
+#endif
 
   RCP<block_crs_matrix_type> bcrsmatrix;
   try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bcrsmatrix = rcp_const_cast<block_crs_matrix_type> (tif_utest::create_block_diagonal_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> (crsgraph, blockSize));
+#else
+    bcrsmatrix = rcp_const_cast<block_crs_matrix_type> (tif_utest::create_block_diagonal_matrix<Scalar,Node> (crsgraph, blockSize));
+#endif
   }
   catch (std::exception& e) {
     errStrm << "Proc " << comm->getRank () << ": BlockCrsMatrix constructor "
@@ -740,15 +848,24 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, DiagonalBlockCrsMatrix, Scalar, LocalO
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, AdditiveSchwarzSubdomainSolver, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, AdditiveSchwarzSubdomainSolver, Scalar)
+#endif
 {
   using std::endl;
   using Teuchos::RCP;
   using Teuchos::rcp;
   using Teuchos::rcp_const_cast;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<Scalar,LO,GO,Node> row_matrix_type;
   typedef Tpetra::BlockCrsMatrix<Scalar,LO,GO,Node> block_crs_matrix_type;
+#else
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+#endif
 
   out << "Test RBILUK as AdditiveSchwarz subdomain solver" << endl;
   Teuchos::OSTab tab1 (out);
@@ -759,9 +876,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, AdditiveSchwarzSubdomainSolver, Scalar
 
   const int lof = 0;
   const size_t rbandwidth = lof+2+2;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::CrsGraph<LO,GO,Node> > crsgraph = tif_utest::create_banded_graph<LO,GO,Node>(num_rows_per_proc, rbandwidth);
+#else
+  RCP<Tpetra::CrsGraph<Node> > crsgraph = tif_utest::create_banded_graph<Node>(num_rows_per_proc, rbandwidth);
+#endif
   RCP<block_crs_matrix_type> bcrsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     rcp_const_cast<block_crs_matrix_type> (tif_utest::create_banded_block_matrix<Scalar,LO,GO,Node> (crsgraph, blockSize, rbandwidth));
+#else
+    rcp_const_cast<block_crs_matrix_type> (tif_utest::create_banded_block_matrix<Scalar,Node> (crsgraph, blockSize, rbandwidth));
+#endif
 
   RCP<const block_crs_matrix_type> const_bcrsmatrix(bcrsmatrix);
 
@@ -789,10 +914,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, AdditiveSchwarzSubdomainSolver, Scalar
     out << "Testing domain and range Maps of AdditiveSchwarz" << endl;
     //trivial tests to insist that the preconditioner's domain/range maps are
     //identically those of the matrix:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Tpetra::Map<LO,GO,Node>* mtx_dom_map_ptr = &*bcrsmatrix->getDomainMap();
     const Tpetra::Map<LO,GO,Node>* mtx_rng_map_ptr = &*bcrsmatrix->getRangeMap();
     const Tpetra::Map<LO,GO,Node>* prec_dom_map_ptr = &*prec.getDomainMap();
     const Tpetra::Map<LO,GO,Node>* prec_rng_map_ptr = &*prec.getRangeMap();
+#else
+    const Tpetra::Map<Node>* mtx_dom_map_ptr = &*bcrsmatrix->getDomainMap();
+    const Tpetra::Map<Node>* mtx_rng_map_ptr = &*bcrsmatrix->getRangeMap();
+    const Tpetra::Map<Node>* prec_dom_map_ptr = &*prec.getDomainMap();
+    const Tpetra::Map<Node>* prec_rng_map_ptr = &*prec.getRangeMap();
+#endif
     TEST_EQUALITY( prec_dom_map_ptr, mtx_dom_map_ptr );
     TEST_EQUALITY( prec_rng_map_ptr, mtx_rng_map_ptr );
 
@@ -802,8 +934,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, AdditiveSchwarzSubdomainSolver, Scalar
     out << "Calling AdditiveSchwarz's compute()" << endl;
     prec.compute();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockMultiVector<Scalar,LO,GO,Node> BMV;
     typedef Tpetra::MultiVector<Scalar,LO,GO,Node> MV;
+#else
+    typedef Tpetra::BlockMultiVector<Scalar,Node> BMV;
+    typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
 
     BMV xBlock (*crsgraph->getRowMap (), blockSize, 1);
     BMV yBlock (*crsgraph->getRowMap (), blockSize, 1);
@@ -835,12 +972,21 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(RBILUK, AdditiveSchwarzSubdomainSolver, Scalar
 
 
 # define UNIT_TEST_GROUP_BLOCK_LGN( Scalar, LocalOrdinal, GlobalOrdinal ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, LowerTriangularBlockCrsMatrix, Scalar, LocalOrdinal, GlobalOrdinal) \
     TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, UpperTriangularBlockCrsMatrix, Scalar, LocalOrdinal, GlobalOrdinal) \
     TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, BandedBlockCrsMatrixWithDropping, Scalar, LocalOrdinal, GlobalOrdinal) \
     TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, BlockMatrixOps, Scalar, LocalOrdinal, GlobalOrdinal) \
     TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, DiagonalBlockCrsMatrix, Scalar, LocalOrdinal, GlobalOrdinal) \
     TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, FullLocalBlockCrsMatrix, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+    TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, LowerTriangularBlockCrsMatrix, Scalar) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, UpperTriangularBlockCrsMatrix, Scalar) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, BandedBlockCrsMatrixWithDropping, Scalar) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, BlockMatrixOps, Scalar) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, DiagonalBlockCrsMatrix, Scalar) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, FullLocalBlockCrsMatrix, Scalar)
+#endif
     //TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( RBILUK, AdditiveSchwarzSubdomainSolver, Scalar, LocalOrdinal, GlobalOrdinal)
 
 typedef Tpetra::MultiVector<>::scalar_type scalar_type;

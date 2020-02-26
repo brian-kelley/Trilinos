@@ -56,11 +56,21 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   CoupledRBMFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~CoupledRBMFactory() {}
+#else
+  template <class Scalar, class Node>
+  CoupledRBMFactory<Scalar, Node>::~CoupledRBMFactory() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoupledRBMFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void CoupledRBMFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     if (currentLevel.IsAvailable(nspName_, NoFactory::get()) == false && currentLevel.GetLevelID() == 0) {
       Input(currentLevel, "A");
       //Input(currentLevel,"Coordinates");
@@ -70,8 +80,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoupledRBMFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void CoupledRBMFactory<Scalar, Node>::Build(Level &currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Structural acoustics nullspace factory", currentLevel);
     RCP<MultiVector> nullspace;
     if (currentLevel.GetLevelID() == 0) {
@@ -147,8 +162,13 @@ namespace MueLu {
     Set(currentLevel, "Nullspace", nullspace);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
       void CoupledRBMFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildRBM(RCP<Matrix>& A, RCP<MultiVector>& Coords, RCP<MultiVector>& nullspace) const {
+#else
+  template <class Scalar, class Node>
+      void CoupledRBMFactory<Scalar, Node>::BuildRBM(RCP<Matrix>& A, RCP<MultiVector>& Coords, RCP<MultiVector>& nullspace) const {
+#endif
         GetOStream(Runtime1) << "Generating nullspace for structural acoustics: dimension = " << numPDEs_ << std::endl;
         RCP<const Map> xmap=A->getDomainMap();
         nullspace = MultiVectorFactory::Build(xmap, 6);

@@ -352,13 +352,21 @@ int main(int argc, char *argv[]) {
       RepartitionHeuristicFact->SetFactory("A", Acfact);
 
       // create amalgamated "Partition"
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<MueLu::IsorropiaInterface<LO, GO, NO> > isoInterface = rcp(new MueLu::IsorropiaInterface<LO, GO, NO>());
+#else
+      RCP<MueLu::IsorropiaInterface<NO> > isoInterface = rcp(new MueLu::IsorropiaInterface<NO>());
+#endif
       isoInterface->SetFactory("A", Acfact);
       isoInterface->SetFactory("number of partitions", RepartitionHeuristicFact);
       isoInterface->SetFactory("UnAmalgamationInfo", rebAmalgFact);
 
       // create "Partition" by unamalgamtion
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<MueLu::RepartitionInterface<LO, GO, NO> > repInterface = rcp(new MueLu::RepartitionInterface<LO, GO, NO>());
+#else
+      RCP<MueLu::RepartitionInterface<NO> > repInterface = rcp(new MueLu::RepartitionInterface<NO>());
+#endif
       repInterface->SetFactory("A", Acfact);
       repInterface->SetFactory("number of partitions", RepartitionHeuristicFact);
       repInterface->SetFactory("AmalgamatedPartition", isoInterface);

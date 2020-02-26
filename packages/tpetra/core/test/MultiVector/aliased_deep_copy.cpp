@@ -61,7 +61,11 @@ namespace { // (anonymous)
   // UNIT TESTS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( MultiVector, AliasedDeepCopy, SC, LO, GO, NT )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( MultiVector, AliasedDeepCopy, SC, NT )
+#endif
   {
     using Teuchos::outArg;
     using Teuchos::RCP;
@@ -69,8 +73,13 @@ namespace { // (anonymous)
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Tpetra::Map<LO, GO, NT>;
     using MV = Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+    using map_type = Tpetra::Map<NT>;
+    using MV = Tpetra::MultiVector<SC, NT>;
+#endif
     using mag_type = typename MV::mag_type;
     using STS = Teuchos::ScalarTraits<SC>;
 
@@ -148,8 +157,13 @@ namespace { // (anonymous)
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, AliasedDeepCopy, SC, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP( SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, AliasedDeepCopy, SC, NT )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

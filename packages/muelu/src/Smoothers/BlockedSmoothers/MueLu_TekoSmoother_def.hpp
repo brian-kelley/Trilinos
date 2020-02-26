@@ -52,8 +52,13 @@
 #include "MueLu_TekoSmoother.hpp"
 
 namespace MueLu {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t TekoSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNodeSmootherComplexity() const {
+#else
+  template <class Scalar, class Node>
+  size_t TekoSmoother<Scalar, Node>::getNodeSmootherComplexity() const {
+#endif
     // FIXME: This is a placeholder
     return Teuchos::OrdinalTraits<size_t>::invalid();
   }

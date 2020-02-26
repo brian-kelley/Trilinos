@@ -48,12 +48,25 @@ namespace Kokkos {
 namespace Example {
 
   // Default implementation just uses the original matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class N>
   Teuchos::RCP<Tpetra::Operator<Scalar,LO,GO,N> >
+#else
+  template<class Scalar, class N>
+  Teuchos::RCP<Tpetra::Operator<Scalar,N> >
+#endif
   build_mean_based_muelu_preconditioner(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LO,GO,N> >& A,
+#else
+    const Teuchos::RCP<Tpetra::CrsMatrix<Scalar,N> >& A,
+#endif
     const Teuchos::RCP<Teuchos::ParameterList>& precParams,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP<Tpetra::MultiVector<double,LO,GO,N> >& coords)
+#else
+    const Teuchos::RCP<Tpetra::MultiVector<double,N> >& coords)
+#endif
   {
     return build_muelu_preconditioner(A, precParams, coords);
   }

@@ -78,13 +78,25 @@ namespace Xpetra {
     GlobalIndices
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,
             class GlobalOrdinal,
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class CrsGraph
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : /*public RowGraph<>,*/ public DistObject<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node>
+#else
+    : /*public RowGraph<>,*/ public DistObject<GlobalOrdinal,Node>
+#endif
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node node_type;
@@ -115,7 +127,11 @@ namespace Xpetra {
     //@{
 
     //! Signal that data entry is complete, specifying domain and range maps.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void fillComplete(const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &domainMap, const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &rangeMap, const RCP< ParameterList > &params=null)= 0;
+#else
+    virtual void fillComplete(const RCP< const Map<Node > > &domainMap, const RCP< const Map<Node > > &rangeMap, const RCP< ParameterList > &params=null)= 0;
+#endif
 
     //! Signal that data entry is complete.
     virtual void fillComplete(const RCP< ParameterList > &params=null)= 0;
@@ -129,22 +145,46 @@ namespace Xpetra {
     virtual RCP< const Comm< int > > getComm() const = 0;
 
     //! Returns the Map that describes the row distribution in this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getRowMap() const = 0;
+#else
+    virtual RCP< const Map<Node > > getRowMap() const = 0;
+#endif
 
     //! Returns the Map that describes the column distribution in this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getColMap() const = 0;
+#else
+    virtual RCP< const Map<Node > > getColMap() const = 0;
+#endif
 
     //! Returns the Map associated with the domain of this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getDomainMap() const = 0;
+#else
+    virtual RCP< const Map<Node > > getDomainMap() const = 0;
+#endif
 
     //! Returns the Map associated with the domain of this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getRangeMap() const = 0;
+#else
+    virtual RCP< const Map<Node > > getRangeMap() const = 0;
+#endif
 
     //! Returns the importer associated with this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP< const Import< LocalOrdinal, GlobalOrdinal, Node > > getImporter() const = 0;
+#else
+    virtual RCP< const Import<Node > > getImporter() const = 0;
+#endif
 
     //! Returns the exporter associated with this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP< const Export< LocalOrdinal, GlobalOrdinal, Node > > getExporter() const = 0;
+#else
+    virtual RCP< const Export<Node > > getExporter() const = 0;
+#endif
 
     //! Returns the number of global rows in the graph.
     virtual global_size_t getGlobalNumRows() const = 0;

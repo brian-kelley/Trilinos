@@ -116,7 +116,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, NonlocalAfterResume, LO, GO, Scala
        << " rows per process" << endl;
     cerr << os.str ();
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Map<LO,GO,Node> > rmap = createContigMapWithNode<LO,GO,Node>(INVALID,numLocal,comm);
+#else
+  RCP<const Map<Node> > rmap = createContigMapWithNode<Node>(INVALID,numLocal,comm);
+#endif
 
   {
     std::ostringstream os;
@@ -124,7 +128,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, NonlocalAfterResume, LO, GO, Scala
        << "Create a column Map with super- and sub-diagonal blocks" << endl;
     cerr << os.str ();
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Map<LO,GO,Node> > cmap;
+#else
+  RCP<const Map<Node> > cmap;
+#endif
   {
     Array<GO> cols;
     for (GO c = rmap->getMinGlobalIndex (); c <= rmap->getMaxGlobalIndex (); ++c) {
@@ -140,7 +148,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, NonlocalAfterResume, LO, GO, Scala
         cols.push_back(c);
       }
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     cmap = createNonContigMapWithNode<LO,GO,Node>(cols(), comm);
+#else
+    cmap = createNonContigMapWithNode<Node>(cols(), comm);
+#endif
   }
 
   comm->barrier ();
@@ -161,7 +173,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, NonlocalAfterResume, LO, GO, Scala
     // put in diagonal, locally
     //----------------------------------------------------------------------
     Tpetra::ProfileType pftype = Tpetra::StaticProfile;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrix<Scalar,LO,GO,Node> matrix(rmap,cmap,3,pftype);
+#else
+    Tpetra::CrsMatrix<Scalar,Node> matrix(rmap,cmap,3,pftype);
+#endif
     for (GO r=rmap->getMinGlobalIndex(); r <= rmap->getMaxGlobalIndex(); ++r) {
       matrix.insertGlobalValues(r,tuple(r),tuple(ST::one()));
     }
@@ -289,7 +305,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, NonlocalAfterResume, LO, GO, Scala
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+#endif
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, NonlocalAfterResume, LO, GO, SCALAR, NODE )
 
   TPETRA_ETI_MANGLING_TYPEDEFS()

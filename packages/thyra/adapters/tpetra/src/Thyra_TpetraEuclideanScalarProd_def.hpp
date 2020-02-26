@@ -50,14 +50,23 @@
 namespace Thyra {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraEuclideanScalarProd<Scalar,LocalOrdinal,GlobalOrdinal,Node>::scalarProdsImpl(
+#else
+template <class Scalar, class Node>
+void TpetraEuclideanScalarProd<Scalar,Node>::scalarProdsImpl(
+#endif
   const MultiVectorBase<Scalar>& X,
   const MultiVectorBase<Scalar>& Y,
   const ArrayView<Scalar>& scalarProds_out
   ) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TMV;
+#else
+  typedef Tpetra::MultiVector<Scalar,Node> TMV;
+#endif
   Teuchos::RCP<const TMV> X_tpetra = this->getConstTpetraMultiVector(Teuchos::rcpFromRef(X));
   Teuchos::RCP<const TMV> Y_tpetra = this->getConstTpetraMultiVector(Teuchos::rcpFromRef(Y));
 
@@ -81,14 +90,25 @@ void TpetraEuclideanScalarProd<Scalar,LocalOrdinal,GlobalOrdinal,Node>::scalarPr
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraEuclideanScalarProd<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+Teuchos::RCP<const Tpetra::MultiVector<Scalar,Node> >
+TpetraEuclideanScalarProd<Scalar,Node>::
+#endif
 getConstTpetraMultiVector(const RCP<const MultiVectorBase<Scalar> >& mv) const
 {
   using Teuchos::rcp_dynamic_cast;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Thyra::TpetraMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TMV;
   typedef Thyra::TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TV;
+#else
+  typedef Thyra::TpetraMultiVector<Scalar,Node> TMV;
+  typedef Thyra::TpetraVector<Scalar,Node> TV;
+#endif
 
   RCP<const TMV> tmv = rcp_dynamic_cast<const TMV>(mv);
   if (nonnull(tmv)) {

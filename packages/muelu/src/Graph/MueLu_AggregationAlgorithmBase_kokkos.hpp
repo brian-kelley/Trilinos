@@ -66,13 +66,21 @@ namespace MueLu {
 
        @ingroup MueLuBaseClasses
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
            class Node = DefaultNode>
+#else
+  template<class Node = DefaultNode>
+#endif
   class AggregationAlgorithmBase_kokkos : public BaseClass {
 #undef MUELU_AGGREGATIONALGORITHMBASE_KOKKOS_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
     public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     using memory_space = typename LWGraph_kokkos::memory_space;
 
     //! @name Constructors/Destructors

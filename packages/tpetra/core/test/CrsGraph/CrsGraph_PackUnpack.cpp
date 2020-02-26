@@ -87,7 +87,11 @@ generate_test_graph(const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
   typedef typename crs_graph_type::local_ordinal_type LO;
   typedef typename crs_graph_type::global_ordinal_type GO;
   typedef typename crs_graph_type::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> MapType;
+#else
+  typedef Tpetra::Map<NT> MapType;
+#endif
 
   const int world_rank = comm->getRank();
 
@@ -135,9 +139,17 @@ generate_test_graph(const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
   return A;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackThenUnpackAndCombine, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackThenUnpackAndCombine, NT)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LO, GO, NT> crs_graph_type;
+#else
+  typedef Tpetra::CrsGraph<NT> crs_graph_type;
+#endif
   typedef typename crs_graph_type::packet_type packet_type;
   typedef typename NT::device_type device_type;
   typedef typename device_type::execution_space execution_space;
@@ -172,7 +184,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackThenUnpackAndCombine, LO, GO, NT
     int local_op_ok;
     std::ostringstream msg;
     try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       packCrsGraph<LO,GO,NT>(*A, exports, numPacketsPerLID(), exportLIDs(),
+#else
+      packCrsGraph<NT>(*A, exports, numPacketsPerLID(), exportLIDs(),
+#endif
           constantNumPackets, distor);
       local_op_ok = 1;
     } catch (std::exception& e) {
@@ -205,7 +221,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackThenUnpackAndCombine, LO, GO, NT
     int local_op_ok;
     std::ostringstream msg;
     try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       unpackCrsGraphAndCombine<LO,GO,NT>(*B, exports, numPacketsPerLID(),
+#else
+      unpackCrsGraphAndCombine<NT>(*B, exports, numPacketsPerLID(),
+#endif
           exportLIDs(), constantNumPackets, distor, Tpetra::REPLACE);
       local_op_ok = 0;
     } catch (std::exception& e) {
@@ -296,10 +316,18 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackThenUnpackAndCombine, LO, GO, NT
 // PackWithError sends intentionally bad inputs to pack/unpack to make sure
 // that CrsGraph will detect the bad inputs and return the correct
 // error diagnostics.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackWithError, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackWithError, NT)
+#endif
 {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LO, GO, NT> crs_graph_type;
+#else
+  typedef Tpetra::CrsGraph<NT> crs_graph_type;
+#endif
   typedef typename crs_graph_type::packet_type packet_type;
 
   RCP<const Comm<int> > comm = getDefaultComm();
@@ -336,7 +364,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackWithError, LO, GO, NT)
       int local_op_ok;
       std::ostringstream msg;
       try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         packCrsGraph<LO,GO,NT>(*A, exports, numPacketsPerLID(), exportLIDs(),
+#else
+        packCrsGraph<NT>(*A, exports, numPacketsPerLID(), exportLIDs(),
+#endif
             constantNumPackets, distor);
         local_op_ok = 1;
       } catch (std::exception& e) {
@@ -380,7 +412,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackWithError, LO, GO, NT)
       int local_op_ok;
       std::ostringstream msg;
       try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         packCrsGraph<LO,GO,NT>(*A, exports, numPacketsPerLID(), exportLIDs(),
+#else
+        packCrsGraph<NT>(*A, exports, numPacketsPerLID(), exportLIDs(),
+#endif
             constantNumPackets, distor);
         local_op_ok = 1;
       } catch (std::exception& e) {
@@ -401,9 +437,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, PackWithError, LO, GO, NT)
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(CrsGraph, PackThenUnpackAndCombine, LO, GO, NT) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(CrsGraph, PackWithError, LO, GO, NT)
+#else
+#define UNIT_TEST_GROUP(NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(CrsGraph, PackThenUnpackAndCombine, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(CrsGraph, PackWithError, NT)
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

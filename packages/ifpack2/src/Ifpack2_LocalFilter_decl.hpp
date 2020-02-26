@@ -168,8 +168,10 @@ private:
                    MatrixType,
                    Tpetra::RowMatrix<
                      typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      typename MatrixType::local_ordinal_type,
                      typename MatrixType::global_ordinal_type,
+#endif
                      typename MatrixType::node_type> >::value,
                  "Ifpack2::LocalFilter: MatrixType must be a Tpetra::RowMatrix specialization.");
 

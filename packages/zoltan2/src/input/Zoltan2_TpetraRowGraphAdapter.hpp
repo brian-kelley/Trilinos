@@ -479,8 +479,13 @@ RCP<User> TpetraRowGraphAdapter<User,UserCoord>::doMigration(
   const gno_t *myNewRows
 ) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<lno_t, gno_t, node_t> map_t;
   typedef Tpetra::CrsGraph<lno_t, gno_t, node_t> tcrsgraph_t;
+#else
+  typedef Tpetra::Map<node_t> map_t;
+  typedef Tpetra::CrsGraph<node_t> tcrsgraph_t;
+#endif
 
   // We cannot create a Tpetra::RowGraph, unless the underlying type is
   // something we know (like Tpetra::CrsGraph).
@@ -513,7 +518,11 @@ RCP<User> TpetraRowGraphAdapter<User,UserCoord>::doMigration(
   RCP<const map_t> tmap = rcp(new map_t(numGlobalRows, rowList, base, comm));
 
   // importer
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::Import<lno_t, gno_t, node_t> importer(smap, tmap);
+#else
+  Tpetra::Import<node_t> importer(smap, tmap);
+#endif
 
   // number of entries in my new rows
   typedef Tpetra::Vector<gno_t, lno_t, gno_t, node_t> vector_t;

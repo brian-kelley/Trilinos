@@ -64,8 +64,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AmalgamationInfo_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AmalgamationInfo_kokkos<Node>::
+#endif
   UnamalgamateAggregates(const Aggregates_kokkos& aggregates,
                          Teuchos::ArrayRCP<LocalOrdinal>& aggStart,
                          Teuchos::ArrayRCP<GlobalOrdinal>& aggToRowMap) const {
@@ -135,8 +140,13 @@ namespace MueLu {
 
   } //UnamalgamateAggregates
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AmalgamationInfo_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AmalgamationInfo_kokkos<Node>::
+#endif
   UnamalgamateAggregatesLO(const Aggregates_kokkos& aggregates,
                            Teuchos::ArrayRCP<LO>& aggStart,
                            Teuchos::ArrayRCP<LO>& aggToRowMap) const {
@@ -207,8 +217,13 @@ namespace MueLu {
 
   /////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > AmalgamationInfo_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  RCP<Xpetra::Map<Node> > AmalgamationInfo_kokkos<Node>::
+#endif
   ComputeUnamalgamatedImportDofMap(const Aggregates_kokkos& aggregates) const {
 
     Teuchos::RCP<const Map> nodeMap = aggregates.GetMap();
@@ -238,8 +253,13 @@ namespace MueLu {
 
   /////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   GlobalOrdinal AmalgamationInfo_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  GlobalOrdinal AmalgamationInfo_kokkos<Node>::
+#endif
   ComputeGlobalDOF(GlobalOrdinal const &gNodeID, LocalOrdinal const &k) const {
     // here, the assumption is, that the node map has the same indexBase as the dof map
     //                            this is the node map index base                    this is the dof map index base

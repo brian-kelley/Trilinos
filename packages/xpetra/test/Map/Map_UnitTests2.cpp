@@ -87,7 +87,11 @@ namespace {
 
   // Test of correctness for the return value of the function: Map::getRemoteIndexList()
   // (getRemoteIndexList() uses Xpetra::LookupStatus toXpetra(int))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Map, getRemoteIndexList, M, LO, GO, N )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Map, getRemoteIndexList, M,N )
+#endif
   {
     typedef typename Teuchos::ArrayView<int>::const_iterator IntConstIt;
     typedef typename ArrayRCP<GO>::size_type GOSize;
@@ -122,21 +126,35 @@ namespace {
   //
 #ifdef HAVE_XPETRA_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_TPETRA_TYPES( LO, GO, N) \
     typedef typename Xpetra::TpetraMap<LO,GO,N> M##LO##GO##N;
+#else
+  #define XPETRA_TPETRA_TYPES(N) \
+    typedef typename Xpetra::TpetraMap<N> M##LO##GO##N;
+#endif
 
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_EPETRA_TYPES( LO, GO, N) \
+#else
+  #define XPETRA_EPETRA_TYPES(N) \
+#endif
     typedef typename Xpetra::EpetraMapT<GO,N> M##LO##GO##N;
 
 #endif
 
 // List of tests (which run both on Epetra and Tpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_MAP_INSTANT(LO,GO,N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Map, getRemoteIndexList, M##LO##GO##N , LO, GO, N )
+#else
+#define XP_MAP_INSTANT(N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Map, getRemoteIndexList, M##LO##GO##N ,N )
+#endif
 
 #if defined(HAVE_XPETRA_TPETRA)
 

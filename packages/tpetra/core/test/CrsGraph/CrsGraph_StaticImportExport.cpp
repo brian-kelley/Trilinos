@@ -73,12 +73,22 @@ using Tpetra::Details::packCrsGraph;
 // over the given Map.
 //
 // CrsMatrixType: The type of the Tpetra::CrsMatrix specialization to use.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
 RCP<const Tpetra::CrsGraph<LO,GO,NT>>
 generate_crs_graph(const RCP<const Tpetra::Map<LO,GO,NT>>& map)
+#else
+template<class NT>
+RCP<const Tpetra::CrsGraph<NT>>
+generate_crs_graph(const RCP<const Tpetra::Map<NT>>& map)
+#endif
 {
   using Teuchos::tuple;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using graph_type = Tpetra::CrsGraph<LO, GO, NT>;
+#else
+  using graph_type = Tpetra::CrsGraph<NT>;
+#endif
 
   // Create a Tpetra::Matrix using the Map, with dynamic allocation.
   auto A = rcp(new graph_type(map, 3, Tpetra::StaticProfile));
@@ -101,11 +111,20 @@ generate_crs_graph(const RCP<const Tpetra::Map<LO,GO,NT>>& map)
   return A;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraph, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraph, NT)
+#endif
 {
   // Set up Tpetra typedefs.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using graph_type = Tpetra::CrsGraph<LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+  using graph_type = Tpetra::CrsGraph<NT>;
+#endif
   using device_type = typename NT::device_type;
   using execution_space = typename device_type::execution_space;
   const char prefix[] = "ImportToStaticGraph: ";
@@ -136,7 +155,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraph, LO, GO, NT)
   auto global_map = rcp(new map_type(num_gbl_inds, idx_base, comm, Tpetra::GloballyDistributed));
 
   // Create a sparse graph using procZeroMap.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto A = generate_crs_graph<LO,GO,NT>(proc_zero_map);
+#else
+  auto A = generate_crs_graph<NT>(proc_zero_map);
+#endif
   comm->barrier();
 
   // We've created a sparse matrix that lives entirely on Process 0.
@@ -150,7 +173,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraph, LO, GO, NT)
   // Export if neither source nor target Map is one-to-one.
   RCP<graph_type> B;
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using export_type = Tpetra::Export<LO,GO,NT>;
+#else
+    using export_type = Tpetra::Export<NT>;
+#endif
     export_type exporter(proc_zero_map, global_map);
     comm->barrier();
 
@@ -208,11 +235,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraph, LO, GO, NT)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraphLocal, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraphLocal, NT)
+#endif
 {
   // Set up Tpetra typedefs.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using graph_type = Tpetra::CrsGraph<LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+  using graph_type = Tpetra::CrsGraph<NT>;
+#endif
   using device_type = typename NT::device_type;
   using execution_space = typename device_type::execution_space;
   const char prefix[] = "ImportToStaticGraphLocal: ";
@@ -239,7 +275,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraphLocal, LO, GO, NT
   }
 
   // Create a sparse graph using procZeroMap.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto A = generate_crs_graph<LO,GO,NT>(proc_zero_map);
+#else
+  auto A = generate_crs_graph<NT>(proc_zero_map);
+#endif
   comm->barrier();
 
   // We've created a sparse matrix that lives entirely on Process 0.
@@ -252,7 +292,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraphLocal, LO, GO, NT
   // use an Export.  We do not allow redistribution using Import or
   // Export if neither source nor target Map is one-to-one.
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using export_type = Tpetra::Export<LO,GO,NT>;
+#else
+    using export_type = Tpetra::Export<NT>;
+#endif
     export_type exporter(proc_zero_map, proc_zero_map);
     comm->barrier();
 
@@ -273,7 +317,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraphLocal, LO, GO, NT
 
   {
     auto global_map = rcp(new map_type(num_gbl_inds, idx_base, comm, Tpetra::GloballyDistributed));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using export_type = Tpetra::Export<LO,GO,NT>;
+#else
+    using export_type = Tpetra::Export<NT>;
+#endif
     export_type exporter1(proc_zero_map, global_map);
     comm->barrier();
     auto B = graph_type(global_map, 0, Tpetra::StaticProfile);
@@ -324,9 +372,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(CrsGraph, ImportToStaticGraphLocal, LO, GO, NT
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(CrsGraph, ImportToStaticGraph, LO, GO, NT) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(CrsGraph, ImportToStaticGraphLocal, LO, GO, NT)
+#else
+#define UNIT_TEST_GROUP(NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(CrsGraph, ImportToStaticGraph, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(CrsGraph, ImportToStaticGraphLocal, NT)
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

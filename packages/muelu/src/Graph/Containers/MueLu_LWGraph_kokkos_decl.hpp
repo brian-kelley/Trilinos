@@ -68,13 +68,26 @@ namespace MueLu {
     This class is lightweight in the sense that it holds to local graph
     information. These were built without using fillComplete.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Node>
+#endif
   class LWGraph_kokkos;
 
   // Partial specialization for DeviceType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   class LWGraph_kokkos<LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>> {
+#else
+  template<class DeviceType>
+  class LWGraph_kokkos<Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>> {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     using local_ordinal_type  = LocalOrdinal;
     using global_ordinal_type = GlobalOrdinal;
     using execution_space     = typename DeviceType::execution_space;
@@ -83,7 +96,11 @@ namespace MueLu {
     using node_type           = Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>;
     using size_type           = size_t;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type            = Xpetra::Map<LocalOrdinal, GlobalOrdinal, node_type>;
+#else
+    using map_type            = Xpetra::Map<node_type>;
+#endif
     using local_graph_type    = Kokkos::StaticCrsGraph<LocalOrdinal,
                                                        Kokkos::LayoutLeft,
                                                        execution_space>;

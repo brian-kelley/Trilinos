@@ -147,18 +147,36 @@ int main(int argc, char *argv[])
         GaleriList.set("my", GO(N));
         GaleriList.set("mz", GO(N));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Map<LO,GO,NO> > UniqueMap;
         RCP<MultiVector<SC,LO,GO,NO> > Coordinates;
         RCP<Matrix<SC,LO,GO,NO> > K;
+#else
+        RCP<const Map<NO> > UniqueMap;
+        RCP<MultiVector<SC,NO> > Coordinates;
+        RCP<Matrix<SC,NO> > K;
+#endif
         if (Dimension==2) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             UniqueMap = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian2D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
             Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("2D",UniqueMap,GaleriList);
             RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Laplace2D",UniqueMap,GaleriList);
+#else
+            UniqueMap = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian2D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+            Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("2D",UniqueMap,GaleriList);
+            RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Laplace2D",UniqueMap,GaleriList);
+#endif
             K = Problem->BuildMatrix();
         } else if (Dimension==3) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             UniqueMap = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian3D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
             Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("3D",UniqueMap,GaleriList);
             RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Laplace3D",UniqueMap,GaleriList);
+#else
+            UniqueMap = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian3D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+            Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("3D",UniqueMap,GaleriList);
+            RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Laplace3D",UniqueMap,GaleriList);
+#endif
             K = Problem->BuildMatrix();
         }
 
@@ -166,15 +184,27 @@ int main(int argc, char *argv[])
         Comm->barrier(); if (Comm->getRank()==0) cout << "#############\n# Constructing Repeated Map #\n#############\n" << endl;
         FROSCH_TIMER_START(repMapTimer,"Construct RepeatedMap");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Map<LO,GO,NO> > RepeatedMap = BuildRepeatedMap<LO,GO,NO>(K->getCrsGraph());
+#else
+        RCP<const Map<NO> > RepeatedMap = BuildRepeatedMap<NO>(K->getCrsGraph());
+#endif
 
         FROSCH_TIMER_STOP(repMapTimer);
         Comm->barrier(); if (Comm->getRank()==0) cout << "#############\n# Identification of Interface Sets #\n#############\n" << endl;
         FROSCH_TIMER_START(intSetsTimer,"Identification of Interface Sets");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<EntitySet<SC,LO,GO,NO> > vertices,shortEdges,straightEdges,edges,faces,interface,interior;
+#else
+        RCP<EntitySet<SC,NO> > vertices,shortEdges,straightEdges,edges,faces,interface,interior;
+#endif
         //RCP<Map<LO,GO,NO> > verticesMap,shortEdgesMap,straightEdgesMap,edgesMap,facesMap;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         DDInterface<SC,LO,GO,NO> dDInterface(Dimension,1,RepeatedMap,All,(CommunicationStrategy) communicationStrategy);
+#else
+        DDInterface<SC,NO> dDInterface(Dimension,1,RepeatedMap,All,(CommunicationStrategy) communicationStrategy);
+#endif
         dDInterface.divideUnconnectedEntities(K);
         dDInterface.sortVerticesEdgesFaces();
 

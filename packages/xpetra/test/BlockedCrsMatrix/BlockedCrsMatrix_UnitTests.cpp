@@ -133,14 +133,27 @@ TEUCHOS_STATIC_SETUP()
 // UNIT TESTS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, SplitMatrix, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, SplitMatrix, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> MapClass;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::MapExtractor<Scalar,LO,GO,Node> MapExtractorClass;
   typedef Xpetra::MapExtractorFactory<Scalar,LO,GO,Node> MapExtractorFactoryClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractorClass;
+  typedef Xpetra::MapExtractorFactory<Scalar,Node> MapExtractorFactoryClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
@@ -157,8 +170,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, SplitMatrix, M, MA, Scalar,
   GO NumGlobalElements = map->getGlobalNumElements();
   Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
       Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 3);
+#else
+  Teuchos::RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+      Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 3);
+#endif
   TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == true || A->isFillActive() == false, std::runtime_error, "");
 
   for (LO i = 0; i < NumMyElements; i++) {
@@ -182,8 +200,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, SplitMatrix, M, MA, Scalar,
   A->fillComplete();
   TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == false || A->isFillActive() == true, std::runtime_error, "");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::Matrix<Scalar, LO, GO, Node> > mat =
       Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar, LO, GO, Node>(A));
+#else
+  Teuchos::RCP<Xpetra::Matrix<Scalar, Node> > mat =
+      Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar, Node>(A));
+#endif
 
   Teuchos::Array<GO> gids1;
   Teuchos::Array<GO> gids2;
@@ -211,8 +234,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, SplitMatrix, M, MA, Scalar,
 
   Teuchos::RCP<const MapExtractorClass> map_extractor = MapExtractorFactoryClass::Build(map,xmaps);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp =
       Xpetra::MatrixUtils<Scalar, LO, GO, Node>::SplitMatrix(*mat,map_extractor,map_extractor);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp =
+      Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*mat,map_extractor,map_extractor);
+#endif
 
   // build gloabl vector with one entries
   Teuchos::RCP<VectorClass> ones = VectorFactoryClass::Build(map, true);
@@ -235,15 +263,27 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, SplitMatrix, M, MA, Scalar,
   TEUCHOS_TEST_COMPARE(res->normInf(), <, 5e-14, out, success);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, CreateBlockedDiagonalOp, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, CreateBlockedDiagonalOp, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 4;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
   GO goNumRows = Teuchos::as<GO>(Teuchos::ScalarTraits<GO>::pow(2,noBlocks-2)) * 10 * comm->getSize();
 
@@ -329,15 +369,27 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, CreateBlockedDiagonalOp, M,
   TEST_EQUALITY(bop->getRangeMapExtractor()->getMap(3,false)->getMaxAllGlobalIndex(),comm->getSize() * 40 - 1);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, CreateBlockedDiagonalOpThyra, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, CreateBlockedDiagonalOpThyra, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 4;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
   GO goNumRows = Teuchos::as<GO>(Teuchos::ScalarTraits<GO>::pow(2,noBlocks-2)) * 10 * comm->getSize();
 
@@ -447,21 +499,38 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, CreateBlockedDiagonalOpThyr
   TEST_EQUALITY(bop->getRangeMapExtractor()->getMap(3,false)->getMaxAllGlobalIndex(),comm->getSize() * 40 - 1);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ [ 0 [ [1 2] 3] ] 4 [ 5 6 7] ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   GO goNumRows = Teuchos::as<GO>(Teuchos::ScalarTraits<GO>::pow(2,noBlocks-2)) * 10 * comm->getSize();
 
@@ -471,8 +540,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator, M, MA
   TEST_EQUALITY(brop->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(goNumRows));
 
   // block 00
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop00 =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop->getMatrix(0,0));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop00 =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop->getMatrix(0,0));
+#endif
 
   GO goNumRows00 = Teuchos::as<GO>(Teuchos::ScalarTraits<GO>::pow(2,2)) * 10 * comm->getSize();
 
@@ -482,7 +556,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator, M, MA
   TEST_EQUALITY(brop00->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(goNumRows00));
 
   // block 11
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop11 = brop->getMatrix(1,1);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop11 = brop->getMatrix(1,1);
+#endif
 
   GO goNumRows11 = Teuchos::as<GO>(40 * comm->getSize());
   TEST_EQUALITY(brop11->getRangeMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(goNumRows11));
@@ -490,8 +568,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator, M, MA
   TEST_EQUALITY(brop11->getRangeMap()->getMinGlobalIndex(),comm->getRank() * 640 + 40);
   TEST_EQUALITY(brop11->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 79);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop11test =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop11);
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop11test =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop11);
+#endif
   TEST_INEQUALITY(brop11test,Teuchos::null);
 
   TEST_EQUALITY(brop11test->Rows(), 1);
@@ -502,8 +585,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator, M, MA
   TEST_EQUALITY(brop11test->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 79);
 
   // block 22
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop22 =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop->getMatrix(2,2));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop22 =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop->getMatrix(2,2));
+#endif
 
   GO goNumRows22 = Teuchos::as<GO>(560 * comm->getSize());
 
@@ -521,8 +609,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator, M, MA
   TEST_EQUALITY(brop22->getMatrix(2,2)->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 639);
 
   // block 00_11
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop00_11 =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop00->getMatrix(1,1));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop00_11 =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop00->getMatrix(1,1));
+#endif
 
   GO goNumRows00_11 = Teuchos::as<GO>(35 * comm->getSize());
 
@@ -542,8 +635,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator, M, MA
   TEST_EQUALITY(brop00_11->getMatrix(1,1)->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 39);
 
   // block 01
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop01 =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop->getMatrix(0,1));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop01 =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop->getMatrix(0,1));
+#endif
 
   TEST_EQUALITY(brop01->Rows(),2);
   TEST_EQUALITY(brop01->Cols(),1);
@@ -556,21 +654,38 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator, M, MA
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 4 3 1 7 ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(),4);
   TEST_EQUALITY(brop->Cols(),4);
@@ -578,7 +693,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2, M, M
   TEST_EQUALITY(brop->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 385));
 
   // block 00
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop00 = brop->getMatrix(0,0);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop00 = brop->getMatrix(0,0);
+#endif
 
   TEST_EQUALITY(brop00->getRangeMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 40));
   TEST_EQUALITY(brop00->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 40));
@@ -586,15 +705,24 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2, M, M
   TEST_EQUALITY(brop00->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 79);
 
   // block 11
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop11 = brop->getMatrix(1,1);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop11 = brop->getMatrix(1,1);
+#endif
 
   TEST_EQUALITY(brop11->getRangeMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 20));
   TEST_EQUALITY(brop11->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 20));
   TEST_EQUALITY(brop11->getRangeMap()->getMinGlobalIndex(),comm->getRank() * 640 + 20);
   TEST_EQUALITY(brop11->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 39);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop11test =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop11);
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop11test =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop11);
+#endif
 
   TEST_EQUALITY(brop11test->Rows(), 1);
   TEST_EQUALITY(brop11test->Cols(), 1);
@@ -604,15 +732,24 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2, M, M
   TEST_EQUALITY(brop11test->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 39);
 
   // block 22
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop22 = brop->getMatrix(2,2);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop22 = brop->getMatrix(2,2);
+#endif
 
   TEST_EQUALITY(brop22->getRangeMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 5));
   TEST_EQUALITY(brop22->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 5));
   TEST_EQUALITY(brop22->getRangeMap()->getMinGlobalIndex(),comm->getRank() * 640 + 5);
   TEST_EQUALITY(brop22->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 9);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop22test =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop22);
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop22test =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop22);
+#endif
 
   TEST_EQUALITY(brop22test->Rows(), 1);
   TEST_EQUALITY(brop22test->Cols(), 1);
@@ -622,15 +759,24 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2, M, M
   TEST_EQUALITY(brop22test->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 9);
 
   // block 33
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop33 = brop->getMatrix(3,3);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop33 = brop->getMatrix(3,3);
+#endif
 
   TEST_EQUALITY(brop33->getRangeMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 320));
   TEST_EQUALITY(brop33->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 320));
   TEST_EQUALITY(brop33->getRangeMap()->getMinGlobalIndex(),comm->getRank() * 640 + 320);
   TEST_EQUALITY(brop33->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 639);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop33test =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop33);
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop33test =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop33);
+#endif
 
   TEST_EQUALITY(brop33test->Rows(), 1);
   TEST_EQUALITY(brop33test->Cols(), 1);
@@ -640,17 +786,31 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2, M, M
   TEST_EQUALITY(brop33test->getRangeMap()->getMaxGlobalIndex(),comm->getRank() * 640 + 639);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorThyra, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorThyra, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Matrix<Scalar,LO,GO,Node> Matrix;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
   typedef Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> ReorderedBlockedCrsMatrix;
+#else
+  typedef Xpetra::Matrix<Scalar,Node> Matrix;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+  typedef Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> ReorderedBlockedCrsMatrix;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ [ 0 [ [1 2] 3] ] 4 [ 5 6 7] ]");
@@ -723,7 +883,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorThyra, 
 
 
   // block 11
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop11 = brop->getMatrix(1,1);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop11 = brop->getMatrix(1,1);
+#endif
 
   // Thyra GIDs for the matrix
   GO goNumRows11 = Teuchos::as<GO>(40 * comm->getSize());
@@ -819,20 +983,37 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorThyra, 
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2Thyra, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2Thyra, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 4 3 1 7 ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(),4);
   TEST_EQUALITY(brop->Cols(),4);
@@ -840,7 +1021,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2Thyra,
   TEST_EQUALITY(brop->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 385));
 
   // block 00
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop00 = brop->getMatrix(0,0);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop00 = brop->getMatrix(0,0);
+#endif
 
   TEST_EQUALITY(brop00->getRangeMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 40));
   TEST_EQUALITY(brop00->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 40));
@@ -854,7 +1039,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2Thyra,
   TEST_EQUALITY(brop->getDomainMap(0,false)->getMaxGlobalIndex(), comm->getSize() * 40 + comm->getRank() * 40 + 39);
 
   // block 11
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop11 = brop->getMatrix(1,1);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop11 = brop->getMatrix(1,1);
+#endif
 
   TEST_EQUALITY(brop11->getRangeMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 20));
   TEST_EQUALITY(brop11->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 20));
@@ -869,8 +1058,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2Thyra,
   TEST_EQUALITY(brop->getDomainMap(1,false)->getMaxGlobalIndex(), comm->getSize() * 20 + comm->getRank() * 20 + 19);
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop11test =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop11);
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop11test =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop11);
+#endif
 
   TEST_EQUALITY(brop11test->Rows(), 1);
   TEST_EQUALITY(brop11test->Cols(), 1);
@@ -881,7 +1075,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2Thyra,
   TEST_EQUALITY(brop11test->getMatrix(0,0)->getRangeMap()->getMaxAllGlobalIndex(),comm->getSize() * 20 - 1);
 
   // block 22
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop22 = brop->getMatrix(2,2);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop22 = brop->getMatrix(2,2);
+#endif
 
   TEST_EQUALITY(brop22->getRangeMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 5));
   TEST_EQUALITY(brop22->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 5));
@@ -893,8 +1091,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2Thyra,
   TEST_EQUALITY(brop->getDomainMap(2,false)->getMinGlobalIndex(), comm->getSize() * 5 + comm->getRank() * 5);
   TEST_EQUALITY(brop->getDomainMap(2,false)->getMaxGlobalIndex(), comm->getSize() * 5 + comm->getRank() * 5 + 4);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop22test =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop22);
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop22test =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop22);
+#endif
   TEST_EQUALITY(brop22test->Rows(), 1);
   TEST_EQUALITY(brop22test->Cols(), 1);
 
@@ -906,7 +1109,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2Thyra,
 
 
   // block 33
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LO,GO,Node> > brop33 = brop->getMatrix(3,3);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > brop33 = brop->getMatrix(3,3);
+#endif
 
   TEST_EQUALITY(brop33->getRangeMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 320));
   TEST_EQUALITY(brop33->getDomainMap()->getGlobalNumElements(),Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 320));
@@ -918,14 +1125,24 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperator2Thyra,
   TEST_EQUALITY(brop->getDomainMap(3,false)->getMinGlobalIndex(), comm->getSize() * 320 + comm->getRank() * 320);
   TEST_EQUALITY(brop->getDomainMap(3,false)->getMaxGlobalIndex(), comm->getSize() * 320 + comm->getRank() * 320 + 319);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop33test =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop33);
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop33test =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop33);
+#endif
   TEST_EQUALITY(brop33test->Rows(), 1);
   TEST_EQUALITY(brop33test->Cols(), 1);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> Map;
   typedef Xpetra::BlockedMap<LO, GO, Node> BlockedMap;
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
@@ -934,19 +1151,38 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply, 
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::MultiVectorFactory<Scalar, LO, GO, Node> MultiVectorFactoryClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::MultiVector<Scalar, Node> MultiVectorClass;
+  typedef Xpetra::BlockedMultiVector<Scalar, Node> BlockedMultiVectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::MultiVectorFactory<Scalar, Node> MultiVectorFactoryClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 0 [ 1 [ 2 3 4 ] 5 ] [6 7] ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(),3);
   TEST_EQUALITY(brop->Cols(),3);
@@ -1013,24 +1249,43 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply, 
   TEUCHOS_TEST_COMPARE(vres->normInf(), <, 5e-14, out, success);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply2, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply2, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 6 3 2 ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(),3);
   TEST_EQUALITY(brop->Cols(),3);
@@ -1056,26 +1311,48 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply2,
   TEST_EQUALITY(bres->norm1(), STS::magnitude(Teuchos::as<Scalar>(comm->getSize()) * Teuchos::as<Scalar>(1230)));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApplyThyra, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApplyThyra, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::MultiVector<Scalar, LO, GO, Node> MultiVectorClass;
   typedef Xpetra::BlockedMultiVector<Scalar, LO, GO, Node> BlockedMultiVectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::MultiVectorFactory<Scalar, LO, GO, Node> MultiVectorFactoryClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::MultiVector<Scalar, Node> MultiVectorClass;
+  typedef Xpetra::BlockedMultiVector<Scalar, Node> BlockedMultiVectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::MultiVectorFactory<Scalar, Node> MultiVectorFactoryClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 0 [ 1 [ 2 3 4 ] 5 ] [6 7] ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(),3);
   TEST_EQUALITY(brop->Cols(),3);
@@ -1158,26 +1435,48 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApplyTh
   TEST_EQUALITY(bres->norm1(), STS::magnitude(Teuchos::as<Scalar>(comm->getSize()) * Teuchos::as<Scalar>(4485)));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApplyThyraSmall, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApplyThyraSmall, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::MultiVector<Scalar, LO, GO, Node> MultiVectorClass;
   typedef Xpetra::BlockedMultiVector<Scalar, LO, GO, Node> BlockedMultiVectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::MultiVectorFactory<Scalar, LO, GO, Node> MultiVectorFactoryClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::MultiVector<Scalar, Node> MultiVectorClass;
+  typedef Xpetra::BlockedMultiVector<Scalar, Node> BlockedMultiVectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::MultiVectorFactory<Scalar, Node> MultiVectorFactoryClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 0 [ 1 2 ] ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(),2);
   TEST_EQUALITY(brop->Cols(),2);
@@ -1241,24 +1540,43 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApplyTh
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply2Thyra, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply2Thyra, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 8;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 6 3 2 ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(),3);
   TEST_EQUALITY(brop->Cols(),3);
@@ -1284,16 +1602,29 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReorderBlockOperatorApply2T
   TEST_EQUALITY(bres->norm1(), STS::magnitude(Teuchos::as<Scalar>(comm->getSize()) * Teuchos::as<Scalar>(1230)));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReadWriteBlockedMatrix, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReadWriteBlockedMatrix, M, MA, Scalar, Node )
+#endif
 {
   // TODO: it seems that the Tpetra matrix reader is only working for standard maps??
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> MapClass;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
   typedef Xpetra::MapExtractor<Scalar,LO,GO,Node> MapExtractorClass;
   typedef Xpetra::MapExtractorFactory<Scalar,LO,GO,Node> MapExtractorFactoryClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractorClass;
+  typedef Xpetra::MapExtractorFactory<Scalar,Node> MapExtractorFactoryClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
@@ -1310,8 +1641,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReadWriteBlockedMatrix, M, 
   GO NumGlobalElements = map->getGlobalNumElements();
   Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
       Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 3);
+#else
+  Teuchos::RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+      Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 3);
+#endif
   TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == true || A->isFillActive() == false, std::runtime_error, "");
 
   for (LO i = 0; i < NumMyElements; i++) {
@@ -1335,8 +1671,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReadWriteBlockedMatrix, M, 
   A->fillComplete();
   TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == false || A->isFillActive() == true, std::runtime_error, "");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::Matrix<Scalar, LO, GO, Node> > mat =
       Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar, LO, GO, Node>(A));
+#else
+  Teuchos::RCP<Xpetra::Matrix<Scalar, Node> > mat =
+      Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar, Node>(A));
+#endif
 
   Teuchos::Array<GO> gids1;
   Teuchos::Array<GO> gids2;
@@ -1364,8 +1705,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReadWriteBlockedMatrix, M, 
 
   Teuchos::RCP<const MapExtractorClass> map_extractor = MapExtractorFactoryClass::Build(map,xmaps);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bMat =
       Xpetra::MatrixUtils<Scalar, LO, GO, Node>::SplitMatrix(*mat,map_extractor,map_extractor);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bMat =
+      Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*mat,map_extractor,map_extractor);
+#endif
 
   // Write matrices out, read fine A back in, and check that the read was ok
   // by using a matvec with a random vector.
@@ -1387,8 +1733,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReadWriteBlockedMatrix, M, 
   tname = "_" + tname;
 
   const bool writeAllMaps = true;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::IO<Scalar, LO, GO, Node>::WriteBlockedCrsMatrix(tname, *bMat, writeAllMaps);
   Teuchos::RCP<const Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bMat2 = Xpetra::IO<Scalar, LO, GO, Node>::ReadBlockedCrsMatrix(tname, lib, comm);
+#else
+  Xpetra::IO<Scalar, Node>::WriteBlockedCrsMatrix(tname, *bMat, writeAllMaps);
+  Teuchos::RCP<const Xpetra::BlockedCrsMatrix<Scalar,Node> > bMat2 = Xpetra::IO<Scalar, Node>::ReadBlockedCrsMatrix(tname, lib, comm);
+#endif
 
   TEST_EQUALITY(bMat->getMatrix(0,0)->getGlobalNumEntries(),bMat2->getMatrix(0,0)->getGlobalNumEntries());
   TEST_EQUALITY(bMat->getMatrix(0,1)->getGlobalNumEntries(),bMat2->getMatrix(0,1)->getGlobalNumEntries());
@@ -1457,8 +1808,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, ReadWriteBlockedMatrix, M, 
 }
 
 /// simple test routine for the apply function of BlockedCrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Apply, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Apply, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> MapClass;
   typedef Xpetra::StridedMap<LO, GO, Node> StridedMapClass;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
@@ -1468,6 +1824,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Apply, M, MA, Scalar, LO, G
   typedef Xpetra::MapExtractor<Scalar,LO,GO,Node> MapExtractorClass;
   typedef Xpetra::MapExtractorFactory<Scalar,LO,GO,Node> MapExtractorFactoryClass;
   typedef Xpetra::Matrix<Scalar, LO, GO, Node> MatrixClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::StridedMap<Node> StridedMapClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+  typedef Xpetra::StridedMapFactory<Node> StridedMapFactoryClass;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractorClass;
+  typedef Xpetra::MapExtractorFactory<Scalar,Node> MapExtractorFactoryClass;
+  typedef Xpetra::Matrix<Scalar, Node> MatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
@@ -1529,7 +1896,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Apply, M, MA, Scalar, LO, G
     return;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MatrixClass> A = Xpetra::IO<Scalar,LO,GO,Node>::Read("A.mat", fullmap->getMap());
+#else
+  Teuchos::RCP<MatrixClass> A = Xpetra::IO<Scalar,Node>::Read("A.mat", fullmap->getMap());
+#endif
 
   std::vector<Teuchos::RCP<const MapClass> > xmaps;
   xmaps.push_back(velmap);
@@ -1537,8 +1908,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Apply, M, MA, Scalar, LO, G
 
   Teuchos::RCP<const MapExtractorClass> map_extractor = MapExtractorFactoryClass::Build(fullmap,xmaps);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp =
       Xpetra::MatrixUtils<Scalar, LO, GO, Node>::SplitMatrix(*A,map_extractor,map_extractor);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp =
+      Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*A,map_extractor,map_extractor);
+#endif
 
   // build gloabl vector with one entries
   Teuchos::RCP<VectorClass> ones = VectorFactoryClass::Build(fullmap, true);
@@ -1561,8 +1937,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Apply, M, MA, Scalar, LO, G
   TEUCHOS_TEST_COMPARE(res->normInf(), <, 5e-14, out, success);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, getLocalDiagCopy, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, getLocalDiagCopy, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO,GO,Node> MapClass;
   typedef Xpetra::BlockedMap<LO,GO,Node> BlockedMapClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
@@ -1571,12 +1952,26 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, getLocalDiagCopy, M, MA, Sc
   typedef Xpetra::BlockedVector<Scalar,LO,GO,Node> BlockedVectorClass;
   typedef Xpetra::BlockedMultiVector<Scalar,LO,GO,Node> BlockedMultiVectorClass;
   typedef Xpetra::VectorFactory<Scalar,LO,GO,Node> VectorFactoryClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::BlockedMap<Node> BlockedMapClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+  typedef Xpetra::Vector<Scalar,Node> VectorClass;
+  typedef Xpetra::MultiVector<Scalar,Node> MultiVectorClass;
+  typedef Xpetra::BlockedVector<Scalar,Node> BlockedVectorClass;
+  typedef Xpetra::BlockedMultiVector<Scalar,Node> BlockedMultiVectorClass;
+  typedef Xpetra::VectorFactory<Scalar,Node> VectorFactoryClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 5;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop->Cols(), Teuchos::as<size_t>(noBlocks));
 
@@ -1607,8 +2002,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, getLocalDiagCopy, M, MA, Sc
   // reordered blocked operator (Xpetra style)
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 4 [3 2] 1 0]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   GO goNumRows = Teuchos::as<GO>(Teuchos::ScalarTraits<GO>::pow(2,noBlocks-2)) * 10 * comm->getSize();
 
@@ -1641,10 +2041,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, getLocalDiagCopy, M, MA, Sc
   TEST_EQUALITY(bCheck, true);
 
   // Thyra style (reordered) operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> btop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> btop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brtop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, btop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brtop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, btop));
+#endif
 
   TEST_EQUALITY(brtop->Rows(), 4);
   TEST_EQUALITY(brtop->Cols(), 4);
@@ -1698,17 +2107,31 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, getLocalDiagCopy, M, MA, Sc
   TEST_EQUALITY(bCheck, true);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, leftScale, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, leftScale, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
   typedef Xpetra::Vector<Scalar,LO,GO,Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar,LO,GO,Node> VectorFactoryClass;
+#else
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+  typedef Xpetra::Vector<Scalar,Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar,Node> VectorFactoryClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop->Cols(), Teuchos::as<size_t>(noBlocks));
 
@@ -1734,13 +2157,24 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, leftScale, M, MA, Scalar, L
   TEST_EQUALITY(v1->norm1(), Teuchos::ScalarTraits<Scalar>::magnitude(Teuchos::ScalarTraits<Scalar>::zero()));
 
   // reordered Xpetra operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(8, *comm);
+#else
+  bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(8, *comm);
+#endif
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 0 [ 1 [ 2 3 4 ] 5 ] [6 7] ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
   Teuchos::RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop_nonconst =
       Teuchos::rcp_const_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop);
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+  Teuchos::RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop_nonconst =
+      Teuchos::rcp_const_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop);
+#endif
 
   TEST_EQUALITY(brop->Rows(),3);
   TEST_EQUALITY(brop->Cols(),3);
@@ -1765,10 +2199,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, leftScale, M, MA, Scalar, L
   TEST_EQUALITY(v1->norm1(), Teuchos::ScalarTraits<Scalar>::magnitude(Teuchos::ScalarTraits<Scalar>::zero()));
 
   // reordered Thyra operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(8, *comm);
+#else
+  bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(8, *comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
   brop_nonconst = Teuchos::rcp_const_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop);
+#else
+  brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+  brop_nonconst = Teuchos::rcp_const_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop);
+#endif
 
   TEST_EQUALITY(brop->Rows(),3);
   TEST_EQUALITY(brop->Cols(),3);
@@ -1793,17 +2236,31 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, leftScale, M, MA, Scalar, L
   TEST_EQUALITY(v1->norm1(), Teuchos::ScalarTraits<Scalar>::magnitude(Teuchos::ScalarTraits<Scalar>::zero()));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, rightScale, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, rightScale, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
   typedef Xpetra::Vector<Scalar,LO,GO,Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar,LO,GO,Node> VectorFactoryClass;
+#else
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+  typedef Xpetra::Vector<Scalar,Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar,Node> VectorFactoryClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop->Cols(), Teuchos::as<size_t>(noBlocks));
 
@@ -1833,13 +2290,24 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, rightScale, M, MA, Scalar, 
 
 
   // reordered Xpetra operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(8, *comm);
+#else
+  bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(8, *comm);
+#endif
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 0 [ 1 [ 2 3 4 ] 5 ] [6 7] ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
   Teuchos::RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop_nonconst =
       Teuchos::rcp_const_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop);
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+  Teuchos::RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop_nonconst =
+      Teuchos::rcp_const_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop);
+#endif
 
   TEST_EQUALITY(brop->Rows(),3);
   TEST_EQUALITY(brop->Cols(),3);
@@ -1870,10 +2338,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, rightScale, M, MA, Scalar, 
 
 
   // reordered Thyra operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(8, *comm);
+#else
+  bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(8, *comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
   brop_nonconst = Teuchos::rcp_const_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(brop);
+#else
+  brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+  brop_nonconst = Teuchos::rcp_const_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(brop);
+#endif
 
   TEST_EQUALITY(brop->Rows(),3);
   TEST_EQUALITY(brop->Cols(),3);
@@ -1903,19 +2380,35 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, rightScale, M, MA, Scalar, 
   TEST_EQUALITY(v1->norm1(), Teuchos::ScalarTraits<Scalar>::magnitude(Teuchos::ScalarTraits<Scalar>::zero()));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, deepCopy, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, deepCopy, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
   typedef Xpetra::Vector<Scalar,LO,GO,Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar,LO,GO,Node> VectorFactoryClass;
   typedef Xpetra::Matrix<Scalar,LO,GO,Node> MatrixClass;
   typedef Xpetra::MatrixFactory<Scalar,LO,GO,Node> MatrixFactoryClass;
+#else
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+  typedef Xpetra::Vector<Scalar,Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar,Node> VectorFactoryClass;
+  typedef Xpetra::Matrix<Scalar,Node> MatrixClass;
+  typedef Xpetra::MatrixFactory<Scalar,Node> MatrixFactoryClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 5;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop->Cols(), Teuchos::as<size_t>(noBlocks));
 
@@ -1956,7 +2449,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, deepCopy, M, MA, Scalar, LO
   TEST_EQUALITY(bop2->getMatrix(0,0)->getRangeMap()->getGlobalNumElements(), Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 5));
 
   // Thyra blocked operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop3 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop3 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop3->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop3->Cols(), Teuchos::as<size_t>(noBlocks));
 
@@ -1978,11 +2475,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, deepCopy, M, MA, Scalar, LO
   TEST_EQUALITY(bop4->getMatrix(0,0)->getRangeMap()->getGlobalNumElements(), Teuchos::as<Xpetra::global_size_t>(comm->getSize() * 5));
 
   // Nested Xpetra blocked operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 1 [ [ 2 4 0 ] 3] ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(), 2);
   TEST_EQUALITY(brop->Cols(), 2);
@@ -2013,9 +2519,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, deepCopy, M, MA, Scalar, LO
   TEST_EQUALITY(brop21100->getDomainMapExtractor()->getThyraMode(), false);
 
   // Nested Thyra blocked operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(), 2);
   TEST_EQUALITY(brop->Cols(), 2);
@@ -2046,11 +2560,21 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, deepCopy, M, MA, Scalar, LO
   TEST_EQUALITY(brop21100->getDomainMapExtractor()->getThyraMode(), true);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, transformThyra2XpetraGIDs, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, transformThyra2XpetraGIDs, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO,GO,Node> MapClass;
   typedef Xpetra::MapUtils<LO,GO,Node> MapUtilsClass;
   typedef Xpetra::MapFactory<LO,GO,Node> MapFactoryClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::MapUtils<Node> MapUtilsClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -2094,18 +2618,33 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, transformThyra2XpetraGIDs, 
   TEST_EQUALITY(xmap->getMaxAllGlobalIndex(),novlxMap->getMaxAllGlobalIndex());
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Merge, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Merge, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrixClass;
   typedef Xpetra::Vector<Scalar,LO,GO,Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar,LO,GO,Node> VectorFactoryClass;
   typedef Xpetra::Matrix<Scalar,LO,GO,Node> MatrixClass;
+#else
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrixClass;
+  typedef Xpetra::Vector<Scalar,Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar,Node> VectorFactoryClass;
+  typedef Xpetra::Matrix<Scalar,Node> MatrixClass;
+#endif
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 5;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop->Cols(), Teuchos::as<size_t>(noBlocks));
 
@@ -2128,7 +2667,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Merge, M, MA, Scalar, LO, G
   TEST_EQUALITY(bop->getFrobeniusNorm(), A2->getFrobeniusNorm());
 
   // Thyra blocked operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<BlockedCrsMatrixClass> bop3 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<BlockedCrsMatrixClass> bop3 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop3->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop3->Cols(), Teuchos::as<size_t>(noBlocks));
 
@@ -2150,11 +2693,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Merge, M, MA, Scalar, LO, G
   TEST_EQUALITY(bop3->getFrobeniusNorm(), A4->getFrobeniusNorm());
 
   // Nested Xpetra blocked operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 1 [ [ 2 4 0 ] 3] ]");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(), 2);
   TEST_EQUALITY(brop->Cols(), 2);
@@ -2179,9 +2731,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Merge, M, MA, Scalar, LO, G
   TEST_EQUALITY(bop->getFrobeniusNorm(), A->getFrobeniusNorm());
 
   // Nested Thyra blocked operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#else
+  brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+#endif
 
   TEST_EQUALITY(brop->Rows(), 2);
   TEST_EQUALITY(brop->Cols(), 2);
@@ -2207,21 +2767,38 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, Merge, M, MA, Scalar, LO, G
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixAdd, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixAdd, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Matrix<Scalar, LO, GO, Node> MatrixClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar, LO, GO, Node> BlockedCrsMatrixClass;
+#else
+  typedef Xpetra::Matrix<Scalar, Node> MatrixClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar, Node> BlockedCrsMatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop->Cols(), Teuchos::as<size_t>(noBlocks));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop2->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop2->Cols(), Teuchos::as<size_t>(noBlocks));
 
@@ -2229,7 +2806,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixAdd, M, MA, Sca
   //Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOpbOp = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::TwoMatrixMultiplyBlock(*bop,false,*bop2,false,out);
   Teuchos::RCP<MatrixClass> bOpOp = Teuchos::null;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::TwoMatrixAdd(*bop,false,STS::one(),*bop2,false,STS::one()*Teuchos::as<Scalar>(3.0),bOpOp,out);
+#else
+  Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixAdd(*bop,false,STS::one(),*bop2,false,STS::one()*Teuchos::as<Scalar>(3.0),bOpOp,out);
+#endif
 
   TEST_EQUALITY(bOpOp != Teuchos::null, true);
   Teuchos::RCP<BlockedCrsMatrixClass> bOpOp2 = Teuchos::rcp_dynamic_cast<BlockedCrsMatrixClass>(bOpOp);
@@ -2256,13 +2837,25 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixAdd, M, MA, Sca
 
   // Nested addition test (Xpetra)
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 0 [1 2] ]");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop  = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
   bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  bop  = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+  bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop2 =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop2));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop2 =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop2));
+#endif
 
   TEST_EQUALITY(brop->Rows(),2);
   TEST_EQUALITY(brop->Cols(),2);
@@ -2275,7 +2868,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixAdd, M, MA, Sca
 
   bOpOp = Teuchos::null;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::TwoMatrixAdd(*brop,false,STS::one(),*brop2,false,STS::one()*Teuchos::as<Scalar>(3.0),bOpOp,out);
+#else
+  Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixAdd(*brop,false,STS::one(),*brop2,false,STS::one()*Teuchos::as<Scalar>(3.0),bOpOp,out);
+#endif
 
   TEST_EQUALITY(bOpOp != Teuchos::null, true);
   bOpOp2 = Teuchos::rcp_dynamic_cast<BlockedCrsMatrixClass>(bOpOp);
@@ -2301,11 +2898,21 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixAdd, M, MA, Sca
   TEST_EQUALITY(bOpOp2->getMatrix(0,0)->getFrobeniusNorm(),4.0 * brop2->getMatrix(0,0)->getFrobeniusNorm());
 
   // Nested addition test (Thyra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop  = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
   bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  bop  = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+  bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
   brop2 =Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop2));
+#else
+  brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+  brop2 =Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop2));
+#endif
 
   TEST_EQUALITY(brop->Rows(),2);
   TEST_EQUALITY(brop->Cols(),2);
@@ -2318,7 +2925,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixAdd, M, MA, Sca
 
   bOpOp = Teuchos::null;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::TwoMatrixAdd(*brop,false,STS::one(),*brop2,false,STS::one()*Teuchos::as<Scalar>(3.0),bOpOp,out);
+#else
+  Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixAdd(*brop,false,STS::one(),*brop2,false,STS::one()*Teuchos::as<Scalar>(3.0),bOpOp,out);
+#endif
 
   TEST_EQUALITY(bOpOp != Teuchos::null, true);
   bOpOp2 = Teuchos::rcp_dynamic_cast<BlockedCrsMatrixClass>(bOpOp);
@@ -2344,28 +2955,51 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixAdd, M, MA, Sca
   TEST_EQUALITY(bOpOp2->getMatrix(0,0)->getFrobeniusNorm(),4.0 * brop2->getMatrix(0,0)->getFrobeniusNorm());
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMultDiag, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMultDiag, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Matrix<Scalar, LO, GO, Node> MatrixClass;
   typedef Xpetra::BlockedCrsMatrix<Scalar, LO, GO, Node> BlockedCrsMatrixClass;
   typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
   typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
+#else
+  typedef Xpetra::Matrix<Scalar, Node> MatrixClass;
+  typedef Xpetra::BlockedCrsMatrix<Scalar, Node> BlockedCrsMatrixClass;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+#endif
   //typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop->Cols(), Teuchos::as<size_t>(noBlocks));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrixClass> bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrixClass> bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
   TEST_EQUALITY(bop2->Rows(), Teuchos::as<size_t>(noBlocks));
   TEST_EQUALITY(bop2->Cols(), Teuchos::as<size_t>(noBlocks));
 
   // matrix-matrix multiplication of blocked operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MatrixClass> bOpOp = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::TwoMatrixMultiplyBlock(*bop,false,*bop2,false,out);
+#else
+  Teuchos::RCP<MatrixClass> bOpOp = Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixMultiplyBlock(*bop,false,*bop2,false,out);
+#endif
 
   TEST_EQUALITY(bOpOp != Teuchos::null, true);
   Teuchos::RCP<BlockedCrsMatrixClass> bOpOp2 = Teuchos::rcp_dynamic_cast<BlockedCrsMatrixClass>(bOpOp);
@@ -2402,14 +3036,26 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMultDiag, M, MA
 
 
   // Nested addition test (Xpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop  = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
   bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  bop  = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+  bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
   Teuchos::RCP<const Xpetra::BlockReorderManager> brm = Xpetra::blockedReorderFromString("[ 0 [1 2] ]");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
   Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> > brop2 =
       Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop2));
+#else
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+  Teuchos::RCP<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > brop2 =
+      Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop2));
+#endif
 
   TEST_EQUALITY(brop->Rows(),2);
   TEST_EQUALITY(brop->Cols(),2);
@@ -2421,7 +3067,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMultDiag, M, MA
   TEST_EQUALITY(brop2->getDomainMapExtractor()->getThyraMode(), false);
 
   // matrix-matrix multiplication of blocked operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bOpOp = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::TwoMatrixMultiplyBlock(*brop,false,*brop2,false,out);
+#else
+  bOpOp = Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixMultiplyBlock(*brop,false,*brop2,false,out);
+#endif
 
   TEST_EQUALITY(bOpOp != Teuchos::null, true);
   bOpOp2 = Teuchos::rcp_dynamic_cast<BlockedCrsMatrixClass>(bOpOp);
@@ -2457,11 +3107,21 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMultDiag, M, MA
   TEST_EQUALITY(bCheck, true);
 
   // Nested addition test (Thyra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bop  = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
   bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  bop  = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+  bop2 = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrixThyra<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
   brop2 =Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,LO,GO,Node> >(buildReorderedBlockedCrsMatrix(brm, bop2));
+#else
+  brop = Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop));
+  brop2 =Teuchos::rcp_dynamic_cast<const Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(buildReorderedBlockedCrsMatrix(brm, bop2));
+#endif
 
   TEST_EQUALITY(brop->Rows(),2);
   TEST_EQUALITY(brop->Cols(),2);
@@ -2473,7 +3133,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMultDiag, M, MA
   TEST_EQUALITY(brop2->getDomainMapExtractor()->getThyraMode(), true);
 
   // matrix-matrix multiplication of blocked operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bOpOp = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::TwoMatrixMultiplyBlock(*brop,false,*brop2,false,out);
+#else
+  bOpOp = Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixMultiplyBlock(*brop,false,*brop2,false,out);
+#endif
 
   TEST_EQUALITY(bOpOp != Teuchos::null, true);
   bOpOp2 = Teuchos::rcp_dynamic_cast<BlockedCrsMatrixClass>(bOpOp);
@@ -2510,8 +3174,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMultDiag, M, MA
 }
 
 /// simple test routine for the apply function of BlockedCrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMult, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMult, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> MapClass;
   typedef Xpetra::StridedMap<LO, GO, Node> StridedMapClass;
   typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
@@ -2521,6 +3190,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMult, M, MA, Sc
   typedef Xpetra::MapExtractor<Scalar,LO,GO,Node> MapExtractorClass;
   typedef Xpetra::MapExtractorFactory<Scalar,LO,GO,Node> MapExtractorFactoryClass;
   typedef Xpetra::Matrix<Scalar, LO, GO, Node> MatrixClass;
+#else
+  typedef Xpetra::Map<Node> MapClass;
+  typedef Xpetra::StridedMap<Node> StridedMapClass;
+  typedef Xpetra::MapFactory<Node> MapFactoryClass;
+  typedef Xpetra::StridedMapFactory<Node> StridedMapFactoryClass;
+  typedef Xpetra::Vector<Scalar, Node> VectorClass;
+  typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractorClass;
+  typedef Xpetra::MapExtractorFactory<Scalar,Node> MapExtractorFactoryClass;
+  typedef Xpetra::Matrix<Scalar, Node> MatrixClass;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
@@ -2582,7 +3262,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMult, M, MA, Sc
     return;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MatrixClass> A = Xpetra::IO<Scalar,LO,GO,Node>::Read("A.mat", fullmap->getMap());
+#else
+  Teuchos::RCP<MatrixClass> A = Xpetra::IO<Scalar,Node>::Read("A.mat", fullmap->getMap());
+#endif
 
   std::vector<Teuchos::RCP<const MapClass> > xmaps;
   xmaps.push_back(velmap);
@@ -2590,10 +3274,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMult, M, MA, Sc
 
   Teuchos::RCP<const MapExtractorClass> map_extractor = MapExtractorFactoryClass::Build(fullmap,xmaps);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp =
       Xpetra::MatrixUtils<Scalar, LO, GO, Node>::SplitMatrix(*A,map_extractor,map_extractor);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp =
+      Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*A,map_extractor,map_extractor);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MatrixClass> A2 = Xpetra::IO<Scalar,LO,GO,Node>::Read("A.mat", fullmap->getMap());
+#else
+  Teuchos::RCP<MatrixClass> A2 = Xpetra::IO<Scalar,Node>::Read("A.mat", fullmap->getMap());
+#endif
 
   std::vector<Teuchos::RCP<const MapClass> > xmaps2;
   xmaps2.push_back(velmap);
@@ -2601,15 +3294,28 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMult, M, MA, Sc
 
   Teuchos::RCP<const MapExtractorClass> map_extractor2 = MapExtractorFactoryClass::Build(fullmap,xmaps2);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp2 =
       Xpetra::MatrixUtils<Scalar, LO, GO, Node>::SplitMatrix(*A2,map_extractor2,map_extractor2);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp2 =
+      Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*A2,map_extractor2,map_extractor2);
+#endif
 
   // matrix-matrix multiplication of standard matrices
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::Matrix<Scalar,LO,GO,Node> > fuAfuA_2 = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::Multiply(*A,false,*A2,false,out);
+#else
+  Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > fuAfuA_2 = Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*A,false,*A2,false,out);
+#endif
   fuAfuA_2->describe(out);
 
   // matrix-matrix multiplication of blocked operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOpbOp_2 = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::TwoMatrixMultiplyBlock(*bOp,false,*bOp2,false,out);
+#else
+  Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOpbOp_2 = Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixMultiplyBlock(*bOp,false,*bOp2,false,out);
+#endif
 
   // build gloabl vector with one entries
   Teuchos::RCP<VectorClass> ones = VectorFactoryClass::Build(fullmap, true);
@@ -2674,8 +3380,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, MatrixMatrixMult, M, MA, Sc
   */
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, BlockedOperatorApply, M, MA, Scalar, LO, GO, Node )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, BlockedOperatorApply, M, MA, Scalar, Node )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO, GO, Node> Map;
   typedef Xpetra::BlockedMap<LO, GO, Node> BlockedMap;
   typedef Xpetra::MapExtractor<Scalar, LO, GO, Node> MapExtractor;
@@ -2683,13 +3394,26 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, BlockedOperatorApply, M, MA
   typedef Xpetra::BlockedMultiVector<Scalar, LO, GO, Node> BlockedMultiVector;
   typedef Xpetra::MultiVectorFactory<Scalar, LO, GO, Node> MultiVectorFactory;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> BlockedCrsMatrix;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+  typedef Xpetra::MapExtractor<Scalar, Node> MapExtractor;
+  typedef Xpetra::MultiVector<Scalar, Node> MultiVector;
+  typedef Xpetra::BlockedMultiVector<Scalar, Node> BlockedMultiVector;
+  typedef Xpetra::MultiVectorFactory<Scalar, Node> MultiVectorFactory;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrix;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
 
   int noBlocks = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedCrsMatrix> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,LO,GO,Node,M>(noBlocks, *comm);
+#else
+  Teuchos::RCP<const BlockedCrsMatrix> bop = XpetraBlockMatrixTests::CreateBlockDiagonalExampleMatrix<Scalar,Node,M>(noBlocks, *comm);
+#endif
 
   TEST_EQUALITY(bop->Rows(),3);
   TEST_EQUALITY(bop->Cols(),3);
@@ -2860,21 +3584,32 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, BlockedOperatorApply, M, MA
 //
 #ifdef HAVE_XPETRA_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_TPETRA_TYPES( S, LO, GO, N) \
     typedef typename Xpetra::TpetraMap<LO,GO,N> M##LO##GO##N; \
     typedef typename Xpetra::TpetraCrsMatrix<S,LO,GO,N> MA##S##LO##GO##N;
+#else
+  #define XPETRA_TPETRA_TYPES( S, N) \
+    typedef typename Xpetra::TpetraMap<N> M##LO##GO##N; \
+    typedef typename Xpetra::TpetraCrsMatrix<S,N> MA##S##LO##GO##N;
+#endif
 
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_EPETRA_TYPES( S, LO, GO, N) \
+#else
+  #define XPETRA_EPETRA_TYPES( S, N) \
+#endif
     typedef typename Xpetra::EpetraMapT<GO,N> M##LO##GO##N; \
     typedef typename Xpetra::EpetraCrsMatrixT<GO,N> MA##S##LO##GO##N;
 
 #endif
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_MATRIX_INSTANT(S,LO,GO,N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, SplitMatrix, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperator, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N ) \
@@ -2897,15 +3632,50 @@ TEUCHOS_UNIT_TEST_TEMPLATE_6_DECL( BlockedCrsMatrix, BlockedOperatorApply, M, MA
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, MatrixMatrixMultDiag, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, MatrixMatrixMult, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, BlockedOperatorApply, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N )
+#else
+#define XP_MATRIX_INSTANT(S,N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, SplitMatrix, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperator, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperator2, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperatorThyra, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperator2Thyra, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperatorApply, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperatorApply2, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperatorApplyThyra, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperatorApplyThyraSmall, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReorderBlockOperatorApply2Thyra, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, Apply, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, getLocalDiagCopy, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, leftScale, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, rightScale, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, deepCopy, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, transformThyra2XpetraGIDs, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, Merge, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, MatrixMatrixAdd, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, MatrixMatrixMultDiag, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, MatrixMatrixMult, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, BlockedOperatorApply, M##LO##GO##N , MA##S##LO##GO##N, S,N )
+#endif
 
 // List of tests which run only with Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_TPETRA_MATRIX_INSTANT(S,LO,GO,N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, CreateBlockedDiagonalOp, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N ) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, CreateBlockedDiagonalOpThyra, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N )
+#else
+#define XP_TPETRA_MATRIX_INSTANT(S,N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, CreateBlockedDiagonalOp, M##LO##GO##N , MA##S##LO##GO##N, S,N ) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, CreateBlockedDiagonalOpThyra, M##LO##GO##N , MA##S##LO##GO##N, S,N )
+#endif
 
 // List of tests which run only with Epetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_EPETRA_MATRIX_INSTANT(S,LO,GO,N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReadWriteBlockedMatrix, M##LO##GO##N , MA##S##LO##GO##N, S, LO, GO, N )
+#else
+#define XP_EPETRA_MATRIX_INSTANT(S,N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_6_INSTANT( BlockedCrsMatrix, ReadWriteBlockedMatrix, M##LO##GO##N , MA##S##LO##GO##N, S,N )
+#endif
 
 // TODO reactivate these tests after moving MM multiplication code to xpetra...
 //TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockedCrsMatrix, EpetraMatrixMatrixMult2x1, SC, LO, GO, Node )

@@ -106,25 +106,43 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class LO ,
     class GO ,
+#endif
     class NO >
     class OneLevelPreconditioner;
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class SubdomainSolver : public Operator<SC,LO,GO,NO> {
+#else
+    class SubdomainSolver : public Operator<SC,NO> {
+#endif
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMap                        = Map<LO,GO,NO>;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using XMap                        = Map<NO>;
+#endif
         using XMapPtr                     = RCP<XMap>;
         using ConstXMapPtr                = RCP<const XMap>;
         using XMapPtrVecPtr               = ArrayRCP<XMapPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrix                     = Matrix<SC,LO,GO,NO>;
+#else
+        using XMatrix                     = Matrix<SC,NO>;
+#endif
         using XMatrixPtr                  = RCP<XMatrix>;
         using ConstXMatrixPtr             = RCP<const XMatrix>;
 
@@ -133,19 +151,35 @@ namespace FROSch {
         using ECrsMatrixPtr               = RCP<ECrsMatrix>;
         using ConstECrsMatrixPtr          = RCP<const ECrsMatrix>;
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using TCrsMatrix                  = Tpetra::CrsMatrix<SC,LO,GO,NO>;
+#else
+        using TCrsMatrix                  = Tpetra::CrsMatrix<SC,NO>;
+#endif
         using TCrsMatrixPtr               = RCP<TCrsMatrix>;
         using ConstTCrsMatrixPtr          = RCP<const TCrsMatrix>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using TRowMatrix                  = Tpetra::RowMatrix<SC,LO,GO,NO>;
+#else
+        using TRowMatrix                  = Tpetra::RowMatrix<SC,NO>;
+#endif
         using TRowMatrixPtr               = RCP<TRowMatrix>;
         using ConstTRowMatrixPtr          = RCP<const TRowMatrix>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector                = MultiVector<SC,LO,GO,NO>;
+#else
+        using XMultiVector                = MultiVector<SC,NO>;
+#endif
         using XMultiVectorPtr             = RCP<XMultiVector>;
         using ConstXMultiVectorPtr        = RCP<const XMultiVector>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using TMultiVector                = Tpetra::MultiVector<SC,LO,GO,NO>;
+#else
+        using TMultiVector                = Tpetra::MultiVector<SC,NO>;
+#endif
         using TMultiVectorPtr             = RCP<TMultiVector>;
 
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
@@ -153,7 +187,11 @@ namespace FROSch {
         using EMultiVectorPtr             = RCP<EMultiVector>;
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVectorFactory         = MultiVectorFactory<SC,LO,GO,NO>;
+#else
+        using XMultiVectorFactory         = MultiVectorFactory<SC,NO>;
+#endif
 
         using ParameterListPtr            = RCP<ParameterList>;
 
@@ -172,8 +210,13 @@ namespace FROSch {
         using Amesos2SolverTpetraPtr      = RCP<Amesos2::Solver<TCrsMatrix,TMultiVector> >;
 
 #ifdef HAVE_SHYLU_DDFROSCH_MUELU
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using MueLuFactoryPtr             = RCP<MueLu::HierarchyManager<SC,LO,GO,NO> >;
         using MueLuHierarchyPtr           = RCP<MueLu::Hierarchy<SC,LO,GO,NO> >;
+#else
+        using MueLuFactoryPtr             = RCP<MueLu::HierarchyManager<SC,NO> >;
+        using MueLuHierarchyPtr           = RCP<MueLu::Hierarchy<SC,NO> >;
+#endif
 #endif
 
         using GOVecPtr                    = ArrayRCP<GO>;
@@ -310,12 +353,21 @@ namespace FROSch {
 #endif
 
 #ifdef HAVE_SHYLU_DDFROSCH_BELOS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Belos::LinearProblem<SC,MultiVector<SC,LO,GO,NO>,Belos::OperatorT<MultiVector<SC,LO,GO,NO> > > >  BelosLinearProblem_;
         RCP<Belos::SolverManager<SC,MultiVector<SC,LO,GO,NO>,Belos::OperatorT<MultiVector<SC,LO,GO,NO> > > > BelosSolverManager_;
+#else
+        RCP<Belos::LinearProblem<SC,MultiVector<SC,NO>,Belos::OperatorT<MultiVector<SC,NO> > > >  BelosLinearProblem_;
+        RCP<Belos::SolverManager<SC,MultiVector<SC,NO>,Belos::OperatorT<MultiVector<SC,NO> > > > BelosSolverManager_;
+#endif
 #endif
 
 #ifdef HAVE_SHYLU_DDFROSCH_IFPACK2
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Ifpack2::Preconditioner<SC,LO,GO,NO> > Ifpack2Preconditioner_;
+#else
+        RCP<Ifpack2::Preconditioner<SC,NO> > Ifpack2Preconditioner_;
+#endif
 #endif
 
         bool IsInitialized_ = false;

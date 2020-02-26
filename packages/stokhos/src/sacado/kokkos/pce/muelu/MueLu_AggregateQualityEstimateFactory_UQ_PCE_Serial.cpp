@@ -52,8 +52,13 @@
 
 #include "MueLu_AggregateQualityEstimateFactory_def.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_INST_S_LO_GO_N(S, LO, GO, N) \
   template class MueLu::AggregateQualityEstimateFactory<S, LO, GO, N>;
+#else
+#define MUELU_INST_S_LO_GO_N(S, N) \
+  template class MueLu::AggregateQualityEstimateFactory<S, N>;
+#endif
 
 #define MUELU_INST_N(N) \
   INSTANTIATE_TPETRA_UQ_PCE_N(MUELU_INST_S_LO_GO_N, N)

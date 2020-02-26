@@ -55,7 +55,11 @@ namespace panzer {
 // Hessian Specialization
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>::
+#else
+ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,NodeT>::
+#endif
 ScatterDirichletResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & /* indexer */,
                                 const Teuchos::ParameterList& p) 
 {
@@ -70,7 +74,11 @@ ScatterDirichletResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & /* ind
   
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>::
+#else
+ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* vm */) 
 {
@@ -78,14 +86,22 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>::
+#else
+ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData /* d */) 
 {
 }
   
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>::
+#else
+ScatterDirichletResidual_Tpetra<panzer::Traits::Hessian,TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData /* workset */)
 {
   TEUCHOS_TEST_FOR_EXCEPTION(true,std::logic_error,

@@ -138,14 +138,22 @@ namespace MueLu {
     | Aggregates   | UncoupledAggregationFactory   | Container class with aggregation information. See also Aggregates.
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
            class Node = DefaultNode>
+#else
+  template<class Node = DefaultNode>
+#endif
   class UncoupledAggregationFactory_kokkos : public SingleLevelFactoryBase {
 #undef MUELU_UNCOUPLEDAGGREGATIONFACTORY_KOKKOS_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 
@@ -229,7 +237,11 @@ namespace MueLu {
 
     //! aggregation algorithms
     // will be filled in Build routine
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     mutable std::vector<RCP<MueLu::AggregationAlgorithmBase_kokkos<LocalOrdinal, GlobalOrdinal, Node> > > algos_;
+#else
+    mutable std::vector<RCP<MueLu::AggregationAlgorithmBase_kokkos<Node> > > algos_;
+#endif
 
     //! boolean flag: definition phase
     //! if true, the aggregation algorithms still can be set and changed.

@@ -40,13 +40,18 @@ class TestDiagonalOperator : public TpetraOperatorType {
 public:
   using multivector_type = Tpetra::MultiVector<
     typename TpetraOperatorType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typename TpetraOperatorType::local_ordinal_type,
     typename TpetraOperatorType::global_ordinal_type,
     typename TpetraOperatorType::node_type>;
   using map_type = Tpetra::Map<
     typename TpetraOperatorType::local_ordinal_type,
     typename TpetraOperatorType::global_ordinal_type,
+#endif
     typename TpetraOperatorType::node_type>;
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using map_type = Tpetra::Map<typename TpetraOperatorType::node_type>;
+#endif
 
 private:
   using device_type = typename map_type::device_type;  

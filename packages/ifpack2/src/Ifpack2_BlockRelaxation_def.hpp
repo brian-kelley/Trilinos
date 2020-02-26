@@ -159,8 +159,10 @@ getValidParameters () const
   validParams->set("partitioner: line detection threshold", 0.0);
   validParams->set("partitioner: PDE equations", 1);
   Teuchos::RCP<Tpetra::MultiVector<double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    typename MatrixType::local_ordinal_type,
                                    typename MatrixType::global_ordinal_type,
+#endif
                                    typename MatrixType::node_type> > dummy;
   validParams->set("partitioner: coordinates",dummy);
 
@@ -335,17 +337,23 @@ BlockRelaxation<MatrixType,ContainerType>::getComm () const
 
 template<class MatrixType,class ContainerType>
 Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      typename MatrixType::local_ordinal_type,
                                      typename MatrixType::global_ordinal_type,
+#endif
                                      typename MatrixType::node_type> >
 BlockRelaxation<MatrixType,ContainerType>::getMatrix () const {
   return A_;
 }
 
 template<class MatrixType,class ContainerType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 BlockRelaxation<MatrixType,ContainerType>::
 getDomainMap () const
 {
@@ -357,9 +365,13 @@ getDomainMap () const
 }
 
 template<class MatrixType,class ContainerType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 BlockRelaxation<MatrixType,ContainerType>::
 getRangeMap () const
 {
@@ -444,12 +456,16 @@ template<class MatrixType,class ContainerType>
 void
 BlockRelaxation<MatrixType,ContainerType>::
 apply (const Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                  typename MatrixType::local_ordinal_type,
                                  typename MatrixType::global_ordinal_type,
+#endif
                                  typename MatrixType::node_type>& X,
        Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                            typename MatrixType::local_ordinal_type,
                            typename MatrixType::global_ordinal_type,
+#endif
                            typename MatrixType::node_type>& Y,
        Teuchos::ETransp mode,
        scalar_type alpha,
@@ -535,12 +551,16 @@ template<class MatrixType,class ContainerType>
 void
 BlockRelaxation<MatrixType,ContainerType>::
 applyMat (const Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                     typename MatrixType::local_ordinal_type,
                                     typename MatrixType::global_ordinal_type,
+#endif
                                     typename MatrixType::node_type>& X,
           Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                              typename MatrixType::local_ordinal_type,
                              typename MatrixType::global_ordinal_type,
+#endif
                              typename MatrixType::node_type>& Y,
           Teuchos::ETransp mode) const
 {
@@ -1088,11 +1108,20 @@ describe (Teuchos::FancyOStream& out,
 
 #ifdef HAVE_IFPACK2_EXPLICIT_INSTANTIATION
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_BLOCKRELAXATION_INSTANT(S,LO,GO,N) \
+#else
+#define IFPACK2_BLOCKRELAXATION_INSTANT(S,N) \
+#endif
   template \
   class Ifpack2::BlockRelaxation<      \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::RowMatrix<S, LO, GO, N>,   \
     Ifpack2::Container<Tpetra::RowMatrix<S, LO, GO, N> > >;
+#else
+    Tpetra::RowMatrix<S, N>,   \
+    Ifpack2::Container<Tpetra::RowMatrix<S, N> > >;
+#endif
 
 #endif // HAVE_IFPACK2_EXPLICIT_INSTANTIATION
 

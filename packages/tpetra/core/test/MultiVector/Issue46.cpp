@@ -194,7 +194,11 @@ void issue46Test (bool& success, Teuchos::FancyOStream& out)
   typedef typename MV::local_ordinal_type LO;
   typedef typename MV::global_ordinal_type GO;
   typedef typename MV::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
   typedef typename MV::impl_scalar_type IST;
   typedef typename MV::dual_view_type::array_layout array_layout;
   typedef typename MV::device_type device_type;

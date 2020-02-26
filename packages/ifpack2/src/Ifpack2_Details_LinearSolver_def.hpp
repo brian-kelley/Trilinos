@@ -62,8 +62,13 @@
 namespace Ifpack2 {
 namespace Details {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 LinearSolver<SC, LO, GO, NT>::
+#else
+template<class SC, class NT>
+LinearSolver<SC, NT>::
+#endif
 LinearSolver (const Teuchos::RCP<prec_type>& solver, const std::string& solverName) :
   solver_ (solver),
   solverName_ (solverName)
@@ -74,7 +79,11 @@ LinearSolver (const Teuchos::RCP<prec_type>& solver, const std::string& solverNa
   TEUCHOS_TEST_FOR_EXCEPTION(solver.is_null (), std::invalid_argument,
                              prefix << "Input solver is NULL.");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<SC, LO, GO, NT> row_matrix_type;
+#else
+  typedef Tpetra::RowMatrix<SC, NT> row_matrix_type;
+#endif
   typedef ::Ifpack2::Details::CanChangeMatrix<row_matrix_type> mixin_type;
   RCP<mixin_type> innerSolver = rcp_dynamic_cast<mixin_type> (solver);
   TEUCHOS_TEST_FOR_EXCEPTION
@@ -83,14 +92,26 @@ LinearSolver (const Teuchos::RCP<prec_type>& solver, const std::string& solverNa
      "that inherit from Ifpack2::Details::CanChangeMatrix implement this feature.");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 LinearSolver<SC, LO, GO, NT>::
+#else
+LinearSolver<SC, NT>::
+#endif
 setMatrix (const Teuchos::RCP<const OP>& A)
 {
   using Teuchos::RCP;
   using Teuchos::rcp_dynamic_cast;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<SC, LO, GO, NT> row_matrix_type;
+#else
+  typedef Tpetra::RowMatrix<SC, NT> row_matrix_type;
+#endif
   typedef ::Ifpack2::Details::CanChangeMatrix<row_matrix_type> mixin_type;
   const char prefix[] = "Ifpack2::Details::LinearSolver::setMatrix: ";
 
@@ -122,16 +143,30 @@ setMatrix (const Teuchos::RCP<const OP>& A)
   A_ = A; // keep a pointer to A, so that getMatrix() works
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 Teuchos::RCP<const typename LinearSolver<SC, LO, GO, NT>::OP>
 LinearSolver<SC, LO, GO, NT>::
+#else
+template<class SC, class NT>
+Teuchos::RCP<const typename LinearSolver<SC, NT>::OP>
+LinearSolver<SC, NT>::
+#endif
 getMatrix () const {
   return A_; // may be null
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 LinearSolver<SC, LO, GO, NT>::
+#else
+LinearSolver<SC, NT>::
+#endif
 solve (MV& X, const MV& B)
 {
   const char prefix[] = "Ifpack2::Details::LinearSolver::solve: ";
@@ -146,17 +181,33 @@ solve (MV& X, const MV& B)
   solver_->apply (B, X);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 LinearSolver<SC, LO, GO, NT>::
+#else
+LinearSolver<SC, NT>::
+#endif
 setParameters (const Teuchos::RCP<Teuchos::ParameterList>& params)
 {
   solver_->setParameters (*params);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 LinearSolver<SC, LO, GO, NT>::
+#else
+LinearSolver<SC, NT>::
+#endif
 symbolic ()
 {
   const char prefix[] = "Ifpack2::Details::LinearSolver::symbolic: ";
@@ -171,9 +222,17 @@ symbolic ()
   solver_->initialize ();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 LinearSolver<SC, LO, GO, NT>::
+#else
+LinearSolver<SC, NT>::
+#endif
 numeric ()
 {
   const char prefix[] = "Ifpack2::Details::LinearSolver::numeric: ";
@@ -188,9 +247,17 @@ numeric ()
   solver_->compute ();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 LinearSolver<SC, LO, GO, NT>::
+#else
+LinearSolver<SC, NT>::
+#endif
 description () const
 {
   const char prefix[] = "Ifpack2::Details::LinearSolver::description: ";
@@ -201,9 +268,17 @@ description () const
   return solver_->description ();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 LinearSolver<SC, LO, GO, NT>::
+#else
+LinearSolver<SC, NT>::
+#endif
 describe (Teuchos::FancyOStream& out,
           const Teuchos::EVerbosityLevel verbLevel) const
 {
@@ -221,7 +296,12 @@ describe (Teuchos::FancyOStream& out,
 // Explicit template instantiation macro for LinearSolver.  This is
 // generally not for users!  It is used by automatically generated
 // code, and perhaps by expert Trilinos developers.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_LINEARSOLVER_INSTANT(SC, LO, GO, NT) \
   template class Ifpack2::Details::LinearSolver<SC, LO, GO, NT>;
+#else
+#define IFPACK2_DETAILS_LINEARSOLVER_INSTANT(SC, NT) \
+  template class Ifpack2::Details::LinearSolver<SC, NT>;
+#endif
 
 #endif // IFPACK2_DETAILS_LINEARSOLVER_DEF_HPP

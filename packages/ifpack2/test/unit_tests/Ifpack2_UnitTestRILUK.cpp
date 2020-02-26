@@ -71,14 +71,25 @@ typedef tif_utest::Node Node;
 
 // Single-process unit tests for RILUK are located in the file Ifpack2_UnitTestSerialRILUK.cpp.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal>
 static Teuchos::RCP<Ifpack2::RILUK<Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > > setupTest ()
+#else
+template <typename Scalar,>
+static Teuchos::RCP<Ifpack2::RILUK<Tpetra::RowMatrix<Scalar,Node> > > setupTest ()
+#endif
 {
   // Test that ILU(k) can be done on a parallel sparse matrix with noncontiguous row map.
   // See bug #6033.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>   crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>   row_matrix_type;
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>                map_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node>   crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node>   row_matrix_type;
+  typedef Tpetra::Map<Node>                map_type;
+#endif
 
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -126,22 +137,38 @@ static Teuchos::RCP<Ifpack2::RILUK<Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalO
   return prec;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2RILUK, Parallel, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2RILUK, Parallel, Scalar)
+#endif
 {
   std::string version = Ifpack2::Version();
   out << "Ifpack2::Version(): " << version << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto prec = setupTest<Scalar, LocalOrdinal, GlobalOrdinal>();
+#else
+  auto prec = setupTest<Scalar>();
+#endif
   prec->initialize();
   prec->compute();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2RILUK, ParallelReuse, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2RILUK, ParallelReuse, Scalar)
+#endif
 {
   std::string version = Ifpack2::Version();
   out << "Ifpack2::Version(): " << version << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto prec = setupTest<Scalar, LocalOrdinal, GlobalOrdinal>();
+#else
+  auto prec = setupTest<Scalar>();
+#endif
   prec->initialize();
   prec->compute();
   // Pretend we've updated some of the numbers in the matrix, but not its structure.
@@ -149,8 +176,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2RILUK, ParallelReuse, Scalar, LocalOrdi
 }
 
 #define UNIT_TEST_GROUP_SC_LO_GO( SC, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2RILUK, Parallel, SC, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2RILUK, ParallelReuse, SC, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2RILUK, Parallel, SC ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2RILUK, ParallelReuse, SC )
+#endif
 
 #include "Ifpack2_ETIHelperMacros.h"
 

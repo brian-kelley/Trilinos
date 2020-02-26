@@ -58,7 +58,11 @@
 #include "Tpetra_Map.hpp"
 
 template<typename EvalT,typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_Tpetra<EvalT, TRAITS,LO,GO,NodeT>::
+#else
+panzer::GatherTangent_Tpetra<EvalT, TRAITS,NodeT>::
+#endif
 GatherTangent_Tpetra(
   const Teuchos::RCP<const panzer::GlobalIndexer> & indexer,
   const Teuchos::ParameterList& p)
@@ -100,7 +104,11 @@ GatherTangent_Tpetra(
 
 // **********************************************************************
 template<typename EvalT,typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherTangent_Tpetra<EvalT, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherTangent_Tpetra<EvalT, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -118,13 +126,21 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename EvalT,typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherTangent_Tpetra<EvalT, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherTangent_Tpetra<EvalT, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
   using Teuchos::RCP;
   using Teuchos::rcp_dynamic_cast;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
   // try to extract linear object container
   if (d.gedc->containsDataObject(globalDataKey_)) {
@@ -145,7 +161,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename EvalT,typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherTangent_Tpetra<EvalT, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::GatherTangent_Tpetra<EvalT, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
   // If tpetraContainer_ was not initialized, then no global evaluation data
@@ -153,7 +173,11 @@ evaluateFields(typename TRAITS::EvalData workset)
   if (tpetraContainer_ == Teuchos::null)
     return;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
   // for convenience pull out some objects from workset
   std::string blockId = this->wda(workset).block_id;
   const std::vector<std::size_t> & localCellIds = this->wda(workset).cell_local_ids;

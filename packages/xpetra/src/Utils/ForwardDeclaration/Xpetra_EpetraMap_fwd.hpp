@@ -47,7 +47,11 @@
 #define XPETRA_EPETRAMAP_FWD_HPP
 
 namespace Xpetra {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GO, class NO> class EpetraMapT;
+#else
+  template<class NO> class EpetraMapT;
+#endif
   typedef EpetraMapT<int, EpetraNode> EpetraMap;
 }
 

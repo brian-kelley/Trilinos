@@ -50,8 +50,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     CoarseSpace<SC,LO,GO,NO>::CoarseSpace(CommPtr mpiComm,
+#else
+    template <class SC,class NO>
+    CoarseSpace<SC,NO>::CoarseSpace(CommPtr mpiComm,
+#endif
                                           CommPtr serialComm) :
     MpiComm_ (mpiComm),
     SerialComm_ (serialComm)
@@ -60,8 +65,13 @@ namespace FROSch {
     }
 
     // Will man Informationen über die Subspaces als strings reingeben?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int CoarseSpace<SC,LO,GO,NO>::addSubspace(ConstXMapPtr subspaceBasisMap,
+#else
+    template <class SC,class NO>
+    int CoarseSpace<SC,NO>::addSubspace(ConstXMapPtr subspaceBasisMap,
+#endif
                                               ConstXMapPtr subspaceBasisMapUnique,
                                               ConstXMultiVectorPtr subspaceBasis,
                                               UN offset)
@@ -82,8 +92,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int CoarseSpace<SC,LO,GO,NO>::assembleCoarseSpace()
+#else
+    template <class SC,class NO>
+    int CoarseSpace<SC,NO>::assembleCoarseSpace()
+#endif
     {
         FROSCH_ASSERT(UnassembledBasesMaps_.size()>0,"FROSch::CoarseSpace : ERROR: UnassembledBasesMaps_.size()==0");
         FROSCH_ASSERT(UnassembledBasesMapsUnique_.size()>0,"FROSch::CoarseSpace : ERROR: UnassembledBasesMapsUnique_.size()==0");
@@ -107,7 +122,11 @@ namespace FROSch {
         
         if (buildUniqueMapMax>0) {
             FROSCH_NOTIFICATION("FROSch::CoarseSpace",this->MpiComm_->getRank()==0,"We re-build a unique map of AssembledBasisMap_.");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             AssembledBasisMapUnique_ = BuildUniqueMap<LO,GO,NO>(AssembledBasisMap_);
+#else
+            AssembledBasisMapUnique_ = BuildUniqueMap<NO>(AssembledBasisMap_);
+#endif
         } else {
             AssembledBasisMapUnique_ = AssembleMaps(UnassembledBasesMapsUnique_(),partMappings);
         }
@@ -122,9 +141,17 @@ namespace FROSch {
                 for (UN i=0; i<UnassembledSubspaceBases_.size(); i++) {
                     if (!UnassembledSubspaceBases_[i].is_null()) totalSize = std::max(totalSize,LO(UnassembledSubspaceBases_[i]->getLocalLength()+Offsets_[i]));
                 }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 XMapPtr serialMap = MapFactory<LO,GO,NO>::Build(AssembledBasisMap_->lib(),totalSize,0,this->SerialComm_);
+#else
+                XMapPtr serialMap = MapFactory<NO>::Build(AssembledBasisMap_->lib(),totalSize,0,this->SerialComm_);
+#endif
                 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 AssembledBasis_ = MultiVectorFactory<SC,LO,GO,NO >::Build(serialMap,AssembledBasisMap_->getNodeNumElements());
+#else
+                AssembledBasis_ = MultiVectorFactory<SC,NO >::Build(serialMap,AssembledBasisMap_->getNodeNumElements());
+#endif
                 for (UN i=0; i<UnassembledSubspaceBases_.size(); i++) {
                     if (!UnassembledSubspaceBases_[i].is_null()) {
                         for (UN j=0; j<UnassembledSubspaceBases_[i]->getNumVectors(); j++) {
@@ -161,8 +188,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int CoarseSpace<SC,LO,GO,NO>::buildGlobalBasisMatrix(ConstXMapPtr rowMap,
+#else
+    template <class SC,class NO>
+    int CoarseSpace<SC,NO>::buildGlobalBasisMatrix(ConstXMapPtr rowMap,
+#endif
                                                          ConstXMapPtr rangeMap,
                                                          ConstXMapPtr repeatedMap,
                                                          SC treshold)
@@ -170,7 +202,11 @@ namespace FROSch {
         FROSCH_ASSERT(!AssembledBasisMap_.is_null(),"FROSch::CoarseSpace : ERROR: AssembledBasisMap_.is_null().");
         FROSCH_ASSERT(!AssembledBasis_.is_null(),"FROSch::CoarseSpace : ERROR: AssembledBasis_.is_null().");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         GlobalBasisMatrix_ = MatrixFactory<SC,LO,GO,NO>::Build(rowMap,AssembledBasisMap_->getNodeNumElements()); // Nonzeroes abhängig von dim/dofs!!!
+#else
+        GlobalBasisMatrix_ = MatrixFactory<SC,NO>::Build(rowMap,AssembledBasisMap_->getNodeNumElements()); // Nonzeroes abhängig von dim/dofs!!!
+#endif
 
         LO iD;
         SC valueTmp;
@@ -195,8 +231,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int CoarseSpace<SC,LO,GO,NO>::clearCoarseSpace()
+#else
+    template <class SC,class NO>
+    int CoarseSpace<SC,NO>::clearCoarseSpace()
+#endif
     {
         ConstXMapPtrVec emptyVec1;
         UnassembledBasesMaps_.swap(emptyVec1);
@@ -219,72 +260,127 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int CoarseSpace<SC,LO,GO,NO>::checkForLinearDependencies()
+#else
+    template <class SC,class NO>
+    int CoarseSpace<SC,NO>::checkForLinearDependencies()
+#endif
     {
         FROSCH_ASSERT(false,"FROSch::CoarseSpace : ERROR: This is not implemented yet.");
         return 0;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool CoarseSpace<SC,LO,GO,NO>::hasUnassembledMaps() const
+#else
+    template <class SC,class NO>
+    bool CoarseSpace<SC,NO>::hasUnassembledMaps() const
+#endif
     {
         return UnassembledBasesMaps_.size()>0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool CoarseSpace<SC,LO,GO,NO>::hasBasisMap() const
+#else
+    template <class SC,class NO>
+    bool CoarseSpace<SC,NO>::hasBasisMap() const
+#endif
     {
         return !AssembledBasisMap_.is_null();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename CoarseSpace<SC,LO,GO,NO>::ConstXMapPtr CoarseSpace<SC,LO,GO,NO>::getBasisMap() const
+#else
+    template <class SC,class NO>
+    typename CoarseSpace<SC,NO>::ConstXMapPtr CoarseSpace<SC,NO>::getBasisMap() const
+#endif
     {
         FROSCH_ASSERT(!AssembledBasisMap_.is_null(),"FROSch::CoarseSpace : ERROR: AssembledBasisMap_.is_null().");
         return AssembledBasisMap_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool CoarseSpace<SC,LO,GO,NO>::hasBasisMapUnique() const
+#else
+    template <class SC,class NO>
+    bool CoarseSpace<SC,NO>::hasBasisMapUnique() const
+#endif
     {
         return !AssembledBasisMapUnique_.is_null();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename CoarseSpace<SC,LO,GO,NO>::ConstXMapPtr CoarseSpace<SC,LO,GO,NO>::getBasisMapUnique() const
+#else
+    template <class SC,class NO>
+    typename CoarseSpace<SC,NO>::ConstXMapPtr CoarseSpace<SC,NO>::getBasisMapUnique() const
+#endif
     {
         FROSCH_ASSERT(!AssembledBasisMapUnique_.is_null(),"FROSch::CoarseSpace : ERROR: AssembledBasisMapUnique_.is_null().");
         return AssembledBasisMapUnique_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool CoarseSpace<SC,LO,GO,NO>::hasAssembledBasis() const
+#else
+    template <class SC,class NO>
+    bool CoarseSpace<SC,NO>::hasAssembledBasis() const
+#endif
     {
         return !AssembledBasis_.is_null();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename CoarseSpace<SC,LO,GO,NO>::ConstXMultiVectorPtr CoarseSpace<SC,LO,GO,NO>::getAssembledBasis() const
+#else
+    template <class SC,class NO>
+    typename CoarseSpace<SC,NO>::ConstXMultiVectorPtr CoarseSpace<SC,NO>::getAssembledBasis() const
+#endif
     {
         FROSCH_ASSERT(!AssembledBasis_.is_null(),"FROSch::CoarseSpace : ERROR: AssembledBasis_.is_null().");
         return AssembledBasis_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename CoarseSpace<SC,LO,GO,NO>::ConstUNVecView CoarseSpace<SC,LO,GO,NO>::getLocalSubspaceSizes() const
+#else
+    template <class SC,class NO>
+    typename CoarseSpace<SC,NO>::ConstUNVecView CoarseSpace<SC,NO>::getLocalSubspaceSizes() const
+#endif
     {
         return LocalSubspacesSizes_();
     }
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool CoarseSpace<SC,LO,GO,NO>::hasGlobalBasisMatrix() const
+#else
+    template <class SC,class NO>
+    bool CoarseSpace<SC,NO>::hasGlobalBasisMatrix() const
+#endif
     {
         return !GlobalBasisMatrix_.is_null();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename CoarseSpace<SC,LO,GO,NO>::XMatrixPtr CoarseSpace<SC,LO,GO,NO>::getGlobalBasisMatrix() const
+#else
+    template <class SC,class NO>
+    typename CoarseSpace<SC,NO>::XMatrixPtr CoarseSpace<SC,NO>::getGlobalBasisMatrix() const
+#endif
     {
         FROSCH_ASSERT(!GlobalBasisMatrix_.is_null(),"FROSch::CoarseSpace : ERROR: GlobalBasisMatrix_.is_null().");
         return GlobalBasisMatrix_;

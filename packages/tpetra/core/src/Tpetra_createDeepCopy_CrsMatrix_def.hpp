@@ -13,13 +13,23 @@ namespace Tpetra {
 
 namespace { // (anonymous)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 typename CrsMatrix<SC, LO, GO, NT>::local_matrix_type
 localDeepCopyFillCompleteCrsMatrix (const CrsMatrix<SC, LO, GO, NT>& A)
+#else
+template<class SC, class NT>
+typename CrsMatrix<SC, NT>::local_matrix_type
+localDeepCopyFillCompleteCrsMatrix (const CrsMatrix<SC, NT>& A)
+#endif
 {
   using Kokkos::view_alloc;
   using Kokkos::WithoutInitializing;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = CrsMatrix<SC, NT>;
+#endif
   using local_matrix_type =
     typename crs_matrix_type::local_matrix_type;
   local_matrix_type A_lcl = A.getLocalMatrix ();
@@ -48,11 +58,21 @@ localDeepCopyFillCompleteCrsMatrix (const CrsMatrix<SC, LO, GO, NT>& A)
 
 } // namespace // (anonymous)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 CrsMatrix<SC, LO, GO, NT>
 createDeepCopy (const RowMatrix<SC, LO, GO, NT>& A)
+#else
+template<class SC, class NT>
+CrsMatrix<SC, NT>
+createDeepCopy (const RowMatrix<SC, NT>& A)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = CrsMatrix<SC, NT>;
+#endif
   const crs_matrix_type* A_crs =
     dynamic_cast<const crs_matrix_type*> (&A);
 
@@ -127,8 +147,13 @@ createDeepCopy (const RowMatrix<SC, LO, GO, NT>& A)
     using Details::localDeepCopyLocallyIndexedRowMatrix;
     auto A_lcl = localDeepCopyLocallyIndexedRowMatrix (A, "A");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Export<LO, GO, NT>> exp;
     Teuchos::RCP<const Import<LO, GO, NT>> imp;
+#else
+    Teuchos::RCP<const Export<NT>> exp;
+    Teuchos::RCP<const Import<NT>> imp;
+#endif
     auto G = A.getGraph ();
     if (! G.is_null ()) {
       imp = G->getImporter ();
@@ -158,8 +183,14 @@ createDeepCopy (const RowMatrix<SC, LO, GO, NT>& A)
 // Must be expanded from within the Tpetra namespace!
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_CREATEDEEPCOPY_CRSMATRIX_INSTANT(SC, LO, GO, NT) \
   template CrsMatrix< SC , LO , GO , NT > \
   createDeepCopy (const RowMatrix<SC, LO, GO, NT>& );
+#else
+#define TPETRA_CREATEDEEPCOPY_CRSMATRIX_INSTANT(SC, NT) \
+  template CrsMatrix< SC , NT > \
+  createDeepCopy (const RowMatrix<SC, NT>& );
+#endif
 
 #endif // TPETRA_CREATEDEEPCOPY_CRSMATRIX_DEF_HPP

@@ -115,8 +115,10 @@ public:
   typedef Teuchos::ScalarTraits<ScalarType> STS;
   typedef typename STS::magnitudeType MT;
   typedef Tpetra::Vector<typename MV::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          typename MV::local_ordinal_type,
                          typename MV::global_ordinal_type,
+#endif
                          typename MV::node_type> V;
   /// Constructor.
   ///
@@ -353,11 +355,19 @@ TEUCHOS_UNIT_TEST(Ifpack2Chebyshev, Convergence)
   typedef Tpetra::MultiVector<>::node_type NT;
 
   // Convenience typedefs.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
   typedef Tpetra::CrsMatrix<ST, LO, GO, NT> crs_matrix_type;
   typedef Tpetra::RowMatrix<ST, LO, GO, NT> row_matrix_type;
   typedef Tpetra::MultiVector<ST, LO, GO, NT> MV;
   typedef Tpetra::Vector<ST, LO, GO, NT> V;
+#else
+  typedef Tpetra::Map<NT> map_type;
+  typedef Tpetra::CrsMatrix<ST, NT> crs_matrix_type;
+  typedef Tpetra::RowMatrix<ST, NT> row_matrix_type;
+  typedef Tpetra::MultiVector<ST, NT> MV;
+  typedef Tpetra::Vector<ST, NT> V;
+#endif
   typedef Ifpack2::Chebyshev<row_matrix_type> prec_type;
   typedef Teuchos::ScalarTraits<ST> STS;
   typedef STS::magnitudeType MT;

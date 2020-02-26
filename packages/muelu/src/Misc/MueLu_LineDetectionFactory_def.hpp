@@ -58,8 +58,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> LineDetectionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> LineDetectionFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -73,8 +78,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void LineDetectionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void LineDetectionFactory<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "A");
 
     // The factory needs the information about the number of z-layers. While this information is
@@ -88,8 +98,13 @@ namespace MueLu {
     currentLevel.RemoveKeepFlag("NumZLayers", NoFactory::get(), MueLu::UserData);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void LineDetectionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void LineDetectionFactory<Scalar, Node>::Build(Level& currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Line detection (Ray style)", currentLevel);
 
     LO               NumZDir = 0;
@@ -252,8 +267,13 @@ namespace MueLu {
       Zorientation_ = VERTICAL;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   LocalOrdinal LineDetectionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ML_compute_line_info(LocalOrdinal LayerId[], LocalOrdinal VertLineId[], LocalOrdinal Ndof, LocalOrdinal DofsPerNode, LocalOrdinal MeshNumbering, LocalOrdinal NumNodesPerVertLine, typename Teuchos::ScalarTraits<Scalar>::coordinateType *xvals, typename Teuchos::ScalarTraits<Scalar>::coordinateType *yvals, typename Teuchos::ScalarTraits<Scalar>::coordinateType *zvals, const Teuchos::Comm<int>& /* comm */) const {
+#else
+  template <class Scalar, class Node>
+  LocalOrdinal LineDetectionFactory<Scalar, Node>::ML_compute_line_info(LocalOrdinal LayerId[], LocalOrdinal VertLineId[], LocalOrdinal Ndof, LocalOrdinal DofsPerNode, LocalOrdinal MeshNumbering, LocalOrdinal NumNodesPerVertLine, typename Teuchos::ScalarTraits<Scalar>::coordinateType *xvals, typename Teuchos::ScalarTraits<Scalar>::coordinateType *yvals, typename Teuchos::ScalarTraits<Scalar>::coordinateType *zvals, const Teuchos::Comm<int>& /* comm */) const {
+#endif
 
     LO    Nnodes, NVertLines, MyNode;
     LO    NumCoords, next; //, subindex, subnext;
@@ -356,8 +376,13 @@ namespace MueLu {
   }
 
   /* Private member function to sort coordinates in arrays. This is an expert routine. Do not use or change.*/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void LineDetectionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::sort_coordinates(LO numCoords, LO* OrigLoc,
+#else
+  template <class Scalar, class Node>
+  void LineDetectionFactory<Scalar, Node>::sort_coordinates(LO numCoords, LO* OrigLoc,
+#endif
                                                                                          typename Teuchos::ScalarTraits<Scalar>::coordinateType* xvals,
                                                                                          typename Teuchos::ScalarTraits<Scalar>::coordinateType* yvals,
                                                                                          typename Teuchos::ScalarTraits<Scalar>::coordinateType* zvals,
@@ -404,8 +429,13 @@ namespace MueLu {
   }
 
   /* Sort coordinates and additional array accordingly (if provided). This is an expert routine borrowed from ML. Do not change.*/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void LineDetectionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ML_az_dsort2(typename Teuchos::ScalarTraits<Scalar>::coordinateType dlist[], LocalOrdinal N, LocalOrdinal list2[]) const {
+#else
+  template <class Scalar, class Node>
+  void LineDetectionFactory<Scalar, Node>::ML_az_dsort2(typename Teuchos::ScalarTraits<Scalar>::coordinateType dlist[], LocalOrdinal N, LocalOrdinal list2[]) const {
+#endif
     LO l, r, j, i, flag;
     LO RR2;
     coordinate_type       dRR, dK;

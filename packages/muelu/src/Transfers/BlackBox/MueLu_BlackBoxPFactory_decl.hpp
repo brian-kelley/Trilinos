@@ -59,7 +59,11 @@
 
 namespace MueLuTests {
   // Forward declaration of friend tester class used to UnitTest BlackBoxPFactory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class BlackBoxPFactoryTester;
 }
 
@@ -114,8 +118,10 @@ namespace MueLu {
 
 */
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class BlackBoxPFactory : public PFactory {
 #undef MUELU_BLACKBOXPFACTORY_SHORT
@@ -123,7 +129,13 @@ namespace MueLu {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     friend class MueLuTests::BlackBoxPFactoryTester<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    friend class MueLuTests::BlackBoxPFactoryTester<Scalar, Node>;
+#endif
 
     //! @name Constructors/Destructors.
     //@{
@@ -173,7 +185,11 @@ namespace MueLu {
       LO  LID, lexiInd;
     };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void GetGeometricData(RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> >& coordinates,
+#else
+    void GetGeometricData(RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> >& coordinates,
+#endif
                           const Array<LO> coarseRate, const Array<GO> gFineNodesPerDir,
                           const Array<LO> lFineNodesPerDir, const LO BlkSize, Array<GO>& gIndices,
                           Array<LO>& myOffset, Array<bool>& ghostInterface, Array<LO>& endRate,

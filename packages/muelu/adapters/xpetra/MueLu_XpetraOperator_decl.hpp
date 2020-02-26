@@ -58,11 +58,21 @@ namespace MueLu {
 /*!  @brief Wraps an existing MueLu::Hierarchy as a Xpetra::Operator.
 */
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class XpetraOperator : public Xpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> {
+#else
+  class XpetraOperator : public Xpetra::Operator<Scalar,Node> {
+#endif
   protected:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     XpetraOperator() { }
   public:
 
@@ -70,7 +80,11 @@ namespace MueLu {
     //@{
 
     //! Constructor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     XpetraOperator(const RCP<MueLu::Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& H) : Hierarchy_(H) { }
+#else
+    XpetraOperator(const RCP<MueLu::Hierarchy<Scalar, Node> >& H) : Hierarchy_(H) { }
+#endif
 
     //! Destructor.
     virtual ~XpetraOperator() { }
@@ -78,16 +92,26 @@ namespace MueLu {
     //@}
 
     //! Returns the Tpetra::Map object associated with the domain of this operator.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const {
       typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix;
+#else
+    Teuchos::RCP<const Xpetra::Map<Node> > getDomainMap() const {
+      typedef Xpetra::Matrix<Scalar, Node> Matrix;
+#endif
 
       RCP<Matrix> A = Hierarchy_->GetLevel(0)->template Get<RCP<Matrix> >("A");
       return A->getDomainMap();
     }
 
     //! Returns the Tpetra::Map object associated with the range of this operator.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const {
       typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix;
+#else
+    Teuchos::RCP<const Xpetra::Map<Node> > getRangeMap() const {
+      typedef Xpetra::Matrix<Scalar, Node> Matrix;
+#endif
 
       RCP<Matrix> A = Hierarchy_->GetLevel(0)->template Get<RCP<Matrix> >("A");
       return A->getRangeMap();
@@ -98,21 +122,37 @@ namespace MueLu {
       \param[in]  X - Xpetra::MultiVector of dimension NumVectors to multiply with matrix.
       \param[out] Y - Xpetra::MultiVector of dimension NumVectors containing result.
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void apply(const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X,
                                          Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y,
+#else
+    void apply(const Xpetra::MultiVector<Scalar,Node>& X,
+                                         Xpetra::MultiVector<Scalar,Node>& Y,
+#endif
                                          Teuchos::ETransp /* mode */ = Teuchos::NO_TRANS,
                                          Scalar /* alpha */ = Teuchos::ScalarTraits<Scalar>::one(),
                                          Scalar /* beta */  = Teuchos::ScalarTraits<Scalar>::one()) const{
       try {
 #ifdef HAVE_MUELU_DEBUG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix;
+#else
+        typedef Xpetra::Matrix<Scalar, Node> Matrix;
+#endif
         RCP<Matrix> A = Hierarchy_->GetLevel(0)->template Get<RCP<Matrix> >("A");
 
         // X is supposed to live in the range map of the operator (const rhs = B)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > Xop =
             Xpetra::MultiVectorFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build(A->getRangeMap(),X.getNumVectors());
         RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > Yop =
             Xpetra::MultiVectorFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build(A->getDomainMap(),Y.getNumVectors());
+#else
+        RCP<Xpetra::MultiVector<Scalar,Node> > Xop =
+            Xpetra::MultiVectorFactory<Scalar,Node>::Build(A->getRangeMap(),X.getNumVectors());
+        RCP<Xpetra::MultiVector<Scalar,Node> > Yop =
+            Xpetra::MultiVectorFactory<Scalar,Node>::Build(A->getDomainMap(),Y.getNumVectors());
+#endif
         TEUCHOS_TEST_FOR_EXCEPTION(A->getRangeMap()->isSameAs(*(Xop->getMap())) == false, std::logic_error,
                                    "MueLu::XpetraOperator::apply: map of X is incompatible with range map of A");
         TEUCHOS_TEST_FOR_EXCEPTION(A->getDomainMap()->isSameAs(*(Yop->getMap())) == false, std::logic_error,
@@ -132,9 +172,15 @@ namespace MueLu {
     bool hasTransposeApply() const { return false; }
 
     //! Compute a residual R = B - (*this) * X
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void residual(const Xpetra::MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & X,
                   const Xpetra::MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & B,
                   Xpetra::MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & R) const {
+#else
+    void residual(const Xpetra::MultiVector< Scalar, Node > & X,
+                  const Xpetra::MultiVector< Scalar, Node > & B,
+                  Xpetra::MultiVector< Scalar, Node > & R) const {
+#endif
       using STS = Teuchos::ScalarTraits<Scalar>;
       R.update(STS::one(),B,STS::zero());
       this->apply (X, R, Teuchos::NO_TRANS, -STS::one(), STS::one());   
@@ -144,12 +190,20 @@ namespace MueLu {
     //@{
 
     //! Direct access to the underlying MueLu::Hierarchy.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node> > GetHierarchy() const { return Hierarchy_; }
+#else
+    RCP<MueLu::Hierarchy<Scalar, Node> > GetHierarchy() const { return Hierarchy_; }
+#endif
 
     //@}
 
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Hierarchy_;
+#else
+    RCP<MueLu::Hierarchy<Scalar, Node> > Hierarchy_;
+#endif
   };
 
 } // namespace

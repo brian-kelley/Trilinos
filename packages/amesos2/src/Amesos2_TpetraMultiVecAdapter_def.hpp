@@ -61,26 +61,40 @@ namespace Amesos2 {
 
   using Tpetra::MultiVector;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, class Node >
+#else
+  template <typename Scalar, class Node >
+#endif
   MultiVecAdapter<
     MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 LocalOrdinal,
                 GlobalOrdinal,
+#endif
                 Node> >::MultiVecAdapter( const Teuchos::RCP<multivec_t>& m )
   : mv_(m)
   {}
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, class Node >
+#else
+  template <typename Scalar, class Node >
+#endif
   typename MultiVecAdapter<
     MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 LocalOrdinal,
                 GlobalOrdinal,
+#endif
                 Node> >::multivec_t::impl_scalar_type *
   MultiVecAdapter<
     MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 LocalOrdinal,
                 GlobalOrdinal,
+#endif
                 Node> >::getMVPointer_impl() const
   {
   TEUCHOS_TEST_FOR_EXCEPTION( this->getGlobalNumVectors() != 1,
@@ -103,23 +117,37 @@ namespace Amesos2 {
   // Traits class needed to do this generically for the general MultiVectorAdapter interface
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, class Node >
+#else
+  template <typename Scalar, class Node >
+#endif
   void
   MultiVecAdapter<
     MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 LocalOrdinal,
                 GlobalOrdinal,
+#endif
                 Node> >::get1dCopy(const Teuchos::ArrayView<scalar_t>& av,
                                    size_t lda,
                                    Teuchos::Ptr<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      const Tpetra::Map<LocalOrdinal,
                                                        GlobalOrdinal,
                                                        Node> > distribution_map,
+#else
+                                     const Tpetra::Map<Node> > distribution_map,
+#endif
                                                        EDistribution distribution) const
   {
     using Teuchos::as;
     using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
+#else
+    typedef Tpetra::Map<Node> map_type;
+#endif
     const size_t num_vecs = getGlobalNumVectors ();
 
     TEUCHOS_TEST_FOR_EXCEPTION(
@@ -219,12 +247,18 @@ namespace Amesos2 {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, class Node >
+#else
+  template <typename Scalar, class Node >
+#endif
   Teuchos::ArrayRCP<Scalar>
   MultiVecAdapter<
     MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 LocalOrdinal,
                 GlobalOrdinal,
+#endif
                 Node> >::get1dViewNonConst (bool local)
   {
     // FIXME (mfh 22 Jan 2014) When I first found this routine, all of
@@ -286,22 +320,36 @@ namespace Amesos2 {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, class Node>
+#else
+  template <typename Scalar, class Node>
+#endif
   void
   MultiVecAdapter<
     MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 LocalOrdinal,
                 GlobalOrdinal,
+#endif
                 Node> >::put1dData(const Teuchos::ArrayView<const scalar_t>& new_data,
                                    size_t lda,
                                    Teuchos::Ptr<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      const Tpetra::Map<LocalOrdinal,
                                                        GlobalOrdinal,
                                                        Node> > source_map,
+#else
+                                     const Tpetra::Map<Node> > source_map,
+#endif
                                                        EDistribution distribution )
   {
     using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
+#else
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     TEUCHOS_TEST_FOR_EXCEPTION(
       source_map.getRawPtr () == NULL, std::invalid_argument,
@@ -394,12 +442,18 @@ namespace Amesos2 {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, class Node >
+#else
+  template <typename Scalar, class Node >
+#endif
   std::string
   MultiVecAdapter<
     MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 LocalOrdinal,
                 GlobalOrdinal,
+#endif
                 Node> >::description() const
   {
     std::ostringstream oss;
@@ -409,12 +463,18 @@ namespace Amesos2 {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, class Node >
+#else
+  template <typename Scalar, class Node >
+#endif
   void
   MultiVecAdapter<
     MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 LocalOrdinal,
                 GlobalOrdinal,
+#endif
                 Node> >::describe (Teuchos::FancyOStream& os,
                                    const Teuchos::EVerbosityLevel verbLevel) const
   {
@@ -422,11 +482,17 @@ namespace Amesos2 {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, class Node >
+#else
+  template <typename Scalar, class Node >
+#endif
   const char* MultiVecAdapter<
     MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 LocalOrdinal,
                 GlobalOrdinal,
+#endif
                 Node> >::name = "Amesos2 adapter for Tpetra::MultiVector";
 
 } // end namespace Amesos2

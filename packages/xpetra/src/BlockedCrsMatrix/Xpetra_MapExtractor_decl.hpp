@@ -67,23 +67,37 @@ namespace Xpetra {
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
   // forward declaration of BlockedMultiVector, needed to prevent circular inclusions
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class S, class LO, class GO, class N> class BlockedMultiVector;
+#else
+  template<class S, class N> class BlockedMultiVector;
+#endif
 
   // forward declaration of BlockedMap, needed because some functions take them as parameters 
   // (This should go away when BlockedMap is converted to ETI)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class N> class BlockedMap;
+#else
+  template<class N> class BlockedMap;
+#endif
 #endif
 
 
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   class MapExtractor : public Teuchos::Describable
   {
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_type;
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
@@ -120,7 +134,11 @@ namespace Xpetra {
      *
      * \param map BlockedMap defining the block structure of the multi vector
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor(const Teuchos::RCP< const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node> > &map);
+#else
+    MapExtractor(const Teuchos::RCP< const Xpetra::BlockedMap<Node> > &map);
+#endif
 
 
     //! copy constructor
@@ -145,8 +163,13 @@ namespace Xpetra {
     RCP<MultiVector> ExtractVector(RCP<const        MultiVector>& full, size_t block,             bool  bThyraMode = false) const;
     RCP<MultiVector> ExtractVector(RCP<             MultiVector>& full, size_t block,             bool  bThyraMode = false) const;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MultiVector> ExtractVector(RCP<const Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& full, size_t block, bool bThyraMode = false) const;
     RCP<MultiVector> ExtractVector(RCP<      Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& full, size_t block, bool bThyraMode = false) const;
+#else
+    RCP<MultiVector> ExtractVector(RCP<const Xpetra::BlockedMultiVector<Scalar,Node> >& full, size_t block, bool bThyraMode = false) const;
+    RCP<MultiVector> ExtractVector(RCP<      Xpetra::BlockedMultiVector<Scalar,Node> >& full, size_t block, bool bThyraMode = false) const;
+#endif
 
     //@}
 
@@ -158,8 +181,13 @@ namespace Xpetra {
     void InsertVector(RCP<           Vector> partial, size_t block, RCP<     Vector> full, bool bThyraMode = false) const;
     void InsertVector(RCP<const MultiVector> partial, size_t block, RCP<MultiVector> full, bool bThyraMode = false) const;
     void InsertVector(RCP<      MultiVector> partial, size_t block, RCP<MultiVector> full, bool bThyraMode = false) const;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void InsertVector(RCP<const MultiVector> partial, size_t block, RCP<Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > full, bool bThyraMode = false) const;
     void InsertVector(RCP<      MultiVector> partial, size_t block, RCP<Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > full, bool bThyraMode = false) const;
+#else
+    void InsertVector(RCP<const MultiVector> partial, size_t block, RCP<Xpetra::BlockedMultiVector<Scalar,Node> > full, bool bThyraMode = false) const;
+    void InsertVector(RCP<      MultiVector> partial, size_t block, RCP<Xpetra::BlockedMultiVector<Scalar,Node> > full, bool bThyraMode = false) const;
+#endif
 
     //@}
 
@@ -185,7 +213,11 @@ namespace Xpetra {
     const RCP<const Map> getMap() const;
 
     /// get the underlying BlockedMap object (as BlockedMap)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node>> getBlockedMap() const;
+#else
+    const RCP<const Xpetra::BlockedMap<Node>> getBlockedMap() const;
+#endif
 
     /// the full map
     const RCP<const Map> getFullMap() const;
@@ -196,7 +228,11 @@ namespace Xpetra {
     //@}
 
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node>> map_;         ///< blocked map containing the sub block maps (either thyra or xpetra mode)
+#else
+    Teuchos::RCP<const Xpetra::BlockedMap<Node>> map_;         ///< blocked map containing the sub block maps (either thyra or xpetra mode)
+#endif
   };
 
 

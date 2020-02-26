@@ -57,9 +57,15 @@ namespace Amesos2 {
 #include "Kokkos_DefaultNode.hpp"
 #include "Tpetra_ETIHelperMacros.h"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define AMESOS2_MUMPS_LOCAL_INSTANT(SC,LO,GO,N)                        \
   template class Amesos2::MUMPS<Tpetra::CrsMatrix<SC, LO, GO, N>,      \
                                   Tpetra::MultiVector<SC, LO, GO,  N> >;
+#else
+#define AMESOS2_MUMPS_LOCAL_INSTANT(SC,N)                        \
+  template class Amesos2::MUMPS<Tpetra::CrsMatrix<SC, N>,      \
+                                  Tpetra::MultiVector<SC,  N> >;
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 TPETRA_INSTANTIATE_SLGN_NO_ORDINAL_SCALAR(AMESOS2_MUMPS_LOCAL_INSTANT)

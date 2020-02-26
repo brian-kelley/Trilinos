@@ -156,7 +156,11 @@ int main(int argc, char *argv[]) {
 #endif
 
     // Create application
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef twoD_diffusion_problem<Scalar,MeshScalar,BasisScalar,LocalOrdinal,GlobalOrdinal,Node> problem_type;
+#else
+    typedef twoD_diffusion_problem<Scalar,MeshScalar,BasisScalar,Node> problem_type;
+#endif
     RCP<problem_type> model = 
       rcp(new problem_type(teuchos_app_comm, n, num_KL, s, mu, 
 			   nonlinear_expansion, symmetric));
@@ -178,7 +182,11 @@ int main(int argc, char *argv[]) {
     std::string prec_name = "RILUK";
     precParams.set("fact: iluk level-of-fill", 1);
     precParams.set("fact: iluk level-of-overlap", 0);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tprec;
+#else
+    typedef Ifpack2::Preconditioner<Scalar,Node> Tprec;
+#endif
     Teuchos::RCP<Tprec> M;
     Ifpack2::Factory factory;
     M = factory.create<Tpetra_CrsMatrix>(prec_name, J);
@@ -204,8 +212,13 @@ int main(int argc, char *argv[]) {
     belosParams->set("Verbosity", 33);
     belosParams->set("Output Style", 1);
     belosParams->set("Output Frequency", 1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> OP;
     typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+    typedef Tpetra::Operator<Scalar,Node> OP;
+    typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
     typedef Belos::OperatorTraits<Scalar,MV,OP> BOPT;
     typedef Belos::MultiVecTraits<Scalar,MV> BMVT;
     typedef Belos::LinearProblem<Scalar,MV,OP> BLinProb;

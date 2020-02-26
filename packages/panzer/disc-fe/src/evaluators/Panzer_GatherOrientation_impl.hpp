@@ -53,7 +53,11 @@
 #include "Teuchos_FancyOStream.hpp"
 
 template<typename EvalT,typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherOrientation<EvalT, TRAITS,LO,GO>::
+#else
+panzer::GatherOrientation<EvalT, TRAITS>::
+#endif
 GatherOrientation(
   const Teuchos::RCP<const panzer::GlobalIndexer> & indexer,
   const Teuchos::ParameterList& p)
@@ -84,7 +88,11 @@ GatherOrientation(
 }
 
 template<typename EvalT,typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherOrientation<EvalT, TRAITS,LO,GO>::
+#else
+panzer::GatherOrientation<EvalT, TRAITS>::
+#endif
 GatherOrientation(const std::vector<Teuchos::RCP<const GlobalIndexer> > & indexers,
                   const Teuchos::ParameterList& p)
   : indexers_(indexers)
@@ -113,7 +121,11 @@ GatherOrientation(const std::vector<Teuchos::RCP<const GlobalIndexer> > & indexe
 
 // **********************************************************************
 template<typename EvalT,typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherOrientation<EvalT, TRAITS,LO,GO>::
+#else
+void panzer::GatherOrientation<EvalT, TRAITS>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */, 
 		      PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -135,7 +147,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename EvalT,typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::GatherOrientation<EvalT, TRAITS,LO,GO>::
+#else
+void panzer::GatherOrientation<EvalT, TRAITS>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 { 
    std::vector<double> orientation;

@@ -79,13 +79,23 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   UncoupledAggregationFactory_kokkos<LocalOrdinal, GlobalOrdinal, Node>::UncoupledAggregationFactory_kokkos()
+#else
+  template <class Node>
+  UncoupledAggregationFactory_kokkos<Node>::UncoupledAggregationFactory_kokkos()
+#endif
   : bDefinitionPhase_(true)
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> UncoupledAggregationFactory_kokkos<LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Node>
+  RCP<const ParameterList> UncoupledAggregationFactory_kokkos<Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     // Aggregation parameters (used in aggregation algorithms)
@@ -121,8 +131,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledAggregationFactory_kokkos<LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Node>
+  void UncoupledAggregationFactory_kokkos<Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "Graph");
     Input(currentLevel, "DofsPerNode");
 
@@ -141,8 +156,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledAggregationFactory_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledAggregationFactory_kokkos<Node>::
+#endif
   Build(Level &currentLevel) const {
     using execution_space    = typename LWGraph_kokkos::execution_space;
     using memory_space       = typename LWGraph_kokkos::memory_space;

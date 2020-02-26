@@ -465,8 +465,13 @@ int Ifpack2_ILU::Compute()
 
 //=============================================================================
 // This function finds Y such that LDU Y = X or U(trans) D L(trans) Y = X for multiple RHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int Ifpack2_ILU::Solve(bool Trans, const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
                       Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const 
+#else
+int Ifpack2_ILU::Solve(bool Trans, const Tpetra_MultiVector<Scalar,Node>& X, 
+                      Tpetra_MultiVector<Scalar,Node>& Y) const 
+#endif
 {
 
 #ifdef ENABLE_IFPACK2_ILU_TEUCHOS_TIMERS
@@ -500,8 +505,13 @@ int Ifpack2_ILU::Solve(bool Trans, const Tpetra_MultiVector<Scalar,LocalOrdinal,
 
 //=============================================================================
 // This function finds X such that LDU Y = X or U(trans) D L(trans) Y = X for multiple RHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int Ifpack2_ILU::Multiply(bool Trans, const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 				Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const 
+#else
+int Ifpack2_ILU::Multiply(bool Trans, const Tpetra_MultiVector<Scalar,Node>& X, 
+				Tpetra_MultiVector<Scalar,Node>& Y) const 
+#endif
 {
 
 #ifdef ENABLE_IFPACK2_ILU_TEUCHOS_TIMERS
@@ -540,8 +550,13 @@ int Ifpack2_ILU::Multiply(bool Trans, const Tpetra_MultiVector<Scalar,LocalOrdin
 
 //=============================================================================
 // This function finds X such that LDU Y = X or U(trans) D L(trans) Y = X for multiple RHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int Ifpack2_ILU::ApplyInverse(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
                              Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const
+#else
+int Ifpack2_ILU::ApplyInverse(const Tpetra_MultiVector<Scalar,Node>& X, 
+                             Tpetra_MultiVector<Scalar,Node>& Y) const
+#endif
 {
 
 #ifdef ENABLE_IFPACK2_ILU_TEUCHOS_TIMERS

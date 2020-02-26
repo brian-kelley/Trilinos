@@ -70,8 +70,13 @@
 ///
 /// \note This defers to Tpetra::Utils::readHBMatrix for reading the
 ///   sparse matrix from the Matrix Market file.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar,class LocalOrdinal,class GlobalOrdinal,class Node>
 Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+template<class Scalar,class Node>
+Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,Node> >
+#endif
 read_matrix_hb (const std::string& hb_file,
                 const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                 const Teuchos::RCP<Node>& node = Teuchos::null)
@@ -81,7 +86,11 @@ read_matrix_hb (const std::string& hb_file,
   using std::endl;
 
   RCP<Teuchos::Time> timer = Teuchos::TimeMonitor::getNewCounter ("read_matrix");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > A;
+#else
+  RCP<Tpetra::CrsMatrix<Scalar,Node> > A;
+#endif
   {
     Teuchos::TimeMonitor timeMon (*timer);
     Tpetra::Utils::readHBMatrix (hb_file, comm, A);

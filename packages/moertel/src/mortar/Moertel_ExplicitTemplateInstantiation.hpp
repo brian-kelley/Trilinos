@@ -70,11 +70,21 @@ typedef int KokkosNode;
 #define MOERTEL_INSTANTIATE_TEMPLATE_CLASS_ON_NAME_LO_GO_ST(name, LocalOrdinal, GlobalOrdinal, ScalarType) \
   template class name<LocalOrdinal, GlobalOrdinal, ScalarType>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MOERTEL_INSTANTIATE_TEMPLATE_CLASS_ON_NAME_ST_LO_GO_N(name, ScalarType, LocalOrdinal, GlobalOrdinal, NodeType) \
   template class name<ScalarType, LocalOrdinal, GlobalOrdinal, NodeType>;
+#else
+#define MOERTEL_INSTANTIATE_TEMPLATE_CLASS_ON_NAME_ST_LO_GO_N(name, ScalarType, NodeType) \
+  template class name<ScalarType, NodeType>;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MOERTEL_INSTANTIATE_NESTED_TEMPLATE_CLASS_ST_LO_GO_N(name, name2, ScalarType, LocalOrdinal, GlobalOrdinal, NodeType) \
   template class name<name2<ScalarType, LocalOrdinal, GlobalOrdinal, NodeType> >;
+#else
+#define MOERTEL_INSTANTIATE_NESTED_TEMPLATE_CLASS_ST_LO_GO_N(name, name2, ScalarType,NodeType) \
+  template class name<name2<ScalarType, NodeType> >;
+#endif
 
 #ifdef HAVE_MOERTEL_INST_DOUBLE_INT_INT
 #   define MOERTEL_INSTANTIATE_TEMPLATE_CLASS_DII(name)\

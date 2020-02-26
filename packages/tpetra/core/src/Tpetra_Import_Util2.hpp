@@ -120,15 +120,27 @@ sortAndMergeCrsEntries (const Teuchos::ArrayView<size_t>& CRS_rowptr,
 ///
 /// \warning This method is intended for expert developer use only,
 ///   and should never be called by user code.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Node>
+#endif
 void
 lowCommunicationMakeColMapAndReindex (const Teuchos::ArrayView<const size_t> &rowPointers,
                                       const Teuchos::ArrayView<LocalOrdinal> &columnIndices_LID,
                                       const Teuchos::ArrayView<GlobalOrdinal> &columnIndices_GID,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                       const Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap,
+#else
+                                      const Teuchos::RCP<const Tpetra::Map<Node> > & domainMap,
+#endif
                                       const Teuchos::ArrayView<const int> &owningPids,
                                       Teuchos::Array<int> &remotePids,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                       Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > & colMap);
+#else
+                                      Teuchos::RCP<const Tpetra::Map<Node> > & colMap);
+#endif
 
 
 
@@ -146,12 +158,25 @@ lowCommunicationMakeColMapAndReindex (const Teuchos::ArrayView<const size_t> &ro
   ///  --- Precondition 3 is only checked in DEBUG mode ---
   /// Postcondition:
   ///   owningPIDs[VectorMap->getLocalElement(GID i)] =   j iff  (OwningMap->isLocalElement(GID i) on rank j)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
   void getTwoTransferOwnershipVector(const ::Tpetra::Details::Transfer<LocalOrdinal, GlobalOrdinal, Node>& transferThatDefinesOwnership,
+#else
+  template <typename Node>
+  void getTwoTransferOwnershipVector(const ::Tpetra::Details::Transfer<Node>& transferThatDefinesOwnership,
+#endif
                                      bool useReverseModeForOwnership,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      const ::Tpetra::Details::Transfer<LocalOrdinal, GlobalOrdinal, Node>& transferForMigratingData,
+#else
+                                     const ::Tpetra::Details::Transfer<Node>& transferForMigratingData,
+#endif
                                      bool useReverseModeForMigration,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      Tpetra::Vector<int,LocalOrdinal,GlobalOrdinal,Node> & owningPIDs);
+#else
+                                     Tpetra::Vector<int,Node> & owningPIDs);
+#endif
 
 } // namespace Import_Util
 } // namespace Tpetra
@@ -187,16 +212,28 @@ bool sort_PID_then_pair_GID_LID(const std::pair<PID, std::pair< GlobalOrdinal, L
 }
 
 template<typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          typename LocalOrdinal,
          typename GlobalOrdinal,
+#endif
          typename Node>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 reverseNeighborDiscovery(const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>  & SourceMatrix,
+#else
+reverseNeighborDiscovery(const CrsMatrix<Scalar, Node>  & SourceMatrix,
+#endif
                          const Teuchos::ArrayRCP<const size_t> & rowptr,
                          const Teuchos::ArrayRCP<const LocalOrdinal> & colind,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          const Tpetra::Details::Transfer<LocalOrdinal,GlobalOrdinal,Node>& RowTransfer,
                          Teuchos::RCP<const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node> > MyImporter,
                          Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > MyDomainMap,
+#else
+                         const Tpetra::Details::Transfer<Node>& RowTransfer,
+                         Teuchos::RCP<const Tpetra::Import<Node> > MyImporter,
+                         Teuchos::RCP<const Tpetra::Map<Node> > MyDomainMap,
+#endif
                          Teuchos::ArrayRCP<int>& type3PIDs,
                          Teuchos::ArrayRCP<LocalOrdinal>& type3LIDs,
                          Teuchos::RCP<const Teuchos::Comm<int> >& rcomm)
@@ -240,7 +277,11 @@ reverseNeighborDiscovery(const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, No
     auto LengthsFrom                = Distor.getLengthsFrom();
     auto MyColMap                   = SourceMatrix.getColMap();
     const size_t numCols            = MyColMap->getNodeNumElements ();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > target = MyImporter->getTargetMap();
+#else
+    RCP<const Tpetra::Map<Node> > target = MyImporter->getTargetMap();
+#endif
 
     // Get the owning pids in a special way,
     // s.t. ProcsFrom[RemotePIDs[i]] is the proc that owns RemoteLIDs[j]....
@@ -713,21 +754,37 @@ sortAndMergeCrsEntries (const Teuchos::ArrayView<size_t> &CRS_rowptr,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Node>
+#endif
 void
 lowCommunicationMakeColMapAndReindex (const Teuchos::ArrayView<const size_t> &rowptr,
                                       const Teuchos::ArrayView<LocalOrdinal> &colind_LID,
                                       const Teuchos::ArrayView<GlobalOrdinal> &colind_GID,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                       const Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& domainMapRCP,
+#else
+                                      const Teuchos::RCP<const Tpetra::Map<Node> >& domainMapRCP,
+#endif
                                       const Teuchos::ArrayView<const int> &owningPIDs,
                                       Teuchos::Array<int> &remotePIDs,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                       Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > & colMap)
+#else
+                                      Teuchos::RCP<const Tpetra::Map<Node> > & colMap)
+#endif
 {
   using Teuchos::rcp;
   typedef LocalOrdinal LO;
   typedef GlobalOrdinal GO;
   typedef Tpetra::global_size_t GST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+#endif
   const char prefix[] = "lowCommunicationMakeColMapAndReindex: ";
 
   // The domainMap is an RCP because there is a shortcut for a
@@ -964,25 +1021,56 @@ lowCommunicationMakeColMapAndReindex (const Teuchos::ArrayView<const size_t> &ro
 //  --- Precondition 3 is only checked in DEBUG mode ---
 // Postcondition:
 //   owningPIDs[VectorMap->getLocalElement(GID i)] =   j iff  (OwningMap->isLocalElement(GID i) on rank j)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void getTwoTransferOwnershipVector(const ::Tpetra::Details::Transfer<LocalOrdinal, GlobalOrdinal, Node>& transferThatDefinesOwnership,
+#else
+template <typename Node>
+void getTwoTransferOwnershipVector(const ::Tpetra::Details::Transfer<Node>& transferThatDefinesOwnership,
+#endif
                                    bool useReverseModeForOwnership,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    const ::Tpetra::Details::Transfer<LocalOrdinal, GlobalOrdinal, Node>& transferThatDefinesMigration,
+#else
+                                   const ::Tpetra::Details::Transfer<Node>& transferThatDefinesMigration,
+#endif
                                    bool useReverseModeForMigration,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    Tpetra::Vector<int,LocalOrdinal,GlobalOrdinal,Node> & owningPIDs) {
   typedef Tpetra::Import<LocalOrdinal, GlobalOrdinal, Node> import_type;
   typedef Tpetra::Export<LocalOrdinal, GlobalOrdinal, Node> export_type;
+#else
+                                   Tpetra::Vector<int,Node> & owningPIDs) {
+  typedef Tpetra::Import<Node> import_type;
+  typedef Tpetra::Export<Node> export_type;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > OwningMap = useReverseModeForOwnership ?
+#else
+  Teuchos::RCP<const Tpetra::Map<Node> > OwningMap = useReverseModeForOwnership ?
+#endif
                                                                                 transferThatDefinesOwnership.getTargetMap() :
                                                                                 transferThatDefinesOwnership.getSourceMap();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > MapAo     = useReverseModeForOwnership ?
+#else
+  Teuchos::RCP<const Tpetra::Map<Node> > MapAo     = useReverseModeForOwnership ?
+#endif
                                                                                 transferThatDefinesOwnership.getSourceMap() :
                                                                                 transferThatDefinesOwnership.getTargetMap();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > MapAm     = useReverseModeForMigration ?
+#else
+  Teuchos::RCP<const Tpetra::Map<Node> > MapAm     = useReverseModeForMigration ?
+#endif
                                                                                 transferThatDefinesMigration.getTargetMap() :
                                                                                 transferThatDefinesMigration.getSourceMap();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > VectorMap = useReverseModeForMigration ?
+#else
+  Teuchos::RCP<const Tpetra::Map<Node> > VectorMap = useReverseModeForMigration ?
+#endif
                                                                                 transferThatDefinesMigration.getSourceMap() :
                                                                                 transferThatDefinesMigration.getTargetMap();
 
@@ -995,7 +1083,11 @@ void getTwoTransferOwnershipVector(const ::Tpetra::Details::Transfer<LocalOrdina
   int rank = OwningMap->getComm()->getRank();
   // Generate "A" vector and fill it with owning information.  We can read this from transferThatDefinesOwnership w/o communication
   // Note:  Due to the 1-to-1 requirement, several of these options throw
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::Vector<int,LocalOrdinal,GlobalOrdinal,Node> temp(MapAo);
+#else
+  Tpetra::Vector<int,Node> temp(MapAo);
+#endif
   const import_type* ownAsImport = dynamic_cast<const import_type*> (&transferThatDefinesOwnership);
   const export_type* ownAsExport = dynamic_cast<const export_type*> (&transferThatDefinesOwnership);
 

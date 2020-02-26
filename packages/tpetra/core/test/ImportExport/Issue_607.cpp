@@ -81,11 +81,21 @@ trueOnAllProcesses (const Teuchos::Comm<int>& comm, const bool in)
   return (outInt == 1);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, IsLocallyComplete, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, IsLocallyComplete, NT )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
   typedef Tpetra::Import<LO, GO, NT> import_type;
   typedef Tpetra::Export<LO, GO, NT> export_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+  typedef Tpetra::Import<NT> import_type;
+  typedef Tpetra::Export<NT> export_type;
+#endif
 
   out << "Test {Ex,Im}port::isLocallyComplete()" << endl;
   Teuchos::OSTab tab1 (out);
@@ -385,8 +395,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, IsLocallyComplete, LO, GO, NT )
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ImportExport, IsLocallyComplete, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP(NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ImportExport, IsLocallyComplete, NT )
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

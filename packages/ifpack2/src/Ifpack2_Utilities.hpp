@@ -64,14 +64,23 @@ namespace Details {
       This is copied from Tpetra::Experimental::BlockCrsMatrix. 
   */
   template <class graph_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::CrsGraph<typename graph_type::local_ordinal_type, typename graph_type::global_ordinal_type, typename graph_type::node_type> >
+#else
+  Teuchos::RCP<Tpetra::CrsGraph<typename graph_type::node_type> >
+#endif
   computeDiagonalGraph (graph_type const &graph)
   {
     typedef typename graph_type::local_ordinal_type  LO;
     typedef typename graph_type::global_ordinal_type GO;
     typedef typename graph_type::node_type           NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, NO> map_type;
     typedef Tpetra::CrsGraph<LO, GO, NO> crs_graph_type;
+#else
+    typedef Tpetra::Map<NO> map_type;
+    typedef Tpetra::CrsGraph<NO> crs_graph_type;
+#endif
 
     const size_t maxDiagEntPerRow = 1;
     // NOTE (mfh 12 Aug 2014) We could also pass in the column Map

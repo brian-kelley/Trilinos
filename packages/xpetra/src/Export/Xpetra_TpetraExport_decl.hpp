@@ -62,26 +62,53 @@ namespace Xpetra {
 
 
 // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 const Tpetra::Export<LocalOrdinal, GlobalOrdinal, Node>& toTpetra(const Export<LocalOrdinal, GlobalOrdinal, Node>&);
+#else
+template<class Node>
+const Tpetra::Export<Node>& toTpetra(const Export<Node>&);
+#endif
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Export<LocalOrdinal, GlobalOrdinal, Node>>
 toXpetra(const RCP<const Tpetra::Export<LocalOrdinal, GlobalOrdinal, Node>>& exp);
+#else
+template<class Node>
+RCP<const Export<Node>>
+toXpetra(const RCP<const Tpetra::Export<Node>>& exp);
+#endif
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal,
          class GlobalOrdinal,
          class Node>
+#else
+template<class Node>
+#endif
 class TpetraExport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public Export<LocalOrdinal, GlobalOrdinal, Node>
+#else
+    : public Export<Node>
+#endif
 {
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! The specialization of Map used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
 
 
     //! @name Constructor/Destructor Methods
@@ -98,7 +125,11 @@ class TpetraExport
 
 
     //! Copy constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraExport(const Export<LocalOrdinal, GlobalOrdinal, Node>& rhs);
+#else
+    TpetraExport(const Export<Node>& rhs);
+#endif
 
 
     //! Destructor.
@@ -148,11 +179,19 @@ class TpetraExport
 
 
     //! The source Map used to construct this Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node>> getSourceMap() const;
+#else
+    Teuchos::RCP<const Map<Node>> getSourceMap() const;
+#endif
 
 
     //! The target Map used to construct this Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node>> getTargetMap() const;
+#else
+    Teuchos::RCP<const Map<Node>> getTargetMap() const;
+#endif
 
     //! Set distributor parameters.
     void setDistributorParameters(const Teuchos::RCP<Teuchos::ParameterList> params) const;
@@ -175,17 +214,29 @@ class TpetraExport
 
 
     //! TpetraExport constructor to wrap a Tpetra::Export object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraExport(const RCP<const Tpetra::Export<LocalOrdinal, GlobalOrdinal, Node>>& exp);
+#else
+    TpetraExport(const RCP<const Tpetra::Export<Node>>& exp);
+#endif
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Export<LocalOrdinal, GlobalOrdinal, Node>> getTpetra_Export() const;
+#else
+    RCP<const Tpetra::Export<Node>> getTpetra_Export() const;
+#endif
 
     //@}
 
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Export<LocalOrdinal, GlobalOrdinal, Node>> export_;
+#else
+    RCP<const Tpetra::Export<Node>> export_;
+#endif
 
 };      // TpetraExport class
 
@@ -198,23 +249,44 @@ class TpetraExport
 
 
 // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 const Tpetra::Export<LocalOrdinal, GlobalOrdinal, Node>&
 toTpetra(const Export<LocalOrdinal, GlobalOrdinal, Node>& exp)
+#else
+template<class Node>
+const Tpetra::Export<Node>&
+toTpetra(const Export<Node>& exp)
+#endif
 {
     // TODO: throw exception
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const TpetraExport<LocalOrdinal, GlobalOrdinal, Node>& tpetraExport =
       dynamic_cast<const TpetraExport<LocalOrdinal, GlobalOrdinal, Node>&>(exp);
+#else
+    const TpetraExport<Node>& tpetraExport =
+      dynamic_cast<const TpetraExport<Node>&>(exp);
+#endif
     return *tpetraExport.getTpetra_Export();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Export<LocalOrdinal, GlobalOrdinal, Node>>
 toXpetra(const RCP<const Tpetra::Export<LocalOrdinal, GlobalOrdinal, Node>>& exp)
+#else
+template<class Node>
+RCP<const Export<Node>>
+toXpetra(const RCP<const Tpetra::Export<Node>>& exp)
+#endif
 {
     if(!exp.is_null())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp(new TpetraExport<LocalOrdinal, GlobalOrdinal, Node>(exp));
+#else
+        return rcp(new TpetraExport<Node>(exp));
+#endif
 
     return Teuchos::null;
 }

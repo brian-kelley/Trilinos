@@ -342,7 +342,11 @@ int Ifpack2_NodeFilter::Apply(const Tpetra_MultiVector<Scalar,LocalOrdinal,Globa
   return(0);
 }
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int Ifpack2_NodeFilter::Apply(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const {
+#else
+int Ifpack2_NodeFilter::Apply(const Tpetra_MultiVector<Scalar,Node>& X, Tpetra_MultiVector<Scalar,Node>& Y) const {
+#endif
   //
   // This function forms the product Y = A * X.
   //
@@ -494,8 +498,13 @@ void Ifpack2_NodeFilter::UpdateExportVector(int NumVectors) const {
 }
 
 //=======================================================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int Ifpack2_NodeFilter::ApplyInverse(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X,
 		 Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const
+#else
+int Ifpack2_NodeFilter::ApplyInverse(const Tpetra_MultiVector<Scalar,Node>& X,
+		 Tpetra_MultiVector<Scalar,Node>& Y) const
+#endif
 {
   IFPACK2_CHK_ERR(-1); // not implemented
 }

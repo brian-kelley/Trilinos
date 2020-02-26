@@ -62,7 +62,11 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 typedef Kokkos::Compat::KokkosThreadsWrapperNode threads_node_type;
 
 #define UNIT_TEST_GROUP_THREADS( SCALAR, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   UNIT_TEST_GROUP( SCALAR, LO, GO, threads_node_type )
+#else
+  UNIT_TEST_GROUP( SCALAR, threads_node_type )
+#endif
 
 TPETRA_INSTANTIATE_SLG_NO_ORDINAL_SCALAR( UNIT_TEST_GROUP_THREADS )
 

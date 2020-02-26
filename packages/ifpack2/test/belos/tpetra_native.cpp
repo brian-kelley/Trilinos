@@ -21,12 +21,22 @@
 
 namespace { // (anonymous)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 Teuchos::RCP<Tpetra::CrsMatrix<SC, LO, GO, NT> >
 deepCopyFillCompleteCrsMatrix (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A)
+#else
+template<class SC, class NT>
+Teuchos::RCP<Tpetra::CrsMatrix<SC, NT> >
+deepCopyFillCompleteCrsMatrix (const Tpetra::CrsMatrix<SC, NT>& A)
+#endif
 {
   using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
 
   TEUCHOS_TEST_FOR_EXCEPTION
     (! A.isFillComplete (), std::invalid_argument,

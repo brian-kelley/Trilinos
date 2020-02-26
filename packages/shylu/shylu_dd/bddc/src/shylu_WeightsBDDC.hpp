@@ -68,18 +68,32 @@ public:
   //
   typedef Tpetra::Map<LO,GO>                                 Map;
   typedef Tpetra::CrsGraph<LO,GO>                            CrsGraph;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SX,LO,GO>                        CrsMatrix;
   typedef Tpetra::CrsMatrix<GO,LO,GO>                        CrsMatrixGO;
+#else
+  typedef Tpetra::CrsMatrix<SX>                        CrsMatrix;
+  typedef Tpetra::CrsMatrix<GO>                        CrsMatrixGO;
+#endif
   typedef Tpetra::Export<LO,GO>                              Export;
   typedef Tpetra::Import<LO,GO>                              Import;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<SX,LO,GO>                      MV;
+#else
+  typedef Tpetra::MultiVector<SX>                      MV;
+#endif
 
   WeightsBDDC()
   {
   }
   WeightsBDDC
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     (std::vector< SubdomainBDDC<SX,SM,LO,GO>* > & Subdomain,
      RCP< PartitionOfUnity<SX,SM,LO,GO> > & Partition,
+#else
+    (std::vector< SubdomainBDDC<SX,SM>* > & Subdomain,
+     RCP< PartitionOfUnity<SX,SM> > & Partition,
+#endif
      RCP<Export> & exporterB,
      const std::vector< std::vector<LO> > & subBoundaryDofs,
      const std::vector<SM> & diagBoundary,
@@ -104,8 +118,13 @@ public:
   }
 
   WeightsBDDC
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     (std::vector< SubdomainBDDC<SX,SM,LO,GO>* > & Subdomain,
      RCP< PartitionOfUnity<SX,SM,LO,GO> > & Partition,
+#else
+    (std::vector< SubdomainBDDC<SX,SM>* > & Subdomain,
+     RCP< PartitionOfUnity<SX,SM> > & Partition,
+#endif
      RCP<const Teuchos::Comm<int> > Comm,
      RCP< PComm<LO,GO,SX> > & pCommB,
      const std::vector< std::vector<LO> > & subBoundaryDofs,
@@ -125,8 +144,13 @@ public:
   }
 
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   std::vector< SubdomainBDDC<SX,SM,LO,GO>* > & m_Subdomain;
   RCP< PartitionOfUnity<SX,SM,LO,GO> > & m_Partition;
+#else
+  std::vector< SubdomainBDDC<SX,SM>* > & m_Subdomain;
+  RCP< PartitionOfUnity<SX,SM> > & m_Partition;
+#endif
   RCP<Export> m_exporterB;
   RCP<const Map> m_dofMapB, m_dofMapB1to1;
   RCP<const Teuchos::Comm<int> > m_Comm;

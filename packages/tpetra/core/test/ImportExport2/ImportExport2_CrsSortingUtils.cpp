@@ -168,7 +168,11 @@ shuffle_crs_entries(std::vector<ordinal_type>& colind_rand,
 
 
 // Unit Test the functionality in Tpetra_Import_Util
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Import_Util, SortCrsEntries, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Import_Util, SortCrsEntries, Scalar)
+#endif
 {
 
   using Tpetra::Import_Util::sortCrsEntries;
@@ -315,11 +319,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Import_Util, SortCrsEntries, Scalar, LO, GO)
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Import_Util, SortCrsEntriesKokkos, Scalar, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Import_Util, SortCrsEntriesKokkos, Scalar, NT)
+#endif
 {
   using Tpetra::Import_Util::sortCrsEntries;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::CrsMatrix<Scalar,LO,GO,NT>::local_matrix_type local_matrix_type;
+#else
+  typedef typename Tpetra::CrsMatrix<Scalar,NT>::local_matrix_type local_matrix_type;
+#endif
   typedef typename local_matrix_type::StaticCrsGraphType graph_type;
   typedef typename graph_type::row_map_type::non_const_type rowptr_view_type;
   typedef typename graph_type::entries_type::non_const_type colind_view_type;
@@ -338,7 +350,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Import_Util, SortCrsEntriesKokkos, Scalar, LO
   auto comm = Tpetra::getDefaultComm();
   const Tpetra::global_size_t INVALID =
     Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto dummy_map = Tpetra::Map<LO,GO,NT>(INVALID, 1, 0, comm);
+#else
+  auto dummy_map = Tpetra::Map<NT>(INVALID, 1, 0, comm);
+#endif
 
   int max_num_entries_per_row = 7;  // should be odd
   int num_cols = 15; // should be odd
@@ -427,10 +443,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Import_Util, SortCrsEntriesKokkos, Scalar, LO
   //
 
 #define UNIT_TEST_GROUP_SC_LO_GO( SC, LO, GO )                   \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Import_Util, SortCrsEntries, SC, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Import_Util, SortCrsEntries, SC )
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, LO, GO, NT) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Import_Util, SortCrsEntriesKokkos, SC, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Import_Util, SortCrsEntriesKokkos, SC, NT )
+#endif
 
   // Note: This test fails.  Should fix later.
   //      TEUCHOS_UNIT_TEST_TEMPLATE_2_INSTANT( ReverseImportExport, doImport, ORDINAL, SCALAR )

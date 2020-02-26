@@ -47,7 +47,11 @@
 #define XPETRA_DISTOBJECT_FWD_HPP
 
 namespace Xpetra {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Packet, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Packet, class Node>
+#endif
   class DistObject;
 }
 

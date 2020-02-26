@@ -70,7 +70,11 @@
 
 // This is a standard Galeri-or-MatrixFile loading routine designed to be shared between the various scaling tests
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void MatrixLoad(Teuchos::RCP<const Teuchos::Comm<int> > &comm,  Xpetra::UnderlyingLib& lib,
                 bool binaryFormat,const std::string & matrixFile, const std::string & rhsFile,
                 const std::string & rowMapFile,
@@ -78,6 +82,7 @@ void MatrixLoad(Teuchos::RCP<const Teuchos::Comm<int> > &comm,  Xpetra::Underlyi
                 const std::string & domainMapFile,
                 const std::string & rangeMapFile,
                 const std::string & coordFile, const std::string &nullFile, const std::string &materialFile,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >          & map,
                 Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >      & A,
                 Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> > & coordinates,
@@ -85,6 +90,15 @@ void MatrixLoad(Teuchos::RCP<const Teuchos::Comm<int> > &comm,  Xpetra::Underlyi
                 Teuchos::RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > & material,
                 Teuchos::RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > & X,
                 Teuchos::RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > & B,
+#else
+                Teuchos::RCP<const Xpetra::Map<Node> >          & map,
+                Teuchos::RCP<Xpetra::Matrix<Scalar,Node> >      & A,
+                Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> > & coordinates,
+                Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > & nullspace,
+                Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > & material,
+                Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > & X,
+                Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > & B,
+#endif
                 const int numVectors,
                 Galeri::Xpetra::Parameters<GlobalOrdinal> & galeriParameters,  Xpetra::Parameters & xpetraParameters,
                 std::ostringstream & galeriStream) {
@@ -94,7 +108,11 @@ void MatrixLoad(Teuchos::RCP<const Teuchos::Comm<int> > &comm,  Xpetra::Underlyi
   typedef Teuchos::ScalarTraits<SC> STS;
   SC zero = STS::zero(), one = STS::one();
   typedef typename STS::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
 
   Teuchos::ParameterList galeriList = galeriParameters.GetParameterList();
@@ -118,24 +136,44 @@ void MatrixLoad(Teuchos::RCP<const Teuchos::Comm<int> > &comm,  Xpetra::Underlyi
     // In the future, we hope to be able to first create a Galeri problem, and then request map and coordinates from it
     // At the moment, however, things are fragile as we hope that the Problem uses same map and coordinates inside
     if (matrixType == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,RealValuedMultiVector>("1D", map, galeriList);
 
     } else if (matrixType == "Laplace2D" || matrixType == "Star2D" ||
                matrixType == "BigStar2D" || matrixType == "Elasticity2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,RealValuedMultiVector>("2D", map, galeriList);
 
     } else if (matrixType == "Laplace3D" || matrixType == "Brick3D" || matrixType == "Elasticity3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,RealValuedMultiVector>("3D", map, galeriList);
     }
 
     // Expand map to do multiple DOF per node for block problems
     if (matrixType == "Elasticity2D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 2);
+#else
+      map = Xpetra::MapFactory<Node>::Build(map, 2);
+#endif
     if (matrixType == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 3);
+#else
+      map = Xpetra::MapFactory<Node>::Build(map, 3);
+#endif
 
     galeriStream << "Processor subdomains in x direction: " << galeriList.get<GO>("mx") << std::endl
                  << "Processor subdomains in y direction: " << galeriList.get<GO>("my") << std::endl
@@ -163,17 +201,32 @@ void MatrixLoad(Teuchos::RCP<const Teuchos::Comm<int> > &comm,  Xpetra::Underlyi
 
   } else {
     if (!rowMapFile.empty())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Xpetra::IO<SC,LO,GO,Node>::ReadMap(rowMapFile, lib, comm);
+#else
+      map = Xpetra::IO<SC,Node>::ReadMap(rowMapFile, lib, comm);
+#endif
     comm->barrier();
 
     if (!binaryFormat && !map.is_null()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Map> colMap    = (!colMapFile.empty()    ? Xpetra::IO<SC,LO,GO,Node>::ReadMap(colMapFile,    lib, comm) : Teuchos::null);
       RCP<const Map> domainMap = (!domainMapFile.empty() ? Xpetra::IO<SC,LO,GO,Node>::ReadMap(domainMapFile, lib, comm) : Teuchos::null);
       RCP<const Map> rangeMap  = (!rangeMapFile.empty()  ? Xpetra::IO<SC,LO,GO,Node>::ReadMap(rangeMapFile,  lib, comm) : Teuchos::null);
       A = Xpetra::IO<SC,LO,GO,Node>::Read(matrixFile, map, colMap, domainMap, rangeMap);
+#else
+      RCP<const Map> colMap    = (!colMapFile.empty()    ? Xpetra::IO<SC,Node>::ReadMap(colMapFile,    lib, comm) : Teuchos::null);
+      RCP<const Map> domainMap = (!domainMapFile.empty() ? Xpetra::IO<SC,Node>::ReadMap(domainMapFile, lib, comm) : Teuchos::null);
+      RCP<const Map> rangeMap  = (!rangeMapFile.empty()  ? Xpetra::IO<SC,Node>::ReadMap(rangeMapFile,  lib, comm) : Teuchos::null);
+      A = Xpetra::IO<SC,Node>::Read(matrixFile, map, colMap, domainMap, rangeMap);
+#endif
 
     } else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       A = Xpetra::IO<SC,LO,GO,Node>::Read(matrixFile, lib, comm, binaryFormat);
+#else
+      A = Xpetra::IO<SC,Node>::Read(matrixFile, lib, comm, binaryFormat);
+#endif
 
       if (!map.is_null()) {
         RCP<Matrix> newMatrix = MatrixFactory::Build(map, 1);
@@ -191,14 +244,26 @@ void MatrixLoad(Teuchos::RCP<const Teuchos::Comm<int> > &comm,  Xpetra::Underlyi
     if (!coordFile.empty()) {
       // NOTE: currently we only allow reading scalar matrices, thus coordinate
       // map is same as matrix map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       coordinates = Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,Node>::ReadMultiVector(coordFile, map);
+#else
+      coordinates = Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node>::ReadMultiVector(coordFile, map);
+#endif
     }
 
     if (!nullFile.empty())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       nullspace = Xpetra::IO<SC,LO,GO,Node>::ReadMultiVector(nullFile, map);
+#else
+      nullspace = Xpetra::IO<SC,Node>::ReadMultiVector(nullFile, map);
+#endif
 
     if (!materialFile.empty())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       material = Xpetra::IO<SC,LO,GO,Node>::ReadMultiVector(materialFile, map);
+#else
+      material = Xpetra::IO<SC,Node>::ReadMultiVector(materialFile, map);
+#endif
   }
 
   X = MultiVectorFactory::Build(map, numVectors);
@@ -216,7 +281,11 @@ void MatrixLoad(Teuchos::RCP<const Teuchos::Comm<int> > &comm,  Xpetra::Underlyi
 
   } else {
     // read in B
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     B = Xpetra::IO<SC,LO,GO,Node>::ReadMultiVector(rhsFile, map);
+#else
+    B = Xpetra::IO<SC,Node>::ReadMultiVector(rhsFile, map);
+#endif
   }
   galeriStream << "Galeri complete.\n========================================================" << std::endl;
 }

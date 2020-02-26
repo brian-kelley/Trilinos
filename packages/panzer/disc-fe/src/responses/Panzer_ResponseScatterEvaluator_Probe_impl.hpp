@@ -69,7 +69,11 @@
 namespace panzer {
 
 template<typename EvalT, typename Traits, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ResponseScatterEvaluator_ProbeBase<EvalT,Traits,LO,GO>::
+#else
+ResponseScatterEvaluator_ProbeBase<EvalT,Traits>::
+#endif
 ResponseScatterEvaluator_ProbeBase(
   const std::string & responseName,
   const std::string & fieldName,
@@ -115,7 +119,11 @@ ResponseScatterEvaluator_ProbeBase(
 }
 
 template<typename EvalT, typename Traits, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void ResponseScatterEvaluator_ProbeBase<EvalT,Traits,LO,GO>::
+#else
+void ResponseScatterEvaluator_ProbeBase<EvalT,Traits>::
+#endif
 preEvaluate(typename Traits::PreEvalData d)
 {
   // extract linear object container
@@ -127,7 +135,11 @@ preEvaluate(typename Traits::PreEvalData d)
 
 
 template<typename EvalT, typename Traits, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool ResponseScatterEvaluator_ProbeBase<EvalT,Traits,LO,GO>::
+#else
+bool ResponseScatterEvaluator_ProbeBase<EvalT,Traits>::
+#endif
 computeBasisValues(typename Traits::EvalData d)
 {
   typedef Intrepid2::CellTools<PHX::exec_space> CTD;
@@ -258,7 +270,11 @@ computeBasisValues(typename Traits::EvalData d)
 }
 
 template<typename EvalT, typename Traits, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void ResponseScatterEvaluator_ProbeBase<EvalT,Traits,LO,GO>::
+#else
+void ResponseScatterEvaluator_ProbeBase<EvalT,Traits>::
+#endif
 evaluateFields(typename Traits::EvalData d)
 {
   // Compute basis values at point
@@ -284,7 +300,11 @@ evaluateFields(typename Traits::EvalData d)
 }
 
 template <typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void ResponseScatterEvaluator_Probe<panzer::Traits::Jacobian,panzer::Traits,LO,GO>::
+#else
+void ResponseScatterEvaluator_Probe<panzer::Traits::Jacobian,panzer::Traits>::
+#endif
 evaluateFields(panzer::Traits::EvalData d)
 {
   using Teuchos::RCP;

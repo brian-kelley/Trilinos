@@ -130,7 +130,11 @@ private:
 
   using typename Container<MatrixType>::mv_type;
   using typename Container<MatrixType>::map_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using local_mv_type = Tpetra::MultiVector<LSC, LO, GO, NO>;
+#else
+  using local_mv_type = Tpetra::MultiVector<LSC, NO>;
+#endif
   using typename Container<MatrixType>::vector_type;
   using typename Container<MatrixType>::import_type;
 
@@ -139,7 +143,11 @@ private:
   using HostViewLocal = typename local_mv_type::dual_view_type::t_host;
 
   static_assert(std::is_same<MatrixType,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   Tpetra::RowMatrix<SC, LO, GO, NO> >::value,
+#else
+                  Tpetra::RowMatrix<SC, NO> >::value,
+#endif
                 "Ifpack2::BandedContainer: Please use MatrixType = Tpetra::RowMatrix.");
 
   /// \brief The (base class) type of the input matrix.

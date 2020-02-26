@@ -50,29 +50,49 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     EntitySet<SC,LO,GO,NO>::EntitySet(EntityType type) :
+#else
+    template<class SC,class NO>
+    EntitySet<SC,NO>::EntitySet(EntityType type) :
+#endif
     Type_ (type)
     {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     EntitySet<SC,LO,GO,NO>::EntitySet(const EntitySet<SC,LO,GO,NO> &entitySet) :
+#else
+    template<class SC,class NO>
+    EntitySet<SC,NO>::EntitySet(const EntitySet<SC,NO> &entitySet) :
+#endif
     Type_ (entitySet.getEntityType()),
     EntityVector_ (entitySet.getEntityVector())
     {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     EntitySet<SC,LO,GO,NO>::~EntitySet()
+#else
+    template<class SC,class NO>
+    EntitySet<SC,NO>::~EntitySet()
+#endif
     {
 
     } // Do we need sth here?
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::addEntity(InterfaceEntityPtr entity)
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::addEntity(InterfaceEntityPtr entity)
+#endif
     {
         FROSCH_ASSERT(Type_==DefaultType||entity->getEntityType()==Type_,"FROSch::EntitySet : ERROR: Entity to add is of wrong type.");
         EntityVector_.push_back(entity);
@@ -80,8 +100,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::addEntitySet(EntitySetPtr entitySet)
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::addEntitySet(EntitySetPtr entitySet)
+#endif
     {
         for (UN i=0; i<entitySet->getNumEntities(); i++) {
             addEntity(entitySet->getEntity(i));
@@ -89,12 +114,25 @@ namespace FROSch {
         return 0;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename EntitySet<SC,LO,GO,NO>::EntitySetPtr EntitySet<SC,LO,GO,NO>::deepCopy()
+#else
+    template<class SC,class NO>
+    typename EntitySet<SC,NO>::EntitySetPtr EntitySet<SC,NO>::deepCopy()
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         EntitySetPtr copy(new EntitySet<SC,LO,GO,NO>(Type_));
+#else
+        EntitySetPtr copy(new EntitySet<SC,NO>(Type_));
+#endif
         for (UN i=0; i<getNumEntities(); i++) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             InterfaceEntityPtr entity(new InterfaceEntity<SC,LO,GO,NO>(getEntity(i)->getEntityType(),
+#else
+            InterfaceEntityPtr entity(new InterfaceEntity<SC,NO>(getEntity(i)->getEntityType(),
+#endif
                                                                        getEntity(i)->getDofsPerNode(),
                                                                        getEntity(i)->getMultiplicity(),
                                                                        getEntity(i)->getSubdomainsVector().getRawPtr()));
@@ -112,8 +150,13 @@ namespace FROSch {
         return copy;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::buildEntityMap(ConstXMapPtr localToGlobalNodesMap)
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::buildEntityMap(ConstXMapPtr localToGlobalNodesMap)
+#endif
     {
         if (!EntityMapIsUpToDate_) {
             LO localNumberEntities = getNumEntities();
@@ -132,7 +175,11 @@ namespace FROSch {
                     entities[i] = getEntity(i)->getUniqueID()+1;
                     getEntity(i)->setLocalID(i);
                 }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 XMapPtr entityMapping = MapFactory<LO,GO,NO>::Build(localToGlobalNodesMap->lib(),-1,entities(),0,localToGlobalNodesMap->getComm());
+#else
+                XMapPtr entityMapping = MapFactory<NO>::Build(localToGlobalNodesMap->lib(),-1,entities(),0,localToGlobalNodesMap->getComm());
+#endif
 
                 GOVec allEntities(maxLocalNumberEntities*localToGlobalNodesMap->getComm()->getSize(),0);
                 //localToGlobalNodesMap->getComm().GatherAll(&(entities->at(0)),&(allEntities->at(0)),maxLocalNumberEntities);
@@ -152,14 +199,23 @@ namespace FROSch {
                 }
 
             }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             EntityMap_ = MapFactory<LO,GO,NO>::Build(localToGlobalNodesMap->lib(),-1,localToGlobalVector(),0,localToGlobalNodesMap->getComm());
+#else
+            EntityMap_ = MapFactory<NO>::Build(localToGlobalNodesMap->lib(),-1,localToGlobalVector(),0,localToGlobalNodesMap->getComm());
+#endif
             EntityMapIsUpToDate_ = true;
         }
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::findAncestorsInSet(EntitySetPtr entitySet)
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::findAncestorsInSet(EntitySetPtr entitySet)
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             getEntity(i)->findAncestorsInSet(entitySet);
@@ -167,10 +223,19 @@ namespace FROSch {
         return 0;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename EntitySet<SC,LO,GO,NO>::EntitySetPtr EntitySet<SC,LO,GO,NO>::findRoots()
+#else
+    template<class SC,class NO>
+    typename EntitySet<SC,NO>::EntitySetPtr EntitySet<SC,NO>::findRoots()
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         EntitySetPtr Roots(new EntitySet<SC,LO,GO,NO>(DefaultType));
+#else
+        EntitySetPtr Roots(new EntitySet<SC,NO>(DefaultType));
+#endif
         for (UN i=0; i<getNumEntities(); i++) {
             EntitySetPtr tmpRoots = getEntity(i)->findRoots();
             if (tmpRoots.is_null()) {
@@ -186,10 +251,19 @@ namespace FROSch {
         return Roots;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename EntitySet<SC,LO,GO,NO>::EntitySetPtr EntitySet<SC,LO,GO,NO>::findLeafs()
+#else
+    template<class SC,class NO>
+    typename EntitySet<SC,NO>::EntitySetPtr EntitySet<SC,NO>::findLeafs()
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         EntitySetPtr Leafs(new EntitySet<SC,LO,GO,NO>(DefaultType));
+#else
+        EntitySetPtr Leafs(new EntitySet<SC,NO>(DefaultType));
+#endif
         for (UN i=0; i<getNumEntities(); i++) {
             if (getEntity(i)->getOffspring()->getNumEntities()==0) {
                 Leafs->addEntity(getEntity(i));
@@ -199,8 +273,13 @@ namespace FROSch {
         return Leafs;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::clearAncestors()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::clearAncestors()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             getEntity(i)->clearAncestors();
@@ -208,8 +287,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::clearOffspring()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::clearOffspring()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             getEntity(i)->clearOffspring();
@@ -217,8 +301,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::clearRoots()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::clearRoots()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             getEntity(i)->clearRoots();
@@ -226,8 +315,13 @@ namespace FROSch {
         return 0;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::clearLeafs()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::clearLeafs()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             getEntity(i)->clearLeafs();
@@ -235,8 +329,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::computeDistancesToRoots(UN dimension,
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::computeDistancesToRoots(UN dimension,
+#endif
                                                         ConstXMultiVectorPtr &nodeList,
                                                         DistanceFunction distanceFunction)
     {
@@ -246,8 +345,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::divideUnconnectedEntities(ConstXMatrixPtr matrix,
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::divideUnconnectedEntities(ConstXMatrixPtr matrix,
+#endif
                                                           int pID)
     {
         UN before = getNumEntities();
@@ -263,8 +367,13 @@ namespace FROSch {
         return getNumEntities()-before;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::flagNodes()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::flagNodes()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             if (getEntity(i)->getNumNodes()==1) {
@@ -274,8 +383,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::flagShortEntities()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::flagShortEntities()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             if (getEntity(i)->getNumNodes()==2) {
@@ -285,8 +399,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::flagStraightEntities(UN dimension,
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::flagStraightEntities(UN dimension,
+#endif
                                                      ConstXMultiVectorPtr &nodeList)
     {
         FROSCH_ASSERT(dimension==nodeList->getNumVectors(),"FROSch::EntitySet : ERROR: Inconsistent Dimension.");
@@ -333,11 +452,20 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename EntitySet<SC,LO,GO,NO>::EntitySetPtr EntitySet<SC,LO,GO,NO>::sortOutEntities(EntityFlag flag)
+#else
+    template<class SC,class NO>
+    typename EntitySet<SC,NO>::EntitySetPtr EntitySet<SC,NO>::sortOutEntities(EntityFlag flag)
+#endif
     {
         UN before = getNumEntities();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         EntitySetPtr removedEntities(new EntitySet<SC,LO,GO,NO>(DefaultType));
+#else
+        EntitySetPtr removedEntities(new EntitySet<SC,NO>(DefaultType));
+#endif
         for (UN i=0; i<getNumEntities(); i++) {
             if (getEntity(i)->getEntityFlag()==flag) {
                 removedEntities->addEntities(getEntity(i));
@@ -349,8 +477,13 @@ namespace FROSch {
         return arcp(removedEntities);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::removeEntity(UN iD)
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::removeEntity(UN iD)
+#endif
     {
         FROSCH_ASSERT(iD<getNumEntities(),"FROSch::EntitySet : ERROR: Cannot access Entity because iD>=getNumEntities().");
         EntityVector_.erase(EntityVector_.begin()+iD);
@@ -358,8 +491,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::removeNodesWithDofs(GOVecView dirichletBoundaryDofs)
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::removeNodesWithDofs(GOVecView dirichletBoundaryDofs)
+#endif
     {
         UN dofsPerNode = 0;
         if (getNumEntities()>0) dofsPerNode = EntityVector_[0]->getDofsPerNode();
@@ -381,8 +519,13 @@ namespace FROSch {
         return 0;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::removeEmptyEntities()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::removeEmptyEntities()
+#endif
     {
         UN before = getNumEntities();
         for (UN i=0; i<getNumEntities(); i++) {
@@ -395,21 +538,36 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::sortUnique()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::sortUnique()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             getEntity(i)->sortByGlobalID();
         }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         std::sort(EntityVector_.begin(),EntityVector_.end(),compareInterfaceEntities<SC,LO,GO,NO>);
         EntityVector_.erase(std::unique(EntityVector_.begin(),EntityVector_.end(),equalInterfaceEntities<SC,LO,GO,NO>),EntityVector_.end());
+#else
+        std::sort(EntityVector_.begin(),EntityVector_.end(),compareInterfaceEntities<SC,NO>);
+        EntityVector_.erase(std::unique(EntityVector_.begin(),EntityVector_.end(),equalInterfaceEntities<SC,NO>),EntityVector_.end());
+#endif
         EntityMapIsUpToDate_ = false;
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     bool EntitySet<SC,LO,GO,NO>::checkForVertices()
+#else
+    template<class SC,class NO>
+    bool EntitySet<SC,NO>::checkForVertices()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             if (getEntity(i)->getNumNodes()==1) {
@@ -420,8 +578,13 @@ namespace FROSch {
         return false;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     bool EntitySet<SC,LO,GO,NO>::checkForShortEdges()
+#else
+    template<class SC,class NO>
+    bool EntitySet<SC,NO>::checkForShortEdges()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             if (getEntity(i)->getNumNodes()==2) {
@@ -432,8 +595,13 @@ namespace FROSch {
         return false;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     bool EntitySet<SC,LO,GO,NO>::checkForStraightEdges(UN dimension,
+#else
+    template<class SC,class NO>
+    bool EntitySet<SC,NO>::checkForStraightEdges(UN dimension,
+#endif
                                                        ConstXMultiVectorPtr &nodeList)
     {
         FROSCH_ASSERT(dimension==nodeList->getNumVectors(),"FROSch::EntitySet : ERROR: Inconsistent Dimension.");
@@ -476,8 +644,13 @@ namespace FROSch {
         return false;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     bool EntitySet<SC,LO,GO,NO>::checkForEmptyEntities()
+#else
+    template<class SC,class NO>
+    bool EntitySet<SC,NO>::checkForEmptyEntities()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             if (getEntity(i)->getNumNodes()==0) {
@@ -492,8 +665,13 @@ namespace FROSch {
     // Set Methods //
     /////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::setUniqueIDToFirstGlobalNodeID()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::setUniqueIDToFirstGlobalNodeID()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             getEntity(i)->sortByGlobalID();
@@ -503,8 +681,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::setRootID()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::setRootID()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             getEntity(i)->setRootID(i);
@@ -512,8 +695,13 @@ namespace FROSch {
         return 0;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::setLeafID()
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::setLeafID()
+#endif
     {
         for (UN i=0; i<getNumEntities(); i++) {
             getEntity(i)->setLeafID(i);
@@ -521,8 +709,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int EntitySet<SC,LO,GO,NO>::resetEntityType(EntityType type)
+#else
+    template<class SC,class NO>
+    int EntitySet<SC,NO>::resetEntityType(EntityType type)
+#endif
     {
         Type_ = type;
         for (UN i=0; i<getNumEntities(); i++) {
@@ -535,40 +728,70 @@ namespace FROSch {
     // Get Methods //
     /////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     EntityType EntitySet<SC,LO,GO,NO>::getEntityType() const
+#else
+    template<class SC,class NO>
+    EntityType EntitySet<SC,NO>::getEntityType() const
+#endif
     {
         return Type_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename EntitySet<SC,LO,GO,NO>::UN EntitySet<SC,LO,GO,NO>::getNumEntities() const
+#else
+    template<class SC,class NO>
+    typename EntitySet<SC,NO>::UN EntitySet<SC,NO>::getNumEntities() const
+#endif
     {
         return EntityVector_.size();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     const typename EntitySet<SC,LO,GO,NO>::InterfaceEntityPtrVec & EntitySet<SC,LO,GO,NO>::getEntityVector() const
+#else
+    template<class SC,class NO>
+    const typename EntitySet<SC,NO>::InterfaceEntityPtrVec & EntitySet<SC,NO>::getEntityVector() const
+#endif
     {
         return EntityVector_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     const typename EntitySet<SC,LO,GO,NO>::InterfaceEntityPtr EntitySet<SC,LO,GO,NO>::getEntity(UN iD) const
+#else
+    template<class SC,class NO>
+    const typename EntitySet<SC,NO>::InterfaceEntityPtr EntitySet<SC,NO>::getEntity(UN iD) const
+#endif
     {
         FROSCH_ASSERT(iD<getNumEntities(),"FROSch::EntitySet : ERROR: Cannot access Entity because iD>=getNumEntities().");
         return EntityVector_[iD];
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     const typename EntitySet<SC,LO,GO,NO>::XMapPtr EntitySet<SC,LO,GO,NO>::getEntityMap() const
+#else
+    template<class SC,class NO>
+    const typename EntitySet<SC,NO>::XMapPtr EntitySet<SC,NO>::getEntityMap() const
+#endif
     {
         FROSCH_ASSERT(EntityMapIsUpToDate_,"FROSch::EntitySet : ERROR:  the entity map has not been built or is not up to date.");
         return EntityMap_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     const typename EntitySet<SC,LO,GO,NO>::SCVecPtr EntitySet<SC,LO,GO,NO>::getDirection(UN dimension,
+#else
+    template<class SC,class NO>
+    const typename EntitySet<SC,NO>::SCVecPtr EntitySet<SC,NO>::getDirection(UN dimension,
+#endif
                                                                                          ConstXMultiVectorPtr &nodeList,
                                                                                          UN iD) const
     {

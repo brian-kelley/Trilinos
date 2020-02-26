@@ -71,7 +71,11 @@ Build(const Teuchos::RCP<const Map<int, int, EpetraNode>>& map, size_t NumVector
 
       XPETRA_MONITOR("MultiVectorFactory::Build");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const BlockedMap<LocalOrdinal, GlobalOrdinal, Node>> bmap = Teuchos::rcp_dynamic_cast<const BlockedMap<int, int, EpetraNode>>(map);
+#else
+    RCP<const BlockedMap<Node>> bmap = Teuchos::rcp_dynamic_cast<const BlockedMap<int, int, EpetraNode>>(map);
+#endif
 
     if(!bmap.is_null())
     {
@@ -280,7 +284,11 @@ Build(const Teuchos::RCP<const Map<int, long long, EpetraNode>>& map,
 
 Teuchos::RCP<MultiVector<int, int, long long, EpetraNode>>
 MultiVectorFactory<int, int, long long, EpetraNode>::
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Build(const Teuchos::RCP<const Map<int, long long, Node>>&           map,
+#else
+Build(const Teuchos::RCP<const Map<Node>>&           map,
+#endif
       const Teuchos::ArrayView<const Teuchos::ArrayView<const int>>& ArrayOfPtrs,
       size_t                                                         NumVectors)
 {

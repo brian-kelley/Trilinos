@@ -74,12 +74,22 @@ using Tpetra::Details::unpackCrsMatrixAndCombine;
 // over the given Map.
 //
 // CrsMatrixType: The type of the Tpetra::CrsMatrix specialization to use.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 RCP<const Tpetra::CrsMatrix<SC, LO,GO,NT>>
 generate_crs_matrix(const RCP<const Tpetra::Map<LO,GO,NT>>& map)
+#else
+template<class SC, class NT>
+RCP<const Tpetra::CrsMatrix<SC,NT>>
+generate_crs_matrix(const RCP<const Tpetra::Map<NT>>& map)
+#endif
 {
   using Teuchos::tuple;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
 
   const SC two     = static_cast<SC>( 2.0);
   const SC neg_one = static_cast<SC>(-1.0);
@@ -105,11 +115,20 @@ generate_crs_matrix(const RCP<const Tpetra::Map<LO,GO,NT>>& map)
   return A;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrix, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrix, SC, NT)
+#endif
 {
   // Set up Tpetra typedefs.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+  using matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using device_type = typename NT::device_type;
   using execution_space = typename device_type::execution_space;
   const char prefix[] = "ImportToStaticMatrix: ";
@@ -140,7 +159,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrix, SC, LO, GO, N
   auto global_map = rcp(new map_type(num_gbl_inds, idx_base, comm, Tpetra::GloballyDistributed));
 
   // Create a sparse matrix using procZeroMap.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto A = generate_crs_matrix<SC,LO,GO,NT>(proc_zero_map);
+#else
+  auto A = generate_crs_matrix<SC,NT>(proc_zero_map);
+#endif
   comm->barrier();
 
   // We've created a sparse matrix that lives entirely on Process 0.
@@ -154,7 +177,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrix, SC, LO, GO, N
   // Export if neither source nor target Map is one-to-one.
   RCP<matrix_type> B;
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using export_type = Tpetra::Export<LO,GO,NT>;
+#else
+    using export_type = Tpetra::Export<NT>;
+#endif
     export_type exporter(proc_zero_map, global_map);
     comm->barrier();
 
@@ -212,11 +239,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrix, SC, LO, GO, N
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrixLocal, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrixLocal, SC, NT)
+#endif
 {
   // Set up Tpetra typedefs.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+  using matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using device_type = typename NT::device_type;
   using execution_space = typename device_type::execution_space;
   const char prefix[] = "ImportToStaticMatrixLocal: ";
@@ -243,7 +279,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrixLocal, SC, LO, 
   }
 
   // Create a sparse matrix using procZeroMap.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto A = generate_crs_matrix<SC,LO,GO,NT>(proc_zero_map);
+#else
+  auto A = generate_crs_matrix<SC,NT>(proc_zero_map);
+#endif
   comm->barrier();
 
   // We've created a sparse matrix that lives entirely on Process 0.
@@ -256,7 +296,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrixLocal, SC, LO, 
   // use an Export.  We do not allow redistribution using Import or
   // Export if neither source nor target Map is one-to-one.
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using export_type = Tpetra::Export<LO,GO,NT>;
+#else
+    using export_type = Tpetra::Export<NT>;
+#endif
     export_type exporter(proc_zero_map, proc_zero_map);
     comm->barrier();
 
@@ -276,7 +320,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrixLocal, SC, LO, 
 
   {
     auto global_map = rcp(new map_type(num_gbl_inds, idx_base, comm, Tpetra::GloballyDistributed));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using export_type = Tpetra::Export<LO,GO,NT>;
+#else
+    using export_type = Tpetra::Export<NT>;
+#endif
     export_type exporter1(proc_zero_map, global_map);
     comm->barrier();
     out << prefix << "Creating empty matrix from global map.\n";
@@ -284,7 +332,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrixLocal, SC, LO, 
     B.doExport(*A, exporter1, Tpetra::INSERT);
     B.fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using export_type = Tpetra::Export<LO,GO,NT>;
+#else
+    using export_type = Tpetra::Export<NT>;
+#endif
     export_type exporter2(global_map, global_map);
     comm->barrier();
     out << prefix << "Creating another empty matrix from global map.\n";
@@ -332,9 +384,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, ImportToStaticMatrixLocal, SC, LO, 
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, ImportToStaticMatrix, SC, LO, GO, NT) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, ImportToStaticMatrixLocal, SC, LO, GO, NT)
+#else
+#define UNIT_TEST_GROUP( SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, ImportToStaticMatrix, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, ImportToStaticMatrixLocal, SC, NT)
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

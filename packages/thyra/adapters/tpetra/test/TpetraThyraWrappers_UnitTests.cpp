@@ -334,7 +334,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( TpetraThyraWrappers, createMultiVector,
     Thyra::createVectorSpace<Scalar>(tpetraMap);
 
   const RCP<const TpetraMap_t> tpetraLocRepMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createLocalMapWithNode<LO,GO,NODE>(
+#else
+    Tpetra::createLocalMapWithNode<NODE>(
+#endif
       numCols, tpetraMap->getComm());
   const RCP<const VectorSpaceBase<Scalar> > domainVs =
     Thyra::createVectorSpace<Scalar>(tpetraLocRepMap);
@@ -386,7 +390,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( TpetraThyraWrappers, createConstMultiVector,
     Thyra::createVectorSpace<Scalar>(tpetraMap);
 
   const RCP<const TpetraMap_t> tpetraLocRepMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createLocalMapWithNode<LO,GO,NODE>(
+#else
+    Tpetra::createLocalMapWithNode<NODE>(
+#endif
       numCols, tpetraMap->getComm());
   const RCP<const VectorSpaceBase<Scalar> > domainVs =
     Thyra::createVectorSpace<Scalar>(tpetraLocRepMap);

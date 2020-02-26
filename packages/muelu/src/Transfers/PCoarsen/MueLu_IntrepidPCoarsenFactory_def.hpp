@@ -113,8 +113,13 @@ inline std::string tolower(const std::string & str) {
   template<class Basis, class LOFieldContainer, class LocalOrdinal, class GlobalOrdinal, class Node>
   void FindGeometricSeedOrdinals(Teuchos::RCP<Basis> basis, const LOFieldContainer &elementToNodeMap,
                                  std::vector<std::vector<LocalOrdinal> > &seeds,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                  const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> &rowMap,
                                  const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> &columnMap)
+#else
+                                 const Xpetra::Map<Node> &rowMap,
+                                 const Xpetra::Map<Node> &columnMap)
+#endif
   {
 
     // For each subcell represented by the elements in elementToNodeMap, we want to identify a globally
@@ -282,7 +287,11 @@ void IntrepidGetP1NodeInHi(const Teuchos::RCP<Intrepid2::Basis<typename KokkosDe
 //  lo_elemToHiRepresentativeNode - FC<LO> of size (# elements, # lo dofs per element) listing the hi unknown chosen as the single representative for each lo unknown for counting purposes
 template<class LocalOrdinal, class GlobalOrdinal, class Node, class LOFieldContainer>
 void GenerateLoNodeInHiViaGIDs(const std::vector<std::vector<size_t> > & candidates,const LOFieldContainer & hi_elemToNode,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > & hi_columnMap,
+#else
+                               RCP<const Xpetra::Map<Node> > & hi_columnMap,
+#endif
                                LOFieldContainer & lo_elemToHiRepresentativeNode) {
   typedef GlobalOrdinal GO;
 
@@ -478,13 +487,23 @@ void BuildLoElemToNode(const LOFieldContainer & hi_elemToNode,
 //  lo_columnMapLength - Number of local columns in the lo column map
 // Output:
 //  lo_columnMap       - Column map of the lower order matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void GenerateColMapFromImport(const Xpetra::Import<LocalOrdinal,GlobalOrdinal, Node> & hi_importer,const std::vector<LocalOrdinal> &hi_to_lo_map,const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> & lo_domainMap, const size_t & lo_columnMapLength, RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > & lo_columnMap) {
+#else
+  template <class Node>
+  void GenerateColMapFromImport(const Xpetra::Import<Node> & hi_importer,const std::vector<LocalOrdinal> &hi_to_lo_map,const Xpetra::Map<Node> & lo_domainMap, const size_t & lo_columnMapLength, RCP<const Xpetra::Map<Node> > & lo_columnMap) {
+#endif
   typedef LocalOrdinal LO;
   typedef GlobalOrdinal GO;
   typedef Node NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LO,GO,NO> Map;
   typedef Xpetra::Vector<GO,LO,GO,NO> GOVector;
+#else
+  typedef Xpetra::Map<NO> Map;
+  typedef Xpetra::Vector<GO,NO> GOVector;
+#endif
 
   GO go_invalid = Teuchos::OrdinalTraits<GO>::invalid();
   LO lo_invalid = Teuchos::OrdinalTraits<LO>::invalid();
@@ -496,7 +515,11 @@ void BuildLoElemToNode(const LOFieldContainer & hi_elemToNode,
   // Then we can use A's importer to get a GOVector(colMap) with that information.
 
   // NOTE: This assumes rowMap==colMap and [E|T]petra ordering of all the locals first in the colMap
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<GOVector> dvec = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(hi_domainMap);
+#else
+  RCP<GOVector> dvec = Xpetra::VectorFactory<GO, NO>::Build(hi_domainMap);
+#endif
   ArrayRCP<GO> dvec_data = dvec->getDataNonConst(0);
   for(size_t i=0; i<hi_domainMap->getNodeNumElements(); i++) {
     if(hi_to_lo_map[i]!=lo_invalid) dvec_data[i] = lo_domainMap.getGlobalElement(hi_to_lo_map[i]);
@@ -504,7 +527,11 @@ void BuildLoElemToNode(const LOFieldContainer & hi_elemToNode,
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<GOVector> cvec = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(hi_columnMap,true);
+#else
+  RCP<GOVector> cvec = Xpetra::VectorFactory<GO, NO>::Build(hi_columnMap,true);
+#endif
   cvec->doImport(*dvec,hi_importer,Xpetra::ADD);
 
   // Generate the lo_columnMap
@@ -518,7 +545,11 @@ void BuildLoElemToNode(const LOFieldContainer & hi_elemToNode,
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   lo_columnMap = Xpetra::MapFactory<LO,GO,NO>::Build(lo_domainMap.lib(),Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),lo_col_data(),lo_domainMap.getIndexBase(),lo_domainMap.getComm());
+#else
+  lo_columnMap = Xpetra::MapFactory<NO>::Build(lo_domainMap.lib(),Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),lo_col_data(),lo_domainMap.getIndexBase(),lo_domainMap.getComm());
+#endif
 }
 
 /*********************************************************************************************************/
@@ -584,8 +615,13 @@ void GenerateRepresentativeBasisNodes(const Basis & basis, const SCFieldContaine
 /*********************************************************************************************************/
 /*********************************************************************************************************/
 /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GenerateLinearCoarsening_pn_kirby_to_p1(const LOFieldContainer & hi_elemToNode,
+#else
+template <class Scalar, class Node>
+void IntrepidPCoarsenFactory<Scalar, Node>::GenerateLinearCoarsening_pn_kirby_to_p1(const LOFieldContainer & hi_elemToNode,
+#endif
                                                                                                                  const std::vector<bool> & hi_nodeIsOwned,
                                                                                                                  const SCFieldContainer & hi_DofCoords,
                                                                                                                  const std::vector<size_t> &lo_node_in_hi,
@@ -641,8 +677,13 @@ void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Generat
 }
 
 /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GenerateLinearCoarsening_pn_kirby_to_pm(const LOFieldContainer & hi_elemToNode,
+#else
+template <class Scalar, class Node>
+void IntrepidPCoarsenFactory<Scalar, Node>::GenerateLinearCoarsening_pn_kirby_to_pm(const LOFieldContainer & hi_elemToNode,
+#endif
                                                                                                                  const std::vector<bool> & hi_nodeIsOwned,
                                                                                                                  const SCFieldContainer & hi_DofCoords,
                                                                                                                  const LOFieldContainer & lo_elemToHiRepresentativeNode,
@@ -695,8 +736,13 @@ void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Generat
 }
 
 /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> IntrepidPCoarsenFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -712,22 +758,37 @@ void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Generat
   }
 
 /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &/* coarseLevel */) const {
+#else
+  template <class Scalar, class Node>
+  void IntrepidPCoarsenFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &/* coarseLevel */) const {
+#endif
     Input(fineLevel, "A");
     Input(fineLevel, "pcoarsen: element to node map");
     Input(fineLevel, "Nullspace");
   }
 
 /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void IntrepidPCoarsenFactory<Scalar, Node>::Build(Level& fineLevel, Level &coarseLevel) const {
+#endif
     return BuildP(fineLevel, coarseLevel);
   }
 
 /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void IntrepidPCoarsenFactory<Scalar, Node>::BuildP(Level &fineLevel, Level &coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "P Coarsening", coarseLevel);
     std::string levelIDs = toString(coarseLevel.GetLevelID());
     const std::string prefix = "MueLu::IntrepidPCoarsenFactory(" + levelIDs + "): ";
@@ -739,7 +800,11 @@ void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Generat
     // Level Get
     RCP<Matrix> A     = Get< RCP<Matrix> >(fineLevel, "A");
     RCP<MultiVector> fineNullspace = Get< RCP<MultiVector> >(fineLevel, "Nullspace");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Acrs = dynamic_cast<Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>&>(*A);
+#else
+    Xpetra::CrsMatrixWrap<Scalar,Node>& Acrs = dynamic_cast<Xpetra::CrsMatrixWrap<Scalar,Node>&>(*A);
+#endif
 
 
     if (restrictionMode_) {
@@ -816,7 +881,11 @@ void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Generat
     FCi lo_elemToHiRepresentativeNode;
 
     // Get Dirichlet unknown information
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<int,LocalOrdinal,GlobalOrdinal,Node> > hi_isDirichletRow, hi_isDirichletCol;
+#else
+    RCP<Xpetra::Vector<int,Node> > hi_isDirichletRow, hi_isDirichletCol;
+#endif
     Utilities::FindDirichletRowsAndPropagateToCols(A,hi_isDirichletRow, hi_isDirichletCol);
 
 #if 0
@@ -864,7 +933,11 @@ void IntrepidPCoarsenFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Generat
     // Generate the P1_columnMap
     RCP<const Map> P1_colMap;
     if(NumProc==1) P1_colMap = P1_domainMap;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     else MueLuIntrepid::GenerateColMapFromImport<LO,GO,NO>(*Acrs.getCrsGraph()->getImporter(),hi_to_lo_map,*P1_domainMap,P1_nodeIsOwned.size(),P1_colMap);
+#else
+    else MueLuIntrepid::GenerateColMapFromImport<NO>(*Acrs.getCrsGraph()->getImporter(),hi_to_lo_map,*P1_domainMap,P1_nodeIsOwned.size(),P1_colMap);
+#endif
 
     /*******************/
     // Generate the coarsening

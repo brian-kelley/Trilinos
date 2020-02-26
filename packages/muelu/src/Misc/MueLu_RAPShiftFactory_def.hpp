@@ -64,14 +64,24 @@
 namespace MueLu {
 
   /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RAPShiftFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RAPShiftFactory()
+#else
+  template <class Scalar, class Node>
+  RAPShiftFactory<Scalar, Node>::RAPShiftFactory()
+#endif
     : implicitTranspose_(false)  { }
 
 
   /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> RAPShiftFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> RAPShiftFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -108,8 +118,13 @@ namespace MueLu {
   }
 
   /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RAPShiftFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RAPShiftFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     const Teuchos::ParameterList& pL = GetParameterList();
 
     bool use_mdiag = false;
@@ -164,8 +179,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RAPShiftFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const { // FIXME make fineLevel const
+#else
+  template <class Scalar, class Node>
+  void RAPShiftFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const { // FIXME make fineLevel const
+#endif
     {
       FactoryMonitor m(*this, "Computing Ac", coarseLevel);      
       const Teuchos::ParameterList& pL = GetParameterList();
@@ -258,12 +278,24 @@ namespace MueLu {
 
       {
         SubFactoryMonitor subM(*this, "MxM: K x P", coarseLevel);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         KP = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*K, false, *P, false, KP, GetOStream(Statistics2));
+#else
+        KP = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*K, false, *P, false, KP, GetOStream(Statistics2));
+#endif
         if(!M_is_diagonal) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           MP = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*M, false, *P, false, MP, GetOStream(Statistics2));
+#else
+          MP = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*M, false, *P, false, MP, GetOStream(Statistics2));
+#endif
         }
         else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           MP = Xpetra::MatrixFactory2<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildCopy(P);
+#else
+          MP = Xpetra::MatrixFactory2<Scalar, Node>::BuildCopy(P);
+#endif
           MP->leftScale(*Mdiag);
         }
 
@@ -281,14 +313,24 @@ namespace MueLu {
       bool doFillComplete=true;
       if (implicitTranspose_) {
         SubFactoryMonitor m2(*this, "MxM: P' x (KP) (implicit)", coarseLevel);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Kc = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*P, true, *KP, false, Kc, GetOStream(Statistics2), doFillComplete, doOptimizedStorage);
         Mc = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*P, true, *MP, false, Mc, GetOStream(Statistics2), doFillComplete, doOptimizedStorage);
+#else
+        Kc = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*P, true, *KP, false, Kc, GetOStream(Statistics2), doFillComplete, doOptimizedStorage);
+        Mc = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*P, true, *MP, false, Mc, GetOStream(Statistics2), doFillComplete, doOptimizedStorage);
+#endif
       }
       else {
         RCP<Matrix> R = Get< RCP<Matrix> >(coarseLevel, "R");
         SubFactoryMonitor m2(*this, "MxM: R x (KP) (explicit)", coarseLevel);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Kc = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*R, false, *KP, false, Kc, GetOStream(Statistics2), doFillComplete, doOptimizedStorage);
         Mc = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*R, false, *MP, false, Mc, GetOStream(Statistics2), doFillComplete, doOptimizedStorage);
+#else
+        Kc = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*R, false, *KP, false, Kc, GetOStream(Statistics2), doFillComplete, doOptimizedStorage);
+        Mc = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*R, false, *MP, false, Mc, GetOStream(Statistics2), doFillComplete, doOptimizedStorage);
+#endif
       }
 
       // Get the shift
@@ -335,19 +377,31 @@ namespace MueLu {
       // recombine to get K+shift*M
       {
 	SubFactoryMonitor m2(*this, "Add: RKP + s*RMP", coarseLevel);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TwoMatrixAdd(*Kc, false, Teuchos::ScalarTraits<Scalar>::one(), *Mc, false, shift, Ac, GetOStream(Statistics2));
+#else
+	Xpetra::MatrixMatrix<Scalar, Node>::TwoMatrixAdd(*Kc, false, Teuchos::ScalarTraits<Scalar>::one(), *Mc, false, shift, Ac, GetOStream(Statistics2));
+#endif
 	Ac->fillComplete();
       }
 
       Teuchos::ArrayView<const double> relativeFloor = pL.get<Teuchos::Array<double> >("rap: relative diagonal floor")();
       if(relativeFloor.size() > 0) 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MatrixUtils<SC,LO,GO,NO>::RelativeDiagonalBoost(Ac, relativeFloor,GetOStream(Statistics2));
+#else
+        Xpetra::MatrixUtils<SC,NO>::RelativeDiagonalBoost(Ac, relativeFloor,GetOStream(Statistics2));
+#endif
    
 
       bool repairZeroDiagonals = pL.get<bool>("RepairMainDiagonal") || pL.get<bool>("rap: fix zero diagonals");
       bool checkAc             = pL.get<bool>("CheckMainDiagonal")|| pL.get<bool>("rap: fix zero diagonals"); ;
       if (checkAc || repairZeroDiagonals)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MatrixUtils<SC,LO,GO,NO>::CheckRepairMainDiagonal(Ac, repairZeroDiagonals, GetOStream(Warnings1));
+#else
+        Xpetra::MatrixUtils<SC,NO>::CheckRepairMainDiagonal(Ac, repairZeroDiagonals, GetOStream(Warnings1));
+#endif
 
       RCP<ParameterList> params = rcp(new ParameterList());;
       params->set("printLoadBalancingInfo", true);
@@ -364,7 +418,11 @@ namespace MueLu {
       else {
         // If M is diagonal, then we only pass that part down the hierarchy
         // NOTE: Should we be doing some kind of rowsum instead?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Vector> Mcv = Xpetra::VectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Mc->getRowMap(),false);
+#else
+        RCP<Vector> Mcv = Xpetra::VectorFactory<Scalar, Node>::Build(Mc->getRowMap(),false);
+#endif
         Mc->getLocalDiagCopy(*Mcv);
         Set(coarseLevel, "Mdiag", Mcv);
       }
@@ -387,8 +445,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RAPShiftFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddTransferFactory(const RCP<const FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void RAPShiftFactory<Scalar, Node>::AddTransferFactory(const RCP<const FactoryBase>& factory) {
+#endif
     // check if it's a TwoLevelFactoryBase based transfer factory
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::rcp_dynamic_cast<const TwoLevelFactoryBase>(factory) == Teuchos::null, Exceptions::BadCast, "MueLu::RAPShiftFactory::AddTransferFactory: Transfer factory is not derived from TwoLevelFactoryBase. This is very strange. (Note: you can remove this exception if there's a good reason for)");
     transferFacts_.push_back(factory);

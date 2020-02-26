@@ -84,8 +84,13 @@ int main (int argc, char* argv[])
     typedef Tpetra::Map<>::local_ordinal_type    LO;
     typedef Tpetra::Map<>::global_ordinal_type   GO;
     typedef Tpetra::Map<>::node_type             Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar,LO,GO>    TMV;
     typedef Tpetra::Operator<Scalar,LO,GO>       TOP;
+#else
+    typedef Tpetra::MultiVector<Scalar>    TMV;
+    typedef Tpetra::Operator<Scalar>       TOP;
+#endif
     typedef Belos::LinearProblem<Scalar,TMV,TOP> BLinProb;
     typedef Belos::SolverManager<Scalar,TMV,TOP> BSolverMgr;
 
@@ -117,7 +122,11 @@ int main (int argc, char* argv[])
     //linear-problem, if a preconditioner is specified.
 
     Teuchos::RCP<BLinProb> problem =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       build_problem<Scalar,LO,GO,Node>(test_params, comm);
+#else
+      build_problem<Scalar,Node>(test_params, comm);
+#endif
 
     //The build_solver function is located in build_solver.hpp:
 

@@ -70,7 +70,11 @@ typedef Tpetra::global_size_t GST;
 typedef std::complex<double> scd;
 
 template<class Scalar, class LO, class GO, class Node, class TOLERANCE >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool compare_final_matrix_structure_impl(Teuchos::FancyOStream &out,Tpetra::CrsMatrix<Scalar,LO,GO,Node> & g1, Tpetra::CrsMatrix<Scalar,LO,GO,Node> & g2, TOLERANCE tol) {
+#else
+bool compare_final_matrix_structure_impl(Teuchos::FancyOStream &out,Tpetra::CrsMatrix<Scalar,Node> & g1, Tpetra::CrsMatrix<Scalar,Node> & g2, TOLERANCE tol) {
+#endif
   using std::endl;
  
   if (!g1.isFillComplete() || !g2.isFillComplete()) {out<<"Compare: FillComplete failed"<<endl;return false;}
@@ -111,9 +115,19 @@ bool compare_final_matrix_structure_impl(Teuchos::FancyOStream &out,Tpetra::CrsM
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 struct compare {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static bool compare_final_matrix_structure(Teuchos::FancyOStream &out,Tpetra::CrsMatrix<Scalar,LO,GO,Node> & g1, Tpetra::CrsMatrix<Scalar,LO,GO,Node> & g2){ 
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  static bool compare_final_matrix_structure(Teuchos::FancyOStream &out,Tpetra::CrsMatrix<Scalar,Node> & g1, Tpetra::CrsMatrix<Scalar,Node> & g2){ 
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType Mag;
     double errorTolSlack = 1.0e+2;
     const Mag tol = errorTolSlack * Teuchos::ScalarTraits<Scalar>::eps();
@@ -121,25 +135,52 @@ struct compare {
   }
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class Node>
 struct compare<int,LO,GO,Node> {
   static bool compare_final_matrix_structure(Teuchos::FancyOStream &out,Tpetra::CrsMatrix<int,LO,GO,Node> & g1, Tpetra::CrsMatrix<int,LO,GO,Node> & g2) {
+#else
+template<class Node>
+struct compare<int,Node> {
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  static bool compare_final_matrix_structure(Teuchos::FancyOStream &out,Tpetra::CrsMatrix<int,Node> & g1, Tpetra::CrsMatrix<int,Node> & g2) {
+#endif
     return compare_final_matrix_structure_impl(out,g1,g2,0);
   }
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class Node>
 struct compare<long long,LO,GO,Node> {
   static bool compare_final_matrix_structure(Teuchos::FancyOStream &out,Tpetra::CrsMatrix<long long,LO,GO,Node> & g1, Tpetra::CrsMatrix<long long,LO,GO,Node> & g2) {
+#else
+template<class Node>
+struct compare<long long,Node> {
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  static bool compare_final_matrix_structure(Teuchos::FancyOStream &out,Tpetra::CrsMatrix<long long,Node> & g1, Tpetra::CrsMatrix<long long,Node> & g2) {
+#endif
     return compare_final_matrix_structure_impl(out,g1,g2,0);
   }
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class Node>
+#else
+template<class Node>
+#endif
 class GraphPack {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::Map<LO,GO,Node> > uniqueMap;
   RCP<const Tpetra::Map<LO,GO,Node> > overlapMap;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  RCP<const Tpetra::Map<Node> > uniqueMap;
+  RCP<const Tpetra::Map<Node> > overlapMap;
+#endif
   std::vector<std::vector<GO> > element2node;
 
   // NOTE: This is hardwired for 1D bar elements
@@ -169,8 +210,13 @@ public:
 };
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class Node>
 void generate_fem1d_graph(size_t numLocalNodes, RCP<const Comm<int> > comm , GraphPack<LO,GO,Node> & pack) {
+#else
+template<class Node>
+void generate_fem1d_graph(size_t numLocalNodes, RCP<const Comm<int> > comm , GraphPack<Node> & pack) {
+#endif
   const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid();
   int rank    = comm->getRank();
   int numProc = comm->getSize();
@@ -178,7 +224,11 @@ void generate_fem1d_graph(size_t numLocalNodes, RCP<const Comm<int> > comm , Gra
   size_t numLocalElements = (rank == numProc-1) ? numLocalNodes -1 : numLocalNodes;
   //  printf("CMS numOverlapNodes = %d numLocalElements = %d\n",numOverlapNodes,numLocalElements);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   pack.uniqueMap = createContigMapWithNode<LO,GO,Node>(INVALID,numLocalNodes,comm);
+#else
+  pack.uniqueMap = createContigMapWithNode<Node>(INVALID,numLocalNodes,comm);
+#endif
 
   Teuchos::Array<GO> overlapIndices(numOverlapNodes);
   for(size_t i=0; i<numLocalNodes; i++) {
@@ -188,7 +238,11 @@ void generate_fem1d_graph(size_t numLocalNodes, RCP<const Comm<int> > comm , Gra
   if(rank != 0)           {overlapIndices[last] = overlapIndices[0] - 1; last++;}
   if(rank != numProc -1)  {overlapIndices[last] = overlapIndices[numLocalNodes-1] + 1; last++;}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   pack.overlapMap = rcp(new Tpetra::Map<LO,GO,Node>(INVALID,overlapIndices,0,comm));
+#else
+  pack.overlapMap = rcp(new Tpetra::Map<Node>(INVALID,overlapIndices,0,comm));
+#endif
 
   pack.element2node.resize(numLocalElements);
   for(size_t i=0; i<numLocalElements; i++) {
@@ -247,16 +301,26 @@ Kokkos::View<ImplScalarType[2][2], Kokkos::LayoutLeft, typename Node::device_typ
 ////
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D, LO, GO, Scalar, Node )
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using FEMAT = typename Tpetra::FECrsMatrix<Scalar,LO,GO,Node>;
   using CMAT = typename Tpetra::CrsMatrix<Scalar,LO,GO,Node>;
   using FEG = typename Tpetra::FECrsGraph<LO,GO,Node>;
+#else
+  using FEMAT = typename Tpetra::FECrsMatrix<Scalar,Node>;
+  using CMAT = typename Tpetra::CrsMatrix<Scalar,Node>;
+  using FEG = typename Tpetra::FECrsGraph<Node>;
+#endif
 
   // get a comm
   RCP<const Comm<int> > comm = getDefaultComm();
   
   // Generate a mesh
   size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   GraphPack<LO,GO,Node> pack;
+#else
+  GraphPack<Node> pack;
+#endif
   generate_fem1d_graph(numLocal,comm,pack);
   
   // Make the graph    
@@ -298,7 +362,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D, LO, GO, Scalar, Node
   mat1.endFill();
   mat2.fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   success = compare<Scalar,LO,GO,Node>::compare_final_matrix_structure(out,mat1,mat2);
+#else
+  success = compare<Scalar,Node>::compare_final_matrix_structure(out,mat1,mat2);
+#endif
   TPETRA_GLOBAL_SUCCESS_CHECK(out,comm,success)
 }
 
@@ -307,9 +375,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D_Kokkos, LO, GO, Scala
 {
   using exec_space = typename Node::execution_space;
   using range_type = Kokkos::RangePolicy<exec_space, LO>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using FEMAT = typename Tpetra::FECrsMatrix<Scalar,LO,GO,Node>;
   using CMAT = typename Tpetra::CrsMatrix<Scalar,LO,GO,Node>;
   using FEG = typename Tpetra::FECrsGraph<LO,GO,Node>;
+#else
+  using FEMAT = typename Tpetra::FECrsMatrix<Scalar,Node>;
+  using CMAT = typename Tpetra::CrsMatrix<Scalar,Node>;
+  using FEG = typename Tpetra::FECrsGraph<Node>;
+#endif
   using ImplScalarType = typename FEMAT::impl_scalar_type;
 
   // get a comm
@@ -317,7 +391,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D_Kokkos, LO, GO, Scala
   
   // Generate a mesh
   size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   GraphPack<LO,GO,Node> pack;
+#else
+  GraphPack<Node> pack;
+#endif
   generate_fem1d_graph(numLocal,comm,pack);
 
   // Make the graph    
@@ -378,23 +456,37 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D_Kokkos, LO, GO, Scala
   }
   mat2.fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   success = compare<Scalar,LO,GO,Node>::compare_final_matrix_structure(out,mat1,mat2);
+#else
+  success = compare<Scalar,Node>::compare_final_matrix_structure(out,mat1,mat2);
+#endif
   TPETRA_GLOBAL_SUCCESS_CHECK(out,comm,success)
 }
 
 ////
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D_LocalIndex, LO, GO, Scalar, Node )
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using FEMAT = typename Tpetra::FECrsMatrix<Scalar,LO,GO,Node>;
   using CMAT = typename Tpetra::CrsMatrix<Scalar,LO,GO,Node>;
   using FEG = typename Tpetra::FECrsGraph<LO,GO,Node>;
+#else
+  using FEMAT = typename Tpetra::FECrsMatrix<Scalar,Node>;
+  using CMAT = typename Tpetra::CrsMatrix<Scalar,Node>;
+  using FEG = typename Tpetra::FECrsGraph<Node>;
+#endif
 
   // get a comm
   RCP<const Comm<int> > comm = getDefaultComm();
   
   // Generate a mesh
   size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   GraphPack<LO,GO,Node> pack;
+#else
+  GraphPack<Node> pack;
+#endif
   generate_fem1d_graph(numLocal,comm,pack);
   
   // Make the graph    
@@ -438,7 +530,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D_LocalIndex, LO, GO, S
   mat1.endFill();
   mat2.fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   success = compare<Scalar,LO,GO,Node>::compare_final_matrix_structure(out,mat1,mat2);
+#else
+  success = compare<Scalar,Node>::compare_final_matrix_structure(out,mat1,mat2);
+#endif
   TPETRA_GLOBAL_SUCCESS_CHECK(out,comm,success)
 }
 
@@ -447,9 +543,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D_LocalIndex_Kokkos, LO
 {
   using exec_space = typename Node::execution_space;
   using range_type = Kokkos::RangePolicy<exec_space, LO>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using FEMAT = typename Tpetra::FECrsMatrix<Scalar,LO,GO,Node>;
   using CMAT = typename Tpetra::CrsMatrix<Scalar,LO,GO,Node>;
   using FEG = typename Tpetra::FECrsGraph<LO,GO,Node>;
+#else
+  using FEMAT = typename Tpetra::FECrsMatrix<Scalar,Node>;
+  using CMAT = typename Tpetra::CrsMatrix<Scalar,Node>;
+  using FEG = typename Tpetra::FECrsGraph<Node>;
+#endif
   using ImplScalarType = typename FEMAT::impl_scalar_type;
 
   // get a comm
@@ -457,7 +559,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D_LocalIndex_Kokkos, LO
   
   // Generate a mesh
   size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   GraphPack<LO,GO,Node> pack;
+#else
+  GraphPack<Node> pack;
+#endif
   generate_fem1d_graph(numLocal,comm,pack);
   
   // Make the graph    
@@ -516,7 +622,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D_LocalIndex_Kokkos, LO
 
   mat2.fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   success = compare<Scalar,LO,GO,Node>::compare_final_matrix_structure(out,mat1,mat2);
+#else
+  success = compare<Scalar,Node>::compare_final_matrix_structure(out,mat1,mat2);
+#endif
   TPETRA_GLOBAL_SUCCESS_CHECK(out,comm,success)
 }
 
@@ -524,7 +634,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( FECrsMatrix, Assemble1D_LocalIndex_Kokkos, LO
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+#endif
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( FECrsMatrix, Assemble1D_Kokkos, LO, GO, SCALAR, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( FECrsMatrix, Assemble1D, LO, GO, SCALAR, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( FECrsMatrix, Assemble1D_LocalIndex, LO, GO, SCALAR, NODE ) \

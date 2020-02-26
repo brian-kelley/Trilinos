@@ -59,7 +59,11 @@
 namespace bddc {
   
 template <class SX, class SM, class LO, class GO> class SolverNoPivotT : 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   public SolverBase<SX,SM,LO,GO>
+#else
+  public SolverBase<SX,SM>
+#endif
 {
 public:
   SolverNoPivotT(LO numRows,
@@ -67,7 +71,11 @@ public:
 		LO* columns,
 		SX* values,
 		Teuchos::ParameterList & Parameters) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   SolverBase<SX,SM,LO,GO>(numRows, rowBegin, columns, values, Parameters),
+#else
+  SolverBase<SX,SM>(numRows, rowBegin, columns, values, Parameters),
+#endif
     m_Solver(0)
   {
     m_useHtsForSolves = useHtsForSolves();

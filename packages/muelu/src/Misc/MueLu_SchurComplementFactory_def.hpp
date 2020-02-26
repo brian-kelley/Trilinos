@@ -64,8 +64,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> SchurComplementFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> SchurComplementFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     SC one = Teuchos::ScalarTraits<SC>::one();
@@ -80,13 +85,23 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SchurComplementFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SchurComplementFactory<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "A");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SchurComplementFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SchurComplementFactory<Scalar, Node>::Build(Level& currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", currentLevel);
 
     typedef Teuchos::ScalarTraits<SC> STS;
@@ -142,7 +157,11 @@ namespace MueLu {
         TEUCHOS_TEST_FOR_EXCEPTION(T->getRangeMap()->isSameAs(*(A10->getDomainMap())) == false, Exceptions::RuntimeError,
                                    "MueLu::SchurComplementFactory::Build: RangeMap of A01 and domain map of A10 are not the same.");
         RCP<ParameterList> myparams = rcp(new ParameterList);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         S = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A10, false, *T, false, GetOStream(Statistics2),true,true,std::string("SchurComplementFactory"),myparams);
+#else
+        S = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A10, false, *T, false, GetOStream(Statistics2),true,true,std::string("SchurComplementFactory"),myparams);
+#endif
 
       } else {
         // nested blocking
@@ -157,12 +176,20 @@ namespace MueLu {
         TEUCHOS_TEST_FOR_EXCEPTION(bA01->Cols() != bA10->Rows(), Exceptions::RuntimeError,
                                    "MueLu::SchurComplementFactory::Build: Block rows and cols of A01 and A10 are not compatible.");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         S = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TwoMatrixMultiplyBlock(*bA10, false, *bT, false, GetOStream(Statistics2));
+#else
+        S = Xpetra::MatrixMatrix<Scalar, Node>::TwoMatrixMultiplyBlock(*bA10, false, *bT, false, GetOStream(Statistics2));
+#endif
       }
 
       if (!A11.is_null()) {
         T = Teuchos::null;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TwoMatrixAdd(*A11, false, one, *S, false, one, T, GetOStream(Statistics2));
+#else
+        Xpetra::MatrixMatrix<Scalar, Node>::TwoMatrixAdd(*A11, false, one, *S, false, one, T, GetOStream(Statistics2));
+#endif
         T->fillComplete();
         S.swap(T);
 

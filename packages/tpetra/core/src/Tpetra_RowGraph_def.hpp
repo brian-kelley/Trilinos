@@ -45,9 +45,17 @@
 #include "Tpetra_Distributor.hpp" // avoid error C2027: use of undefined type 'Tpetra::Distributor' at (void) distor below
 
 namespace Tpetra {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RowGraph<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  RowGraph<Node>::
+#endif
   pack (const Teuchos::ArrayView<const LocalOrdinal>& exportLIDs,
         Teuchos::Array<GlobalOrdinal>& exports,
         const Teuchos::ArrayView<size_t>& numPacketsPerLID,
@@ -57,7 +65,11 @@ namespace Tpetra {
     using Teuchos::Array;
     typedef LocalOrdinal LO;
     typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LO, GO, Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
     const char tfecfFuncName[] = "packAndPrepare";
     (void) distor; // forestall "unused argument" compiler warning
 
@@ -103,9 +115,17 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RowGraph<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  RowGraph<Node>::
+#endif
   getLocalRowView (const LocalOrdinal /* lclRow */,
                    Teuchos::ArrayView<const LocalOrdinal>& /* lclColInds */) const
   {
@@ -124,9 +144,17 @@ namespace Tpetra {
        "but this method is not implemented.");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RowGraph<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  RowGraph<Node>::
+#endif
   getGlobalRowView (const GlobalOrdinal /* gblRow */,
                     Teuchos::ArrayView<const GlobalOrdinal>& /* gblColInds */) const
   {
@@ -152,7 +180,12 @@ namespace Tpetra {
 // Must be expanded from within the Tpetra namespace!
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_ROWGRAPH_INSTANT(LO,GO,NODE) \
   template class RowGraph< LO , GO , NODE >;
+#else
+#define TPETRA_ROWGRAPH_INSTANT(NODE) \
+  template class RowGraph<NODE >;
+#endif
 
 #endif // TPETRA_ROWGRAPH_DEF_HPP

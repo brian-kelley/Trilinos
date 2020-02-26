@@ -56,10 +56,15 @@ namespace MueLuTests {
   using std::string; //?? TODO
 
   //TODO: should go in the Aggregates class
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,
            class GlobalOrdinal,
            class Node>
              void printAggregates(MueLu::Aggregates<LocalOrdinal, GlobalOrdinal, Node>& aggregates, Teuchos::FancyOStream& out) {
+#else
+  template <class Node>
+             void printAggregates(MueLu::Aggregates<Node>& aggregates, Teuchos::FancyOStream& out) {
+#endif
                RCP<LOVector> Final_ = LOVectorFactory::Build( aggregates.GetVertex2AggId()->getMap() );
 
                ArrayRCP<LO> Final = Final_->getDataNonConst(0);
@@ -72,7 +77,11 @@ namespace MueLuTests {
                out << *Final_ << std::endl;
              }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CoupledAggregationFactory, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CoupledAggregationFactory, Constructor, Scalar, Node)
+#endif
   {
     MUELU_TEST_EPETRA_ONLY_FOR_DOUBLE_AND_INT(Scalar, LocalOrdinal, GlobalOrdinal) {
 
@@ -82,7 +91,11 @@ namespace MueLuTests {
     }
   } // Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CoupledAggregationFactory, Build, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CoupledAggregationFactory, Build, Scalar, Node)
+#endif
   {
     MUELU_TEST_EPETRA_ONLY_FOR_DOUBLE_AND_INT(Scalar, LocalOrdinal, GlobalOrdinal) {
       //    typedef double Scalar;
@@ -90,7 +103,11 @@ namespace MueLuTests {
 
       out << "version: " << MueLu::Version() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Matrix> Op = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(16);
+#else
+      RCP<Matrix> Op = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(16);
+#endif
       RCP<Graph> graph = rcp(new Graph(Op->getCrsGraph(), "someGraphLabel"));
 
       {
@@ -152,12 +169,22 @@ namespace MueLuTests {
   typedef long long int LongLongInt;
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_4(SC, LO, GO, NO)                          \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CoupledAggregationFactory, Constructor, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CoupledAggregationFactory, Build,       SC, LO, GO, NO)
+#else
+#define UNIT_TEST_GROUP_4(SC, NO)                          \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CoupledAggregationFactory, Constructor, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CoupledAggregationFactory, Build,       SC, NO)
+#endif
 
 #define UNIT_TEST_GROUP_2(LO, GO)                                       \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   UNIT_TEST_GROUP_4(Scalar, LO, GO, Node)
+#else
+  UNIT_TEST_GROUP_4(Scalar, Node)
+#endif
 
   UNIT_TEST_GROUP_2(int, int)
     UNIT_TEST_GROUP_2(int, LongInt)

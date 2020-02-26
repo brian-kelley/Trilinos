@@ -61,8 +61,13 @@
 namespace MueLu {
 
   ///////////////////////////////////////////////////////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Aggregates<LocalOrdinal, GlobalOrdinal, Node>::Aggregates(const GraphBase & graph) {
+#else
+  template <class Node>
+  Aggregates<Node>::Aggregates(const GraphBase & graph) {
+#endif
     nAggregates_  = 0;
 
     vertex2AggId_ = LOMultiVectorFactory::Build(graph.GetImportMap(), 1);
@@ -78,8 +83,13 @@ namespace MueLu {
   }
 
   ///////////////////////////////////////////////////////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Aggregates<LocalOrdinal, GlobalOrdinal, Node>::Aggregates(const RCP<const Map> & map) {
+#else
+  template <class Node>
+  Aggregates<Node>::Aggregates(const RCP<const Map> & map) {
+#endif
     nAggregates_ = 0;
 
     vertex2AggId_ = LOMultiVectorFactory::Build(map, 1);
@@ -95,8 +105,13 @@ namespace MueLu {
   }
 
   ///////////////////////////////////////////////////////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::ArrayRCP<LocalOrdinal>  Aggregates<LocalOrdinal, GlobalOrdinal, Node>::ComputeAggregateSizes(bool forceRecompute) const {
+#else
+  template <class Node>
+  Teuchos::ArrayRCP<LocalOrdinal>  Aggregates<Node>::ComputeAggregateSizes(bool forceRecompute) const {
+#endif
 
     if (aggregateSizes_ != Teuchos::null && !forceRecompute) {
 
@@ -126,31 +141,51 @@ namespace MueLu {
 
   } //ComputeAggSizesNodes
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string Aggregates<LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Node>
+  std::string Aggregates<Node>::description() const {
+#endif
     std::ostringstream out;
     out << BaseClass::description();
     out << "{nGlobalAggregates = " << GetNumGlobalAggregates() << "}";
     return out.str();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void Aggregates<LocalOrdinal, GlobalOrdinal, Node>::print(Teuchos::FancyOStream &out, const Teuchos::EVerbosityLevel verbLevel) const {
+#else
+  template <class Node>
+  void Aggregates<Node>::print(Teuchos::FancyOStream &out, const Teuchos::EVerbosityLevel verbLevel) const {
+#endif
     MUELU_DESCRIBE;
 
     if (verbLevel & Statistics1)
       out0 << "Global number of aggregates: " << GetNumGlobalAggregates() << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   GlobalOrdinal Aggregates<LocalOrdinal, GlobalOrdinal, Node>::GetNumGlobalAggregates() const {
+#else
+  template <class Node>
+  GlobalOrdinal Aggregates<Node>::GetNumGlobalAggregates() const {
+#endif
     LO nAggregates = GetNumAggregates();
     GO nGlobalAggregates; MueLu_sumAll(vertex2AggId_->getMap()->getComm(), (GO)nAggregates, nGlobalAggregates);
     return nGlobalAggregates;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   const RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal, Node> > Aggregates<LocalOrdinal, GlobalOrdinal, Node>::GetMap() const {
+#else
+  template <class Node>
+  const RCP<const Xpetra::Map<Node> > Aggregates<Node>::GetMap() const {
+#endif
     return vertex2AggId_->getMap();
   }
 

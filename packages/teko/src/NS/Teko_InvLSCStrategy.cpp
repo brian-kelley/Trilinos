@@ -295,7 +295,11 @@ void InvLSCStrategy::initializeState(const BlockedLinearOp & A,LSCPrecondState *
    } else { //Tpetra
      ST scalar = 0.0;
      bool transp = false;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > crsF = Teko::TpetraHelpers::getTpetraCrsMatrix(F, &scalar, &transp);
+#else
+     RCP<const Tpetra::CrsMatrix<ST,NT> > crsF = Teko::TpetraHelpers::getTpetraCrsMatrix(F, &scalar, &transp);
+#endif
 
      std::vector<GO> zeroIndices;
           
@@ -303,7 +307,11 @@ void InvLSCStrategy::initializeState(const BlockedLinearOp & A,LSCPrecondState *
      Teko::TpetraHelpers::identityRowIndices(*crsF->getRowMap(), *crsF,zeroIndices);
 
      // build an operator that zeros those rows
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       modF = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(crsF->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(crsF->getRangeMap()),rcp(new Teko::TpetraHelpers::ZeroedOperator(zeroIndices,crsF)));
+#else
+      modF = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(crsF->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(crsF->getRangeMap()),rcp(new Teko::TpetraHelpers::ZeroedOperator(zeroIndices,crsF)));
+#endif
    }
 
    // compute gamma

@@ -84,16 +84,31 @@ using Tpetra::global_size_t;
 typedef tif_utest::Node Node;
 
 //this macro declares the unit-test-class:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(SparseContainer, ILUT, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(SparseContainer, ILUT, Scalar)
+#endif
 {
   using Teuchos::RCP;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> CRS;
   typedef Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> vec_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::CrsMatrix<Scalar,Node> CRS;
+  typedef Tpetra::Vector<Scalar,Node> vec_type;
+#endif
   typedef Ifpack2::ILUT< Tpetra::RowMatrix<Scalar,LocalOrdinal,LocalOrdinal,Node>    > ILUTlo;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::ILUT< Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>   > ILUTgo;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> ROW;
+#else
+  typedef Ifpack2::ILUT< Tpetra::RowMatrix<Scalar,Node>   > ILUTgo;
+  typedef Tpetra::RowMatrix<Scalar,Node> ROW;
+#endif
 
 //we are now in a class method declared by the above macro, and
 //that method has these input arguments:
@@ -105,9 +120,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(SparseContainer, ILUT, Scalar, LocalOrdinal, G
   // The simple joy of tridiagonal matrices
   global_size_t num_rows_per_proc = 5;
   RCP<const map_type> rowmap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node> (num_rows_per_proc);
+#else
+    tif_utest::create_tpetra_map<Node> (num_rows_per_proc);
+#endif
   Teuchos::RCP<const CRS> crsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> (rowmap);
+#else
+    tif_utest::create_test_matrix<Scalar,Node> (rowmap);
+#endif
   vec_type x (rowmap), y (rowmap), z (rowmap), d (rowmap);
   Teuchos::ArrayRCP<Scalar> x_ptr = x.get1dViewNonConst();
   Teuchos::ArrayRCP<Scalar> y_ptr = y.get1dViewNonConst();
@@ -186,7 +209,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(SparseContainer, ILUT, Scalar, LocalOrdinal, G
 //
 // If running on only one (MPI) process, x should equal x_exact (to
 // within a reasonable tolerance).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(DenseContainer, FullMatrixSameScalar, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(DenseContainer, FullMatrixSameScalar, Scalar)
+#endif
 {
   using Teuchos::Array;
   using Teuchos::ArrayRCP;
@@ -196,10 +223,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(DenseContainer, FullMatrixSameScalar, Scalar, 
   using Teuchos::reduceAll;
   using std::cerr;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
   typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> row_matrix_type;
   typedef Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> vec_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar, Node> row_matrix_type;
+  typedef Tpetra::Vector<Scalar, Node> vec_type;
+#endif
   typedef Ifpack2::DenseContainer<row_matrix_type, Scalar> container_type;
   typedef Teuchos::ScalarTraits<Scalar> STS;
   typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType magnitude_type;
@@ -213,11 +247,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(DenseContainer, FullMatrixSameScalar, Scalar, 
 
   global_size_t numRowsPerProc = 5;
   RCP<const map_type> rowMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LocalOrdinal, GlobalOrdinal, Node> (numRowsPerProc);
+#else
+    tif_utest::create_tpetra_map<Node> (numRowsPerProc);
+#endif
 
   out << "Creating the test matrix A" << endl;
   RCP<const crs_matrix_type> A =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_test_matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> (rowMap);
+#else
+    tif_utest::create_test_matrix<Scalar, Node> (rowMap);
+#endif
 
   out << "Creating an exact solution vector x" << endl;
   vec_type x_exact (rowMap);
@@ -335,7 +377,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(DenseContainer, FullMatrixSameScalar, Scalar, 
 //
 // If running on only one (MPI) process, x should equal x_exact (to
 // within a reasonable tolerance).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(BandedContainer, FullMatrixSameScalar, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(BandedContainer, FullMatrixSameScalar, Scalar)
+#endif
 {
   using Teuchos::Array;
   using Teuchos::ArrayRCP;
@@ -345,10 +391,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(BandedContainer, FullMatrixSameScalar, Scalar,
   using Teuchos::reduceAll;
   using std::cerr;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
   typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> row_matrix_type;
   typedef Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> vec_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar, Node> row_matrix_type;
+  typedef Tpetra::Vector<Scalar, Node> vec_type;
+#endif
   typedef Ifpack2::BandedContainer<row_matrix_type, Scalar> container_type;
   typedef Teuchos::ScalarTraits<Scalar> STS;
   typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType magnitude_type;
@@ -362,11 +415,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(BandedContainer, FullMatrixSameScalar, Scalar,
 
   global_size_t numRowsPerProc = 5;
   RCP<const map_type> rowMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LocalOrdinal, GlobalOrdinal, Node> (numRowsPerProc);
+#else
+    tif_utest::create_tpetra_map<Node> (numRowsPerProc);
+#endif
 
   out << "Creating the test matrix A" << endl;
   RCP<const crs_matrix_type> A =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_banded_matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> (rowMap,3);
+#else
+    tif_utest::create_banded_matrix<Scalar, Node> (rowMap,3);
+#endif
 
   out << "Creating an exact solution vector x" << endl;
   vec_type x_exact (rowMap);
@@ -490,9 +551,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(BandedContainer, FullMatrixSameScalar, Scalar,
 
 // Define the set of unit tests to instantiate in this file.
 #define UNIT_TEST_GROUP_SC_LO_GO(Scalar,LocalOrdinal,GlobalOrdinal) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( SparseContainer, ILUT, Scalar, LocalOrdinal, GlobalOrdinal) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( BandedContainer, FullMatrixSameScalar, Scalar, LocalOrdinal,GlobalOrdinal) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( DenseContainer, FullMatrixSameScalar, Scalar, LocalOrdinal,GlobalOrdinal) \
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( SparseContainer, ILUT, Scalar) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( BandedContainer, FullMatrixSameScalar, Scalar) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( DenseContainer, FullMatrixSameScalar, Scalar) \
+#endif
 
 // NOTE (mfh 21 Oct 2015) This test is special, because it wants to
 // use two different GlobalOrdinal types, but Ifpack2 does not do ETI

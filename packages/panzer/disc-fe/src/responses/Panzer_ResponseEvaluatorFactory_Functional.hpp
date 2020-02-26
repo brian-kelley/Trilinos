@@ -146,7 +146,11 @@ struct FunctionalResponse_Builder : public ResponseMESupportBuilderBase {
 
   template <typename T>
   Teuchos::RCP<panzer::ResponseEvaluatorFactoryBase> build() const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ResponseEvaluatorFactory_Functional<T,LO,GO>(comm,cubatureDegree,requiresCellIntegral,quadPointField,
+#else
+  { return Teuchos::rcp(new ResponseEvaluatorFactory_Functional<T>(comm,cubatureDegree,requiresCellIntegral,quadPointField,
+#endif
                                                                          linearObjFactory,applyDirichletToDerivative)); }
 
   virtual Teuchos::RCP<panzer::ResponseEvaluatorFactoryBase> buildValueFactory() const

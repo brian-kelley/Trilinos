@@ -79,13 +79,24 @@
 // The resulting preconditioners are identical to multigrid preconditioners built without recycling the parts described above.
 // This can be verified by using the --no-recycling option.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void ConstructData(const std::string& matrixType, Teuchos::ParameterList& galeriList,
                    Xpetra::UnderlyingLib lib, Teuchos::RCP<const Teuchos::Comm<int> >& comm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    Teuchos::RCP<Xpetra::Matrix      <Scalar,LocalOrdinal,GlobalOrdinal,Node> >& A,
                    Teuchos::RCP<const Xpetra::Map   <LocalOrdinal,GlobalOrdinal, Node> >&       map,
                    Teuchos::RCP<Xpetra::MultiVector <typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> >& coordinates,
                    Teuchos::RCP<Xpetra::MultiVector <Scalar,LocalOrdinal,GlobalOrdinal,Node> >& nullspace) {
+#else
+                   Teuchos::RCP<Xpetra::Matrix      <Scalar,Node> >& A,
+                   Teuchos::RCP<const Xpetra::Map   <Node> >&       map,
+                   Teuchos::RCP<Xpetra::MultiVector <typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> >& coordinates,
+                   Teuchos::RCP<Xpetra::MultiVector <Scalar,Node> >& nullspace) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -93,7 +104,11 @@ void ConstructData(const std::string& matrixType, Teuchos::ParameterList& galeri
   using Teuchos::RCP;
   using Teuchos::TimeMonitor;
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef typename Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
 
   // Galeri will attempt to create a square-as-possible distribution of subdomains di, e.g.,
@@ -110,24 +125,44 @@ void ConstructData(const std::string& matrixType, Teuchos::ParameterList& galeri
   // In the future, we hope to be able to first create a Galeri problem, and then request map and coordinates from it
   // At the moment, however, things are fragile as we hope that the Problem uses same map and coordinates inside
   if (matrixType == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian1D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian1D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<real_type,LO,GO,Map,RealValuedMultiVector>("1D", map, galeriList);
 
   } else if (matrixType == "Laplace2D" || matrixType == "Star2D" ||
              matrixType == "BigStar2D" || matrixType == "Elasticity2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian2D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian2D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<real_type,LO,GO,Map,RealValuedMultiVector>("2D", map, galeriList);
 
   } else if (matrixType == "Laplace3D" || matrixType == "Brick3D" || matrixType == "Elasticity3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian3D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian3D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<real_type,LO,GO,Map,RealValuedMultiVector>("3D", map, galeriList);
   }
 
   // Expand map to do multiple DOF per node for block problems
   if (matrixType == "Elasticity2D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 2);
+#else
+    map = Xpetra::MapFactory<Node>::Build(map, 2);
+#endif
   if (matrixType == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 3);
+#else
+    map = Xpetra::MapFactory<Node>::Build(map, 3);
+#endif
 
   if (matrixType == "Elasticity2D" || matrixType == "Elasticity3D") {
     // Our default test case for elasticity: all boundaries of a square/cube have Neumann b.c. except left which has Dirichlet
@@ -149,7 +184,11 @@ void ConstructData(const std::string& matrixType, Teuchos::ParameterList& galeri
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
@@ -159,7 +198,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib, int ar
   using Teuchos::TimeMonitor;
 
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef typename Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   // =========================================================================
   // MPI initialization using Teuchos
@@ -310,7 +353,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib &lib, int ar
     out << "residual(A) = " << Utilities::ResidualNorm(*A, *X, *Y)[0] << " [reuse \"" << reuseNames[k] << "\"]" << std::endl;
 
     // Reuse setup
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> Bcopy = Xpetra::MatrixFactory2<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildCopy(B);
+#else
+    RCP<Matrix> Bcopy = Xpetra::MatrixFactory2<Scalar, Node>::BuildCopy(B);
+#endif
 
     RCP<Teuchos::Time> tm = TimeMonitor::getNewTimer("Setup #" + MueLu::toString(k+2) + ": reuse " + reuseNames[k]);
     for (int i = 0; i <= numRebuilds; i++) {

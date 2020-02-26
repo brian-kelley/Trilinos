@@ -929,7 +929,12 @@ ILUT<MatrixType>::makeLocalFilter (const Teuchos::RCP<const row_matrix_type>& A)
 // preconditioners can and should do dynamic casts if they need a type
 // more specific than RowMatrix.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_ILUT_INSTANT(S,LO,GO,N) \
   template class Ifpack2::ILUT< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_ILUT_INSTANT(S,N) \
+  template class Ifpack2::ILUT< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif /* IFPACK2_ILUT_DEF_HPP */

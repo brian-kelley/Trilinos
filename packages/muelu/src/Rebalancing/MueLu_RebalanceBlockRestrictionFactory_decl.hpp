@@ -72,14 +72,20 @@ namespace MueLu {
     @ingroup MueLuTransferClasses
   */
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class RebalanceBlockRestrictionFactory : public TwoLevelFactoryBase {
 #undef MUELU_REBALANCEBLOCKRESTRICTIONFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 

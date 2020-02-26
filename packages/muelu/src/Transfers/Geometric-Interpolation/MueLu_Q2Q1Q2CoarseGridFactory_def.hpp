@@ -70,18 +70,33 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Q2Q1Q2CoarseGridFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Q2Q1Q2CoarseGridFactory(){
+#else
+  template <class Scalar, class Node>
+  Q2Q1Q2CoarseGridFactory<Scalar, Node>::Q2Q1Q2CoarseGridFactory(){
+#endif
     GetOStream(Runtime1) << "I constructed a Q2Q1Q2CoarseGridFactory object... Nothing else to do here." << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Q2Q1Q2CoarseGridFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~Q2Q1Q2CoarseGridFactory(){
+#else
+  template <class Scalar, class Node>
+  Q2Q1Q2CoarseGridFactory<Scalar, Node>::~Q2Q1Q2CoarseGridFactory(){
+#endif
     // Should be empty. All destruction should be handled by Level-based get stuff and RCP
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1Q2CoarseGridFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Q2Q1Q2CoarseGridFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
 
     Input(fineLevel, "VElementList");
     Input(fineLevel, "PElementList");
@@ -95,8 +110,13 @@ namespace MueLu {
     //currentLevel.DeclareInput(varName_,factory_,this);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1Q2CoarseGridFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Q2Q1Q2CoarseGridFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#endif
 
     GetOStream(Runtime1) << "Starting 'build' routine...\n";
 
@@ -111,8 +131,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Q2Q1Q2CoarseGridFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildCoarseGrid(Level &fineLevel, Level &coarseLevel) const
+#else
+  template <class Scalar, class Node>
+  void Q2Q1Q2CoarseGridFactory<Scalar, Node>::BuildCoarseGrid(Level &fineLevel, Level &coarseLevel) const
+#endif
   {
 
     GetOStream(Runtime1) << "starting 'BuildCoarseGrid' routine...\n";

@@ -59,20 +59,42 @@
 
 namespace tif_utest {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LO, typename GO>
+#else
+template <typename Scalar,>
+#endif
 struct BlockCrsMatrixMaker {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   typedef LO Int;
   typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType Magnitude;
   typedef Tpetra::Map<LO, GO> Tpetra_Map;
   typedef Tpetra::Import<LO, GO> Tpetra_Import;
   typedef Tpetra::Export<LO, GO> Tpetra_Export;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar, LO, GO> Tpetra_MultiVector;
   typedef Tpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType, LO, GO>
+#else
+  typedef Tpetra::MultiVector<Scalar> Tpetra_MultiVector;
+  typedef Tpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType>
+#endif
           Tpetra_MultiVector_Magnitude;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockMultiVector<Scalar, LO, GO> Tpetra_BlockMultiVector;
+#else
+  typedef Tpetra::BlockMultiVector<Scalar> Tpetra_BlockMultiVector;
+#endif
   typedef Tpetra::CrsGraph<LO, GO> Tpetra_CrsGraph;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<Scalar, LO, GO> Tpetra_RowMatrix;
   typedef Tpetra::BlockCrsMatrix<Scalar, LO, GO> Tpetra_BlockCrsMatrix;
+#else
+  typedef Tpetra::RowMatrix<Scalar> Tpetra_RowMatrix;
+  typedef Tpetra::BlockCrsMatrix<Scalar> Tpetra_BlockCrsMatrix;
+#endif
 
   // Representation of a structured block mesh. The fastest index is k.
   struct StructuredBlock {

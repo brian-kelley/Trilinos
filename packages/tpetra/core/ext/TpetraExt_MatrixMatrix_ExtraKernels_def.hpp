@@ -82,17 +82,29 @@ size_t Ac_estimate_nnz(CrsMatrixType & A, CrsMatrixType &P){
 #if defined (HAVE_TPETRA_INST_OPENMP)
 /*********************************************************************************************************/
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class LocalOrdinalViewType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void mult_A_B_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
                                                  CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Bview,
+#else
+void mult_A_B_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
+                                                 CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Bview,
+#endif
                                                  const LocalOrdinalViewType & targetMapToOrigRow,
                                                  const LocalOrdinalViewType & targetMapToImportRow,
                                                  const LocalOrdinalViewType & Bcol2Ccol,
                                                  const LocalOrdinalViewType & Icol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& C,
                                                  Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosOpenMPWrapperNode> > Cimport,
+#else
+                                                 CrsMatrix<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& C,
+                                                 Teuchos::RCP<const Import<Kokkos::Compat::KokkosOpenMPWrapperNode> > Cimport,
+#endif
                                                  const std::string& label,
                                                  const Teuchos::RCP<Teuchos::ParameterList>& params) {
 #ifdef HAVE_TPETRA_MMM_TIMINGS
@@ -108,7 +120,11 @@ void mult_A_B_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOr
 
 
   // Lots and lots of typedefs
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosOpenMPWrapperNode>::local_matrix_type KCRS;
+#else
+  typedef typename Tpetra::CrsMatrix<Scalar,Kokkos::Compat::KokkosOpenMPWrapperNode>::local_matrix_type KCRS;
+#endif
   //  typedef typename KCRS::device_type device_t;
   typedef typename KCRS::StaticCrsGraphType graph_t;
   typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -125,7 +141,11 @@ void mult_A_B_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOr
   typedef LocalOrdinal      LO;
   typedef GlobalOrdinal     GO;
   typedef Kokkos::Compat::KokkosOpenMPWrapperNode NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NO>                     map_type;
+#else
+  typedef Map<NO>                     map_type;
+#endif
 
   // NOTE (mfh 15 Sep 2017) This is specifically only for
   // execution_space = Kokkos::OpenMP, so we neither need nor want
@@ -298,17 +318,29 @@ void mult_A_B_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOr
 
 /*********************************************************************************************************/
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class LocalOrdinalViewType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void mult_A_B_reuse_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
                                                  CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Bview,
+#else
+void mult_A_B_reuse_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
+                                                 CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Bview,
+#endif
                                                  const LocalOrdinalViewType & targetMapToOrigRow,
                                                  const LocalOrdinalViewType & targetMapToImportRow,
                                                  const LocalOrdinalViewType & Bcol2Ccol,
                                                  const LocalOrdinalViewType & Icol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& C,
                                                  Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosOpenMPWrapperNode> > Cimport,
+#else
+                                                 CrsMatrix<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& C,
+                                                 Teuchos::RCP<const Import<Kokkos::Compat::KokkosOpenMPWrapperNode> > Cimport,
+#endif
                                                  const std::string& label,
                                                  const Teuchos::RCP<Teuchos::ParameterList>& params) {
 #ifdef HAVE_TPETRA_MMM_TIMINGS
@@ -324,7 +356,11 @@ void mult_A_B_reuse_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOrdina
   using Teuchos::rcp;
 
   // Lots and lots of typedefs
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosOpenMPWrapperNode>::local_matrix_type KCRS;
+#else
+  typedef typename Tpetra::CrsMatrix<Scalar,Kokkos::Compat::KokkosOpenMPWrapperNode>::local_matrix_type KCRS;
+#endif
   //  typedef typename KCRS::device_type device_t;
   typedef typename KCRS::StaticCrsGraphType graph_t;
   typedef typename graph_t::row_map_type::const_type c_lno_view_t;
@@ -335,7 +371,11 @@ void mult_A_B_reuse_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOrdina
   typedef LocalOrdinal      LO;
   typedef GlobalOrdinal     GO;
   typedef Kokkos::Compat::KokkosOpenMPWrapperNode NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NO>                     map_type;
+#else
+  typedef Map<NO>                     map_type;
+#endif
 
   // NOTE (mfh 15 Sep 2017) This is specifically only for
   // execution_space = Kokkos::OpenMP, so we neither need nor want
@@ -447,19 +487,32 @@ void mult_A_B_reuse_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOrdina
 
 /*********************************************************************************************************/
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class LocalOrdinalViewType>
 void jacobi_A_B_newmatrix_LowThreadGustavsonKernel(Scalar omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                    const Vector<Scalar,LocalOrdinal,GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode> & Dinv,
                                                    CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
                                                    CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Bview,
+#else
+                                                   const Vector<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode> & Dinv,
+                                                   CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
+                                                   CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Bview,
+#endif
                                                    const LocalOrdinalViewType & targetMapToOrigRow,
                                                    const LocalOrdinalViewType & targetMapToImportRow,
                                                    const LocalOrdinalViewType & Bcol2Ccol,
                                                    const LocalOrdinalViewType & Icol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                    CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& C,
                                                    Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosOpenMPWrapperNode> > Cimport,
+#else
+                                                   CrsMatrix<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& C,
+                                                   Teuchos::RCP<const Import<Kokkos::Compat::KokkosOpenMPWrapperNode> > Cimport,
+#endif
                                                    const std::string& label,
                                                    const Teuchos::RCP<Teuchos::ParameterList>& params) {
 #ifdef HAVE_TPETRA_MMM_TIMINGS
@@ -476,7 +529,11 @@ void jacobi_A_B_newmatrix_LowThreadGustavsonKernel(Scalar omega,
 
   // Lots and lots of typedefs
   typedef typename Kokkos::Compat::KokkosOpenMPWrapperNode Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::local_matrix_type KCRS;
+#else
+  typedef typename Tpetra::CrsMatrix<Scalar,Node>::local_matrix_type KCRS;
+#endif
   //  typedef typename KCRS::device_type device_t;
   typedef typename KCRS::StaticCrsGraphType graph_t;
   typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -496,7 +553,11 @@ void jacobi_A_B_newmatrix_LowThreadGustavsonKernel(Scalar omega,
   typedef LocalOrdinal      LO;
   typedef GlobalOrdinal     GO;
   typedef Node              NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NO>                     map_type;
+#else
+  typedef Map<NO>                     map_type;
+#endif
 
   // NOTE (mfh 15 Sep 2017) This is specifically only for
   // execution_space = Kokkos::OpenMP, so we neither need nor want
@@ -695,19 +756,32 @@ void jacobi_A_B_newmatrix_LowThreadGustavsonKernel(Scalar omega,
 
 /*********************************************************************************************************/
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class LocalOrdinalViewType>
 void jacobi_A_B_reuse_LowThreadGustavsonKernel(Scalar omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                    const Vector<Scalar,LocalOrdinal,GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode> & Dinv,
                                                    CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
                                                    CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Bview,
+#else
+                                                   const Vector<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode> & Dinv,
+                                                   CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
+                                                   CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Bview,
+#endif
                                                    const LocalOrdinalViewType & targetMapToOrigRow,
                                                    const LocalOrdinalViewType & targetMapToImportRow,
                                                    const LocalOrdinalViewType & Bcol2Ccol,
                                                    const LocalOrdinalViewType & Icol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                    CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& C,
                                                    Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosOpenMPWrapperNode> > Cimport,
+#else
+                                                   CrsMatrix<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& C,
+                                                   Teuchos::RCP<const Import<Kokkos::Compat::KokkosOpenMPWrapperNode> > Cimport,
+#endif
                                                    const std::string& label,
                                                    const Teuchos::RCP<Teuchos::ParameterList>& params) {
 #ifdef HAVE_TPETRA_MMM_TIMINGS
@@ -723,7 +797,11 @@ void jacobi_A_B_reuse_LowThreadGustavsonKernel(Scalar omega,
 
   // Lots and lots of typedefs
   typedef typename Kokkos::Compat::KokkosOpenMPWrapperNode Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::local_matrix_type KCRS;
+#else
+  typedef typename Tpetra::CrsMatrix<Scalar,Node>::local_matrix_type KCRS;
+#endif
   //  typedef typename KCRS::device_type device_t;
   typedef typename KCRS::StaticCrsGraphType graph_t;
   typedef typename graph_t::row_map_type::const_type c_lno_view_t;
@@ -737,7 +815,11 @@ void jacobi_A_B_reuse_LowThreadGustavsonKernel(Scalar omega,
   typedef LocalOrdinal      LO;
   typedef GlobalOrdinal     GO;
   typedef Node              NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NO>                     map_type;
+#else
+  typedef Map<NO>                     map_type;
+#endif
 
   // NOTE (mfh 15 Sep 2017) This is specifically only for
   // execution_space = Kokkos::OpenMP, so we neither need nor want
@@ -963,15 +1045,26 @@ void copy_out_from_thread_memory(const OutColindType& thread_total_nnz,
 /*********************************************************************************************************/
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class LocalOrdinalViewType>
 void jacobi_A_B_newmatrix_MultiplyScaleAddKernel(Scalar omega,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                   const Vector<Scalar,LocalOrdinal,GlobalOrdinal, Node> & Dinv,
                                                   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Aview,
                                                   CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Bview,
+#else
+                                                  const Vector<Scalar, Node> & Dinv,
+                                                  CrsMatrixStruct<Scalar, Node>& Aview,
+                                                  CrsMatrixStruct<Scalar, Node>& Bview,
+#endif
                                                   const LocalOrdinalViewType & Acol2Brow,
                                                   const LocalOrdinalViewType & Acol2Irow,
                                                   const LocalOrdinalViewType & Bcol2Ccol,
                                                   const LocalOrdinalViewType & Icol2Ccol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& C,
                                                   Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > Cimport,
+#else
+                                                  CrsMatrix<Scalar, Node>& C,
+                                                  Teuchos::RCP<const Import<Node> > Cimport,
+#endif
                                                   const std::string& label,
                                                   const Teuchos::RCP<Teuchos::ParameterList>& params) {
 #ifdef HAVE_TPETRA_MMM_TIMINGS
@@ -981,7 +1074,11 @@ void jacobi_A_B_newmatrix_MultiplyScaleAddKernel(Scalar omega,
   Teuchos::RCP<TimeMonitor> MM2 = Teuchos::rcp(new TimeMonitor(*TimeMonitor::getNewTimer(prefix_mmm + std::string("Jacobi Newmatrix MSAK Multiply"))));
   using Teuchos::rcp;
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix_t;
+#else
+  typedef  CrsMatrix<Scalar, Node> Matrix_t;
+#endif
 
   // This kernel computes (I-omega Dinv A) B the slow way (for generality's sake, you must understand)
 
@@ -1017,16 +1114,28 @@ void jacobi_A_B_newmatrix_MultiplyScaleAddKernel(Scalar omega,
 
 #if defined (HAVE_TPETRA_INST_OPENMP)
 /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class LocalOrdinalViewType>
 static inline void mult_R_A_P_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Rview,
                                                                  CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
                                                                  CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Pview,
+#else
+template<class Scalar, class LocalOrdinalViewType>
+static inline void mult_R_A_P_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Rview,
+                                                                 CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
+                                                                 CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Pview,
+#endif
                                                                  const LocalOrdinalViewType & Acol2PRow,
                                                                  const LocalOrdinalViewType & Acol2PRowImport,
                                                                  const LocalOrdinalViewType & Pcol2Accol,
                                                                  const LocalOrdinalViewType & PIcol2Accol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Ac,
                                                                  Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode> > Acimport,
+#else
+                                                                 CrsMatrix<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Ac,
+                                                                 Teuchos::RCP<const Import<Kokkos::Compat::KokkosOpenMPWrapperNode> > Acimport,
+#endif
                                                                  const std::string& label,
                                                                  const Teuchos::RCP<Teuchos::ParameterList>& params) {
 
@@ -1044,8 +1153,13 @@ static inline void mult_R_A_P_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct
         typedef LocalOrdinal  LO;
         typedef GlobalOrdinal GO;
         typedef Node          NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Map<LO,GO,NO> map_type;
         typedef typename Tpetra::CrsMatrix<SC,LO,GO,NO>::local_matrix_type KCRS;
+#else
+        typedef Map<NO> map_type;
+        typedef typename Tpetra::CrsMatrix<SC,NO>::local_matrix_type KCRS;
+#endif
         typedef typename KCRS::StaticCrsGraphType graph_t;
         typedef typename graph_t::row_map_type::non_const_type lno_view_t;
         typedef typename graph_t::row_map_type::const_type c_lno_view_t;
@@ -1269,7 +1383,11 @@ static inline void mult_R_A_P_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct
         RCP<Teuchos::ParameterList> labelList = rcp(new Teuchos::ParameterList);
         labelList->set("Timer Label",label);
         if(!params.is_null()) labelList->set("compute global constants",params->get("compute global constants",true));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Export<LO,GO,NO> > dummyExport;
+#else
+        RCP<const Export<NO> > dummyExport;
+#endif
         Ac.expertStaticFillComplete(Pview.origMatrix->getDomainMap(),
                                     Rview.origMatrix->getRangeMap(),
                                     Acimport,
@@ -1280,16 +1398,28 @@ static inline void mult_R_A_P_newmatrix_LowThreadGustavsonKernel(CrsMatrixStruct
 
 
 /*********************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class LocalOrdinalViewType>
 static inline void mult_R_A_P_reuse_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Rview,
                                                                  CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
                                                                  CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Pview,
+#else
+template<class Scalar, class LocalOrdinalViewType>
+static inline void mult_R_A_P_reuse_LowThreadGustavsonKernel(CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Rview,
+                                                                 CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Aview,
+                                                                 CrsMatrixStruct<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Pview,
+#endif
                                                                  const LocalOrdinalViewType & Acol2PRow,
                                                                  const LocalOrdinalViewType & Acol2PRowImport,
                                                                  const LocalOrdinalViewType & Pcol2Accol,
                                                                  const LocalOrdinalViewType & PIcol2Accol,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>& Ac,
                                                                  Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode> > Acimport,
+#else
+                                                                 CrsMatrix<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>& Ac,
+                                                                 Teuchos::RCP<const Import<Kokkos::Compat::KokkosOpenMPWrapperNode> > Acimport,
+#endif
                                                                  const std::string& label,
                                                                  const Teuchos::RCP<Teuchos::ParameterList>& params) {
 
@@ -1307,8 +1437,13 @@ static inline void mult_R_A_P_reuse_LowThreadGustavsonKernel(CrsMatrixStruct<Sca
         typedef LocalOrdinal  LO;
         typedef GlobalOrdinal GO;
         typedef Node          NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Map<LO,GO,NO> map_type;
         typedef typename Tpetra::CrsMatrix<SC,LO,GO,NO>::local_matrix_type KCRS;
+#else
+        typedef Map<NO> map_type;
+        typedef typename Tpetra::CrsMatrix<SC,NO>::local_matrix_type KCRS;
+#endif
         typedef typename KCRS::StaticCrsGraphType graph_t;
         typedef typename graph_t::row_map_type::const_type c_lno_view_t;
         typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;

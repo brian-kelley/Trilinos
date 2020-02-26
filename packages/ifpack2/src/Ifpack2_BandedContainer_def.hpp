@@ -581,7 +581,12 @@ std::string BandedContainer<MatrixType, LocalScalarType>::getName()
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_BANDEDCONTAINER_INSTANT(S,LO,GO,N) \
   template class Ifpack2::BandedContainer< Tpetra::RowMatrix<S, LO, GO, N>, S >;
+#else
+#define IFPACK2_BANDEDCONTAINER_INSTANT(S,N) \
+  template class Ifpack2::BandedContainer< Tpetra::RowMatrix<S, N>, S >;
+#endif
 
 #endif // IFPACK2_BANDEDCONTAINER_HPP

@@ -61,15 +61,27 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   FacadeClassFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::FacadeClassFactory() {
     facadeClasses_["Simple"] = Teuchos::rcp(new FacadeSimple<Scalar,LocalOrdinal,GlobalOrdinal,Node>());
     facadeClasses_["BGS2x2"] = Teuchos::rcp(new FacadeBGS2x2<Scalar,LocalOrdinal,GlobalOrdinal,Node>());
+#else
+  template <class Scalar, class Node>
+  FacadeClassFactory<Scalar, Node>::FacadeClassFactory() {
+    facadeClasses_["Simple"] = Teuchos::rcp(new FacadeSimple<Scalar,Node>());
+    facadeClasses_["BGS2x2"] = Teuchos::rcp(new FacadeBGS2x2<Scalar,Node>());
+#endif
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<Teuchos::ParameterList> FacadeClassFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetParameterList(const ParameterList& paramList) {
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<Teuchos::ParameterList> FacadeClassFactory<Scalar, Node>::SetParameterList(const ParameterList& paramList) {
+#endif
 
     TEUCHOS_TEST_FOR_EXCEPTION(paramList.isParameter("MueLu preconditioner") == false, MueLu::Exceptions::RuntimeError, "FacadeClassFactory: undefined MueLu preconditioner. Set the \"MueLu preconditioner\" parameter correctly in your input file.");
     TEUCHOS_TEST_FOR_EXCEPTION(paramList.get<std::string>("MueLu preconditioner") == "undefined", MueLu::Exceptions::RuntimeError, "FacadeClassFactory: undefined MueLu preconditioner. Set the \"MueLu preconditioner\" parameter correctly in your input file.");
@@ -80,7 +92,11 @@ namespace MueLu {
     if(facadeClasses_.find(precMueLu) == facadeClasses_.end()) {
       GetOStream(Errors) << "FacadeClassFactory: Could not find facade class \"" << precMueLu << "\"!" << std::endl;
       GetOStream(Errors) << "The available facade classes are:" << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       for(typename std::map<std::string, Teuchos::RCP<FacadeClassBase<Scalar,LocalOrdinal,GlobalOrdinal,Node> > >::const_iterator it =facadeClasses_.begin(); it != facadeClasses_.end(); it++){
+#else
+      for(typename std::map<std::string, Teuchos::RCP<FacadeClassBase<Scalar,Node> > >::const_iterator it =facadeClasses_.begin(); it != facadeClasses_.end(); it++){
+#endif
         GetOStream(Errors) << "   " << it->first << std::endl;
       }
       TEUCHOS_TEST_FOR_EXCEPTION(true, MueLu::Exceptions::RuntimeError, "FacadeClassFactory: Could not find facade class \"" << precMueLu << "\".");

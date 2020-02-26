@@ -133,11 +133,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, NonlocalSumInto_Ignore, LocalOrdin
   typedef global_ordinal_type GO;
   typedef node_type NT;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<ST, LO, GO, NT> CrsMatrixType;
+#else
+  typedef Tpetra::CrsMatrix<ST, NT> CrsMatrixType;
+#endif
 
   // CrsGraph specialization corresponding to CrsMatrixType (the
   // CrsMatrix specialization).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LO, GO, NT> crs_graph_type;
+#else
+  typedef Tpetra::CrsGraph<NT> crs_graph_type;
+#endif
 
   ////////////////////////////////////////////////////////////////////
   // HERE BEGINS THE TEST.
@@ -177,7 +185,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, NonlocalSumInto_Ignore, LocalOrdin
   }
 
   // Create a contiguous row Map, with numLocalRows rows per process.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const map_type> rowMap = createContigMapWithNode<LO, GO, NT> (INVALID, numLocalRows, comm);
+#else
+  RCP<const map_type> rowMap = createContigMapWithNode<NT> (INVALID, numLocalRows, comm);
+#endif
 
   // For now, reuse the row Map for the domain and range Maps.  Later,
   // we might want to test using different domain or range Maps.
@@ -436,7 +448,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_INSTANT( CrsMatrix, NonlocalSumInto_Ignore, mat_com
 #endif // 0
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+#endif
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, NonlocalSumInto_Ignore, LO, GO, SCALAR, NODE )
 
 TPETRA_ETI_MANGLING_TYPEDEFS()

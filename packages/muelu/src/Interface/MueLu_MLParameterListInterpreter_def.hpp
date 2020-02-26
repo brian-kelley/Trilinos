@@ -122,8 +122,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   MLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MLParameterListInterpreter(Teuchos::ParameterList & paramList, Teuchos::RCP<const Teuchos::Comm<int> > comm, std::vector<RCP<FactoryBase> > factoryList) : nullspace_(NULL), xcoord_(NULL), ycoord_(NULL), zcoord_(NULL),TransferFacts_(factoryList), blksize_(1) {
+#else
+  template <class Scalar, class Node>
+  MLParameterListInterpreter<Scalar, Node>::MLParameterListInterpreter(Teuchos::ParameterList & paramList, Teuchos::RCP<const Teuchos::Comm<int> > comm, std::vector<RCP<FactoryBase> > factoryList) : nullspace_(NULL), xcoord_(NULL), ycoord_(NULL), zcoord_(NULL),TransferFacts_(factoryList), blksize_(1) {
+#endif
 
     if (paramList.isParameter("xml parameter file")){
       std::string filename = paramList.get("xml parameter file","");
@@ -141,14 +146,24 @@ namespace MueLu {
       SetParameterList(paramList);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   MLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MLParameterListInterpreter(const std::string & xmlFileName, std::vector<RCP<FactoryBase> > factoryList) : nullspace_(NULL), TransferFacts_(factoryList), blksize_(1) {
+#else
+  template <class Scalar, class Node>
+  MLParameterListInterpreter<Scalar, Node>::MLParameterListInterpreter(const std::string & xmlFileName, std::vector<RCP<FactoryBase> > factoryList) : nullspace_(NULL), TransferFacts_(factoryList), blksize_(1) {
+#endif
     Teuchos::RCP<Teuchos::ParameterList> paramList = Teuchos::getParametersFromXmlFile(xmlFileName);
     SetParameterList(*paramList);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetParameterList(const Teuchos::ParameterList & paramList_in) {
+#else
+  template <class Scalar, class Node>
+  void MLParameterListInterpreter<Scalar, Node>::SetParameterList(const Teuchos::ParameterList & paramList_in) {
+#endif
     Teuchos::ParameterList paramList = paramList_in;
 
     //
@@ -377,7 +392,11 @@ namespace MueLu {
       AcFact->SetFactory("R", RFact);
 
       // define rebalancing factory for coarse matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<MueLu::AmalgamationFactory<SC, LO, GO, NO> > rebAmalgFact = Teuchos::rcp(new MueLu::AmalgamationFactory<SC, LO, GO, NO>());
+#else
+      Teuchos::RCP<MueLu::AmalgamationFactory<SC, NO> > rebAmalgFact = Teuchos::rcp(new MueLu::AmalgamationFactory<SC, NO>());
+#endif
       rebAmalgFact->SetFactory("A", AcFact);
 
       MUELU_READ_PARAM(paramList, "repartition: max min ratio",            double,                 1.3,       maxminratio);
@@ -394,13 +413,21 @@ namespace MueLu {
       RepartitionHeuristicFact->SetFactory("A", AcFact);
 
       // create "Partition"
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<MueLu::IsorropiaInterface<LO, GO, NO> > isoInterface = Teuchos::rcp(new MueLu::IsorropiaInterface<LO, GO, NO>());
+#else
+      Teuchos::RCP<MueLu::IsorropiaInterface<NO> > isoInterface = Teuchos::rcp(new MueLu::IsorropiaInterface<NO>());
+#endif
       isoInterface->SetFactory("A", AcFact);
       isoInterface->SetFactory("number of partitions", RepartitionHeuristicFact);
       isoInterface->SetFactory("UnAmalgamationInfo", rebAmalgFact);
 
       // create "Partition" by unamalgamtion
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<MueLu::RepartitionInterface<LO, GO, NO> > repInterface = Teuchos::rcp(new MueLu::RepartitionInterface<LO, GO, NO>());
+#else
+      Teuchos::RCP<MueLu::RepartitionInterface<NO> > repInterface = Teuchos::rcp(new MueLu::RepartitionInterface<NO>());
+#endif
       repInterface->SetFactory("A", AcFact);
       repInterface->SetFactory("number of partitions", RepartitionHeuristicFact);
       repInterface->SetFactory("AmalgamatedPartition", isoInterface);
@@ -548,8 +575,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetupHierarchy(Hierarchy & H) const {
+#else
+  template <class Scalar, class Node>
+  void MLParameterListInterpreter<Scalar, Node>::SetupHierarchy(Hierarchy & H) const {
+#endif
     // if nullspace_ has already been extracted from ML parameter list
     // make nullspace available for MueLu
     if (nullspace_ != NULL) {
@@ -611,9 +643,15 @@ namespace MueLu {
   }
 
   // TODO: code factorization with MueLu_ParameterListInterpreter.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   MLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::SmootherFactory<Scalar, Node> >
+  MLParameterListInterpreter<Scalar, Node>::
+#endif
   GetSmootherFactory (const Teuchos::ParameterList & paramList,
                       const RCP<FactoryBase> & AFact)
   {
@@ -696,7 +734,11 @@ namespace MueLu {
 
         // TODO change to TrilinosSmoother as soon as Ifpack2 supports all preconditioners from Ifpack
         smooProto =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           MueLu::GetIfpackSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node> (ifpackType,
+#else
+          MueLu::GetIfpackSmoother<Scalar, Node> (ifpackType,
+#endif
                                                                                smootherParamList,
                                                                                paramList.get<int> ("smoother: ifpack overlap"));
         smooProto->SetFactory("A", AFact);
@@ -749,20 +791,35 @@ namespace MueLu {
     return SmooFact;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddTransferFactory(const RCP<FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void MLParameterListInterpreter<Scalar, Node>::AddTransferFactory(const RCP<FactoryBase>& factory) {
+#endif
     // check if it's a TwoLevelFactoryBase based transfer factory
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::rcp_dynamic_cast<TwoLevelFactoryBase>(factory) == Teuchos::null, Exceptions::BadCast, "Transfer factory is not derived from TwoLevelFactoryBase. Since transfer factories will be handled by the RAPFactory they have to be derived from TwoLevelFactoryBase!");
     TransferFacts_.push_back(factory);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t MLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NumTransferFactories() const {
+#else
+  template <class Scalar, class Node>
+  size_t MLParameterListInterpreter<Scalar, Node>::NumTransferFactories() const {
+#endif
     return TransferFacts_.size();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MLParameterListInterpreter<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetupOperator(Operator & Op) const {
+#else
+  template <class Scalar, class Node>
+  void MLParameterListInterpreter<Scalar, Node>::SetupOperator(Operator & Op) const {
+#endif
     try {
       Matrix& A = dynamic_cast<Matrix&>(Op);
       if (A.GetFixedBlockSize() != blksize_)

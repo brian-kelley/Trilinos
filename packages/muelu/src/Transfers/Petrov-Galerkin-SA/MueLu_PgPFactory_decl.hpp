@@ -78,8 +78,10 @@ namespace MueLu {
   */
 
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal = DefaultLocalOrdinal,
           class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
           class Node = DefaultNode>
   class PgPFactory : public PFactory {
 #undef MUELU_PGPFACTORY_SHORT
@@ -87,6 +89,10 @@ namespace MueLu {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 
@@ -136,11 +142,23 @@ namespace MueLu {
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void MultiplySelfAll(const RCP<Matrix>& Op, Teuchos::RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& InnerProdVec) const;
+#else
+    void MultiplySelfAll(const RCP<Matrix>& Op, Teuchos::RCP<Xpetra::Vector<Scalar,Node> >& InnerProdVec) const;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void MultiplyAll(const RCP<Matrix>& left, const RCP<Matrix>& right, Teuchos::RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& InnerProdVec) const;
+#else
+    void MultiplyAll(const RCP<Matrix>& left, const RCP<Matrix>& right, Teuchos::RCP<Xpetra::Vector<Scalar,Node> >& InnerProdVec) const;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void ComputeRowBasedOmega(Level& fineLevel, Level& coarseLevel, const RCP<Matrix>& A, const RCP<Matrix>& P0, const RCP<Matrix>& DinvAP0, RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > & RowBasedOmega) const;
+#else
+    void ComputeRowBasedOmega(Level& fineLevel, Level& coarseLevel, const RCP<Matrix>& A, const RCP<Matrix>& P0, const RCP<Matrix>& DinvAP0, RCP<Xpetra::Vector<Scalar,Node> > & RowBasedOmega) const;
+#endif
 
   private:
 

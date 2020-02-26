@@ -51,10 +51,19 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     TwoLevelBlockPreconditioner<SC,LO,GO,NO>::TwoLevelBlockPreconditioner(ConstXMatrixPtr k,
+#else
+    template <class SC,class NO>
+    TwoLevelBlockPreconditioner<SC,NO>::TwoLevelBlockPreconditioner(ConstXMatrixPtr k,
+#endif
                                                                           ParameterListPtr parameterList) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     OneLevelPreconditioner<SC,LO,GO,NO> (k,parameterList)
+#else
+    OneLevelPreconditioner<SC,NO> (k,parameterList)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(twoLevelBlockPreconditionerTime,"TwoLevelBlockPreconditioner::TwoLevelBlockPreconditioner");
         if (!this->ParameterList_->get("CoarseOperator Type","IPOUHarmonicCoarseOperator").compare("IPOUHarmonicCoarseOperator")) {
@@ -62,17 +71,29 @@ namespace FROSch {
             parameterList->sublist("IPOUHarmonicCoarseOperator").set("Level ID",this->LevelID_);
             //                FROSCH_ASSERT(false,"not implemented for block.");
             this->ParameterList_->sublist("IPOUHarmonicCoarseOperator").sublist("InterfacePartitionOfUnity").set("Test Unconnected Interface",false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             CoarseOperator_ = IPOUHarmonicCoarseOperatorPtr(new IPOUHarmonicCoarseOperator<SC,LO,GO,NO>(k,sublist(parameterList,"IPOUHarmonicCoarseOperator")));
+#else
+            CoarseOperator_ = IPOUHarmonicCoarseOperatorPtr(new IPOUHarmonicCoarseOperator<SC,NO>(k,sublist(parameterList,"IPOUHarmonicCoarseOperator")));
+#endif
         } else if (!this->ParameterList_->get("CoarseOperator Type","IPOUHarmonicCoarseOperator").compare("GDSWCoarseOperator")) {
             // Set the LevelID in the sublist
             parameterList->sublist("GDSWCoarseOperator").set("Level ID",this->LevelID_);
             this->ParameterList_->sublist("GDSWCoarseOperator").set("Test Unconnected Interface",false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             CoarseOperator_ = GDSWCoarseOperatorPtr(new GDSWCoarseOperator<SC,LO,GO,NO>(k,sublist(parameterList,"GDSWCoarseOperator")));
+#else
+            CoarseOperator_ = GDSWCoarseOperatorPtr(new GDSWCoarseOperator<SC,NO>(k,sublist(parameterList,"GDSWCoarseOperator")));
+#endif
         } else if (!this->ParameterList_->get("CoarseOperator Type","IPOUHarmonicCoarseOperator").compare("RGDSWCoarseOperator")) {
             // Set the LevelID in the sublist
             parameterList->sublist("RGDSWCoarseOperator").set("Level ID",this->LevelID_);
             this->ParameterList_->sublist("RGDSWCoarseOperator").set("Test Unconnected Interface",false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             CoarseOperator_ = RGDSWCoarseOperatorPtr(new RGDSWCoarseOperator<SC,LO,GO,NO>(k,sublist(parameterList,"RGDSWCoarseOperator")));
+#else
+            CoarseOperator_ = RGDSWCoarseOperatorPtr(new RGDSWCoarseOperator<SC,NO>(k,sublist(parameterList,"RGDSWCoarseOperator")));
+#endif
         } else {
             FROSCH_ASSERT(false,"CoarseOperator Type unkown.");
         } // TODO: Add ability to disable individual levels
@@ -85,8 +106,13 @@ namespace FROSch {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int TwoLevelBlockPreconditioner<SC,LO,GO,NO>::initialize(UN dimension,
+#else
+    template <class SC,class NO>
+    int TwoLevelBlockPreconditioner<SC,NO>::initialize(UN dimension,
+#endif
                                                              UNVecPtr dofsPerNodeVec,
                                                              DofOrderingVecPtr dofOrderingVec,
                                                              int overlap,
@@ -142,8 +168,13 @@ namespace FROSch {
             for (UN i=0; i<nodeListVec.size(); i++) {
                 ConstXMapPtr nodeListVecMap_i = nodeListVec[i]->getMap();
                 if (!nodeListVecMap_i->isSameAs(*repeatedNodesMapVec[i])) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     RCP<MultiVector<SC,LO,GO,NO> > tmpNodeList = MultiVectorFactory<SC,LO,GO,NO>::Build(repeatedNodesMapVec[i],nodeListVec[i]->getNumVectors());
                     RCP<Import<LO,GO,NO> > scatter = ImportFactory<LO,GO,NO>::Build(nodeListVecMap_i,repeatedNodesMapVec[i]);
+#else
+                    RCP<MultiVector<SC,NO> > tmpNodeList = MultiVectorFactory<SC,NO>::Build(repeatedNodesMapVec[i],nodeListVec[i]->getNumVectors());
+                    RCP<Import<NO> > scatter = ImportFactory<NO>::Build(nodeListVecMap_i,repeatedNodesMapVec[i]);
+#endif
                     tmpNodeList->doImport(*nodeListVec[i],*scatter,INSERT);
                     nodeListVec[i] = tmpNodeList.getConst();
                 }
@@ -197,7 +228,11 @@ namespace FROSch {
         // Initialize OverlappingOperator //
         ////////////////////////////////////
         if (!this->ParameterList_->get("OverlappingOperator Type","AlgebraicOverlappingOperator").compare("AlgebraicOverlappingOperator")) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             AlgebraicOverlappingOperatorPtr algebraicOverlappigOperator = rcp_static_cast<AlgebraicOverlappingOperator<SC,LO,GO,NO> >(this->OverlappingOperator_);
+#else
+            AlgebraicOverlappingOperatorPtr algebraicOverlappigOperator = rcp_static_cast<AlgebraicOverlappingOperator<SC,NO> >(this->OverlappingOperator_);
+#endif
             if (0>algebraicOverlappigOperator->initialize(overlap,repeatedMap)) ret -= 1;
         } else {
             FROSCH_ASSERT(false,"OverlappingOperator Type unkown.");
@@ -210,23 +245,40 @@ namespace FROSch {
             // Build Null Space
             if (!this->ParameterList_->get("Null Space Type","Stokes").compare("Stokes")) {
                 nullSpaceBasisVec.resize(2);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 nullSpaceBasisVec[0] = BuildNullSpace<SC,LO,GO,NO>(dimension,LaplaceNullSpace,repeatedMapVec[0],dofsPerNodeVec[0],dofsMapsVec[0]);
                 nullSpaceBasisVec[1] = BuildNullSpace<SC,LO,GO,NO>(dimension,LaplaceNullSpace,repeatedMapVec[1],dofsPerNodeVec[1],dofsMapsVec[1]);
+#else
+                nullSpaceBasisVec[0] = BuildNullSpace<SC,NO>(dimension,LaplaceNullSpace,repeatedMapVec[0],dofsPerNodeVec[0],dofsMapsVec[0]);
+                nullSpaceBasisVec[1] = BuildNullSpace<SC,NO>(dimension,LaplaceNullSpace,repeatedMapVec[1],dofsPerNodeVec[1],dofsMapsVec[1]);
+#endif
             } else if (!this->ParameterList_->get("Null Space Type","Stokes").compare("Input")) {
                 FROSCH_ASSERT(!nullSpaceBasisVec.is_null(),"Null Space Type is 'Input', but nullSpaceBasis.is_null().");
             } else {
                 FROSCH_ASSERT(false,"Null Space Type unknown.");
             }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             IPOUHarmonicCoarseOperatorPtr iPOUHarmonicCoarseOperator = rcp_static_cast<IPOUHarmonicCoarseOperator<SC,LO,GO,NO> >(CoarseOperator_);
+#else
+            IPOUHarmonicCoarseOperatorPtr iPOUHarmonicCoarseOperator = rcp_static_cast<IPOUHarmonicCoarseOperator<SC,NO> >(CoarseOperator_);
+#endif
             if (0>iPOUHarmonicCoarseOperator->initialize(dimension,dofsPerNodeVec,repeatedNodesMapVec,dofsMapsVec,nullSpaceBasisVec,nodeListVec,dirichletBoundaryDofsVec)) ret -=10;
         } else if (!this->ParameterList_->get("CoarseOperator Type","IPOUHarmonicCoarseOperator").compare("GDSWCoarseOperator")) {
             this->ParameterList_->sublist("GDSWCoarseOperator").sublist("CoarseSolver").sublist("MueLu").set("Dimension",(int)dimension);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             GDSWCoarseOperatorPtr gDSWCoarseOperator = rcp_static_cast<GDSWCoarseOperator<SC,LO,GO,NO> >(CoarseOperator_);
+#else
+            GDSWCoarseOperatorPtr gDSWCoarseOperator = rcp_static_cast<GDSWCoarseOperator<SC,NO> >(CoarseOperator_);
+#endif
             if (0>gDSWCoarseOperator->initialize(dimension,dofsPerNodeVec,repeatedNodesMapVec,dofsMapsVec,dirichletBoundaryDofsVec,nodeListVec)) ret -=10;
         }
         else if (!this->ParameterList_->get("CoarseOperator Type","IPOUHarmonicCoarseOperator").compare("RGDSWCoarseOperator")) {
             this->ParameterList_->sublist("RGDSWCoarseOperator").sublist("CoarseSolver").sublist("MueLu").set("Dimension",(int)dimension);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             RGDSWCoarseOperatorPtr rGDSWCoarseOperator = rcp_static_cast<RGDSWCoarseOperator<SC,LO,GO,NO> >(CoarseOperator_);
+#else
+            RGDSWCoarseOperatorPtr rGDSWCoarseOperator = rcp_static_cast<RGDSWCoarseOperator<SC,NO> >(CoarseOperator_);
+#endif
             if (0>rGDSWCoarseOperator->initialize(dimension,dofsPerNodeVec,repeatedNodesMapVec,dofsMapsVec,dirichletBoundaryDofsVec,nodeListVec)) ret -=10;
         }
         else {
@@ -235,8 +287,13 @@ namespace FROSch {
         return ret;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int TwoLevelBlockPreconditioner<SC,LO,GO,NO>::compute()
+#else
+    template <class SC,class NO>
+    int TwoLevelBlockPreconditioner<SC,NO>::compute()
+#endif
     {
         FROSCH_TIMER_START_LEVELID(computeTime,"TwoLevelBlockPreconditioner::compute");
         int ret = 0;
@@ -245,21 +302,36 @@ namespace FROSch {
         return ret;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     void TwoLevelBlockPreconditioner<SC,LO,GO,NO>::describe(FancyOStream &out,
+#else
+    template <class SC,class NO>
+    void TwoLevelBlockPreconditioner<SC,NO>::describe(FancyOStream &out,
+#endif
                                                             const EVerbosityLevel verbLevel) const
     {
         FROSCH_ASSERT(false,"describe() has to be implemented properly...");
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     std::string TwoLevelBlockPreconditioner<SC,LO,GO,NO>::description() const
+#else
+    template <class SC,class NO>
+    std::string TwoLevelBlockPreconditioner<SC,NO>::description() const
+#endif
     {
         return "GDSW Preconditioner";
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int TwoLevelBlockPreconditioner<SC,LO,GO,NO>::resetMatrix(ConstXMatrixPtr &k)
+#else
+    template <class SC,class NO>
+    int TwoLevelBlockPreconditioner<SC,NO>::resetMatrix(ConstXMatrixPtr &k)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(resetMatrixTime,"TwoLevelBlockPreconditioner::resetMatrix");
         this->K_ = k;
@@ -269,8 +341,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int TwoLevelBlockPreconditioner<SC,LO,GO,NO>::preApplyCoarse(XMultiVectorPtr &x,
+#else
+    template <class SC,class NO>
+    int TwoLevelBlockPreconditioner<SC,NO>::preApplyCoarse(XMultiVectorPtr &x,
+#endif
                                                                  XMultiVectorPtr &y)
     {
         FROSCH_TIMER_START_LEVELID(preApplyCoarseTime,"TwoLevelBlockPreconditioner::preApplyCoarse");

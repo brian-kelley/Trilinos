@@ -44,35 +44,61 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  BlockVector<Scalar, Node>::
+#endif
   BlockVector () :
     base_type ()
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockVector<Scalar, LO, GO, Node>::
   BlockVector (const BlockVector<Scalar, LO, GO, Node>& in,
+#else
+  template<class Scalar, class Node>
+  BlockVector<Scalar, Node>::
+  BlockVector (const BlockVector<Scalar, Node>& in,
+#endif
                const Teuchos::DataAccess copyOrView) :
     base_type (in, copyOrView)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  BlockVector<Scalar, Node>::
+#endif
   BlockVector (const map_type& meshMap, const LO blockSize) :
     base_type (meshMap, blockSize, 1)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  BlockVector<Scalar, Node>::
+#endif
   BlockVector (const map_type& meshMap,
                const map_type& pointMap,
                const LO blockSize) :
     base_type (meshMap, pointMap, blockSize, 1)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  BlockVector<Scalar, Node>::
+#endif
   BlockVector (const mv_type& X_mv,
                const map_type& meshMap,
                const LO blockSize) :
@@ -84,83 +110,160 @@ namespace Tpetra {
       << X_mv.getNumVectors () << " != 1 columns.");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  BlockVector<Scalar, Node>::
+#endif
   BlockVector (const vec_type& X_vec,
                const map_type& meshMap,
                const LO blockSize) :
     base_type (X_vec, meshMap, blockSize)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockVector<Scalar, LO, GO, Node>::
   BlockVector (const BlockVector<Scalar, LO, GO, Node>& X,
+#else
+  template<class Scalar, class Node>
+  BlockVector<Scalar, Node>::
+  BlockVector (const BlockVector<Scalar, Node>& X,
+#endif
                const map_type& newMeshMap,
                const map_type& newPointMap,
                const size_t offset) :
     base_type (X, newMeshMap, newPointMap, offset)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockVector<Scalar, LO, GO, Node>::
   BlockVector (const BlockVector<Scalar, LO, GO, Node>& X,
+#else
+  template<class Scalar, class Node>
+  BlockVector<Scalar, Node>::
+  BlockVector (const BlockVector<Scalar, Node>& X,
+#endif
                const map_type& newMeshMap,
                const size_t offset) :
     base_type (X, newMeshMap, offset)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   typename BlockVector<Scalar, LO, GO, Node>::vec_type
   BlockVector<Scalar, LO, GO, Node>::getVectorView () {
+#else
+  template<class Scalar, class Node>
+  typename BlockVector<Scalar, Node>::vec_type
+  BlockVector<Scalar, Node>::getVectorView () {
+#endif
     Teuchos::RCP<vec_type> vPtr = this->mv_.getVectorNonConst (0);
     return *vPtr; // shallow copy
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  BlockVector<Scalar, Node>::
+#endif
   replaceLocalValues (const LO localRowIndex, const Scalar vals[]) const {
     return ((const base_type*) this)->replaceLocalValues (localRowIndex, 0, vals);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  BlockVector<Scalar, Node>::
+#endif
   replaceGlobalValues (const GO globalRowIndex, const Scalar vals[]) const {
     return ((const base_type*) this)->replaceGlobalValues (globalRowIndex, 0, vals);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  BlockVector<Scalar, Node>::
+#endif
   sumIntoLocalValues (const LO localRowIndex, const Scalar vals[]) const {
     return ((const base_type*) this)->sumIntoLocalValues (localRowIndex, 0, vals);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  BlockVector<Scalar, Node>::
+#endif
   sumIntoGlobalValues (const GO globalRowIndex, const Scalar vals[]) const {
     return ((const base_type*) this)->sumIntoLocalValues (globalRowIndex, 0, vals);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  BlockVector<Scalar, Node>::
+#endif
   getLocalRowView (const LO localRowIndex, Scalar*& vals) const {
     return ((const base_type*) this)->getLocalRowView (localRowIndex, 0, vals);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  BlockVector<Scalar, Node>::
+#endif
   getGlobalRowView (const GO globalRowIndex, Scalar*& vals) const {
     return ((const base_type*) this)->getGlobalRowView (globalRowIndex, 0, vals);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   typename BlockVector<Scalar, LO, GO, Node>::little_vec_type
   BlockVector<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  typename BlockVector<Scalar, Node>::little_vec_type
+  BlockVector<Scalar, Node>::
+#endif
   getLocalBlock (const LO localRowIndex) const
   {
     if (! this->isValidLocalMeshIndex (localRowIndex)) {
@@ -180,7 +283,12 @@ namespace Tpetra {
 //
 // Must be expanded from within the Tpetra namespace!
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_BLOCKVECTOR_INSTANT(S,LO,GO,NODE) \
   template class BlockVector< S, LO, GO, NODE >; 
+#else
+#define TPETRA_BLOCKVECTOR_INSTANT(S,NODE) \
+  template class BlockVector< S, NODE >; 
+#endif
 
 #endif // TPETRA_BLOCKVECTOR_DEF_HPP

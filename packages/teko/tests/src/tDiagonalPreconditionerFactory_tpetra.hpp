@@ -87,7 +87,11 @@ protected:
    DiagonalPrecondState *pstate;
    LinearOp pop;
    Teuchos::RCP<const Thyra::LinearOpBase<ST> > F_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraF;
+#else
+   Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> > tpetraF;
+#endif
    GO *block_starts, *block_gids;
 
 };

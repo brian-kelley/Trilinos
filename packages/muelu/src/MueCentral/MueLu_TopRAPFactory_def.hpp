@@ -27,32 +27,57 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   TopRAPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TopRAPFactory(RCP<const FactoryManagerBase> parentFactoryManager) :
+#else
+  template <class Scalar, class Node>
+  TopRAPFactory<Scalar, Node>::TopRAPFactory(RCP<const FactoryManagerBase> parentFactoryManager) :
+#endif
     PFact_ (parentFactoryManager->GetFactory("P")),
     RFact_ (parentFactoryManager->GetFactory("R")),
     AcFact_(parentFactoryManager->GetFactory("A"))
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   TopRAPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TopRAPFactory(RCP<const FactoryManagerBase> /* parentFactoryManagerFine */, RCP<const FactoryManagerBase> parentFactoryManagerCoarse) :
+#else
+  template <class Scalar, class Node>
+  TopRAPFactory<Scalar, Node>::TopRAPFactory(RCP<const FactoryManagerBase> /* parentFactoryManagerFine */, RCP<const FactoryManagerBase> parentFactoryManagerCoarse) :
+#endif
     PFact_ (parentFactoryManagerCoarse->GetFactory("P")),
     RFact_ (parentFactoryManagerCoarse->GetFactory("R")),
     AcFact_(parentFactoryManagerCoarse->GetFactory("A"))
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   TopRAPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~TopRAPFactory() { }
+#else
+  template <class Scalar, class Node>
+  TopRAPFactory<Scalar, Node>::~TopRAPFactory() { }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TopRAPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level & /* fineLevel */, Level & coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void TopRAPFactory<Scalar, Node>::DeclareInput(Level & /* fineLevel */, Level & coarseLevel) const {
+#endif
     if (PFact_  != Teuchos::null)                                       coarseLevel.DeclareInput("P", PFact_.get());
     if (RFact_  != Teuchos::null)                                       coarseLevel.DeclareInput("R", RFact_.get());
     if ((AcFact_ != Teuchos::null) && (AcFact_ != NoFactory::getRCP())) coarseLevel.DeclareInput("A", AcFact_.get());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TopRAPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & /* fineLevel */, Level & coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void TopRAPFactory<Scalar, Node>::Build(Level & /* fineLevel */, Level & coarseLevel) const {
+#endif
     if ((PFact_ != Teuchos::null) && (PFact_ != NoFactory::getRCP())) {
       RCP<Operator> oP = coarseLevel.Get<RCP<Operator> >("P", PFact_.get());
       RCP<Matrix>    P = rcp_dynamic_cast<Matrix>(oP);

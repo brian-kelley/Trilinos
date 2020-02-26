@@ -65,8 +65,13 @@ namespace {
 using Tpetra::global_size_t;
 typedef tif_utest::Node Node;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar,class LocalOrdinal,class GlobalOrdinal,class Node>
 void check_precond_basics(Teuchos::RCP<Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& precond, Teuchos::FancyOStream& out, bool& success)
+#else
+template<class Scalar,class Node>
+void check_precond_basics(Teuchos::RCP<Ifpack2::Preconditioner<Scalar,Node> >& precond, Teuchos::FancyOStream& out, bool& success)
+#endif
 {
   TEST_EQUALITY( precond->getNumInitialize(), 0);
   TEST_EQUALITY( precond->getNumCompute(), 0);
@@ -80,10 +85,19 @@ void check_precond_basics(Teuchos::RCP<Ifpack2::Preconditioner<Scalar,LocalOrdin
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar,class LocalOrdinal,class GlobalOrdinal,class Node>
 void check_precond_apply(Teuchos::RCP<Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& precond, Teuchos::FancyOStream& out, bool& success)
+#else
+template<class Scalar,class Node>
+void check_precond_apply(Teuchos::RCP<Ifpack2::Preconditioner<Scalar,Node> >& precond, Teuchos::FancyOStream& out, bool& success)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
   MV x(precond->getDomainMap(),1);
   MV y(precond->getRangeMap(),1);
 
@@ -95,7 +109,11 @@ void check_precond_apply(Teuchos::RCP<Ifpack2::Preconditioner<Scalar,LocalOrdina
 
 
 //this macro declares the unit-test-class:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, Test0, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, Test0, Scalar)
+#endif
 {
 //we are now in a class method declared by the above macro, and
 //that method has these input arguments:
@@ -103,10 +121,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, Test0, Scalar, LocalOrdinal, G
 
   using Teuchos::RCP;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> prec_type;
   typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> row_matrix_type;
   typedef Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
+#else
+  typedef Ifpack2::Preconditioner<Scalar,Node> prec_type;
+  typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar, Node> row_matrix_type;
+  typedef Tpetra::Map<Node> map_type;
+#endif
 
   Teuchos::OSTab tab0 (out);
   out << "Ifpack2::Factory Test0" << endl;
@@ -115,10 +140,18 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, Test0, Scalar, LocalOrdinal, G
   global_size_t num_rows_per_proc = 5;
 
   RCP<const map_type> rowmap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
+#else
+    tif_utest::create_tpetra_map<Node>(num_rows_per_proc);
+#endif
 
   RCP<const crs_matrix_type> crsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rowmap);
+#else
+    tif_utest::create_test_matrix<Scalar,Node>(rowmap);
+#endif
 
   Ifpack2::Factory factory;
   RCP<prec_type> prec_ilut = factory.create<row_matrix_type> ("ILUT", crsmatrix);
@@ -149,7 +182,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, Test0, Scalar, LocalOrdinal, G
 
 
 //this macro declares the unit-test-class:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, BlockCrs, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, BlockCrs, Scalar)
+#endif
 {
 //we are now in a class method declared by the above macro, and
 //that method has these input arguments:
@@ -157,9 +194,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, BlockCrs, Scalar, LocalOrdinal
 
   using Teuchos::RCP;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> prec_type;
   typedef Tpetra::BlockCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> block_crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
+#else
+  typedef Ifpack2::Preconditioner<Scalar,Node> prec_type;
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+#endif
   // typedef Tpetra::BlockMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> BMV;
   // typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
 
@@ -173,11 +216,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, BlockCrs, Scalar, LocalOrdinal
 
   RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm ();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > crsgraph =
     tif_utest::create_diagonal_graph<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
+#else
+  RCP<Tpetra::CrsGraph<Node> > crsgraph =
+    tif_utest::create_diagonal_graph<Node>(num_rows_per_proc);
+#endif
 
   RCP<block_crs_matrix_type> bcrsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::rcp_const_cast<block_crs_matrix_type, const block_crs_matrix_type> (tif_utest::create_block_diagonal_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> (crsgraph, blockSize));
+#else
+    Teuchos::rcp_const_cast<block_crs_matrix_type, const block_crs_matrix_type> (tif_utest::create_block_diagonal_matrix<Scalar,Node> (crsgraph, blockSize));
+#endif
 
   RCP<const row_matrix_type> rowmatrix = bcrsmatrix;
 
@@ -192,8 +244,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Factory, BlockCrs, Scalar, LocalOrdinal
 
 
 #define UNIT_TEST_GROUP_SC_LO_GO(Scalar,LocalOrdinal,GlobalOrdinal) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Factory, Test0, Scalar, LocalOrdinal,GlobalOrdinal) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Factory, BlockCrs, Scalar, LocalOrdinal,GlobalOrdinal)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Factory, Test0, Scalar) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Factory, BlockCrs, Scalar)
+#endif
 
 #include "Ifpack2_ETIHelperMacros.h"
 

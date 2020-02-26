@@ -70,18 +70,33 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   GeoInterpFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GeoInterpFactory(){
+#else
+  template <class Scalar, class Node>
+  GeoInterpFactory<Scalar, Node>::GeoInterpFactory(){
+#endif
     GetOStream(Runtime1) << "I constructed a GeoInterpFactory object... Nothing else to do here." << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   GeoInterpFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~GeoInterpFactory(){
+#else
+  template <class Scalar, class Node>
+  GeoInterpFactory<Scalar, Node>::~GeoInterpFactory(){
+#endif
     // Should be empty. All destruction should be handled by Level-based get stuff and RCP
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeoInterpFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void GeoInterpFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
 
     Input(fineLevel, "A");
     Input(fineLevel, "A00");
@@ -110,8 +125,13 @@ namespace MueLu {
     //currentLevel.DeclareInput(varName_,factory_,this);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeoInterpFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void GeoInterpFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#endif
 
     GetOStream(Runtime1) << "Starting 'build' routine...\n";
 
@@ -125,8 +145,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void GeoInterpFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void GeoInterpFactory<Scalar, Node>::BuildP(Level &fineLevel, Level &coarseLevel) const {
+#endif
 
     typedef Teuchos::SerialDenseMatrix<GO,GO> SerialDenseMatrixType;
 

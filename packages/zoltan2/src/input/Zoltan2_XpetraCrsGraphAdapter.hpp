@@ -92,7 +92,11 @@ public:
   typedef typename InputTraits<User>::gno_t    gno_t;
   typedef typename InputTraits<User>::part_t   part_t;
   typedef typename InputTraits<User>::node_t   node_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::CrsGraph<lno_t, gno_t, node_t> xgraph_t;
+#else
+  typedef Xpetra::CrsGraph<node_t> xgraph_t;
+#endif
   typedef User user_t;
   typedef UserCoord userCoord_t;
 #endif

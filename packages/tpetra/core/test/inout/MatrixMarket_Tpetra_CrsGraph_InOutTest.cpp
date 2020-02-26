@@ -136,7 +136,11 @@ computeGatherMap (Teuchos::RCP<const MapType> map,
     // It could be that Map is one-to-one, but the class doesn't
     // give us a way to test this, other than to create the
     // one-to-one Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     oneToOneMap = createOneToOne<LO, GO, NT> (map);
+#else
+    oneToOneMap = createOneToOne<NT> (map);
+#endif
   }
 
   RCP<const MapType> gatherMap;
@@ -308,9 +312,15 @@ compareCrsGraph (const CrsGraphType& A_orig, const CrsGraphType& A, Teuchos::Fan
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinalType, class GlobalOrdinalType, class NodeType>
 Teuchos::RCP<Tpetra::CrsGraph<LocalOrdinalType, GlobalOrdinalType, NodeType> >
 createSymRealSmall (const Teuchos::RCP<const Tpetra::Map<LocalOrdinalType, GlobalOrdinalType, NodeType> >& rowMap,
+#else
+template<class NodeType>
+Teuchos::RCP<Tpetra::CrsGraph<NodeType> >
+createSymRealSmall (const Teuchos::RCP<const Tpetra::Map<NodeType> >& rowMap,
+#endif
                     Teuchos::FancyOStream& out,
                     const bool dbg)
 {
@@ -324,9 +334,15 @@ createSymRealSmall (const Teuchos::RCP<const Tpetra::Map<LocalOrdinalType, Globa
   typedef GlobalOrdinalType GO;
   typedef NodeType NT;
   typedef Tpetra::global_size_t GST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
   typedef Tpetra::Export<LO, GO, NT> export_type;
   typedef Tpetra::CrsGraph<LO, GO, NT> graph_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+  typedef Tpetra::Export<NT> export_type;
+  typedef Tpetra::CrsGraph<NT> graph_type;
+#endif
 
   RCP<const Teuchos::Comm<int> > comm = rowMap->getComm ();
   const int myRank = comm->getRank ();
@@ -366,17 +382,30 @@ createSymRealSmall (const Teuchos::RCP<const Tpetra::Map<LocalOrdinalType, Globa
   return A;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinalType, class GlobalOrdinalType, class NodeType>
+#else
+template<class NodeType>
+#endif
 bool
 testCrsGraph (Teuchos::FancyOStream& out, const GlobalOrdinalType indexBase)
 {
   typedef LocalOrdinalType LO;
   typedef GlobalOrdinalType GO;
   typedef NodeType NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
   typedef Tpetra::CrsGraph<LO, GO, NT> crs_graph_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+  typedef Tpetra::CrsGraph<NT> crs_graph_type;
+#endif
   typedef Tpetra::CrsMatrix<>::scalar_type scalar_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<scalar_type,LO, GO, NT> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<scalar_type, NT> crs_matrix_type;
+#endif
   bool result = true; // current Boolean result; reused below
   bool success = true;
 
@@ -408,7 +437,11 @@ testCrsGraph (Teuchos::FancyOStream& out, const GlobalOrdinalType indexBase)
 
   out << "Creating original graph" << endl;
   RCP<crs_graph_type> A_orig =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     createSymRealSmall<LO, GO, NT> (rowMap, out, debug);
+#else
+    createSymRealSmall<NT> (rowMap, out, debug);
+#endif
 
   out << "Comparing read-in graph to original graph" << endl;
   result = compareCrsGraph<crs_graph_type> (*A_orig, *A, out);
@@ -469,25 +502,47 @@ testCrsGraph (Teuchos::FancyOStream& out, const GlobalOrdinalType indexBase)
 
 } // namespace (anonymous)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraphOutputInput, IndexBase0, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraphOutputInput, IndexBase0, NT )
+#endif
 {
   const GO indexBase = 0;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   success = testCrsGraph<LO, GO, NT> (out, indexBase);
+#else
+  success = testCrsGraph<NT> (out, indexBase);
+#endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraphOutputInput, IndexBase1, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraphOutputInput, IndexBase1, NT )
+#endif
 {
   const GO indexBase = 1;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   success = testCrsGraph<LO, GO, NT> (out, indexBase);
+#else
+  success = testCrsGraph<NT> (out, indexBase);
+#endif
 }
 
 // We instantiate tests for all combinations of the following parameters:
 //   - indexBase = {0, 1}
 //   - Scalar = {double, float}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define UNIT_TEST_GROUP( LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraphOutputInput, IndexBase0, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraphOutputInput, IndexBase1, LO, GO, NODE )
+#else
+#  define UNIT_TEST_GROUP(NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraphOutputInput, IndexBase0, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraphOutputInput, IndexBase1, NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

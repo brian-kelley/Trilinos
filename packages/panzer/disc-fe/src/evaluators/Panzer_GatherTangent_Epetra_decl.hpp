@@ -180,7 +180,11 @@ namespace panzer
       {
         using Teuchos::rcp;
         return rcp(new
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           GatherTangent_Epetra<EvalT, TRAITS, LO, GO>(globalIndexer_, pl));
+#else
+          GatherTangent_Epetra<EvalT, TRAITS>(globalIndexer_, pl));
+#endif
       } // end of clone()
 
     private:

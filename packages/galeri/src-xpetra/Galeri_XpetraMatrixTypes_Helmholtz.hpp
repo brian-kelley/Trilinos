@@ -234,7 +234,11 @@ namespace Galeri {
       LocalOrdinal nnz=5;
       std::vector<Scalar> Values(nnz);
       std::vector<GlobalOrdinal> Indices(nnz);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       VelocityModel<Scalar,LocalOrdinal,GlobalOrdinal> velocitymodel(2,model);
+#else
+      VelocityModel<Scalar> velocitymodel(2,model);
+#endif
 
       double LBx, RBx, LBy, RBy, Dx, Dy;
       Scalar sx_left, sx_center, sx_right;
@@ -330,7 +334,11 @@ namespace Galeri {
       LocalOrdinal nnz=5;
       std::vector<Scalar> Values(nnz);
       std::vector<GlobalOrdinal> Indices(nnz);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       VelocityModel<Scalar,LocalOrdinal,GlobalOrdinal> velocitymodel(2,model);
+#else
+      VelocityModel<Scalar> velocitymodel(2,model);
+#endif
 
       double LBx, RBx, LBy, RBy, Dx, Dy;
       Scalar sx_left, sx_center, sx_right;
@@ -432,7 +440,11 @@ namespace Galeri {
       GlobalOrdinal left, right, bottom, top, front, back, center;
       std::vector<Scalar> Values(7);
       std::vector<GlobalOrdinal> Indices(7);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       VelocityModel<Scalar,LocalOrdinal,GlobalOrdinal> velocitymodel(3,model);
+#else
+      VelocityModel<Scalar> velocitymodel(3,model);
+#endif
 
       double LBx, RBx, LBy, RBy, LBz, RBz, Dx, Dy, Dz;
       Scalar sx_left, sx_center, sx_right;
@@ -548,7 +560,11 @@ namespace Galeri {
           GlobalOrdinal left, right, bottom, top, front, back, center;
           std::vector<Scalar> Values(7);
           std::vector<GlobalOrdinal> Indices(7);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	  VelocityModel<Scalar,LocalOrdinal,GlobalOrdinal> velocitymodel(3,model);
+#else
+	  VelocityModel<Scalar> velocitymodel(3,model);
+#endif
 
           double LBx, RBx, LBy, RBy, LBz, RBz, Dx, Dy, Dz;
           Scalar sx_left, sx_center, sx_right;

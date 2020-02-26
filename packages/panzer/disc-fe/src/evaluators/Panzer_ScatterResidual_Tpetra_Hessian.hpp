@@ -55,7 +55,11 @@ namespace panzer {
 // Hessian Specialization
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterResidual_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>
+#else
+class ScatterResidual_Tpetra<panzer::Traits::Hessian,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Hessian, TRAITS>,
     public panzer::CloneableEvaluator {
@@ -75,7 +79,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterResidual_Tpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterResidual_Tpetra<panzer::Traits::Hessian,TRAITS,NodeT>(globalIndexer_,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Hessian::ScalarT ScalarT;
@@ -98,7 +106,11 @@ private:
   Teuchos::RCP<const std::map<std::string,std::string> > fieldMap_;
 
   std::string globalDataKey_; // what global data does this fill?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TpetraLinearObjContainer<double,LO,GO,NodeT> > tpetraContainer_;
+#else
+  Teuchos::RCP<const TpetraLinearObjContainer<double,NodeT> > tpetraContainer_;
+#endif
 
   ScatterResidual_Tpetra();
 };

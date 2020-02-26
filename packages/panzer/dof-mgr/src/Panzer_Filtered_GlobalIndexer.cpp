@@ -66,9 +66,15 @@ initialize(const Teuchos::RCP<const GlobalIndexer> & ugi,
   using GO = panzer::GlobalOrdinal;
   using LO = panzer::LocalOrdinal;
   using Node = panzer::TpetraNodeType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using Map = Tpetra::Map<LO, GO, Node>;
   using Vector = Tpetra::Vector<GO,LO,GO,Node>;
   using Export = Tpetra::Export<LO,GO,Node>;
+#else
+  using Map = Tpetra::Map<Node>;
+  using Vector = Tpetra::Vector<GO,Node>;
+  using Export = Tpetra::Export<Node>;
+#endif
 
   using std::size_t;
   using std::vector;
@@ -148,9 +154,15 @@ getOwnedAndGhostedNotFilteredIndicator(std::vector<int> & indicator) const
   using GO = panzer::GlobalOrdinal;
   using LO = panzer::LocalOrdinal;
   using Node = panzer::TpetraNodeType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using Map = Tpetra::Map<LO, GO, Node>;
   using Vector = Tpetra::Vector<GO,LO,GO,Node>;
   using Import = Tpetra::Import<LO,GO,Node>;
+#else
+  using Map = Tpetra::Map<Node>;
+  using Vector = Tpetra::Vector<GO,Node>;
+  using Import = Tpetra::Import<Node>;
+#endif
 
   std::vector<panzer::GlobalOrdinal> ownedIndices;
   std::vector<panzer::GlobalOrdinal> ghostedIndices;

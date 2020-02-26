@@ -61,16 +61,28 @@ namespace Details {
 /// \brief Common base class of Import and Export
 /// \warning This is an implementation detail of Tpetra.  We make no
 ///   promises of backwards compatibility with this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO,
          class GO,
          class NT>
+#else
+template<class NT>
+#endif
 class Transfer : public Teuchos::Describable {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   /// \brief Map specialization used by this class and subclasses.
   ///
   /// The initial two colons avoid confusion between Tpetra::Map and
   /// Tpetra::Details::Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = ::Tpetra::Map<LO, GO, NT>;
+#else
+  using map_type = ::Tpetra::Map<NT>;
+#endif
 
 private:
   using execution_space = typename NT::device_type::execution_space;
@@ -104,16 +116,28 @@ public:
             const Teuchos::RCP<Teuchos::ParameterList>& plist,
             const std::string& className);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Transfer (const Transfer<LO, GO, NT>& rhs) = default;
+#else
+  Transfer (const Transfer<NT>& rhs) = default;
+#endif
 
   struct reverse_tag {};
   /// \brief Reverse-mode "copy" constructor.
   ///
   /// Use this for constructing an Export from an Import, or an Import
   /// from an Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Transfer (const Transfer<LO, GO, NT>& rhs, reverse_tag tag);
+#else
+  Transfer (const Transfer<NT>& rhs, reverse_tag tag);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Transfer<LO, GO, NT>& operator= (const Transfer<LO, GO, NT>&) = default;
+#else
+  Transfer<NT>& operator= (const Transfer<NT>&) = default;
+#endif
 
   //! Destructor (declared virtual for memory safety of derived classes).
   virtual ~Transfer () = default;
@@ -228,7 +252,11 @@ public:
 
 protected:
   //! All the data needed for executing the Export communication plan.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<ImportExportData<LO, GO, NT> > TransferData_;
+#else
+  Teuchos::RCP<ImportExportData<NT> > TransferData_;
+#endif
 
   //! Valid (nonnull) output stream for verbose output.
   Teuchos::FancyOStream& verboseOutputStream () const;
@@ -295,7 +323,12 @@ private:
 // LO: The local ordinal type.
 // GO: The global ordinal type.
 // NODE: The Kokkos Node type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DETAILS_TRANSFER_INSTANT(LO, GO, NODE) \
   template class Transfer< LO , GO , NODE >;
+#else
+#define TPETRA_DETAILS_TRANSFER_INSTANT(NODE) \
+  template class Transfer<NODE >;
+#endif
 
 #endif // TPETRA_DETAILS_TRANSFER_DECL_HPP

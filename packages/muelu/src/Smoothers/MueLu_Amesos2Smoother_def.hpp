@@ -62,8 +62,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Amesos2Smoother(const std::string& type, const Teuchos::ParameterList& paramList)
+#else
+  template <class Scalar, class Node>
+  Amesos2Smoother<Scalar, Node>::Amesos2Smoother(const std::string& type, const Teuchos::ParameterList& paramList)
+#endif
     : type_(type), useTransformation_(false) {
     this->SetParameterList(paramList);
 
@@ -104,11 +109,21 @@ namespace MueLu {
                                "Amesos2 has been compiled without the support of this solver, or the solver name is misspelled.");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~Amesos2Smoother() { }
+#else
+  template <class Scalar, class Node>
+  Amesos2Smoother<Scalar, Node>::~Amesos2Smoother() { }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> Amesos2Smoother<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
     validParamList->set< RCP<const FactoryBase> >("A",         null, "Factory of the coarse matrix");
     validParamList->set< RCP<const FactoryBase> >("Nullspace", null, "Factory of the nullspace");
@@ -116,8 +131,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Amesos2Smoother<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     ParameterList pL = this->GetParameterList();
 
     this->Input(currentLevel, "A");
@@ -125,8 +145,13 @@ namespace MueLu {
       this->Input(currentLevel, "Nullspace");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(Level& currentLevel) {
+#else
+  template <class Scalar, class Node>
+  void Amesos2Smoother<Scalar, Node>::Setup(Level& currentLevel) {
+#endif
     FactoryMonitor m(*this, "Setup Smoother", currentLevel);
 
     if (SmootherPrototype::IsSetup() == true)
@@ -283,8 +308,13 @@ namespace MueLu {
     SmootherPrototype::IsSetup(true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Apply(MultiVector& X, const MultiVector& B, bool /* InitialGuessIsZero */) const {
+#else
+  template <class Scalar, class Node>
+  void Amesos2Smoother<Scalar, Node>::Apply(MultiVector& X, const MultiVector& B, bool /* InitialGuessIsZero */) const {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(SmootherPrototype::IsSetup() == false, Exceptions::RuntimeError, "MueLu::Amesos2Smoother::Apply(): Setup() has not been called");
 
     RCP<Tpetra_MultiVector> tX, tB;
@@ -330,16 +360,27 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::SmootherPrototype<Scalar, Node> >
+  Amesos2Smoother<Scalar, Node>::
+#endif
   Copy() const
   {
     return rcp (new Amesos2Smoother (*this));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string Amesos2Smoother<Scalar, Node>::description() const {
+#endif
     std::ostringstream out;
 
     if (SmootherPrototype::IsSetup() == true) {
@@ -352,8 +393,13 @@ namespace MueLu {
     return out.str();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::print(Teuchos::FancyOStream& out, const VerbLevel verbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Amesos2Smoother<Scalar, Node>::print(Teuchos::FancyOStream& out, const VerbLevel verbLevel) const {
+#endif
     MUELU_DESCRIBE;
 
     if (verbLevel & Parameters0)
@@ -376,8 +422,13 @@ namespace MueLu {
            << "RCP<prec_>: " << prec_ << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t Amesos2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNodeSmootherComplexity() const {
+#else
+  template <class Scalar, class Node>
+  size_t Amesos2Smoother<Scalar, Node>::getNodeSmootherComplexity() const {
+#endif
     if(!prec_.is_null())
       return prec_->getStatus().getNnzLU();
     else

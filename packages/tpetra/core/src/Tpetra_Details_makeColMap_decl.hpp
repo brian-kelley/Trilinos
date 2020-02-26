@@ -124,22 +124,44 @@ namespace Details {
 /// which does not sort remote GIDs with the same owning process.
 /// means "sort remote GIDs."  If you don't want to sort, for
 /// compatibility with Epetra, set sortEachProcsGids to false.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 int
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& colMap,
+#else
+makeColMap (Teuchos::RCP<const Tpetra::Map<NT> >& colMap,
+#endif
             Teuchos::Array<int>& remotePIDs,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& domMap,
             const RowGraph<LO, GO, NT>& graph,
+#else
+            const Teuchos::RCP<const Tpetra::Map<NT> >& domMap,
+            const RowGraph<NT>& graph,
+#endif
             const bool sortEachProcsGids = true,
             std::ostream* errStrm = NULL);
 
 /// \brief Construct a column map for the given set of gids (always sorting remote GIDs within each remote process).
 /// \param colMap [out] Will be set to the new column map.
 /// \param domMap [in] The domain map, used to determine which global columns are locally owned.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 int
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& colMap,
             const Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& domMap,
+#else
+makeColMap (Teuchos::RCP<const Tpetra::Map<NT>>& colMap,
+            const Teuchos::RCP<const Tpetra::Map<NT>>& domMap,
+#endif
             Kokkos::View<GO*, typename NT::memory_space> gids,
             std::ostream* errStrm = NULL);
 

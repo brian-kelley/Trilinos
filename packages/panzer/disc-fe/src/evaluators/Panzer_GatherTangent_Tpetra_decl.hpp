@@ -95,7 +95,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData d);
 
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new GatherTangent_Tpetra<EvalT,TRAITS,LO,GO,NodeT>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new GatherTangent_Tpetra<EvalT,TRAITS,NodeT>(globalIndexer_,pl)); }
+#endif
 
   // for testing purposes
   const PHX::FieldTag & getFieldTag(int i) const
@@ -118,7 +122,11 @@ private:
   bool useTimeDerivativeSolutionVector_;
   std::string globalDataKey_; // what global data does this fill?
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TpetraLinearObjContainer<double,LO,GO,NodeT> > tpetraContainer_;
+#else
+  Teuchos::RCP<const TpetraLinearObjContainer<double,NodeT> > tpetraContainer_;
+#endif
 
   GatherTangent_Tpetra();
 };

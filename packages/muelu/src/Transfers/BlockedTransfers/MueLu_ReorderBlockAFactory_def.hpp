@@ -65,8 +65,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> ReorderBlockAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> ReorderBlockAFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A",          MueLu::NoFactory::getRCP(), "Generating factory for A.");
@@ -87,13 +92,23 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ReorderBlockAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ReorderBlockAFactory<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "A");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ReorderBlockAFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ReorderBlockAFactory<Scalar, Node>::Build(Level& currentLevel) const {
+#endif
     FactoryMonitor m(*this, "ReorderBlockA factory", currentLevel);
 
     const ParameterList& pL = GetParameterList();
@@ -122,14 +137,23 @@ namespace MueLu {
       }
 
       bool bThyraMode = false; // no support for Thyra mode (yet)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const MapExtractor> map_extractor = Xpetra::MapExtractorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Ain->getRowMap(),xmaps,bThyraMode);
+#else
+      RCP<const MapExtractor> map_extractor = Xpetra::MapExtractorFactory<Scalar, Node>::Build(Ain->getRowMap(),xmaps,bThyraMode);
+#endif
 
       // split null space vectors
       //RCP<MultiVector> nullspace1 = map_extractor->ExtractVector(nullspace,0);
       //RCP<MultiVector> nullspace2 = map_extractor->ExtractVector(nullspace,1);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > bOp =
           Xpetra::MatrixUtils<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SplitMatrix(*Ain,map_extractor,map_extractor,Teuchos::null,bThyraMode);
+#else
+      Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp =
+          Xpetra::MatrixUtils<Scalar, Node>::SplitMatrix(*Ain,map_extractor,map_extractor,Teuchos::null,bThyraMode);
+#endif
 
       TEUCHOS_TEST_FOR_EXCEPTION(Ain->getGlobalNumRows()    != bOp->getGlobalNumRows(),    Exceptions::RuntimeError,      "Split operator not consistent with input operator (different number of rows).");
       TEUCHOS_TEST_FOR_EXCEPTION(Ain->getNodeNumRows()      != bOp->getNodeNumRows(),      Exceptions::RuntimeError,      "Split operator not consistent with input operator (different number of node rows).");
@@ -147,7 +171,11 @@ namespace MueLu {
     GetOStream(Debug) << "Reordering A using " << brm->toString() << std::endl;
 
     Teuchos::RCP<const ReorderedBlockedCrsMatrix> brop =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::rcp_dynamic_cast<const ReorderedBlockedCrsMatrix>(Xpetra::buildReorderedBlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(brm, A));
+#else
+        Teuchos::rcp_dynamic_cast<const ReorderedBlockedCrsMatrix>(Xpetra::buildReorderedBlockedCrsMatrix<Scalar,Node>(brm, A));
+#endif
 
     TEUCHOS_TEST_FOR_EXCEPTION(brop.is_null(),     Exceptions::RuntimeError,      "Block reordering of " << A->Rows() << "x" << A->Cols() << " blocked operator failed.");
 

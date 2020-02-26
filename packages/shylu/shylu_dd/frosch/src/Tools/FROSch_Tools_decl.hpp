@@ -136,16 +136,28 @@ namespace FROSch {
     template <typename LO,typename GO>
     int MergeList(Array<RCP<OverlappingData<LO,GO> > > &odList);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LO,
               typename GO,
               typename NO>
+#else
+    template <typename NO>
+#endif
     class LowerPIDTieBreak : public Tpetra::Details::TieBreak<LO,GO> {
 
     protected:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
         using CommPtr                   = RCP<const Comm<int> >;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using ConstXMapPtr              = RCP<const Map<LO,GO,NO> >;
+#else
+        using ConstXMapPtr              = RCP<const Map<NO> >;
+#endif
 
         using OverlappingDataPtr        = RCP<OverlappingData<LO,GO> >;
         using OverlappingDataPtrVec     = Array<OverlappingDataPtr>;
@@ -197,11 +209,17 @@ namespace FROSch {
         UN LevelID_ = 1;
     };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     RCP<const Map<LO,GO,NO> > BuildUniqueMap(const RCP<const Map<LO,GO,NO> > map,
+#else
+    template <class NO>
+    RCP<const Map<NO> > BuildUniqueMap(const RCP<const Map<NO> > map,
+#endif
                                              bool useCreateOneToOneMap = true,
                                              RCP<Tpetra::Details::TieBreak<LO,GO> > tieBreak = null);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     ArrayRCP<RCP<const Map<LO,GO,NO> > > BuildRepeatedSubMaps(RCP<const Matrix<SC,LO,GO,NO> > matrix,
                                                               ArrayRCP<const RCP<Map<LO,GO,NO> > > subMaps);
@@ -251,63 +269,181 @@ namespace FROSch {
                                 RCP<const Map<LO,GO,NO> > inputMap,
                                 RCP<const CrsGraph<LO,GO,NO> > &outputGraph,
                                 RCP<const Map<LO,GO,NO> > &outputMap);
+#else
+    template <class SC,class NO>
+    ArrayRCP<RCP<const Map<NO> > > BuildRepeatedSubMaps(RCP<const Matrix<SC,NO> > matrix,
+                                                              ArrayRCP<const RCP<Map<NO> > > subMaps);
+
+    template <class SC,class NO>
+    ArrayRCP<RCP<const Map<NO> > > BuildRepeatedSubMaps(RCP<const CrsGraph<NO> > graph,
+                                                              ArrayRCP<const RCP<Map<NO> > > subMaps);
+
+    template <class SC,class NO>
+    RCP<Map<NO> > BuildRepeatedMapNonConstOld(RCP<const Matrix<SC,NO> > matrix);
+
+    template <class SC,class NO>
+    RCP<const Map<NO> > BuildRepeatedMapOld(RCP<const Matrix<SC,NO> > matrix);
+
+    template <class NO>
+    RCP<Map<NO> > BuildRepeatedMapNonConstOld(RCP<const CrsGraph<NO> > graph);
+
+    template <class NO>
+    RCP<const Map<NO> > BuildRepeatedMapOld(RCP<const CrsGraph<NO> > graph);
+
+    template <class SC,class NO>
+    RCP<Map<NO> > BuildRepeatedMapNonConst(RCP<const Matrix<SC,NO> > matrix);
+
+    template <class SC,class NO>
+    RCP<const Map<NO> > BuildRepeatedMap(RCP<const Matrix<SC,NO> > matrix);
+
+    template <class NO>
+    RCP<Map<NO> > BuildRepeatedMapNonConst(RCP<const CrsGraph<NO> > graph);
+
+    template <class NO>
+    RCP<const Map<NO> > BuildRepeatedMap(RCP<const CrsGraph<NO> > graph);
+
+    template <class SC,class NO>
+    int ExtendOverlapByOneLayer_Old(RCP<const Matrix<SC,NO> > inputMatrix,
+                                    RCP<const Map<NO> > inputMap,
+                                    RCP<const Matrix<SC,NO> > &outputMatrix,
+                                    RCP<const Map<NO> > &outputMap);
+
+    template <class SC,class NO>
+    int ExtendOverlapByOneLayer(RCP<const Matrix<SC,NO> > inputMatrix,
+                                RCP<const Map<NO> > inputMap,
+                                RCP<const Matrix<SC,NO> > &outputMatrix,
+                                RCP<const Map<NO> > &outputMap);
+
+    template <class NO>
+    int ExtendOverlapByOneLayer(RCP<const CrsGraph<NO> > inputGraph,
+                                RCP<const Map<NO> > inputMap,
+                                RCP<const CrsGraph<NO> > &outputGraph,
+                                RCP<const Map<NO> > &outputMap);
+#endif
     
     /*! \brief Sort the Xpetra::Map by the global IDs \c x
      * \param[in] inputMap Unsorted input map
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     RCP<const Map<LO,GO,NO> > SortMapByGlobalIndex(RCP<const Map<LO,GO,NO> > inputMap);
+#else
+    template <class NO>
+    RCP<const Map<NO> > SortMapByGlobalIndex(RCP<const Map<NO> > inputMap);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > AssembleMaps(ArrayView<RCP<const Map<LO,GO,NO> > > mapVector,
+#else
+    template <class NO>
+    RCP<Map<NO> > AssembleMaps(ArrayView<RCP<const Map<NO> > > mapVector,
+#endif
                                      ArrayRCP<ArrayRCP<LO> > &partMappings);
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > AssembleSubdomainMap(unsigned numberOfBlocks,
                                              ArrayRCP<ArrayRCP<RCP<const Map<LO,GO,NO> > > > dofsMaps,
+#else
+    template <class NO>
+    RCP<Map<NO> > AssembleSubdomainMap(unsigned numberOfBlocks,
+                                             ArrayRCP<ArrayRCP<RCP<const Map<NO> > > > dofsMaps,
+#endif
                                              ArrayRCP<unsigned> dofsPerNode);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > MergeMapsNonConst(ArrayRCP<RCP<const Map<LO,GO,NO> > > mapVector);
+#else
+    template <class NO>
+    RCP<Map<NO> > MergeMapsNonConst(ArrayRCP<RCP<const Map<NO> > > mapVector);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     RCP<const Map<LO,GO,NO> > MergeMaps(ArrayRCP<RCP<const Map<LO,GO,NO> > > mapVector);
+#else
+    template <class NO>
+    RCP<const Map<NO> > MergeMaps(ArrayRCP<RCP<const Map<NO> > > mapVector);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     int BuildDofMaps(const RCP<const Map<LO,GO,NO> > map,
+#else
+    template <class NO>
+    int BuildDofMaps(const RCP<const Map<NO> > map,
+#endif
                      unsigned dofsPerNode,
                      unsigned dofOrdering,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      RCP<const Map<LO,GO,NO> > &nodesMap,
                      ArrayRCP<RCP<const Map<LO,GO,NO> > > &dofMaps,
+#else
+                     RCP<const Map<NO> > &nodesMap,
+                     ArrayRCP<RCP<const Map<NO> > > &dofMaps,
+#endif
                      GO offset = 0);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     int BuildDofMapsVec(const ArrayRCP<RCP<const Map<LO,GO,NO> > > mapVec,
+#else
+    template <class NO>
+    int BuildDofMapsVec(const ArrayRCP<RCP<const Map<NO> > > mapVec,
+#endif
                         ArrayRCP<unsigned> dofsPerNodeVec,
                         ArrayRCP<FROSch::DofOrdering> dofOrderingVec,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         ArrayRCP<RCP<const Map<LO,GO,NO> > > &nodesMapVec,
                         ArrayRCP<ArrayRCP<RCP<const Map<LO,GO,NO> > > >&dofMapsVec);
+#else
+                        ArrayRCP<RCP<const Map<NO> > > &nodesMapVec,
+                        ArrayRCP<ArrayRCP<RCP<const Map<NO> > > >&dofMapsVec);
+#endif
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > BuildMapFromDofMaps(const ArrayRCP<RCP<Map<LO,GO,NO> > > &dofMaps,
+#else
+    template <class NO>
+    RCP<Map<NO> > BuildMapFromDofMaps(const ArrayRCP<RCP<Map<NO> > > &dofMaps,
+#endif
                                             unsigned dofsPerNode,
                                             unsigned dofOrdering);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > BuildMapFromNodeMap(RCP<Map<LO,GO,NO> > &nodesMap,
+#else
+    template <class NO>
+    RCP<Map<NO> > BuildMapFromNodeMap(RCP<Map<NO> > &nodesMap,
+#endif
                                             unsigned dofsPerNode,
                                             unsigned dofOrdering);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     ArrayRCP<RCP<const Map<LO,GO,NO> > > BuildNodeMapsFromDofMaps(ArrayRCP<ArrayRCP<RCP<const Map<LO,GO,NO> > > >dofsMapsVecVec,
+#else
+    template <class NO>
+    ArrayRCP<RCP<const Map<NO> > > BuildNodeMapsFromDofMaps(ArrayRCP<ArrayRCP<RCP<const Map<NO> > > >dofsMapsVecVec,
+#endif
                                                             ArrayRCP<unsigned> dofsPerNodeVec,
                                                             ArrayRCP<DofOrdering> dofOrderingVec);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     ArrayRCP<RCP<Map<LO,GO,NO> > > BuildSubMaps(RCP<const Map<LO,GO,NO> > &fullMap,
+#else
+    template <class NO>
+    ArrayRCP<RCP<Map<NO> > > BuildSubMaps(RCP<const Map<NO> > &fullMap,
+#endif
                                                 ArrayRCP<GO> maxSubGIDVec);
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     ArrayRCP<GO> FindOneEntryOnlyRowsGlobal(RCP<const Matrix<SC,LO,GO,NO> > matrix,
                                             RCP<const Map<LO,GO,NO> > repeatedMap);
@@ -315,6 +451,15 @@ namespace FROSch {
     template <class LO,class GO,class NO>
     ArrayRCP<GO> FindOneEntryOnlyRowsGlobal(RCP<const CrsGraph<LO,GO,NO> > graph,
                                             RCP<const Map<LO,GO,NO> > repeatedMap);
+#else
+    template <class SC,class NO>
+    ArrayRCP<GO> FindOneEntryOnlyRowsGlobal(RCP<const Matrix<SC,NO> > matrix,
+                                            RCP<const Map<NO> > repeatedMap);
+
+    template <class NO>
+    ArrayRCP<GO> FindOneEntryOnlyRowsGlobal(RCP<const CrsGraph<NO> > graph,
+                                            RCP<const Map<NO> > repeatedMap);
+#endif
     
     template <class SC,class LO>
     bool ismultiple(ArrayView<SC> A,
@@ -326,69 +471,138 @@ namespace FROSch {
     template<class T>
     inline void sortunique(T &v);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC, class LO,class GO,class NO>
     RCP<MultiVector<SC,LO,GO,NO> > ModifiedGramSchmidt(RCP<const MultiVector<SC,LO,GO,NO> > multiVector,
+#else
+    template <class SC,class NO>
+    RCP<MultiVector<SC,NO> > ModifiedGramSchmidt(RCP<const MultiVector<SC,NO> > multiVector,
+#endif
                                                        ArrayView<unsigned> zero = ArrayView<unsigned>());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC, class LO,class GO,class NO>
     RCP<const MultiVector<SC,LO,GO,NO> > BuildNullSpace(unsigned dimension,
+#else
+    template <class SC,class NO>
+    RCP<const MultiVector<SC,NO> > BuildNullSpace(unsigned dimension,
+#endif
                                                         unsigned nullSpaceType,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                         RCP<const Map<LO,GO,NO> > repeatedMap,
+#else
+                                                        RCP<const Map<NO> > repeatedMap,
+#endif
                                                         unsigned dofsPerNode,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                         ArrayRCP<RCP<const Map<LO,GO,NO> > > dofsMaps,
                                                         RCP<const MultiVector<SC,LO,GO,NO> > nodeList = null);
+#else
+                                                        ArrayRCP<RCP<const Map<NO> > > dofsMaps,
+                                                        RCP<const MultiVector<SC,NO> > nodeList = null);
+#endif
 
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
+#else
+    template <class SC,class NO>
+#endif
     struct ConvertToXpetra {
 
     public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         static RCP<Map<LO,GO,NO> > ConvertMap(UnderlyingLib lib,
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        static RCP<Map<NO> > ConvertMap(UnderlyingLib lib,
+#endif
                                               const Epetra_BlockMap &map,
                                               RCP<const Comm<int> > comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         static RCP<Matrix<SC,LO,GO,NO> > ConvertMatrix(UnderlyingLib lib,
+#else
+        static RCP<Matrix<SC,NO> > ConvertMatrix(UnderlyingLib lib,
+#endif
                                                        Epetra_CrsMatrix &matrix,
                                                        RCP<const Comm<int> > comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         static RCP<MultiVector<SC,LO,GO,NO> > ConvertMultiVector(UnderlyingLib lib,
+#else
+        static RCP<MultiVector<SC,NO> > ConvertMultiVector(UnderlyingLib lib,
+#endif
                                                                  Epetra_MultiVector &vector,
                                                                  RCP<const Comm<int> > comm);
     };
 
     template <class SC,class LO,class NO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     struct ConvertToXpetra<SC,LO,int,NO> {
+#else
+    struct ConvertToXpetra<SC,NO> {
+#endif
 
     public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         static RCP<Map<LO,int,NO> > ConvertMap(UnderlyingLib lib,
+#else
+        static RCP<Map<NO> > ConvertMap(UnderlyingLib lib,
+#endif
                                                const Epetra_BlockMap &map,
                                                RCP<const Comm<int> > comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         static RCP<Matrix<SC,LO,int,NO> > ConvertMatrix(UnderlyingLib lib,
+#else
+        static RCP<Matrix<SC,NO> > ConvertMatrix(UnderlyingLib lib,
+#endif
                                                         Epetra_CrsMatrix &matrix,
                                                         RCP<const Comm<int> > comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         static RCP<MultiVector<SC,LO,int,NO> > ConvertMultiVector(UnderlyingLib lib,
+#else
+        static RCP<MultiVector<SC,NO> > ConvertMultiVector(UnderlyingLib lib,
+#endif
                                                                   Epetra_MultiVector &vector,
                                                                   RCP<const Comm<int> > comm);
     };
 
     template <class SC,class LO,class NO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     struct ConvertToXpetra<SC,LO,long long,NO> {
+#else
+    struct ConvertToXpetra<SC,NO> {
+#endif
 
     public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         static RCP<Map<LO,long long,NO> > ConvertMap(UnderlyingLib lib,
+#else
+        static RCP<Map<NO> > ConvertMap(UnderlyingLib lib,
+#endif
                                                      const Epetra_BlockMap &map,
                                                      RCP<const Comm<int> > comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         static RCP<Matrix<SC,LO,long long,NO> > ConvertMatrix(UnderlyingLib lib,
+#else
+        static RCP<Matrix<SC,NO> > ConvertMatrix(UnderlyingLib lib,
+#endif
                                                               Epetra_CrsMatrix &matrix,
                                                               RCP<const Comm<int> > comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         static RCP<MultiVector<SC,LO,long long,NO> > ConvertMultiVector(UnderlyingLib lib,
+#else
+        static RCP<MultiVector<SC,NO> > ConvertMultiVector(UnderlyingLib lib,
+#endif
                                                                         Epetra_MultiVector &vector,
                                                                         RCP<const Comm<int> > comm);
     };
@@ -403,16 +617,31 @@ namespace FROSch {
                                                   std::string nameVector="Vector");
 
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO,class GO,class NO>
     RCP<Epetra_Map> ConvertToEpetra(const Map<LO,GO,NO> &map,
+#else
+    template <class NO>
+    RCP<Epetra_Map> ConvertToEpetra(const Map<NO> &map,
+#endif
                                     RCP<Epetra_Comm> epetraComm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     RCP<Epetra_MultiVector> ConvertToEpetra(const MultiVector<SC,LO,GO,NO> &vector,
+#else
+    template <class SC,class NO>
+    RCP<Epetra_MultiVector> ConvertToEpetra(const MultiVector<SC,NO> &vector,
+#endif
                                             RCP<Epetra_Comm> epetraComm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     RCP<Epetra_CrsMatrix> ConvertToEpetra(const Matrix<SC,LO,GO,NO> &matrix,
+#else
+    template <class SC,class NO>
+    RCP<Epetra_CrsMatrix> ConvertToEpetra(const Matrix<SC,NO> &matrix,
+#endif
                                           RCP<Epetra_Comm> epetraComm);
 #endif
 
@@ -420,8 +649,13 @@ namespace FROSch {
     Array<LO> GetIndicesFromString(std::string string);
 
 #ifdef HAVE_SHYLU_DDFROSCH_ZOLTAN2
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int RepartionMatrixZoltan2(RCP<Matrix<SC,LO,GO,NO> > &crsMatrix,
+#else
+    template <class SC,class NO>
+    int RepartionMatrixZoltan2(RCP<Matrix<SC,NO> > &crsMatrix,
+#endif
                                RCP<ParameterList> parameterList);
 #endif
 

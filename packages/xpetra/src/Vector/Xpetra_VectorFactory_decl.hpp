@@ -68,8 +68,10 @@ namespace Xpetra {
 
 
   template <class Scalar        /* = Vector<>::scalar_type*/,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal  /* = typename Vector<Scalar>::local_ordinal_type*/,
             class GlobalOrdinal /* = typename Vector<Scalar, LocalOrdinal>::local_ordinal_type*/,
+#endif
             class Node          /* = typename Vector<Scalar, LocalOrdinal, GlobalOrdinal>::node_type*/>
   class VectorFactory
   {
@@ -78,23 +80,41 @@ namespace Xpetra {
 
   private:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal  /* = typename Vector<Scalar>::local_ordinal_type*/ = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal /* = typename Vector<Scalar, LocalOrdinal>::local_ordinal_type*/ = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Private constructor. This is a static class.
     VectorFactory() = default;
 
   public:
 
     //! Constructor specifying the number of non-zeros for all rows.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static Teuchos::RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>> 
     Build(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>> &map, bool zeroOut=true)
+#else
+    static Teuchos::RCP<Xpetra::Vector<Scalar,Node>> 
+    Build(const Teuchos::RCP<const Xpetra::Map<Node>> &map, bool zeroOut=true)
+#endif
     {
         XPETRA_MONITOR("VectorFactory::Build");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node>>
             bmap = Teuchos::rcp_dynamic_cast<const Xpetra::BlockedMap<LocalOrdinal, GlobalOrdinal, Node>>(map);
+#else
+        RCP<const Xpetra::BlockedMap<Node>>
+            bmap = Teuchos::rcp_dynamic_cast<const Xpetra::BlockedMap<Node>>(map);
+#endif
 
         if(!bmap.is_null())
         {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             return rcp(new Xpetra::BlockedVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>(bmap, zeroOut));
+#else
+            return rcp(new Xpetra::BlockedVector<Scalar, Node>(bmap, zeroOut));
+#endif
         }
 
         #ifdef HAVE_XPETRA_TPETRA
@@ -141,8 +161,13 @@ namespace Xpetra {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>> 
     Build(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>& map, 
+#else
+    static RCP<Xpetra::Vector<Scalar,Node>> 
+    Build(const Teuchos::RCP<const Xpetra::Map<Node>>& map, 
+#endif
           bool zeroOut=true);
 
   };
@@ -174,8 +199,13 @@ namespace Xpetra {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>>
     Build(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>& map, 
+#else
+    static RCP<Xpetra::Vector<Scalar,Node>>
+    Build(const Teuchos::RCP<const Xpetra::Map<Node>>& map, 
+#endif
           bool zeroOut=true);
 
   };
@@ -209,8 +239,13 @@ namespace Xpetra {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>> 
     Build(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>& map, 
+#else
+    static RCP<Xpetra::Vector<Scalar,Node>> 
+    Build(const Teuchos::RCP<const Xpetra::Map<Node>>& map, 
+#endif
           bool zeroOut=true);
 
   };
@@ -243,8 +278,13 @@ namespace Xpetra {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>> 
     Build(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>& map, 
+#else
+    static RCP<Xpetra::Vector<Scalar,Node>> 
+    Build(const Teuchos::RCP<const Xpetra::Map<Node>>& map, 
+#endif
           bool zeroOut=true);
 
   };

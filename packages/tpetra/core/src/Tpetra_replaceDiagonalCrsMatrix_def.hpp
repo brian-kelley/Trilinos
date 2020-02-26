@@ -51,13 +51,27 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 replaceDiagonalCrsMatrix (CrsMatrix<SC, LO, GO, NT>& matrix,
     const Vector<SC, LO, GO, NT>& newDiag) {
+#else
+replaceDiagonalCrsMatrix (CrsMatrix<SC, NT>& matrix,
+    const Vector<SC, NT>& newDiag) {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Map<LO, GO, NT>;
   using crs_matrix_type = CrsMatrix<SC, LO, GO, NT>;
+#else
+  using map_type = Map<NT>;
+  using crs_matrix_type = CrsMatrix<SC, NT>;
+#endif
   // using vec_type = ::Tpetra::Vector<SC, LO, GO, NT>;
 
   const LO oneLO = Teuchos::OrdinalTraits<LO>::one();
@@ -134,12 +148,21 @@ replaceDiagonalCrsMatrix (CrsMatrix<SC, LO, GO, NT>& matrix,
 // Must be expanded from within the Tpetra namespace!
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_REPLACEDIAGONALCRSMATRIX_INSTANT(SCALAR,LO,GO,NODE)      \
+#else
+#define TPETRA_REPLACEDIAGONALCRSMATRIX_INSTANT(SCALAR,NODE)      \
+#endif
                                                                         \
   template                                                              \
   LO replaceDiagonalCrsMatrix(                                          \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                               CrsMatrix<SCALAR, LO, GO, NODE>& matrix, \
                               const Vector<SCALAR, LO, GO, NODE>& newDiag); \
+#else
+                              CrsMatrix<SCALAR, NODE>& matrix, \
+                              const Vector<SCALAR, NODE>& newDiag); \
+#endif
                                                                         \
 
 #endif // #ifndef TPETRA_REPLACEDIAGONALCRSMATRIX_DEF_HPP

@@ -54,21 +54,32 @@
 namespace Xpetra {
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class Vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public virtual MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >
+#else
+    : public virtual MultiVector< Scalar, Node >
+#endif
   {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     using scalar_type         = Scalar;
     using local_ordinal_type  = LocalOrdinal;
     using global_ordinal_type = GlobalOrdinal;
     using node_type           = Node;
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::dot;          // overloading, not hiding
     using MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::norm1;        // overloading, not hiding
     using MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::norm2;        // overloading, not hiding
@@ -78,13 +89,33 @@ namespace Xpetra {
     using MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::sumIntoGlobalValue; // overloading, not hiding
     using MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::replaceLocalValue;  // overloading, not hiding
     using MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::sumIntoLocalValue;  // overloading, not hiding
+#else
+    using MultiVector< Scalar, Node >::dot;          // overloading, not hiding
+    using MultiVector< Scalar, Node >::norm1;        // overloading, not hiding
+    using MultiVector< Scalar, Node >::norm2;        // overloading, not hiding
+    using MultiVector< Scalar, Node >::normInf;      // overloading, not hiding
+    using MultiVector< Scalar, Node >::meanValue;    // overloading, not hiding
+    using MultiVector< Scalar, Node >::replaceGlobalValue; // overloading, not hiding
+    using MultiVector< Scalar, Node >::sumIntoGlobalValue; // overloading, not hiding
+    using MultiVector< Scalar, Node >::replaceLocalValue;  // overloading, not hiding
+    using MultiVector< Scalar, Node >::sumIntoLocalValue;  // overloading, not hiding
+#endif
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type dual_view_type;
+#else
+    typedef typename Xpetra::MultiVector<Scalar, Node>::dual_view_type dual_view_type;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::getHostLocalView;
     using MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::getDeviceLocalView;
+#else
+    using MultiVector< Scalar, Node >::getHostLocalView;
+    using MultiVector< Scalar, Node >::getDeviceLocalView;
+#endif
 
     /// \brief Return an unmanaged non-const view of the local data on a specific device.
     /// \tparam TargetDeviceType The Kokkos Device type whose data to return.
@@ -104,7 +135,11 @@ namespace Xpetra {
         typename dual_view_type::t_dev_um,
         typename dual_view_type::t_host_um>::type
     getLocalView () const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return this->MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::template getLocalView<TargetDeviceType>();
+#else
+      return this->MultiVector< Scalar, Node >::template getLocalView<TargetDeviceType>();
+#endif
     }
 #endif
 
@@ -137,7 +172,11 @@ namespace Xpetra {
     //@{
 
     //! Computes dot product of this Vector against input Vector x.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Scalar dot(const Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &a) const = 0;
+#else
+    virtual Scalar dot(const Vector< Scalar, Node > &a) const = 0;
+#endif
 
     //! Return 1-norm of this Vector.
     virtual typename Teuchos::ScalarTraits< Scalar >::magnitudeType norm1() const = 0;

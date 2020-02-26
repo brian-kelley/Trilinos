@@ -54,8 +54,10 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
     class EntitySet;
 
@@ -63,10 +65,18 @@ namespace FROSch {
     enum EntityFlag {DefaultFlag,StraightFlag,ShortFlag,NodeFlag};
     enum DistanceFunction {ConstantDistanceFunction,InverseEuclideanDistanceFunction};
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal>
+#else
+    template <class SC = double,>
+#endif
     struct Node {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
         LO NodeIDGamma_;
         LO NodeIDLocal_;
         GO NodeIDGlobal_;
@@ -81,30 +91,59 @@ namespace FROSch {
     };
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
     class InterfaceEntity {
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrix               = Matrix<SC,LO,GO,NO>;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using XMatrix               = Matrix<SC,NO>;
+#endif
         using XMatrixPtr            = RCP<XMatrix>;
         using ConstXMatrixPtr       = RCP<const XMatrix>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XVector               = Vector<SC,LO,GO,NO>;
+#else
+        using XVector               = Vector<SC,NO>;
+#endif
         using XVectorPtr            = RCP<XVector>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector          = MultiVector<SC,LO,GO,NO>;
+#else
+        using XMultiVector          = MultiVector<SC,NO>;
+#endif
         using XMultiVectorPtr       = RCP<XMultiVector>;
         using ConstXMultiVectorPtr  = RCP<const XMultiVector>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using EntitySetPtr          = RCP<EntitySet<SC,LO,GO,NO> >;
+#else
+        using EntitySetPtr          = RCP<EntitySet<SC,NO> >;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using InterfaceEntityPtr    = RCP<InterfaceEntity<SC,LO,GO,NO> >;
+#else
+        using InterfaceEntityPtr    = RCP<InterfaceEntity<SC,NO> >;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using NodeVec               = Array<Node<SC,LO,GO> >;
         using NodePtr               = RCP<Node<SC,LO,GO> >;
+#else
+        using NodeVec               = Array<Node<SC> >;
+        using NodePtr               = RCP<Node<SC> >;
+#endif
         using NodePtrVec            = Array<NodePtr>;
 
         using UN                    = unsigned;
@@ -139,7 +178,11 @@ namespace FROSch {
 
         int addNode(const NodePtr &node);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         int addNode(const Node<SC,LO,GO> &node);
+#else
+        int addNode(const Node<SC> &node);
+#endif
 
         int resetGlobalDofs(UN iD,
                             UN nDofs,
@@ -203,7 +246,11 @@ namespace FROSch {
         
         LO getLeafID() const;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Node<SC,LO,GO>& getNode(UN iDNode) const;
+#else
+        const Node<SC>& getNode(UN iDNode) const;
+#endif
 
         LO getGammaNodeID(UN iDNode) const;
 
@@ -254,6 +301,7 @@ namespace FROSch {
         LO LeafID_ = -1;
     };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool compareInterfaceEntities(RCP<InterfaceEntity<SC,LO,GO,NO> > iEa,
                                   RCP<InterfaceEntity<SC,LO,GO,NO> > iEb);
@@ -261,6 +309,15 @@ namespace FROSch {
     template <class SC,class LO,class GO,class NO>
     bool equalInterfaceEntities(RCP<InterfaceEntity<SC,LO,GO,NO> > iEa,
                                 RCP<InterfaceEntity<SC,LO,GO,NO> > iEb);
+#else
+    template <class SC,class NO>
+    bool compareInterfaceEntities(RCP<InterfaceEntity<SC,NO> > iEa,
+                                  RCP<InterfaceEntity<SC,NO> > iEb);
+
+    template <class SC,class NO>
+    bool equalInterfaceEntities(RCP<InterfaceEntity<SC,NO> > iEa,
+                                RCP<InterfaceEntity<SC,NO> > iEb);
+#endif
 
 }
 

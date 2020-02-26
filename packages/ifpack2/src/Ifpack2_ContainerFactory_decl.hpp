@@ -74,10 +74,14 @@ struct ContainerFactoryEntryBase
   virtual Teuchos::RCP<Ifpack2::Container<MatrixType>> build(
       const Teuchos::RCP<const MatrixType>& A,
       const Teuchos::Array<Teuchos::Array<typename MatrixType::local_ordinal_type>>& partitions,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Teuchos::RCP<const Tpetra::Import<
         typename MatrixType::local_ordinal_type,
         typename MatrixType::global_ordinal_type,
         typename MatrixType::node_type>> importer,
+#else
+      const Teuchos::RCP<const Tpetra::Import<typename MatrixType::node_type>> importer,
+#endif
       bool pointIndexed) = 0;
   virtual ~ContainerFactoryEntryBase() {}
 };
@@ -88,10 +92,14 @@ struct ContainerFactoryEntry : public ContainerFactoryEntryBase<MatrixType>
   Teuchos::RCP<Ifpack2::Container<MatrixType>> build(
       const Teuchos::RCP<const MatrixType>& A,
       const Teuchos::Array<Teuchos::Array<typename MatrixType::local_ordinal_type>>& partitions,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Teuchos::RCP<const Tpetra::Import<
         typename MatrixType::local_ordinal_type,
         typename MatrixType::global_ordinal_type,
         typename MatrixType::node_type>> importer,
+#else
+      const Teuchos::RCP<const Tpetra::Import<typename MatrixType::node_type>> importer,
+#endif
       bool pointIndexed)
   {
     return Teuchos::rcp(new ContainerType(A, partitions, importer, pointIndexed));

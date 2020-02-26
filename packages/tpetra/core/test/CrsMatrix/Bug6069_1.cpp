@@ -78,7 +78,11 @@ void GetNeighboursCartesian2d(const GO i, const GO nx, const GO ny,
   else              upper = i + nx;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6069_1, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6069_1, SC, NT)
+#endif
 {
 
   using Teuchos::Array;
@@ -91,8 +95,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6069_1, SC, LO, GO, NT)
   using Tpetra::TestingUtilities::getDefaultComm;
 
   // Put these typedefs here, to avoid global shadowing warnings.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> MapType;
   typedef Tpetra::CrsMatrix<SC, LO, GO, NT> MatrixType;
+#else
+  typedef Tpetra::Map<NT> MapType;
+  typedef Tpetra::CrsMatrix<SC, NT> MatrixType;
+#endif
 
   RCP<const Comm<int> > comm = getDefaultComm();
   const size_t myRank = comm->getRank ();
@@ -234,8 +243,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6069_1, SC, LO, GO, NT)
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, Bug6069_1, SC, LO, GO, NT)
+#else
+#define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, Bug6069_1, SC, NT)
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

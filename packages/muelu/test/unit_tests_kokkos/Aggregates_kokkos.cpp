@@ -72,14 +72,25 @@
 namespace MueLuTests {
 
   // Little utility to generate uncoupled aggregates.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void gimmeUncoupledAggregates_kokkos(const Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& A,
                                        RCP<MueLu::LWGraph_kokkos<LocalOrdinal, GlobalOrdinal, Node> >& graph,
                                        Teuchos::RCP<MueLu::Aggregates_kokkos<LocalOrdinal, GlobalOrdinal, Node> >& aggregates,
+#else
+  template<class Scalar, class Node>
+  void gimmeUncoupledAggregates_kokkos(const Teuchos::RCP<Xpetra::Matrix<Scalar,Node> >& A,
+                                       RCP<MueLu::LWGraph_kokkos<Node> >& graph,
+                                       Teuchos::RCP<MueLu::Aggregates_kokkos<Node> >& aggregates,
+#endif
                                        bool bPhase1 = true, bool bPhase2a = true, bool bPhase2b = true, bool bPhase3 = true) {
 #   include "MueLu_UseShortNames.hpp"
     Level level;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::createSingleLevelHierarchy(level);
+#else
+    TestHelpers_kokkos::TestFactory<SC,NO>::createSingleLevelHierarchy(level);
+#endif
     level.Set("A", A);
 
     RCP<AmalgamationFactory_kokkos> amalgFact = rcp(new AmalgamationFactory_kokkos());
@@ -133,22 +144,38 @@ namespace MueLuTests {
     params.set<bool>("aggregation: deterministic", false);
 
     if(bPhase1) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<MueLu::AggregationAlgorithmBase_kokkos<LO,GO,NO> > phase1
+#else
+      RCP<MueLu::AggregationAlgorithmBase_kokkos<NO> > phase1
+#endif
         = rcp(new AggregationPhase1Algorithm_kokkos(dropFact));
       phase1->BuildAggregates(params, *graph, *aggregates, aggStat, numNonAggregatedNodes);
     }
     if(bPhase2a) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<MueLu::AggregationAlgorithmBase_kokkos<LO,GO,NO> > phase2a
+#else
+      RCP<MueLu::AggregationAlgorithmBase_kokkos<NO> > phase2a
+#endif
         = rcp(new AggregationPhase2aAlgorithm_kokkos(dropFact));
       phase2a->BuildAggregates(params, *graph, *aggregates, aggStat, numNonAggregatedNodes);
     }
     if(bPhase2b) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<MueLu::AggregationAlgorithmBase_kokkos<LO,GO,NO> > phase2b
+#else
+      RCP<MueLu::AggregationAlgorithmBase_kokkos<NO> > phase2b
+#endif
         = rcp(new AggregationPhase2bAlgorithm_kokkos(dropFact));
       phase2b->BuildAggregates(params, *graph, *aggregates, aggStat, numNonAggregatedNodes);
     }
     if(bPhase3) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<MueLu::AggregationAlgorithmBase_kokkos<LO,GO,NO> > phase3
+#else
+      RCP<MueLu::AggregationAlgorithmBase_kokkos<NO> > phase3
+#endif
         = rcp(new AggregationPhase3Algorithm_kokkos(dropFact));
       phase3->BuildAggregates(params, *graph, *aggregates, aggStat, numNonAggregatedNodes);
     }
@@ -158,9 +185,15 @@ namespace MueLuTests {
   }
 
   // Little utility to generate uncoupled aggregates.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<MueLu::Aggregates_kokkos<LocalOrdinal, GlobalOrdinal, Node> >
   gimmeUncoupledAggregates_kokkos(const Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& A,
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<MueLu::Aggregates_kokkos<Node> >
+  gimmeUncoupledAggregates_kokkos(const Teuchos::RCP<Xpetra::Matrix<Scalar,Node> >& A,
+#endif
                                   bool bPhase1 = true, bool bPhase2a = true, bool bPhase2b = true, bool bPhase3 = true) {
 #   include "MueLu_UseShortNames.hpp"
     RCP<LWGraph_kokkos> graph;
@@ -171,13 +204,24 @@ namespace MueLuTests {
     return aggregates;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   LocalOrdinal checkAggregatesContiguous(MueLu::LWGraph_kokkos<LocalOrdinal, GlobalOrdinal, Node> graph,
                                          MueLu::Aggregates_kokkos<LocalOrdinal, GlobalOrdinal, Node> aggregates) {
+#else
+  template <class Node>
+  LocalOrdinal checkAggregatesContiguous(MueLu::LWGraph_kokkos<Node> graph,
+                                         MueLu::Aggregates_kokkos<Node> aggregates) {
+#endif
     using LO = LocalOrdinal;
     using GO = GlobalOrdinal;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using Aggregates_kokkos = MueLu::Aggregates_kokkos<LO, GO, Node>;
     using LWGraph_kokkos    = MueLu::LWGraph_kokkos<LO, GO, Node>;
+#else
+    using Aggregates_kokkos = MueLu::Aggregates_kokkos<Node>;
+    using LWGraph_kokkos    = MueLu::LWGraph_kokkos<Node>;
+#endif
     using execution_space   = typename LWGraph_kokkos::execution_space;
     using memory_space      = typename LWGraph_kokkos::memory_space;
 
@@ -225,14 +269,22 @@ namespace MueLuTests {
     return numDiscontiguousAggregates;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, JustUncoupledAggregation, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, JustUncoupledAggregation, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,NO);
     out << "version: " << MueLu::Version() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(15);
+#else
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(15);
+#endif
 
     RCP<Aggregates_kokkos> aggregates = gimmeUncoupledAggregates_kokkos(A);
 
@@ -240,7 +292,11 @@ namespace MueLuTests {
     TEST_EQUALITY(aggregates->AggregatesCrossProcessors(),  false);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, JustDist2UncoupledAggregation, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, JustDist2UncoupledAggregation, Scalar, Node)
+#endif
   {
     //TODO bmk: A lot of test code duplicated here from gimmeUncoupledAggregates
     //because it can't take a custom parameter list, add that as parameter?
@@ -248,10 +304,18 @@ namespace MueLuTests {
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     out << "version: " << MueLu::Version() << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(15);
+#else
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(15);
+#endif
     RCP<AmalgamationInfo_kokkos> amalgInfo;
     Level level;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::createSingleLevelHierarchy(level);
+#else
+    TestHelpers_kokkos::TestFactory<SC,NO>::createSingleLevelHierarchy(level);
+#endif
     level.Set("A", A);
 
     RCP<AmalgamationFactory_kokkos> amalgFact = rcp(new AmalgamationFactory_kokkos());
@@ -282,7 +346,11 @@ namespace MueLuTests {
     level.Release("Aggregates", aggFact.get());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, JustDist2DeterUncoupledAggregation, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, JustDist2DeterUncoupledAggregation, Scalar, Node)
+#endif
   {
     //TODO bmk: A lot of test code duplicated here from gimmeUncoupledAggregates
     //because it can't take a custom parameter list, add that as parameter?
@@ -290,10 +358,18 @@ namespace MueLuTests {
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     out << "version: " << MueLu::Version() << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(15);
+#else
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(15);
+#endif
     RCP<AmalgamationInfo_kokkos> amalgInfo;
     Level level;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::createSingleLevelHierarchy(level);
+#else
+    TestHelpers_kokkos::TestFactory<SC,NO>::createSingleLevelHierarchy(level);
+#endif
     level.Set("A", A);
 
     RCP<AmalgamationFactory_kokkos> amalgFact = rcp(new AmalgamationFactory_kokkos());
@@ -328,7 +404,11 @@ namespace MueLuTests {
 
 // A test that creates discontiguous aggregates to make sure the detection algorithm works well
 /// pretty much testing the test...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, DiscontiguousAggregates, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, DiscontiguousAggregates, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -338,9 +418,17 @@ namespace MueLuTests {
     using memory_space = typename Aggregates_kokkos::device_type::memory_space;
 
     RCP<const Teuchos::Comm<int> > comm = TestHelpers_kokkos::Parameters::getDefaultComm();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(3*comm->getSize());
+#else
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(3*comm->getSize());
+#endif
     Level level;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::createSingleLevelHierarchy(level);
+#else
+    TestHelpers_kokkos::TestFactory<SC,NO>::createSingleLevelHierarchy(level);
+#endif
     level.Set("A", A);
 
     RCP<Aggregates_kokkos> aggregates;
@@ -391,14 +479,22 @@ namespace MueLuTests {
   } //UncoupledPhase1
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, UncoupledPhase1, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, UncoupledPhase1, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,NO);
     out << "version: " << MueLu::Version() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(36);
+#else
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(36);
+#endif
     RCP<AmalgamationInfo_kokkos> amalgInfo;
 
     RCP<Aggregates_kokkos> aggregates;
@@ -429,14 +525,22 @@ namespace MueLuTests {
     TEST_EQUALITY(numDiscontiguous, 0);
   } //UncoupledPhase1
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, UncoupledPhase2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, UncoupledPhase2, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,NO);
     out << "version: " << MueLu::Version() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(36);
+#else
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(36);
+#endif
 
     RCP<LWGraph_kokkos> graph;
     RCP<Aggregates_kokkos> aggregates;
@@ -450,14 +554,22 @@ namespace MueLuTests {
     TEST_EQUALITY(numDiscontiguous, 0);
   } //UncoupledPhase2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, UncoupledPhase3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Aggregates_kokkos, UncoupledPhase3, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,NO);
     out << "version: " << MueLu::Version() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::Build1DPoisson(36);
+#else
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC, NO>::Build1DPoisson(36);
+#endif
     RCP<AmalgamationInfo_kokkos> amalgInfo;
 
     RCP<Aggregates_kokkos> aggregates = gimmeUncoupledAggregates_kokkos(A, false, false, false, true);
@@ -484,6 +596,7 @@ namespace MueLuTests {
 
   } //UncoupledPhase3
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, JustUncoupledAggregation, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, JustDist2UncoupledAggregation, SC, LO, GO, NO) \
@@ -492,6 +605,16 @@ namespace MueLuTests {
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, UncoupledPhase1, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, UncoupledPhase2, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, UncoupledPhase3, SC, LO, GO, NO)
+#else
+#define MUELU_ETI_GROUP(SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, JustUncoupledAggregation, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, JustDist2UncoupledAggregation, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, JustDist2DeterUncoupledAggregation, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, DiscontiguousAggregates, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, UncoupledPhase1, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, UncoupledPhase2, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Aggregates_kokkos, UncoupledPhase3, SC, NO)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

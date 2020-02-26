@@ -66,8 +66,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   IndexManager_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template<class Node>
+  IndexManager_kokkos<Node>::
+#endif
   IndexManager_kokkos(const int NumDimensions,
                       const int interpolationOrder,
                       const int MyRank,
@@ -94,8 +99,13 @@ namespace MueLu {
 
   } // IndexManager_kokkos Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   void IndexManager_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template<class Node>
+  void IndexManager_kokkos<Node>::
+#endif
   setupIM(const int NumDimensions, const int interpolationOrder,
           const ArrayView<const int> CoarseRate, const ArrayView<const LO> LFineNodesPerDir) {
 
@@ -133,8 +143,13 @@ namespace MueLu {
 
   } // setupIM
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   void IndexManager_kokkos<LocalOrdinal, GlobalOrdinal, Node>::computeMeshParameters() {
+#else
+  template<class Node>
+  void IndexManager_kokkos<Node>::computeMeshParameters() {
+#endif
 
     RCP<Teuchos::FancyOStream> out;
     if(const char* dbg = std::getenv("MUELU_INDEXMANAGER_DEBUG")) {
@@ -215,8 +230,13 @@ namespace MueLu {
     Kokkos::deep_copy(coarseNodesPerDir, coarseNodesPerDir_h);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   Array<LocalOrdinal> IndexManager_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template<class Node>
+  Array<LocalOrdinal> IndexManager_kokkos<Node>::
+#endif
   getCoarseNodesPerDirArray() const {
     typename LOTupleView::HostMirror coarseNodesPerDir_h = Kokkos::create_mirror_view(coarseNodesPerDir);
     Array<LO> coarseNodesPerDirArray(3);

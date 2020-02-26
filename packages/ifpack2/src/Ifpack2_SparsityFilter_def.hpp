@@ -54,7 +54,11 @@ namespace Ifpack2 {
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 SparsityFilter<MatrixType>::SparsityFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& Matrix,
+#else
+SparsityFilter<MatrixType>::SparsityFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> >& Matrix,
+#endif
                                            size_t AllowedNumEntries,
                                            LocalOrdinal AllowedBandwidth):
   A_(Matrix),
@@ -118,9 +122,13 @@ Teuchos::RCP<const Teuchos::Comm<int> > SparsityFilter<MatrixType>::getComm() co
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SparsityFilter<MatrixType>::getRowMap() const
 {
   return A_->getRowMap();
@@ -128,9 +136,13 @@ SparsityFilter<MatrixType>::getRowMap() const
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SparsityFilter<MatrixType>::getColMap() const
 {
   return A_->getColMap();
@@ -138,9 +150,13 @@ SparsityFilter<MatrixType>::getColMap() const
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SparsityFilter<MatrixType>::getDomainMap() const
 {
   return A_->getDomainMap();
@@ -148,9 +164,13 @@ SparsityFilter<MatrixType>::getDomainMap() const
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SparsityFilter<MatrixType>::getRangeMap() const
 {
   return A_->getRangeMap();
@@ -158,9 +178,13 @@ SparsityFilter<MatrixType>::getRangeMap() const
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::local_ordinal_type,
                                      typename MatrixType::global_ordinal_type,
                                      typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::node_type> >
+#endif
 SparsityFilter<MatrixType>::getGraph() const
 {
   throw std::runtime_error("Ifpack2::SparsityFilter: does not support getGraph.");
@@ -361,7 +385,11 @@ void SparsityFilter<MatrixType>::getLocalRowView(LocalOrdinal /* LocalRow */,
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SparsityFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &diag) const
+#else
+void SparsityFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,Node> &diag) const
+#endif
 {
   // This is somewhat dubious as to how the maps match.
   return A_->getLocalDiagCopy(diag);
@@ -369,22 +397,35 @@ void SparsityFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,LocalOrd
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SparsityFilter<MatrixType>::leftScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* x */)
+#else
+void SparsityFilter<MatrixType>::leftScale(const Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
 {
   throw std::runtime_error("Ifpack2::SparsityFilter does not support leftScale.");
 }
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SparsityFilter<MatrixType>::rightScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* x */)
+#else
+void SparsityFilter<MatrixType>::rightScale(const Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
 {
   throw std::runtime_error("Ifpack2::SparsityFilter does not support rightScale.");
 }
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SparsityFilter<MatrixType>::apply(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
                                        Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+void SparsityFilter<MatrixType>::apply(const Tpetra::MultiVector<Scalar,Node> &X,
+                                       Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
                                        Teuchos::ETransp mode,
                                        Scalar /* alpha */,
                                        Scalar /* beta */) const
@@ -447,7 +488,12 @@ typename SparsityFilter<MatrixType>::mag_type SparsityFilter<MatrixType>::getFro
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_SPARSITYFILTER_INSTANT(S,LO,GO,N)                            \
   template class Ifpack2::SparsityFilter< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_SPARSITYFILTER_INSTANT(S,N)                            \
+  template class Ifpack2::SparsityFilter< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif

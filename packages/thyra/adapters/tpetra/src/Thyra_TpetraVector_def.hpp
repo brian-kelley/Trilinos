@@ -52,55 +52,98 @@ namespace Thyra {
 // Constructors/initializers/accessors
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::TpetraVector()
+#else
+template <class Scalar, class Node>
+TpetraVector<Scalar,Node>::TpetraVector()
+#endif
 {}
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initialize(
   const RCP<const TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraVectorSpace,
   const RCP<Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraVector
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::initialize(
+  const RCP<const TpetraVectorSpace<Scalar,Node> > &tpetraVectorSpace,
+  const RCP<Tpetra::Vector<Scalar,Node> > &tpetraVector
+#endif
   )
 {
   initializeImpl(tpetraVectorSpace, tpetraVector);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::constInitialize(
   const RCP<const TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraVectorSpace,
   const RCP<const Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraVector
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::constInitialize(
+  const RCP<const TpetraVectorSpace<Scalar,Node> > &tpetraVectorSpace,
+  const RCP<const Tpetra::Vector<Scalar,Node> > &tpetraVector
+#endif
   )
 {
   initializeImpl(tpetraVectorSpace, tpetraVector);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getTpetraVector()
+#else
+template <class Scalar, class Node>
+RCP<Tpetra::Vector<Scalar,Node> >
+TpetraVector<Scalar,Node>::getTpetraVector()
+#endif
 {
   return tpetraVector_.getNonconstObj();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getConstTpetraVector() const
+#else
+template <class Scalar, class Node>
+RCP<const Tpetra::Vector<Scalar,Node> >
+TpetraVector<Scalar,Node>::getConstTpetraVector() const
+#endif
 {
   return tpetraVector_;
 }
 
 
 // Overridden from VectorDefaultBase
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP<const VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::domain() const
+#else
+TpetraVector<Scalar,Node>::domain() const
+#endif
 {
   if (domainSpace_.is_null()) {
     domainSpace_ = tpetraVectorSpace<Scalar>(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::createLocalMapWithNode<LocalOrdinal,GlobalOrdinal,Node>(
+#else
+      Tpetra::createLocalMapWithNode<Node>(
+#endif
         1,
         tpetraVector_.getConstObj()->getMap()->getComm()
         )
@@ -113,9 +156,17 @@ TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::domain() const
 // Overridden from SpmdMultiVectorBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP<const SpmdVectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::spmdSpaceImpl() const
+#else
+TpetraVector<Scalar,Node>::spmdSpaceImpl() const
+#endif
 {
   return tpetraVectorSpace_;
 }
@@ -124,16 +175,26 @@ TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::spmdSpaceImpl() const
 // Overridden from SpmdVectorBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getNonconstLocalVectorDataImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::getNonconstLocalVectorDataImpl(
+#endif
   const Ptr<ArrayRCP<Scalar> > &localValues )
 {
   *localValues = tpetraVector_.getNonconstObj()->get1dViewNonConst();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getLocalVectorDataImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::getLocalVectorDataImpl(
+#endif
   const Ptr<ArrayRCP<const Scalar> > &localValues ) const
 {
   *localValues = tpetraVector_->get1dView();
@@ -143,8 +204,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getLocalVectorDataImp
 // Overridden from VectorBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::randomizeImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::randomizeImpl(
+#endif
   Scalar l,
   Scalar u
   )
@@ -164,8 +230,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::randomizeImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::absImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::absImpl(
+#endif
   const VectorBase<Scalar>& x
   )
 {
@@ -184,8 +255,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::absImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::reciprocalImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::reciprocalImpl(
+#endif
   const VectorBase<Scalar>& x
   )
 {
@@ -204,8 +280,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::reciprocalImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::eleWiseScaleImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::eleWiseScaleImpl(
+#endif
   const VectorBase<Scalar>& x
   )
 {
@@ -226,9 +307,17 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::eleWiseScaleImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 typename Teuchos::ScalarTraits<Scalar>::magnitudeType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::norm2WeightedImpl(
+#else
+TpetraVector<Scalar,Node>::norm2WeightedImpl(
+#endif
   const VectorBase<Scalar>& x
   ) const
 {
@@ -239,7 +328,11 @@ TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::norm2WeightedImpl(
   if (nonnull(tx)) {
     // Weighted 2-norm function for Tpetra vector seems to be deprecated...
     typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > temp
+#else
+    RCP<Tpetra::Vector<Scalar,Node> > temp
+#endif
       = Tpetra::createVector<Scalar>(tx->getMap());
     temp->elementWiseMultiply(
       ST::one(), *tx, *tpetraVector_.getConstObj(), ST::zero());
@@ -252,8 +345,13 @@ TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::norm2WeightedImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyOpImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::applyOpImpl(
+#endif
   const RTOpPack::RTOpT<Scalar> &op,
   const ArrayView<const Ptr<const VectorBase<Scalar> > > &vecs,
   const ArrayView<const Ptr<VectorBase<Scalar> > > &targ_vecs,
@@ -265,7 +363,11 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyOpImpl(
   for (auto itr = vecs.begin(); itr != vecs.end(); ++itr) {
     auto tv = this->getConstTpetraVector(Teuchos::rcpFromPtr(*itr));
     if (nonnull(tv)) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TV;
+#else
+      typedef Tpetra::Vector<Scalar,Node> TV;
+#endif
       Teuchos::rcp_const_cast<TV>(tv)->sync_host ();
     }
   }
@@ -283,15 +385,24 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyOpImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::
+#endif
 acquireDetachedVectorViewImpl(
   const Range1D& rng,
   RTOpPack::ConstSubVectorView<Scalar>* sub_vec
   ) const
 {
   // Only viewing data, so just sync dual view to host space
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TV;
+#else
+  typedef typename Tpetra::Vector<Scalar,Node> TV;
+#endif
   Teuchos::rcp_const_cast<TV>(
     tpetraVector_.getConstObj())->sync_host ();
 
@@ -299,8 +410,13 @@ acquireDetachedVectorViewImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::
+#endif
 acquireNonconstDetachedVectorViewImpl(
   const Range1D& rng,
   RTOpPack::SubVectorView<Scalar>* sub_vec
@@ -314,8 +430,13 @@ acquireNonconstDetachedVectorViewImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::
+#endif
 commitNonconstDetachedVectorViewImpl(
   RTOpPack::SubVectorView<Scalar>* sub_vec
   )
@@ -324,7 +445,11 @@ commitNonconstDetachedVectorViewImpl(
 
   // Sync changes from host view to execution space
   typedef typename Tpetra::Vector<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Scalar,LocalOrdinal,GlobalOrdinal,Node>::execution_space execution_space;
+#else
+    Scalar,Node>::execution_space execution_space;
+#endif
   tpetraVector_.getNonconstObj()->template sync<execution_space>();
 }
 
@@ -332,15 +457,25 @@ commitNonconstDetachedVectorViewImpl(
 // Overridden protected functions from MultiVectorBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::assignImpl(Scalar alpha)
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::assignImpl(Scalar alpha)
+#endif
 {
   tpetraVector_.getNonconstObj()->putScalar(alpha);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::
+#endif
 assignMultiVecImpl(const MultiVectorBase<Scalar>& mv)
 {
   auto tmv = this->getConstTpetraMultiVector(Teuchos::rcpFromRef(mv));
@@ -358,15 +493,25 @@ assignMultiVecImpl(const MultiVectorBase<Scalar>& mv)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::scaleImpl(Scalar alpha)
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::scaleImpl(Scalar alpha)
+#endif
 {
   tpetraVector_.getNonconstObj()->scale(alpha);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::updateImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::updateImpl(
+#endif
   Scalar alpha,
   const MultiVectorBase<Scalar>& mv
   )
@@ -387,8 +532,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::updateImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::linearCombinationImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::linearCombinationImpl(
+#endif
   const ArrayView<const Scalar>& alpha,
   const ArrayView<const Ptr<const MultiVectorBase<Scalar> > >& mv,
   const Scalar& beta
@@ -466,8 +616,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::linearCombinationImpl
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::dotsImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::dotsImpl(
+#endif
     const MultiVectorBase<Scalar>& mv,
     const ArrayView<Scalar>& prods
     ) const
@@ -487,8 +642,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::dotsImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::norms1Impl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::norms1Impl(
+#endif
   const ArrayView<typename ScalarTraits<Scalar>::magnitudeType>& norms
   ) const
 {
@@ -496,8 +656,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::norms1Impl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::norms2Impl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::norms2Impl(
+#endif
     const ArrayView<typename ScalarTraits<Scalar>::magnitudeType>& norms
     ) const
 {
@@ -505,8 +670,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::norms2Impl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::normsInfImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::normsInfImpl(
+#endif
   const ArrayView<typename ScalarTraits<Scalar>::magnitudeType>& norms
   ) const
 {
@@ -514,8 +684,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::normsInfImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
+#else
+template <class Scalar, class Node>
+void TpetraVector<Scalar,Node>::applyImpl(
+#endif
   const EOpTransp M_trans,
   const MultiVectorBase<Scalar> &X,
   const Ptr<MultiVectorBase<Scalar> > &Y,
@@ -524,8 +699,13 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
   ) const
 {
   // Try to extract Tpetra objects from X and Y
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TMV;
   typedef Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TV;
+#else
+  typedef Tpetra::MultiVector<Scalar,Node> TMV;
+  typedef Tpetra::Vector<Scalar,Node> TV;
+#endif
   Teuchos::RCP<const TMV> X_tpetra = this->getConstTpetraMultiVector(Teuchos::rcpFromRef(X));
   Teuchos::RCP<TMV> Y_tpetra = this->getTpetraMultiVector(Teuchos::rcpFromPtr(Y));
 
@@ -572,10 +752,19 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
 // private
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 template<class TpetraVector_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initializeImpl(
   const RCP<const TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraVectorSpace,
+#else
+void TpetraVector<Scalar,Node>::initializeImpl(
+  const RCP<const TpetraVectorSpace<Scalar,Node> > &tpetraVectorSpace,
+#endif
   const RCP<TpetraVector_t> &tpetraVector
   )
 {
@@ -589,14 +778,25 @@ void TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initializeImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+RCP<Tpetra::MultiVector<Scalar,Node> >
+TpetraVector<Scalar,Node>::
+#endif
 getTpetraMultiVector(const RCP<MultiVectorBase<Scalar> >& mv) const
 {
   using Teuchos::rcp_dynamic_cast;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TMV;
   typedef TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TV;
+#else
+  typedef TpetraMultiVector<Scalar,Node> TMV;
+  typedef TpetraVector<Scalar,Node> TV;
+#endif
 
   RCP<TMV> tmv = rcp_dynamic_cast<TMV>(mv);
   if (nonnull(tmv)) {
@@ -612,14 +812,25 @@ getTpetraMultiVector(const RCP<MultiVectorBase<Scalar> >& mv) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+RCP<const Tpetra::MultiVector<Scalar,Node> >
+TpetraVector<Scalar,Node>::
+#endif
 getConstTpetraMultiVector(const RCP<const MultiVectorBase<Scalar> >& mv) const
 {
   using Teuchos::rcp_dynamic_cast;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TMV;
   typedef TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> TV;
+#else
+  typedef TpetraMultiVector<Scalar,Node> TMV;
+  typedef TpetraVector<Scalar,Node> TV;
+#endif
 
   RCP<const TMV> tmv = rcp_dynamic_cast<const TMV>(mv);
   if (nonnull(tmv)) {
@@ -635,12 +846,22 @@ getConstTpetraMultiVector(const RCP<const MultiVectorBase<Scalar> >& mv) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+RCP<Tpetra::Vector<Scalar,Node> >
+TpetraVector<Scalar,Node>::
+#endif
 getTpetraVector(const RCP<VectorBase<Scalar> >& v) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> TV;
+#else
+  typedef TpetraVector<Scalar, Node> TV;
+#endif
   RCP<TV> tv = Teuchos::rcp_dynamic_cast<TV>(v);
   if (nonnull(tv)) {
     return tv->getTpetraVector();
@@ -650,12 +871,22 @@ getTpetraVector(const RCP<VectorBase<Scalar> >& v) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+RCP<const Tpetra::Vector<Scalar,Node> >
+TpetraVector<Scalar,Node>::
+#endif
 getConstTpetraVector(const RCP<const VectorBase<Scalar> >& v) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> TV;
+#else
+  typedef TpetraVector<Scalar, Node> TV;
+#endif
   RCP<const TV> tv = Teuchos::rcp_dynamic_cast<const TV>(v);
   if (nonnull(tv)) {
     return tv->getConstTpetraVector();

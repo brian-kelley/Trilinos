@@ -63,28 +63,54 @@ namespace MueLu {
       Intended to be used with MueLu::ShiftedLaplacian.
   */
   template <class Scalar = Tpetra::Operator<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = typename Tpetra::Operator<Scalar>::local_ordinal_type,
             class GlobalOrdinal = typename Tpetra::Operator<Scalar, LocalOrdinal>::global_ordinal_type,
             class Node = typename Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
+#else
+            class Node = typename Tpetra::Operator<Scalar>::node_type>
+#endif
   class ShiftedLaplacianOperator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node>
+#else
+    : public Tpetra::Operator<Scalar,Node>
+#endif
   {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>      Matrix;
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>   CrsMatrix;
     typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
     typedef Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node>    OP;
     typedef MueLu::Utilities<Scalar,LocalOrdinal,GlobalOrdinal,Node>        MUtils;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::Matrix<Scalar,Node>      Matrix;
+    typedef Tpetra::CrsMatrix<Scalar,Node>   CrsMatrix;
+    typedef Tpetra::MultiVector<Scalar,Node> MV;
+    typedef Tpetra::Operator<Scalar,Node>    OP;
+    typedef MueLu::Utilities<Scalar,Node>        MUtils;
+#endif
   public:
 
     //! @name Constructor/Destructor
     //@{
 
     //! Constructor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ShiftedLaplacianOperator(const RCP<MueLu::Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node> > & H) : Hierarchy_(H), option_(0) { }
+#else
+    ShiftedLaplacianOperator(const RCP<MueLu::Hierarchy<Scalar, Node> > & H) : Hierarchy_(H), option_(0) { }
+#endif
 
     //! Auxiliary Constructor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ShiftedLaplacianOperator(const RCP<MueLu::Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node> > & H,
+#else
+    ShiftedLaplacianOperator(const RCP<MueLu::Hierarchy<Scalar, Node> > & H,
+#endif
                              const RCP<Matrix> A, int cycles, int iters, int option, double tol) : Hierarchy_(H), A_(A), cycles_(cycles), iters_(iters), option_(option), tol_(tol)
     {
 
@@ -121,10 +147,18 @@ namespace MueLu {
     //@}
 
     //! Returns the Tpetra::Map object associated with the domain of this operator.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const;
+#else
+    Teuchos::RCP<const Tpetra::Map<Node> > getDomainMap() const;
+#endif
 
     //! Returns the Tpetra::Map object associated with the range of this operator.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const;
+#else
+    Teuchos::RCP<const Tpetra::Map<Node> > getRangeMap() const;
+#endif
 
     //! Returns in Y the result of a Tpetra::Operator applied to a Tpetra::MultiVector X.
     /*!
@@ -132,8 +166,13 @@ namespace MueLu {
       \param[out] Y -Tpetra::MultiVector of dimension NumVectors containing result.
 
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void apply(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X,
                                          Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y,
+#else
+    void apply(const Tpetra::MultiVector<Scalar,Node>& X,
+                                         Tpetra::MultiVector<Scalar,Node>& Y,
+#endif
                                          Teuchos::ETransp mode = Teuchos::NO_TRANS,
                                          Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
                                          Scalar beta = Teuchos::ScalarTraits<Scalar>::one()) const;
@@ -143,9 +182,15 @@ namespace MueLu {
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Hierarchy_;
     RCP< Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > R_, P_, A_;
     RCP< Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > Ac_;
+#else
+    RCP<MueLu::Hierarchy<Scalar, Node> > Hierarchy_;
+    RCP< Xpetra::Matrix<Scalar,Node> > R_, P_, A_;
+    RCP< Tpetra::CrsMatrix<Scalar,Node> > Ac_;
+#endif
     RCP< Teuchos::ParameterList >  BelosList_;
 
     //RCP< Belos::LinearProblem<Scalar,MV,OP> > BelosLP_;

@@ -58,22 +58,37 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> AmalgamationFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> AmalgamationFactory_kokkos<Scalar, Node>::
+#endif
   GetValidParameterList() const {
     RCP<ParameterList> validParamList = rcp(new ParameterList());
     validParamList->set< RCP<const FactoryBase> >("A",              Teuchos::null, "Generating factory of the matrix A");
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AmalgamationFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void AmalgamationFactory_kokkos<Scalar, Node>::
+#endif
   DeclareInput(Level &currentLevel) const {
     Input(currentLevel, "A"); // sub-block from blocked A
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AmalgamationFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void AmalgamationFactory_kokkos<Scalar, Node>::
+#endif
   Build(Level &currentLevel) const
   {
     FactoryMonitor m(*this, "Build", currentLevel);
@@ -160,8 +175,13 @@ namespace MueLu {
     Set(currentLevel, "UnAmalgamationInfo", amalgamationData);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AmalgamationFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void AmalgamationFactory_kokkos<Scalar, Node>::
+#endif
   AmalgamateMap(const Map& sourceMap, const Matrix& A, RCP<const Map>& amalgamatedMap, Array<LO>& translation) {
     typedef typename ArrayView<const GO>::size_type size_type;
     typedef std::map<GO,size_type> container;
@@ -208,8 +228,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   const GlobalOrdinal AmalgamationFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  const GlobalOrdinal AmalgamationFactory_kokkos<Scalar, Node>::
+#endif
   DOFGid2NodeId(GlobalOrdinal gid, LocalOrdinal blockSize, const GlobalOrdinal offset, const GlobalOrdinal indexBase) {
     // here, the assumption is, that the node map has the same indexBase as the dof map
     GlobalOrdinal globalblockid = ((GlobalOrdinal) gid - offset - indexBase) / blockSize + indexBase;

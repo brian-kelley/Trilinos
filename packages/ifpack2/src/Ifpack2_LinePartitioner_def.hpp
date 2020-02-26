@@ -249,8 +249,14 @@ void LinePartitioner<GraphType,Scalar>::local_automatic_line_search(int NumEqns,
 
 }// namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_LINEPARTITIONER_INSTANT(S,LO,GO,N) \
   template class Ifpack2::LinePartitioner<Tpetra::CrsGraph< LO, GO, N >,S >; \
   template class Ifpack2::LinePartitioner<Tpetra::RowGraph< LO, GO, N >,S >;
+#else
+#define IFPACK2_LINEPARTITIONER_INSTANT(S,N) \
+  template class Ifpack2::LinePartitioner<Tpetra::CrsGraph<N >,S >; \
+  template class Ifpack2::LinePartitioner<Tpetra::RowGraph<N >,S >;
+#endif
 
 #endif // IFPACK2_LINEPARTITIONER_DEF_HPP

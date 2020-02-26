@@ -165,22 +165,42 @@ int main(int argc, char *argv[]) {
   // In the future, we hope to be able to first create a Galeri problem, and then request map and coordinates from it
   // At the moment, however, things are fragile as we hope that the Problem uses same map and coordinates inside
   if (matrixParameters.GetMatrixType() == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("1D",map,matrixParameters.GetParameterList());
   }
   else if (matrixParameters.GetMatrixType() == "Laplace2D" || matrixParameters.GetMatrixType() == "Star2D" || matrixParameters.GetMatrixType() == "Elasticity2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("2D",map,matrixParameters.GetParameterList());
   }
   else if (matrixParameters.GetMatrixType() == "Laplace3D" || matrixParameters.GetMatrixType() == "Elasticity3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("3D",map,matrixParameters.GetParameterList());
   }
   // Expand map to do multiple DOF per node for block problems
   if (matrixParameters.GetMatrixType() == "Elasticity2D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 2);
+#else
+    map = Xpetra::MapFactory<Node>::Build(map, 2);
+#endif
   if (matrixParameters.GetMatrixType() == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 3);
+#else
+    map = Xpetra::MapFactory<Node>::Build(map, 3);
+#endif
 
   if (comm->getRank() == 0) {
     GO mx = galeriList.get("mx", -1);
@@ -310,8 +330,13 @@ int main(int argc, char *argv[]) {
     H->IsPreconditioner(true);
 
     // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
     Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, LO, GO, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+    Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
+    Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
 
     // Construct a Belos LinearProblem object
     RCP< Belos::LinearProblem<SC, MV, OP> > belosProblem = rcp(new Belos::LinearProblem<SC, MV, OP>(belosOp, X, B));
@@ -362,8 +387,13 @@ int main(int argc, char *argv[]) {
 
     //Clone the preconditioner to ThrustGPU node type
     typedef KokkosClassic::ThrustGPUNode NO2;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MueLu::Hierarchy<SC,LO,GO,NO2> Hierarchy2;
     typedef Xpetra::MultiVector<SC,LO,GO,NO2> MV2;
+#else
+    typedef MueLu::Hierarchy<SC,NO2> Hierarchy2;
+    typedef Xpetra::MultiVector<SC,NO2> MV2;
+#endif
     typedef Belos::OperatorT<MV2> OP2;
 
     ParameterList plClone;
@@ -372,7 +402,11 @@ int main(int argc, char *argv[]) {
     RCP<Hierarchy2> clonedH = H->clone<NO2>(node);
 
     //Clone A, X, B to new node type
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< Xpetra::Matrix<SC,LO,GO,NO2 > > clonedA = Xpetra::clone(*A, node);
+#else
+    RCP< Xpetra::Matrix<SC,NO2 > > clonedA = Xpetra::clone(*A, node);
+#endif
     RCP< MV2 > clonedX = Xpetra::clone(*X, node);
     clonedX->putScalar(zero);
     RCP< MV2 > clonedB = Xpetra::clone(*B, node);
@@ -380,8 +414,13 @@ int main(int argc, char *argv[]) {
 
 
     // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<OP2> belosOp2   = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO2>(clonedA)); // Turns a Xpetra::Matrix object into a Belos operator
     Teuchos::RCP<OP2> belosPrec2 = Teuchos::rcp(new Belos::MueLuOp<SC, LO, GO, NO2>(clonedH));  // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+    Teuchos::RCP<OP2> belosOp2   = Teuchos::rcp(new Belos::XpetraOp<SC, NO2>(clonedA)); // Turns a Xpetra::Matrix object into a Belos operator
+    Teuchos::RCP<OP2> belosPrec2 = Teuchos::rcp(new Belos::MueLuOp<SC, NO2>(clonedH));  // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
 
     // Construct a Belos LinearProblem object
     RCP< Belos::LinearProblem<SC, MV2, OP2> > belosProblem2 = rcp(new Belos::LinearProblem<SC, MV2, OP2>(belosOp2, clonedX, clonedB));

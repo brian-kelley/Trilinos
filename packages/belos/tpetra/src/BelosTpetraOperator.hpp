@@ -70,16 +70,32 @@
 namespace Belos {
 
 template<class Scalar = Tpetra::Operator<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal = Tpetra::Operator<>::local_ordinal_type,
          class GlobalOrdinal = Tpetra::Operator<>::global_ordinal_type,
+#endif
          class Node = Tpetra::Operator<>::node_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class TpetraOperator : public Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+class TpetraOperator : public Tpetra::Operator<Scalar, Node> {
+#endif
 private:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   // Typedefs:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using Tpetra_MultiVector = Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
   using Tpetra_Operator = Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
   using Tpetra_Map = Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>;
+#else
+  using Tpetra_MultiVector = Tpetra::MultiVector<Scalar, Node>;
+  using Tpetra_Operator = Tpetra::Operator<Scalar, Node>;
+  using Tpetra_Map = Tpetra::Map<Node>;
+#endif
 
   Teuchos::RCP<SolverManager<Scalar,Tpetra_MultiVector,Tpetra_Operator> > solver_;
   Teuchos::RCP<LinearProblem<Scalar,Tpetra_MultiVector,Tpetra_Operator> > lp_;

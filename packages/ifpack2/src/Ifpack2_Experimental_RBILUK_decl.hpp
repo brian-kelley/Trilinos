@@ -125,8 +125,12 @@ the details of diagonal perturbations.
 
 */
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class RBILUK : virtual public Ifpack2::RILUK< Tpetra::RowMatrix< typename MatrixType::scalar_type,
   typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> >
+#else
+class RBILUK : virtual public Ifpack2::RILUK< Tpetra::RowMatrix< typename MatrixType::scalar_type, typename MatrixType::node_type> >
+#endif
 {
  public:
 
@@ -217,8 +221,10 @@ class RBILUK : virtual public Ifpack2::RILUK< Tpetra::RowMatrix< typename Matrix
   // template parameter changes, then be sure to change the code below
   // to refer to the proper base class.
   using RILUK<Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                 typename MatrixType::local_ordinal_type,
                                 typename MatrixType::global_ordinal_type,
+#endif
                                 typename MatrixType::node_type> >::setMatrix;
 
   /// \brief Change the matrix to be preconditioned.

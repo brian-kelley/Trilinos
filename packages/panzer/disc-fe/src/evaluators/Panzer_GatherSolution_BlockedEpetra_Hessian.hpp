@@ -59,7 +59,11 @@ namespace panzer
    *  solution names vector.
    */
   template<typename TRAITS, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS, LO, GO>
+#else
+  class GatherSolution_BlockedEpetra<panzer::Traits::Hessian, TRAITS>
+#endif
     :
     public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Hessian, TRAITS>,
@@ -160,7 +164,11 @@ namespace panzer
         using panzer::Traits;
         using Teuchos::rcp;
         return rcp(new
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           GatherSolution_BlockedEpetra<Traits::Hessian, TRAITS, LO, GO>
+#else
+          GatherSolution_BlockedEpetra<Traits::Hessian, TRAITS>
+#endif
           (indexers_, pl));
       } // end of clone()
     

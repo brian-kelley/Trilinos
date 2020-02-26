@@ -101,33 +101,58 @@ void tBlockJacobiPreconditionerFactory_tpetra::initializeTest()
    FGallery.Set("nx",nx);
    FGallery.Set("ny",ny);
    Epetra_CrsMatrix & epetraF = FGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraF = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraF),comm_tpetra);
    F_ = Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraF->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraF->getRangeMap()),tpetraF);
+#else
+   RCP<const Tpetra::CrsMatrix<ST,NT> > tpetraF = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraF),comm_tpetra);
+   F_ = Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraF->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraF->getRangeMap()),tpetraF);
+#endif
 
    Trilinos_Util::CrsMatrixGallery CGallery("laplace_2d",comm_epetra,false);
    CGallery.Set("nx",nx);
    CGallery.Set("ny",ny);
    Epetra_CrsMatrix & epetraC = CGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraC = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraC),comm_tpetra);
    C_ = Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraC->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraC->getRangeMap()),tpetraC);
+#else
+   RCP<const Tpetra::CrsMatrix<ST,NT> > tpetraC = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraC),comm_tpetra);
+   C_ = Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraC->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraC->getRangeMap()),tpetraC);
+#endif
 
    Trilinos_Util::CrsMatrixGallery BGallery("diag",comm_epetra,false);
    BGallery.Set("nx",nx*ny);
    BGallery.Set("a",5.0);
    Epetra_CrsMatrix & epetraB = BGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraB = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraB),comm_tpetra);
    B_ = Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraB->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraB->getRangeMap()),tpetraB);
+#else
+   RCP<const Tpetra::CrsMatrix<ST,NT> > tpetraB = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraB),comm_tpetra);
+   B_ = Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraB->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraB->getRangeMap()),tpetraB);
+#endif
 
    Trilinos_Util::CrsMatrixGallery BtGallery("diag",comm_epetra,false);
    BtGallery.Set("nx",nx*ny);
    BtGallery.Set("a",3.0);
    Epetra_CrsMatrix & epetraBt = BtGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraBt = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraBt),comm_tpetra);
    Bt_ = Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraBt->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraBt->getRangeMap()),tpetraBt);
+#else
+   RCP<const Tpetra::CrsMatrix<ST,NT> > tpetraBt = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraBt),comm_tpetra);
+   Bt_ = Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraBt->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraBt->getRangeMap()),tpetraBt);
+#endif
 
    // build some inverse operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Vector<ST,LO,GO,NT> > dF = rcp(new Tpetra::Vector<ST,LO,GO,NT>(tpetraF->getRangeMap()));
    RCP<Tpetra::Vector<ST,LO,GO,NT> > dC = rcp(new Tpetra::Vector<ST,LO,GO,NT>(tpetraC->getRangeMap()));
+#else
+   RCP<Tpetra::Vector<ST,NT> > dF = rcp(new Tpetra::Vector<ST,NT>(tpetraF->getRangeMap()));
+   RCP<Tpetra::Vector<ST,NT> > dC = rcp(new Tpetra::Vector<ST,NT>(tpetraC->getRangeMap()));
+#endif
 
    tpetraF->getLocalDiagCopy(*dF); 
    dF->reciprocal(*dF);

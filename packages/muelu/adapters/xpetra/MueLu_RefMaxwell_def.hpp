@@ -105,20 +105,35 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getDomainMap() const {
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<const Xpetra::Map<Node> > RefMaxwell<Scalar,Node>::getDomainMap() const {
+#endif
     return SM_Matrix_->getDomainMap();
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getRangeMap() const {
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<const Xpetra::Map<Node> > RefMaxwell<Scalar,Node>::getRangeMap() const {
+#endif
     return SM_Matrix_->getRangeMap();
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::setParameters(Teuchos::ParameterList& list) {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::setParameters(Teuchos::ParameterList& list) {
+#endif
 
     if (list.isType<std::string>("parameterlist: syntax") && list.get<std::string>("parameterlist: syntax") == "ml") {
       Teuchos::ParameterList newList = *Teuchos::getParametersFromXmlString(MueLu::ML2MueLuParameterTranslator::translate(list,"refmaxwell"));
@@ -180,8 +195,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::compute(bool reuse) {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::compute(bool reuse) {
+#endif
 
 #ifdef HAVE_MUELU_CUDA
     if (parameterList_.get<bool>("refmaxwell: cuda profile setup", false)) cudaProfilerStart();
@@ -1035,7 +1055,11 @@ namespace MueLu {
         hiptmairPostList.set("hiptmair: zero starting solution",
                              smootherPostList.get<bool>("hiptmair: zero starting solution", false));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Tpetra::RowMatrix<SC, LO, GO, NO> TROW;
+#else
+        typedef Tpetra::RowMatrix<SC, NO> TROW;
+#endif
         RCP<const TROW > EdgeMatrix = Utilities::Op2NonConstTpetraRow(SM_Matrix_);
         RCP<const TROW > NodeMatrix = Utilities::Op2NonConstTpetraRow(A22_);
         RCP<const TROW > PMatrix = Utilities::Op2NonConstTpetraRow(D0_Matrix_);
@@ -1137,8 +1161,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::allocateMemory(int numVectors) const {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::allocateMemory(int numVectors) const {
+#endif
     P11res_    = MultiVectorFactory::Build(P11_->getDomainMap(), numVectors);
     if (!ImporterH_.is_null()) {
       P11resTmp_ = MultiVectorFactory::Build(ImporterH_->getTargetMap(), numVectors);
@@ -1157,35 +1186,67 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::dump(const Matrix& A, std::string name) const {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::dump(const Matrix& A, std::string name) const {
+#endif
     if (dump_matrices_) {
       GetOStream(Runtime0) << "Dumping to " << name << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<SC, LO, GO, NO>::Write(name, A);
+#else
+      Xpetra::IO<SC, NO>::Write(name, A);
+#endif
     }
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::dump(const MultiVector& X, std::string name) const {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::dump(const MultiVector& X, std::string name) const {
+#endif
     if (dump_matrices_) {
       GetOStream(Runtime0) << "Dumping to " << name << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<SC, LO, GO, NO>::Write(name, X);
+#else
+      Xpetra::IO<SC, NO>::Write(name, X);
+#endif
     }
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::dumpCoords(const RealValuedMultiVector& X, std::string name) const {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::dumpCoords(const RealValuedMultiVector& X, std::string name) const {
+#endif
     if (dump_matrices_) {
       GetOStream(Runtime0) << "Dumping to " << name << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<coordinateType, LO, GO, NO>::Write(name, X);
+#else
+      Xpetra::IO<coordinateType,NO>::Write(name, X);
+#endif
     }
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<Teuchos::TimeMonitor> RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getTimer(std::string name, RCP<const Teuchos::Comm<int> > comm) const {
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<Teuchos::TimeMonitor> RefMaxwell<Scalar,Node>::getTimer(std::string name, RCP<const Teuchos::Comm<int> > comm) const {
+#endif
     if (!syncTimers_)
       return Teuchos::rcp(new Teuchos::TimeMonitor(*Teuchos::TimeMonitor::getNewTimer(name)));
     else {
@@ -1197,8 +1258,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::buildProlongator() {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::buildProlongator() {
+#endif
     // The P11 matrix maps node based aggregrates { A_j } to edges { e_i }.
     //
     // The old implementation used
@@ -1227,10 +1293,17 @@ namespace MueLu {
       std::string domainmap_filename = parameterList_.get("refmaxwell: P_domainmap_filename",std::string("domainmap_P.m"));
       std::string colmap_filename = parameterList_.get("refmaxwell: P_colmap_filename",std::string("colmap_P.m"));
       std::string coords_filename = parameterList_.get("refmaxwell: CoordsH",std::string("coordsH.m"));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Map> colmap = Xpetra::IO<SC, LO, GO, NO>::ReadMap(colmap_filename, A_nodal_Matrix_->getDomainMap()->lib(),A_nodal_Matrix_->getDomainMap()->getComm());
       RCP<const Map> domainmap = Xpetra::IO<SC, LO, GO, NO>::ReadMap(domainmap_filename, A_nodal_Matrix_->getDomainMap()->lib(),A_nodal_Matrix_->getDomainMap()->getComm());
       P_nodal = Xpetra::IO<SC, LO, GO, NO>::Read(P_filename, A_nodal_Matrix_->getDomainMap(), colmap, domainmap, A_nodal_Matrix_->getDomainMap());
       CoordsH_ = Xpetra::IO<typename RealValuedMultiVector::scalar_type, LO, GO, NO>::ReadMultiVector(coords_filename, domainmap);
+#else
+      RCP<const Map> colmap = Xpetra::IO<SC, NO>::ReadMap(colmap_filename, A_nodal_Matrix_->getDomainMap()->lib(),A_nodal_Matrix_->getDomainMap()->getComm());
+      RCP<const Map> domainmap = Xpetra::IO<SC, NO>::ReadMap(domainmap_filename, A_nodal_Matrix_->getDomainMap()->lib(),A_nodal_Matrix_->getDomainMap()->getComm());
+      P_nodal = Xpetra::IO<SC, NO>::Read(P_filename, A_nodal_Matrix_->getDomainMap(), colmap, domainmap, A_nodal_Matrix_->getDomainMap());
+      CoordsH_ = Xpetra::IO<typename RealValuedMultiVector::scalar_type, NO>::ReadMultiVector(coords_filename, domainmap);
+#endif
     } else {
       Level fineLevel, coarseLevel;
       fineLevel.SetFactoryManager(null);
@@ -1373,7 +1446,11 @@ namespace MueLu {
 
       if (algo == "mat-mat") {
         RCP<Matrix> D0_P_nodal = MatrixFactory::Build(SM_Matrix_->getRowMap());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Multiply(*D0_Matrix_,false,*P_nodal,false,*D0_P_nodal,true,true);
+#else
+        Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*D0_Matrix_,false,*P_nodal,false,*D0_P_nodal,true,true);
+#endif
 
 #ifdef HAVE_MUELU_DEBUG
         TEUCHOS_ASSERT(D0_P_nodal->getColMap()->isSameAs(*P_nodal_imported->getColMap()));
@@ -1383,8 +1460,13 @@ namespace MueLu {
         auto localD0P = D0_P_nodal->getLocalMatrix();
 
         // Create the matrix object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map> blockColMap    = Xpetra::MapFactory<LO,GO,NO>::Build(P_nodal_imported->getColMap(), dim);
         RCP<Map> blockDomainMap = Xpetra::MapFactory<LO,GO,NO>::Build(P_nodal->getDomainMap(), dim);
+#else
+        RCP<Map> blockColMap    = Xpetra::MapFactory<NO>::Build(P_nodal_imported->getColMap(), dim);
+        RCP<Map> blockDomainMap = Xpetra::MapFactory<NO>::Build(P_nodal->getDomainMap(), dim);
+#endif
 
         size_t nnzEstimate = dim*localD0P.graph.entries.size();
         lno_view_t P11rowptr("P11_rowptr", numLocalRows+1);
@@ -1517,7 +1599,11 @@ namespace MueLu {
 
     if (algo == "mat-mat") {
       RCP<Matrix> D0_P_nodal = MatrixFactory::Build(SM_Matrix_->getRowMap());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Multiply(*D0_Matrix_,false,*P_nodal,false,*D0_P_nodal,true,true);
+#else
+      Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*D0_Matrix_,false,*P_nodal,false,*D0_P_nodal,true,true);
+#endif
 
       // Get data out of D0*P.
       ArrayRCP<const size_t>      D0Prowptr_RCP;
@@ -1533,8 +1619,13 @@ namespace MueLu {
       D0Prowptr = D0Prowptr_RCP(); D0Pcolind = D0Pcolind_RCP();
 
       // Create the matrix object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Map> blockColMap    = Xpetra::MapFactory<LO,GO,NO>::Build(P_nodal_imported->getColMap(), dim);
       RCP<Map> blockDomainMap = Xpetra::MapFactory<LO,GO,NO>::Build(P_nodal->getDomainMap(), dim);
+#else
+      RCP<Map> blockColMap    = Xpetra::MapFactory<NO>::Build(P_nodal_imported->getColMap(), dim);
+      RCP<Map> blockDomainMap = Xpetra::MapFactory<NO>::Build(P_nodal->getDomainMap(), dim);
+#endif
       P11_ = rcp(new CrsMatrixWrap(SM_Matrix_->getRowMap(), blockColMap, 0));
       RCP<CrsMatrix> P11Crs = rcp_dynamic_cast<CrsMatrixWrap>(P11_)->getCrsMatrix();
       size_t nnzEstimate = dim*D0Prowptr[numLocalRows];
@@ -1629,8 +1720,13 @@ namespace MueLu {
       size_t nnz_alloc = dim*D0vals_RCP.size();
 
       // Create the matrix object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Map> blockColMap    = Xpetra::MapFactory<LO,GO,NO>::Build(P_nodal_imported->getColMap(), dim);
       RCP<Map> blockDomainMap = Xpetra::MapFactory<LO,GO,NO>::Build(P_nodal->getDomainMap(), dim);
+#else
+      RCP<Map> blockColMap    = Xpetra::MapFactory<NO>::Build(P_nodal_imported->getColMap(), dim);
+      RCP<Map> blockDomainMap = Xpetra::MapFactory<NO>::Build(P_nodal->getDomainMap(), dim);
+#endif
       P11_ = rcp(new CrsMatrixWrap(SM_Matrix_->getRowMap(), blockColMap, 0));
       RCP<CrsMatrix> P11Crs = rcp_dynamic_cast<CrsMatrixWrap>(P11_)->getCrsMatrix();
       P11Crs->allocateAllValues(nnz_alloc, P11rowptr_RCP, P11colind_RCP, P11vals_RCP);
@@ -1732,8 +1828,13 @@ namespace MueLu {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::formCoarseMatrix() {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::formCoarseMatrix() {
+#endif
     RCP<Teuchos::TimeMonitor> tm = getTimer("MueLu RefMaxwell: Build coarse (1,1) matrix");
 
     const Scalar one = Teuchos::ScalarTraits<Scalar>::one();
@@ -1807,9 +1908,17 @@ namespace MueLu {
         RCP<Matrix> Z = MatrixFactory::Build(D0_Matrix_->getDomainMap());
 
         // construct Zaux = M1 P11
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Multiply(*M1_Matrix_,false,*P11_,false,*Zaux,true,true);
+#else
+        Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*M1_Matrix_,false,*P11_,false,*Zaux,true,true);
+#endif
         // construct Z = D0* M1 P11 = D0* Zaux
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Multiply(*D0_Matrix_,true,*Zaux,false,*Z,true,true);
+#else
+        Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*D0_Matrix_,true,*Zaux,false,*Z,true,true);
+#endif
 
         // construct Z* M0inv Z
         RCP<Matrix> Matrix2 = MatrixFactory::Build(Z->getDomainMap());
@@ -1830,16 +1939,32 @@ namespace MueLu {
             diag2->doImport(*diag,*importer,Xpetra::INSERT);
             Z->leftScale(*diag2);
           }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Multiply(*Z,true,*Z,false,*Matrix2,true,true);
+#else
+          Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*Z,true,*Z,false,*Matrix2,true,true);
+#endif
         } else if (parameterList_.get<bool>("rap: triple product", false) == false) {
           RCP<Matrix> C2 = MatrixFactory::Build(M0inv_Matrix_->getRowMap());
           // construct C2 = M0inv Z
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Multiply(*M0inv_Matrix_,false,*Z,false,*C2,true,true);
+#else
+          Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*M0inv_Matrix_,false,*Z,false,*C2,true,true);
+#endif
           // construct Matrix2 = Z* M0inv Z = Z* C2
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Multiply(*Z,true,*C2,false,*Matrix2,true,true);
+#else
+          Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*Z,true,*C2,false,*Matrix2,true,true);
+#endif
         } else {
           // construct Matrix2 = Z* M0inv Z
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Xpetra::TripleMatrixMultiply<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+          Xpetra::TripleMatrixMultiply<Scalar,Node>::
+#endif
             MultiplyRAP(*Z, true, *M0inv_Matrix_, false, *Z, false, *Matrix2, true, true);
         }
         // Should we keep the addon for next setup?
@@ -1847,11 +1972,19 @@ namespace MueLu {
           Addon_Matrix_ = Matrix2;
 
         // add matrices together
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::TwoMatrixAdd(*Matrix1,false,one,*Matrix2,false,one,AH_,GetOStream(Runtime0));
+#else
+        Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixAdd(*Matrix1,false,one,*Matrix2,false,one,AH_,GetOStream(Runtime0));
+#endif
         AH_->fillComplete();
       } else {
         // add matrices together
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MatrixMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::TwoMatrixAdd(*Matrix1,false,one,*Addon_Matrix_,false,one,AH_,GetOStream(Runtime0));
+#else
+        Xpetra::MatrixMatrix<Scalar,Node>::TwoMatrixAdd(*Matrix1,false,one,*Addon_Matrix_,false,one,AH_,GetOStream(Runtime0));
+#endif
         AH_->fillComplete();
       }
     }
@@ -1864,8 +1997,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::resetMatrix(RCP<Matrix> SM_Matrix_new, bool ComputePrec) {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::resetMatrix(RCP<Matrix> SM_Matrix_new, bool ComputePrec) {
+#endif
     bool reuse = !SM_Matrix_.is_null();
     SM_Matrix_ = SM_Matrix_new;
     dump(*SM_Matrix_, "SM.m");
@@ -1874,8 +2012,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyInverseAdditive(const MultiVector& RHS, MultiVector& X) const {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::applyInverseAdditive(const MultiVector& RHS, MultiVector& X) const {
+#endif
 
     Scalar one = Teuchos::ScalarTraits<Scalar>::one();
 
@@ -2007,8 +2150,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyInverse121(const MultiVector& RHS, MultiVector& X) const {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::applyInverse121(const MultiVector& RHS, MultiVector& X) const {
+#endif
 
     // precondition (1,1)-block
     solveH(RHS,X);
@@ -2020,8 +2168,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyInverse212(const MultiVector& RHS, MultiVector& X) const {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::applyInverse212(const MultiVector& RHS, MultiVector& X) const {
+#endif
 
     // precondition (2,2)-block
     solve22(RHS,X);
@@ -2032,8 +2185,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::solveH(const MultiVector& RHS, MultiVector& X) const {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::solveH(const MultiVector& RHS, MultiVector& X) const {
+#endif
 
     Scalar one = Teuchos::ScalarTraits<Scalar>::one();
 
@@ -2081,8 +2239,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::solve22(const MultiVector& RHS, MultiVector& X) const {
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::solve22(const MultiVector& RHS, MultiVector& X) const {
+#endif
 
     Scalar one = Teuchos::ScalarTraits<Scalar>::one();
 
@@ -2130,8 +2293,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::apply (const MultiVector& RHS, MultiVector& X,
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::apply (const MultiVector& RHS, MultiVector& X,
+#endif
                                                                   Teuchos::ETransp /* mode */,
                                                                   Scalar /* alpha */,
                                                                   Scalar /* beta */) const {
@@ -2148,8 +2316,13 @@ namespace MueLu {
 
 #if defined(MUELU_REFMAXWELL_CAN_USE_HIPTMAIR)
       if (useHiptmairSmoothing_) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tX = Utilities::MV2NonConstTpetraMV(X);
         Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tRHS = Utilities::MV2TpetraMV(RHS);
+#else
+        Tpetra::MultiVector<Scalar, Node> tX = Utilities::MV2NonConstTpetraMV(X);
+        Tpetra::MultiVector<Scalar, Node> tRHS = Utilities::MV2TpetraMV(RHS);
+#endif
         hiptmairPreSmoother_->apply(tRHS, tX);
       }
       else
@@ -2181,8 +2354,13 @@ namespace MueLu {
 #if defined(MUELU_REFMAXWELL_CAN_USE_HIPTMAIR)
       if (useHiptmairSmoothing_)
         {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tX = Utilities::MV2NonConstTpetraMV(X);
           Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> tRHS = Utilities::MV2TpetraMV(RHS);
+#else
+          Tpetra::MultiVector<Scalar, Node> tX = Utilities::MV2NonConstTpetraMV(X);
+          Tpetra::MultiVector<Scalar, Node> tRHS = Utilities::MV2TpetraMV(RHS);
+#endif
           hiptmairPostSmoother_->apply(tRHS, tX);
         }
       else
@@ -2193,14 +2371,24 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::hasTransposeApply() const {
+#else
+  template<class Scalar, class Node>
+  bool RefMaxwell<Scalar,Node>::hasTransposeApply() const {
+#endif
     return false;
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template<class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::
+#endif
   initialize(const Teuchos::RCP<Matrix> & D0_Matrix,
              const Teuchos::RCP<Matrix> & Ms_Matrix,
              const Teuchos::RCP<Matrix> & M0inv_Matrix,
@@ -2258,8 +2446,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RefMaxwell<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Scalar, class Node>
+  void RefMaxwell<Scalar,Node>::
+#endif
   describe(Teuchos::FancyOStream& out, const Teuchos::EVerbosityLevel /* verbLevel */) const {
 
     std::ostringstream oss;

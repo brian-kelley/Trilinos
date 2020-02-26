@@ -91,15 +91,28 @@ namespace Xpetra {
   typedef std::string viewLabel_t;
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class Matrix : public Xpetra::Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node > {
     typedef Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> Map;
     typedef Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> CrsMatrix;
     typedef Xpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node> CrsGraph;
     typedef Xpetra::CrsMatrixFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> CrsMatrixFactory;
     typedef Xpetra::MatrixView<Scalar, LocalOrdinal, GlobalOrdinal, Node> MatrixView;
+#else
+  class Matrix : public Xpetra::Operator< Scalar, Node > {
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::Map<Node> Map;
+    typedef Xpetra::CrsMatrix<Scalar, Node> CrsMatrix;
+    typedef Xpetra::CrsGraph<Node> CrsGraph;
+    typedef Xpetra::CrsMatrixFactory<Scalar, Node> CrsMatrixFactory;
+    typedef Xpetra::MatrixView<Scalar, Node> MatrixView;
+#endif
 
   public:
     typedef Scalar          scalar_type;
@@ -150,8 +163,13 @@ namespace Xpetra {
         domainMap = transposeA ? A->getRangeMap()        : A->getDomainMap();
 
         if (viewLabel == "stridedMaps") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           rangeMap  = Xpetra::StridedMapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(rangeMap,  stridingInfo, stridedBlockId);
           domainMap = Xpetra::StridedMapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(domainMap, stridingInfo, stridedBlockId);
+#else
+          rangeMap  = Xpetra::StridedMapFactory<Node>::Build(rangeMap,  stridingInfo, stridedBlockId);
+          domainMap = Xpetra::StridedMapFactory<Node>::Build(domainMap, stridingInfo, stridedBlockId);
+#endif
         }
       }
 
@@ -165,7 +183,11 @@ namespace Xpetra {
           domainMap = transposeB ? B->getRangeMap()        : B->getDomainMap();
 
           if (viewLabel == "stridedMaps")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             domainMap = Xpetra::StridedMapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(domainMap, stridingInfo, stridedBlockId);
+#else
+            domainMap = Xpetra::StridedMapFactory<Node>::Build(domainMap, stridingInfo, stridedBlockId);
+#endif
         }
       }
 
@@ -427,16 +449,28 @@ namespace Xpetra {
     //! \brief Get a copy of the diagonal entries owned by this node, with local row indices.
     /*! Returns a distributed Vector object partitioned according to this matrix's row map, containing
       the zero and non-zero diagonals owned by this node. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void getLocalDiagCopy(Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &diag) const =0;
+#else
+    virtual void getLocalDiagCopy(Vector<Scalar,Node> &diag) const =0;
+#endif
 
     //! Get Frobenius norm of the matrix
     virtual typename ScalarTraits<Scalar>::magnitudeType getFrobeniusNorm() const = 0;
 
     //! Left scale matrix using the given vector entries
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void leftScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) = 0;
+#else
+    virtual void leftScale (const Vector<Scalar, Node>& x) = 0;
+#endif
 
     //! Right scale matrix using the given vector entries
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void rightScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) = 0;
+#else
+    virtual void rightScale (const Vector<Scalar, Node>& x) = 0;
+#endif
 
 
     //! Returns true if globalConstants have been computed; false otherwise
@@ -467,25 +501,45 @@ namespace Xpetra {
     //{@
 
     //! Access function for the Tpetra::Map this DistObject was constructed with.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const Teuchos::RCP< const Xpetra::Map< LocalOrdinal, GlobalOrdinal, Node > > getMap() const = 0;
+#else
+    virtual const Teuchos::RCP< const Xpetra::Map<Node > > getMap() const = 0;
+#endif
 
     // TODO: first argument of doImport/doExport should be a Xpetra::DistObject
 
     //! Import.
     virtual void doImport(const Matrix &source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           const Import< LocalOrdinal, GlobalOrdinal, Node > &importer, CombineMode CM) = 0;
+#else
+                          const Import<Node > &importer, CombineMode CM) = 0;
+#endif
 
     //! Export.
     virtual void doExport(const Matrix &dest,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           const Import< LocalOrdinal, GlobalOrdinal, Node >& importer, CombineMode CM) = 0;
+#else
+                          const Import<Node >& importer, CombineMode CM) = 0;
+#endif
 
     //! Import (using an Exporter).
     virtual void doImport(const Matrix &source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           const Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) = 0;
+#else
+                          const Export<Node >& exporter, CombineMode CM) = 0;
+#endif
 
     //! Export (using an Importer).
     virtual void doExport(const Matrix &dest,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           const Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) = 0;
+#else
+                          const Export<Node >& exporter, CombineMode CM) = 0;
+#endif
 
     // @}
 
@@ -542,13 +596,21 @@ namespace Xpetra {
       stridingInfo.push_back(Teuchos::as<size_t>(blksize));
       LocalOrdinal stridedBlockId = -1;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Xpetra::StridedMap<LocalOrdinal, GlobalOrdinal, Node> > stridedRangeMap = Xpetra::StridedMapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(
+#else
+      RCP<const Xpetra::StridedMap<Node> > stridedRangeMap = Xpetra::StridedMapFactory<Node>::Build(
+#endif
                                                     this->getRangeMap(),
                                                     stridingInfo,
                                                     stridedBlockId,
                                                     offset
                                                     );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Map> stridedDomainMap = Xpetra::StridedMapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(
+#else
+      RCP<const Map> stridedDomainMap = Xpetra::StridedMapFactory<Node>::Build(
+#endif
                                               this->getDomainMap(),
                                               stridingInfo,
                                               stridedBlockId,
@@ -563,8 +625,13 @@ namespace Xpetra {
 
     LocalOrdinal GetFixedBlockSize() const {
       if(IsView("stridedMaps")==true) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<const StridedMap<LocalOrdinal, GlobalOrdinal, Node> > rangeMap = Teuchos::rcp_dynamic_cast<const StridedMap<LocalOrdinal, GlobalOrdinal, Node> >(getRowMap("stridedMaps"));
         Teuchos::RCP<const StridedMap<LocalOrdinal, GlobalOrdinal, Node> > domainMap = Teuchos::rcp_dynamic_cast<const StridedMap<LocalOrdinal, GlobalOrdinal, Node> >(getColMap("stridedMaps"));
+#else
+        Teuchos::RCP<const StridedMap<Node> > rangeMap = Teuchos::rcp_dynamic_cast<const StridedMap<Node> >(getRowMap("stridedMaps"));
+        Teuchos::RCP<const StridedMap<Node> > domainMap = Teuchos::rcp_dynamic_cast<const StridedMap<Node> >(getColMap("stridedMaps"));
+#endif
         TEUCHOS_TEST_FOR_EXCEPTION(rangeMap  == Teuchos::null, Exceptions::BadCast, "Xpetra::Matrix::GetFixedBlockSize(): rangeMap is not of type StridedMap");
         TEUCHOS_TEST_FOR_EXCEPTION(domainMap == Teuchos::null, Exceptions::BadCast, "Xpetra::Matrix::GetFixedBlockSize(): domainMap is not of type StridedMap");
         TEUCHOS_TEST_FOR_EXCEPTION(domainMap->getFixedBlockSize() != rangeMap->getFixedBlockSize(), Exceptions::RuntimeError, "Xpetra::Matrix::GetFixedBlockSize(): block size of rangeMap and domainMap are different.");
@@ -600,9 +667,15 @@ namespace Xpetra {
     // ----------------------------------------------------------------------------------
 
     //! Compute a residual R = B - (*this) * X
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void residual(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & X,
                           const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & B,
                           MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & R) const = 0;
+#else
+    virtual void residual(const MultiVector< Scalar, Node > & X,
+                          const MultiVector< Scalar, Node > & B,
+                          MultiVector< Scalar, Node > & R) const = 0;
+#endif
 
     protected:
       Teuchos::Hashtable<viewLabel_t, RCP<MatrixView> > operatorViewTable_; // hashtable storing the operator views (keys = view names, values = views).

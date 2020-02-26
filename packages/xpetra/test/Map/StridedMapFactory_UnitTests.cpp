@@ -109,9 +109,17 @@ namespace {
 
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( StridedMapFactory, CreateStridedMap1, M, LO, GO, N )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( StridedMapFactory, CreateStridedMap1, M,N )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::StridedMap<LO,GO,N> SM;
+#else
+    typedef Xpetra::StridedMap<N> SM;
+#endif
 
     // create a comm
     Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -133,7 +141,11 @@ namespace {
       stridedInfo.push_back(4);
       stridedInfo.push_back(5);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<SM> map = Xpetra::StridedMapFactory<LO,GO,N>::Build(lib, numGlobalElements, indexBase, stridedInfo, comm, -1, offset);
+#else
+      Teuchos::RCP<SM> map = Xpetra::StridedMapFactory<N>::Build(lib, numGlobalElements, indexBase, stridedInfo, comm, -1, offset);
+#endif
 
       TEST_EQUALITY_CONST( map->getFixedBlockSize(), 12 );
       TEST_EQUALITY_CONST( map->isStrided(), true );
@@ -145,7 +157,11 @@ namespace {
 
       //Teuchos::RCP<SM> emap2 = Teuchos::null;
       for(size_t k=0; k<stridedInfo.size(); k++) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<SM> map2 = Xpetra::StridedMapFactory<LO,GO,N>::Build(lib, numGlobalElements, indexBase, stridedInfo, comm, k, offset);
+#else
+        Teuchos::RCP<SM> map2 = Xpetra::StridedMapFactory<N>::Build(lib, numGlobalElements, indexBase, stridedInfo, comm, k, offset);
+#endif
         TEST_EQUALITY_CONST( map2->getFixedBlockSize(), 12 );
         TEST_EQUALITY_CONST( map2->isStrided(), true );
         TEST_EQUALITY_CONST( map2->isBlocked(), true );
@@ -159,9 +175,17 @@ namespace {
   // TODO add test routines for remaining constructors of StridedMapFactory
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( StridedMapFactory, CreateStridedMap2, M, LO, GO, N )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( StridedMapFactory, CreateStridedMap2, M,N )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::StridedMap<LO,GO,N> SM;
+#else
+    typedef Xpetra::StridedMap<N> SM;
+#endif
 
     // create a comm
     Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -181,7 +205,11 @@ namespace {
     stridedInfo.push_back(4);
     stridedInfo.push_back(5);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<SM> map = Xpetra::StridedMapFactory<LO,GO,N>::Build(lib, numGlobalElements, 0, stridedInfo, comm, -1, offset);
+#else
+    Teuchos::RCP<SM> map = Xpetra::StridedMapFactory<N>::Build(lib, numGlobalElements, 0, stridedInfo, comm, -1, offset);
+#endif
 
     TEST_EQUALITY_CONST( map->getFixedBlockSize(), 12 );
     TEST_EQUALITY_CONST( map->isStrided(), true );
@@ -191,7 +219,11 @@ namespace {
     TEST_EQUALITY_CONST( map->isContiguous(), false);
     TEST_EQUALITY_CONST( map->getNodeNumElements() % 12 , 0);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<SM> map2 = Xpetra::StridedMapFactory<LO,GO,N>::Build(map, 0);
+#else
+    Teuchos::RCP<SM> map2 = Xpetra::StridedMapFactory<N>::Build(map, 0);
+#endif
     TEST_EQUALITY_CONST( map2->getFixedBlockSize(), 12 );
     TEST_EQUALITY_CONST( map2->isStrided(), true );
     TEST_EQUALITY_CONST( map2->isBlocked(), true );
@@ -201,7 +233,11 @@ namespace {
     TEST_EQUALITY_CONST( map2->getNodeNumElements() % 3 , 0);
     TEST_EQUALITY_CONST( map2->getNodeNumElements(), numLocalElements / map2->getFixedBlockSize() * stridedInfo[0]);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<SM> map3 = Xpetra::StridedMapFactory<LO,GO,N>::Build(map, 1);
+#else
+    Teuchos::RCP<SM> map3 = Xpetra::StridedMapFactory<N>::Build(map, 1);
+#endif
     TEST_EQUALITY_CONST( map3->getFixedBlockSize(), 12 );
     TEST_EQUALITY_CONST( map3->isStrided(), true );
     TEST_EQUALITY_CONST( map3->isBlocked(), true );
@@ -211,7 +247,11 @@ namespace {
     TEST_EQUALITY_CONST( map3->getNodeNumElements() % 4 , 0);
     TEST_EQUALITY_CONST( map3->getNodeNumElements(), numLocalElements / map3->getFixedBlockSize() * stridedInfo[1]);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<SM> map4 = Xpetra::StridedMapFactory<LO,GO,N>::Build(map, 2);
+#else
+    Teuchos::RCP<SM> map4 = Xpetra::StridedMapFactory<N>::Build(map, 2);
+#endif
     TEST_EQUALITY_CONST( map4->getFixedBlockSize(), 12 );
     TEST_EQUALITY_CONST( map4->isStrided(), true );
     TEST_EQUALITY_CONST( map4->isBlocked(), true );
@@ -227,22 +267,37 @@ namespace {
   //
 #ifdef HAVE_XPETRA_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_TPETRA_TYPES( LO, GO, N) \
     typedef typename Xpetra::TpetraMap<LO,GO,N> M##LO##GO##N;
+#else
+  #define XPETRA_TPETRA_TYPES(N) \
+    typedef typename Xpetra::TpetraMap<N> M##LO##GO##N;
+#endif
 
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_EPETRA_TYPES( LO, GO, N) \
+#else
+  #define XPETRA_EPETRA_TYPES(N) \
+#endif
     typedef typename Xpetra::EpetraMapT<GO,N> M##LO##GO##N;
 
 #endif
 
 // List of tests (which run both on Epetra and Tpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_MAP_INSTANT(LO,GO,N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( StridedMapFactory, CreateStridedMap1, M##LO##GO##N , LO, GO, N) \
     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( StridedMapFactory, CreateStridedMap2, M##LO##GO##N , LO, GO, N)
+#else
+#define XP_MAP_INSTANT(N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( StridedMapFactory, CreateStridedMap1, M##LO##GO##N ,N) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( StridedMapFactory, CreateStridedMap2, M##LO##GO##N ,N)
+#endif
 
 #if defined(HAVE_XPETRA_TPETRA)
 

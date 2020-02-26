@@ -63,16 +63,30 @@ TEUCHOS_STATIC_SETUP()
 // Test forward/reverse communication in reference to issue #227
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, ReverseCommunication, LO, GO, NT ) {
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, ReverseCommunication, NT ) {
+#endif
   using Teuchos::RCP;
   using Teuchos::rcp;
   using std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> Tpetra_Map;
   typedef Tpetra::Import<LO, GO, NT> Tpetra_Import;
   typedef Tpetra::Export<LO, GO, NT> Tpetra_Export;
+#else
+  typedef Tpetra::Map<NT> Tpetra_Map;
+  typedef Tpetra::Import<NT> Tpetra_Import;
+  typedef Tpetra::Export<NT> Tpetra_Export;
+#endif
   typedef Tpetra::Vector<>::scalar_type SC;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<SC,LO,GO,NT> Tpetra_Vector;
+#else
+  typedef Tpetra::Vector<SC,NT> Tpetra_Vector;
+#endif
 
   RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm ();
   const int myRank = comm->getRank ();
@@ -193,7 +207,12 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ImportExport, ReverseCommunication, LO, GO, N
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_3( LO, GO, NT )                                         \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ImportExport, ReverseCommunication, LO, GO, NT )
+#else
+#define UNIT_TEST_3(NT )                                         \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ImportExport, ReverseCommunication, NT )
+#endif
 TPETRA_ETI_MANGLING_TYPEDEFS()
 TPETRA_INSTANTIATE_LGN( UNIT_TEST_3 )

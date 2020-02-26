@@ -57,12 +57,20 @@
 
 namespace Piro {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 class TrapezoidDecorator
     : public Thyra::ModelEvaluatorDelegatorBase<Scalar> {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   /** \name Constructors/initializers */
   //@{
 
@@ -115,13 +123,21 @@ class TrapezoidDecorator
 
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 class TrapezoidRuleSolver
     : public Thyra::ResponseOnlyModelEvaluatorBase<Scalar> {
 
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   /** \name Constructors/initializers */
   //@{
 
@@ -168,7 +184,11 @@ private:
 
    //These are set in the constructor and used in evalModel
    mutable Teuchos::RCP<Teuchos::ParameterList> appParams;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Piro::TrapezoidDecorator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > model;
+#else
+   Teuchos::RCP<Piro::TrapezoidDecorator<Scalar, Node> > model;
+#endif
    Teuchos::RCP<Piro::ObserverBase<Scalar> > observer;
    Teuchos::RCP<Thyra::AdaptiveSolutionManager> solMgr;
    Teuchos::RCP<Teuchos::FancyOStream> out;

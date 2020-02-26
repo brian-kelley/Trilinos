@@ -72,7 +72,11 @@
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_Epetra<panzer::Traits::Hessian, TRAITS,LO,GO>::
+#else
+panzer::ScatterResidual_Epetra<panzer::Traits::Hessian, TRAITS>::
+#endif
 ScatterResidual_Epetra(const Teuchos::RCP<const GlobalIndexer> & indexer,
                        const Teuchos::RCP<const panzer::GlobalIndexer> & cIndexer,
                        const Teuchos::ParameterList& p,
@@ -122,7 +126,11 @@ ScatterResidual_Epetra(const Teuchos::RCP<const GlobalIndexer> & indexer,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Epetra<panzer::Traits::Hessian, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_Epetra<panzer::Traits::Hessian, TRAITS>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -137,7 +145,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Epetra<panzer::Traits::Hessian, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_Epetra<panzer::Traits::Hessian, TRAITS>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
   // extract linear object container
@@ -152,7 +164,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_Epetra<panzer::Traits::Hessian, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_Epetra<panzer::Traits::Hessian, TRAITS>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
   using Kokkos::View;

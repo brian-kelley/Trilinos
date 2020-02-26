@@ -58,8 +58,13 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GlobalOrdinal, class Node>
   RCP< const Import<int, GlobalOrdinal, Node > > toXpetra(const Epetra_Import *import);
+#else
+  template<class Node>
+  RCP< const Import<Node > > toXpetra(const Epetra_Import *import);
+#endif
   //
 
   template<class EpetraGlobalOrdinal, class Node>
@@ -70,7 +75,11 @@ namespace Xpetra {
     typedef int LocalOrdinal;
     typedef EpetraGlobalOrdinal GlobalOrdinal;
     //! The specialization of Map used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
 
   public:
 
@@ -146,10 +155,18 @@ namespace Xpetra {
 
 
     //! The Source Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getSourceMap() const { XPETRA_MONITOR("EpetraImportT::getSourceMap"); return toXpetra<GlobalOrdinal, Node>(import_->SourceMap()); }
+#else
+    Teuchos::RCP< const Map<Node > > getSourceMap() const { XPETRA_MONITOR("EpetraImportT::getSourceMap"); return toXpetra<GlobalOrdinal, Node>(import_->SourceMap()); }
+#endif
 
     //! The Target Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getTargetMap() const { XPETRA_MONITOR("EpetraImportT::getTargetMap"); return toXpetra<GlobalOrdinal, Node>(import_->TargetMap()); }
+#else
+    Teuchos::RCP< const Map<Node > > getTargetMap() const { XPETRA_MONITOR("EpetraImportT::getTargetMap"); return toXpetra<GlobalOrdinal, Node>(import_->TargetMap()); }
+#endif
 
     void setDistributorParameters(const Teuchos::RCP<Teuchos::ParameterList> params) const { XPETRA_MONITOR("EpetraImportT::setDistributorParameters");  }
 

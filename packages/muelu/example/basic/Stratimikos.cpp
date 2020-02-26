@@ -92,28 +92,52 @@ The source code is not MueLu specific and can be used with any Stratimikos strat
 // Because C++ doesn't support partial template specialization of functions.
 // The reason for this is that Stratimikos only supports Scalar=double.
 // By default, don't do anything and just return success
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar,class LocalOrdinal,class GlobalOrdinal,class Node>
+#else
+template<typename Scalar,class Node>
+#endif
 struct MainWrappers {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   static int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]){ return EXIT_SUCCESS; }
 };
 
 
 // Partial template specialization on SC=double
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 struct MainWrappers<double,LocalOrdinal,GlobalOrdinal,Node> {
+#else
+template<class Node>
+struct MainWrappers<double,Node> {
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   static int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]);
 };
 
 
 // Partial template specialization on SC=double
 // Stratimikos only supports Scalar=double
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 int MainWrappers<double,LocalOrdinal,GlobalOrdinal,Node>::main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
+#else
+template<class Node>
+int MainWrappers<double,Node>::main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
+#endif
   typedef double Scalar;
   #include <MueLu_UseShortNames.hpp>
   typedef Teuchos::ScalarTraits<Scalar> STS;
   typedef typename STS::coordinateType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LocalOrdinal,GlobalOrdinal,Node> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,Node> RealValuedMultiVector;
+#endif
   using Teuchos::RCP;
   using Teuchos::rcp;
   using Teuchos::ParameterList;
@@ -192,18 +216,32 @@ int MainWrappers<double,LocalOrdinal,GlobalOrdinal,Node>::main_(Teuchos::Command
     RCP<MultiVector>           X, B;
 
     std::ostringstream galeriStream;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MatrixLoad<SC,LocalOrdinal,GlobalOrdinal,Node>(comm,lib,binaryFormat,matrixFile,rhsFile,rowMapFile,colMapFile,domainMapFile,rangeMapFile,coordFile,nullFile,materialFile,map,A,coordinates,nullspace,material,X,B,numVectors,matrixParameters,xpetraParameters,galeriStream);
+#else
+    MatrixLoad<SC,Node>(comm,lib,binaryFormat,matrixFile,rhsFile,rowMapFile,colMapFile,domainMapFile,rangeMapFile,coordFile,nullFile,materialFile,map,A,coordinates,nullspace,material,X,B,numVectors,matrixParameters,xpetraParameters,galeriStream);
+#endif
     out << galeriStream.str();
 
     //
     // Build Thyra linear algebra objects
     //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node> > xpCrsA = Teuchos::rcp_dynamic_cast<const Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(A);
+#else
+    RCP<const Xpetra::CrsMatrixWrap<Scalar,Node> > xpCrsA = Teuchos::rcp_dynamic_cast<const Xpetra::CrsMatrixWrap<Scalar,Node> >(A);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Thyra::LinearOpBase<Scalar> >    thyraA = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyra(xpCrsA->getCrsMatrix());
     RCP<      Thyra::MultiVectorBase<Scalar> > thyraX = Teuchos::rcp_const_cast<Thyra::MultiVectorBase<Scalar> >(Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyraMultiVector(X));
     RCP<const Thyra::MultiVectorBase<Scalar> > thyraB = Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toThyraMultiVector(B);
+#else
+    RCP<const Thyra::LinearOpBase<Scalar> >    thyraA = Xpetra::ThyraUtils<Scalar,Node>::toThyra(xpCrsA->getCrsMatrix());
+    RCP<      Thyra::MultiVectorBase<Scalar> > thyraX = Teuchos::rcp_const_cast<Thyra::MultiVectorBase<Scalar> >(Xpetra::ThyraUtils<Scalar,Node>::toThyraMultiVector(X));
+    RCP<const Thyra::MultiVectorBase<Scalar> > thyraB = Xpetra::ThyraUtils<Scalar,Node>::toThyraMultiVector(B);
+#endif
 
     //
     // Build Stratimikos solver
@@ -212,11 +250,19 @@ int MainWrappers<double,LocalOrdinal,GlobalOrdinal,Node>::main_(Teuchos::Command
     // This is the Stratimikos main class (= factory of solver factory).
     Stratimikos::DefaultLinearSolverBuilder linearSolverBuilder;
     // Register MueLu as a Stratimikos preconditioner strategy.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Stratimikos::enableMueLu<LocalOrdinal,GlobalOrdinal,Node>(linearSolverBuilder);
+#else
+    Stratimikos::enableMueLu<Node>(linearSolverBuilder);
+#endif
 #ifdef HAVE_MUELU_IFPACK2
     // Register Ifpack2 as a Stratimikos preconditioner strategy.
     typedef Thyra::PreconditionerFactoryBase<Scalar> Base;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > Impl;
+#else
+    typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<Scalar,Node> > Impl;
+#endif
     linearSolverBuilder.setPreconditioningStrategyFactory(Teuchos::abstractFactoryStd<Base, Impl>(), "Ifpack2");
 #endif
 
@@ -279,9 +325,17 @@ int MainWrappers<double,LocalOrdinal,GlobalOrdinal,Node>::main_(Teuchos::Command
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar,class LocalOrdinal,class GlobalOrdinal,class Node>
+#else
+template<typename Scalar,class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return MainWrappers<Scalar,LocalOrdinal,GlobalOrdinal,Node>::main_(clp, lib, argc, argv);
+#else
+  return MainWrappers<Scalar,Node>::main_(clp, lib, argc, argv);
+#endif
 }
 
 //- -- --------------------------------------------------------

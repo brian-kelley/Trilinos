@@ -921,9 +921,13 @@ namespace { // (anonymous)
     typedef typename map_type::local_ordinal_type LO;
     typedef typename map_type::global_ordinal_type GO;
     //typedef typename map_type::device_type::execution_space execution_space;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Export<typename map_type::local_ordinal_type,
       typename map_type::global_ordinal_type,
       typename map_type::node_type> export_type;
+#else
+    typedef Tpetra::Export<typename map_type::node_type> export_type;
+#endif
     int lclSuccess = 1; // to be modified below
     int gblSuccess = 0; // output argument
 
@@ -1172,14 +1176,22 @@ namespace { // (anonymous)
   //
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrix, Albany182, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsMatrix, Albany182, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::RCP;
     using Teuchos::outArg;
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<double, LO, GO, Node> crs_matrix_type;
+#else
+    typedef Tpetra::CrsMatrix<double, Node> crs_matrix_type;
+#endif
 
     RCP<const Comm<int> > comm = Tpetra::TestingUtilities::getDefaultComm ();
     const bool verbose = ::Tpetra::Details::Behavior::verbose ();
@@ -1190,8 +1202,13 @@ namespace { // (anonymous)
   // INSTANTIATIONS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrix, Albany182, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP(NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsMatrix, Albany182, NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

@@ -183,13 +183,19 @@ namespace MueLu {
 
   */
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class FactoryFactory : public BaseClass {
 #undef MUELU_FACTORYFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef std::map<std::string, RCP<const FactoryBase>  > FactoryMap; // TODO: remove
     typedef std::map<std::string, RCP<FactoryManagerBase> > FactoryManagerMap;
 

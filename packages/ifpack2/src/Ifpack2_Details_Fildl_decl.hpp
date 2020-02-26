@@ -58,11 +58,22 @@ namespace Details
 
 /// \class Fildl
 /// \brief The Ifpack2 wrapper to the ILDL preconditioner of ShyLU FastILU.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 class Fildl : public FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+template<typename Scalar, typename Node>
+class Fildl : public FastILU_Base<Scalar, Node>
+#endif
 {
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node> Base;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef FastILU_Base<Scalar, Node> Base;
+#endif
     typedef typename Base::TRowMatrix TRowMatrix;
     typedef typename Base::ScalarArray ScalarArray;
     typedef FastILDLPrec<LocalOrdinal, Scalar, typename Base::execution_space> LocalFILDL;

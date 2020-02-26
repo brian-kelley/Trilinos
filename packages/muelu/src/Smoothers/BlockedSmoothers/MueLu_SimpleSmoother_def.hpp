@@ -81,8 +81,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SimpleSmoother()
+#else
+  template <class Scalar, class Node>
+  SimpleSmoother<Scalar, Node>::SimpleSmoother()
+#endif
     : type_("SIMPLE"), A_(Teuchos::null)
   {
     //Factory::SetParameter("Sweeps", Teuchos::ParameterEntry(sweeps));
@@ -132,11 +137,21 @@ namespace MueLu {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SimpleSmoother() {}
+#else
+  template <class Scalar, class Node>
+  SimpleSmoother<Scalar, Node>::~SimpleSmoother() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> SimpleSmoother<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A",                  Teuchos::null, "Generating factory of the matrix A");
@@ -148,8 +163,13 @@ namespace MueLu {
   }
 
   //! Add a factory manager at a specific position
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager, int pos) {
+#else
+  template <class Scalar, class Node>
+  void SimpleSmoother<Scalar, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager, int pos) {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(pos < 0, Exceptions::RuntimeError, "MueLu::SimpleSmoother::AddFactoryManager: parameter \'pos\' must not be negative! error.");
 
     size_t myPos = Teuchos::as<size_t>(pos);
@@ -171,18 +191,33 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetVelocityPredictionFactoryManager(RCP<FactoryManager> FactManager) {
+#else
+  template <class Scalar, class Node>
+  void SimpleSmoother<Scalar, Node>::SetVelocityPredictionFactoryManager(RCP<FactoryManager> FactManager) {
+#endif
     AddFactoryManager(FactManager, 0); // overwrite factory manager for predicting the primary variable
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetSchurCompFactoryManager(RCP<FactoryManager> FactManager) {
+#else
+  template <class Scalar, class Node>
+  void SimpleSmoother<Scalar, Node>::SetSchurCompFactoryManager(RCP<FactoryManager> FactManager) {
+#endif
     AddFactoryManager(FactManager, 1); // overwrite factory manager for SchurComplement
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SimpleSmoother<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     currentLevel.DeclareInput("A",this->GetFactory("A").get());
 
     TEUCHOS_TEST_FOR_EXCEPTION(FactManager_.size() != 2, Exceptions::RuntimeError,"MueLu::SimpleSmoother::DeclareInput: You have to declare two FactoryManagers with a \"Smoother\" object: One for predicting the primary variable and one for the SchurComplement system. The smoother for the SchurComplement system needs a SchurComplementFactory as input for variable \"A\". make sure that you use the same proper damping factors for omega both in the SchurComplementFactory and in the SIMPLE smoother!");
@@ -197,8 +232,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(Level &currentLevel) {
+#else
+  template <class Scalar, class Node>
+  void SimpleSmoother<Scalar, Node>::Setup(Level &currentLevel) {
+#endif
     //*********************************************
     // Setup routine can be summarized in 4 steps:
     // - Set the map extractors
@@ -277,8 +317,13 @@ namespace MueLu {
     SmootherPrototype::IsSetup(true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Apply(MultiVector& X, const MultiVector& B, bool InitialGuessIsZero) const
+#else
+  template <class Scalar, class Node>
+  void SimpleSmoother<Scalar, Node>::Apply(MultiVector& X, const MultiVector& B, bool InitialGuessIsZero) const
+#endif
   {
     TEUCHOS_TEST_FOR_EXCEPTION(SmootherPrototype::IsSetup() == false, Exceptions::RuntimeError, "MueLu::SimpleSmoother::Apply(): Setup() has not been called");
 #if 0
@@ -341,7 +386,11 @@ namespace MueLu {
     bB = Teuchos::rcp_dynamic_cast<const BlockedMultiVector>(rcpB);
 
     // check the type of operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > rbA = Teuchos::rcp_dynamic_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(bA);
+#else
+    RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > rbA = Teuchos::rcp_dynamic_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(bA);
+#endif
     if(rbA.is_null() == false) {
       // A is a ReorderedBlockedCrsMatrix
       Teuchos::RCP<const Xpetra::BlockReorderManager > brm = rbA->getBlockReorderManager();
@@ -428,22 +477,38 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Copy () const {
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::SmootherPrototype<Scalar, Node> >
+  SimpleSmoother<Scalar, Node>::Copy () const {
+#endif
     return rcp( new SimpleSmoother(*this) );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string SimpleSmoother<Scalar, Node>::description() const {
+#endif
     std::ostringstream out;
     out << SmootherPrototype::description();
     out << "{type = " << type_ << "}";
     return out.str();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SimpleSmoother<Scalar, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#endif
     MUELU_DESCRIBE;
 
     if (verbLevel & Parameters0) {
@@ -455,8 +520,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t SimpleSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNodeSmootherComplexity() const {
+#else
+  template <class Scalar, class Node>
+  size_t SimpleSmoother<Scalar, Node>::getNodeSmootherComplexity() const {
+#endif
     // FIXME: This is a placeholder
     return Teuchos::OrdinalTraits<size_t>::invalid();
   }

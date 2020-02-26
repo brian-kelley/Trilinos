@@ -163,9 +163,13 @@ namespace Tpetra {
   template<class DistObjectType>
   void
   removeEmptyProcessesInPlace (Teuchos::RCP<DistObjectType>& input,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                const Teuchos::RCP<const Map<typename DistObjectType::local_ordinal_type,
                                                             typename DistObjectType::global_ordinal_type,
                                                             typename DistObjectType::node_type> >& newMap);
+#else
+                               const Teuchos::RCP<const Map<typename DistObjectType::node_type> >& newMap);
+#endif
 
   /// \brief Remove processes which contain no elements in this object's Map.
   ///
@@ -319,14 +323,20 @@ namespace Tpetra {
   /// an object can be the target of an Import or Export, it can also
   /// be the source of an Import or Export.
   template <class Packet,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   class DistObject :
     virtual public SrcDistObject,
     virtual public Teuchos::Describable
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Typedefs
     //@{
 
@@ -360,16 +370,32 @@ namespace Tpetra {
     explicit DistObject (const Teuchos::RCP<const map_type>& map);
 
     //! Copy constructor (default).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistObject (const DistObject<Packet, LocalOrdinal, GlobalOrdinal, Node>&) = default;
+#else
+    DistObject (const DistObject<Packet, Node>&) = default;
+#endif
 
     //! Assignment operator (default).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistObject& operator= (const DistObject<Packet, LocalOrdinal, GlobalOrdinal, Node>&) = default;
+#else
+    DistObject& operator= (const DistObject<Packet, Node>&) = default;
+#endif
 
     //! Move constructor (default).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistObject (DistObject<Packet, LocalOrdinal, GlobalOrdinal, Node>&&) = default;
+#else
+    DistObject (DistObject<Packet, Node>&&) = default;
+#endif
 
     //! Move assignment (default).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistObject& operator= (DistObject<Packet, LocalOrdinal, GlobalOrdinal, Node>&&) = default;
+#else
+    DistObject& operator= (DistObject<Packet, Node>&&) = default;
+#endif
 
     /// \brief Destructor (virtual for memory safety of derived classes).
     ///
@@ -415,7 +441,11 @@ namespace Tpetra {
     ///   global index.
     void
     doImport (const SrcDistObject& source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               const Import<LocalOrdinal, GlobalOrdinal, Node>& importer,
+#else
+              const Import<Node>& importer,
+#endif
               const CombineMode CM,
               const bool restrictedMode = false);
 
@@ -448,7 +478,11 @@ namespace Tpetra {
     ///   global index.
     void
     doExport (const SrcDistObject& source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               const Export<LocalOrdinal, GlobalOrdinal, Node>& exporter,
+#else
+              const Export<Node>& exporter,
+#endif
               const CombineMode CM,
               const bool restrictedMode = false);
 
@@ -482,7 +516,11 @@ namespace Tpetra {
     ///   global index.
     void
     doImport (const SrcDistObject& source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               const Export<LocalOrdinal, GlobalOrdinal, Node>& exporter,
+#else
+              const Export<Node>& exporter,
+#endif
               const CombineMode CM,
               const bool restrictedMode = false);
 
@@ -516,7 +554,11 @@ namespace Tpetra {
     ///   global index.
     void
     doExport (const SrcDistObject& source,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               const Import<LocalOrdinal, GlobalOrdinal, Node>& importer,
+#else
+              const Import<Node>& importer,
+#endif
               const CombineMode CM,
               const bool restrictedMode = false);
 
@@ -978,7 +1020,11 @@ namespace Tpetra {
     Kokkos::DualView<size_t*, buffer_device_type> numExportPacketsPerLID_;
 
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using this_type = DistObject<Packet, LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using this_type = DistObject<Packet, Node>;
+#endif
 
 #ifdef HAVE_TPETRA_TRANSFER_TIMERS
     Teuchos::RCP<Teuchos::Time> doXferTimer_;

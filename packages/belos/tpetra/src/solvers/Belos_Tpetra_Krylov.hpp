@@ -39,19 +39,25 @@ template<class SC = Tpetra::MultiVector<>::scalar_type,
 class Krylov {
 private:
   static_assert (std::is_same<MV, Tpetra::MultiVector<typename MV::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  typename MV::local_ordinal_type,
                  typename MV::global_ordinal_type,
+#endif
                  typename MV::node_type>>::value,
                  "MV must be a Tpetra::MultiVector specialization.");
   static_assert (std::is_same<OP, Tpetra::Operator<typename OP::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  typename OP::local_ordinal_type,
                  typename OP::global_ordinal_type,
+#endif
                  typename OP::node_type>>::value,
                  "OP must be a Tpetra::Operator specialization.");
 public:
   using vec_type = Tpetra::Vector<typename MV::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   typename MV::local_ordinal_type,
                                   typename MV::global_ordinal_type,
+#endif
                                   typename MV::node_type>;
 
 private:

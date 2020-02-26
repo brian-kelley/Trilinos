@@ -54,25 +54,43 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
     class CoarseSpace {
 
     protected:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
         using CommPtr                   = RCP<const Comm<int> >;
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMap                      = Map<LO,GO,NO>;
+#else
+        using XMap                      = Map<NO>;
+#endif
         using XMapPtr                   = RCP<XMap>;
         using ConstXMapPtr              = RCP<const XMap>;
         using XMapPtrVec                = Array<XMapPtr>;
         using ConstXMapPtrVec           = Array<ConstXMapPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrix                   = Matrix<SC,LO,GO,NO>;
+#else
+        using XMatrix                   = Matrix<SC,NO>;
+#endif
         using XMatrixPtr                = RCP<XMatrix>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector              = MultiVector<SC,LO,GO,NO>;
+#else
+        using XMultiVector              = MultiVector<SC,NO>;
+#endif
         using XMultiVectorPtr           = RCP<XMultiVector>;
         using ConstXMultiVectorPtr      = RCP<const XMultiVector>;
         using ConstXMultiVectorPtrVec   = Array<ConstXMultiVectorPtr>;

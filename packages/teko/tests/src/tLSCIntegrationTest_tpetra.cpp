@@ -92,9 +92,15 @@ void tLSCIntegrationTest_tpetra::initializeTest()
 {
    tolerance_ = 1.0e-6;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    velMap_  = rcp(new Tpetra::Map<LO,GO,NT>(5890,0,GetComm_tpetra())); // map of velocity space
    prsMap_  = rcp(new Tpetra::Map<LO,GO,NT>(769,0,GetComm_tpetra())); // map of pressure space
    fullMap_ = rcp(new Tpetra::Map<LO,GO,NT>(769+5890,0,GetComm_tpetra())); // map of pressure space
+#else
+   velMap_  = rcp(new Tpetra::Map<NT>(5890,0,GetComm_tpetra())); // map of velocity space
+   prsMap_  = rcp(new Tpetra::Map<NT>(769,0,GetComm_tpetra())); // map of pressure space
+   fullMap_ = rcp(new Tpetra::Map<NT>(769+5890,0,GetComm_tpetra())); // map of pressure space
+#endif
 }
 
 void tLSCIntegrationTest_tpetra::solveList(Teuchos::ParameterList & paramList,int vcycles)
@@ -121,6 +127,7 @@ void tLSCIntegrationTest_tpetra::solveList(Teuchos::ParameterList & paramList,in
 void tLSCIntegrationTest_tpetra::loadStableSystem()
 {
    // read in stable discretization
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::Map<LO,GO,NT> > junkMap = Teuchos::null;
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > nF_ = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,LO,GO,NT> >::readSparseFile("./data/lsc_F_2.mm",velMap_,junkMap,velMap_,velMap_);
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > nB_ = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,LO,GO,NT> >::readSparseFile("./data/lsc_B_2.mm",prsMap_,junkMap,velMap_,prsMap_);
@@ -131,34 +138,78 @@ void tLSCIntegrationTest_tpetra::loadStableSystem()
    sB_ = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(nB_);
    sBt_ = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(nBt_);
    sQu_ = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(nQu_);
+#else
+   RCP<const Tpetra::Map<NT> > junkMap = Teuchos::null;
+   RCP<Tpetra::CrsMatrix<ST,NT> > nF_ = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,NT> >::readSparseFile("./data/lsc_F_2.mm",velMap_,junkMap,velMap_,velMap_);
+   RCP<Tpetra::CrsMatrix<ST,NT> > nB_ = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,NT> >::readSparseFile("./data/lsc_B_2.mm",prsMap_,junkMap,velMap_,prsMap_);
+   RCP<Tpetra::CrsMatrix<ST,NT> > nBt_ = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,NT> >::readSparseFile("./data/lsc_Bt_2.mm",velMap_,junkMap,prsMap_,velMap_);
+   RCP<Tpetra::CrsMatrix<ST,NT> > nQu_ = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,NT> >::readSparseFile("./data/lsc_Qu_2.mm",velMap_,junkMap,velMap_,velMap_);
+
+   sF_ = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(nF_);
+   sB_ = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(nB_);
+   sBt_ = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(nBt_);
+   sQu_ = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(nQu_);
+#endif
 
    Teko::LinearOp C;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teko::LinearOp tA_ = Thyra::block2x2<ST>(Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sF_->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sF_->getDomainMap()),sF_),Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sBt_->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sBt_->getDomainMap()),sBt_),Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sB_->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sB_->getDomainMap()),sB_),C,"A");
+#else
+   Teko::LinearOp tA_ = Thyra::block2x2<ST>(Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(sF_->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(sF_->getDomainMap()),sF_),Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(sBt_->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(sBt_->getDomainMap()),sBt_),Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(sB_->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(sB_->getDomainMap()),sB_),C,"A");
+#endif
    sA_ = rcp(new Teko::TpetraHelpers::TpetraOperatorWrapper(tA_));
 
    // build an exporter to work around issue with MMFileToVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Export<LO,GO,NT> exporter(fullMap_,sA_->getRangeMap());
+#else
+   Tpetra::Export<NT> exporter(fullMap_,sA_->getRangeMap());
+#endif
 
    // read in RHS vector
    {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Tpetra::Vector<ST,LO,GO,NT> > vfull, temp;
+#else
+      RCP<Tpetra::Vector<ST,NT> > vfull, temp;
+#endif
  
       // read in rhs file 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       vfull = Tpetra::MatrixMarket::Reader<Tpetra::Vector<ST,LO,GO,NT> >::readVectorFile("./data/lsc_rhs.mm",GetComm_tpetra(),fullMap_);
+#else
+      vfull = Tpetra::MatrixMarket::Reader<Tpetra::Vector<ST,NT> >::readVectorFile("./data/lsc_rhs.mm",GetComm_tpetra(),fullMap_);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       temp = rcp(new Tpetra::Vector<ST,LO,GO,NT>(sA_->getRangeMap()));
+#else
+      temp = rcp(new Tpetra::Vector<ST,NT>(sA_->getRangeMap()));
+#endif
       temp->doExport(*vfull,exporter,Tpetra::INSERT);
       rhs_ = temp;
    }
 
    // read in solution vector
    {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Tpetra::Vector<ST,LO,GO,NT> > vfull, temp;
+#else
+      RCP<Tpetra::Vector<ST,NT> > vfull, temp;
+#endif
  
       // read in exact solution file 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       vfull = Tpetra::MatrixMarket::Reader<Tpetra::Vector<ST,LO,GO,NT> >::readVectorFile("./data/lsc_exact_2.mm",GetComm_tpetra(),fullMap_);
+#else
+      vfull = Tpetra::MatrixMarket::Reader<Tpetra::Vector<ST,NT> >::readVectorFile("./data/lsc_exact_2.mm",GetComm_tpetra(),fullMap_);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       temp = rcp(new Tpetra::Vector<ST,LO,GO,NT>(sA_->getRangeMap()));
+#else
+      temp = rcp(new Tpetra::Vector<ST,NT>(sA_->getRangeMap()));
+#endif
       temp->doExport(*vfull,exporter,Tpetra::INSERT);
       sExact_ = temp;
    }
@@ -203,8 +254,13 @@ int tLSCIntegrationTest_tpetra::runTest(int verbosity,std::ostream & stdstrm,std
 
 bool tLSCIntegrationTest_tpetra::test_withmassStable(int verbosity,std::ostream & os)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typedef Tpetra::MultiVector<ST,LO,GO,NT> MV;
    typedef Tpetra::Operator<ST,LO,GO,NT> OP;
+#else
+   typedef Tpetra::MultiVector<ST,NT> MV;
+   typedef Tpetra::Operator<ST,NT> OP;
+#endif
 
    Teuchos::ParameterList paramList;
    solveList(paramList,8);
@@ -224,14 +280,22 @@ bool tLSCIntegrationTest_tpetra::test_withmassStable(int verbosity,std::ostream 
          << toString(true) << std::endl;
    }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    LinearOp Qu = Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sQu_->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sQu_->getDomainMap()),sQu_);
+#else
+   LinearOp Qu = Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(sQu_->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(sQu_->getDomainMap()),sQu_);
+#endif
    const RCP<Teko::NS::LSCStrategy> strategy = rcp(new Teko::NS::InvLSCStrategy(invFact,Qu));
    const RCP<Teko::BlockPreconditionerFactory> precFact = rcp(new Teko::NS::LSCPreconditionerFactory(strategy));
    const RCP<Teko::TpetraHelpers::TpetraBlockPreconditioner> prec = rcp(new Teko::TpetraHelpers::TpetraBlockPreconditioner(precFact));
    prec->buildPreconditioner(sA_);
 
    // Build solver and solve system
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT> x(sA_->getDomainMap());
+#else
+   Tpetra::Vector<ST,NT> x(sA_->getDomainMap());
+#endif
    x.scale(0.0);
    RCP<MV> x_mv = Teuchos::rcp_dynamic_cast<MV>(rcpFromRef(x));
    RCP<const MV> rhs_mv = Teuchos::rcp_dynamic_cast<const MV>(rhs_);
@@ -275,8 +339,13 @@ bool tLSCIntegrationTest_tpetra::test_withmassStable(int verbosity,std::ostream 
 
 bool tLSCIntegrationTest_tpetra::test_nomassStable(int verbosity,std::ostream & os)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typedef Tpetra::MultiVector<ST,LO,GO,NT> MV;
    typedef Tpetra::Operator<ST,LO,GO,NT> OP;
+#else
+   typedef Tpetra::MultiVector<ST,NT> MV;
+   typedef Tpetra::Operator<ST,NT> OP;
+#endif
 
    Teuchos::ParameterList paramList;
    solveList(paramList,8);
@@ -304,7 +373,11 @@ bool tLSCIntegrationTest_tpetra::test_nomassStable(int verbosity,std::ostream & 
    prec->buildPreconditioner(sA_);
 
    // Build solver and solve system
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT> x(sA_->getDomainMap());
+#else
+   Tpetra::Vector<ST,NT> x(sA_->getDomainMap());
+#endif
    x.scale(0.0);
    RCP<MV> x_mv = Teuchos::rcp_dynamic_cast<MV>(rcpFromRef(x));
    RCP<const MV> rhs_mv = Teuchos::rcp_dynamic_cast<const MV>(rhs_);

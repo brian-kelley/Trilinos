@@ -50,8 +50,10 @@
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 namespace Tpetra {
 template<class SC = ::Tpetra::Details::DefaultTypes::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LO = ::Tpetra::Details::DefaultTypes::local_ordinal_type,
          class GO = ::Tpetra::Details::DefaultTypes::global_ordinal_type,
+#endif
          class NT = ::Tpetra::Details::DefaultTypes::node_type>
 class BlockVector;
 } // namespace Tpetra

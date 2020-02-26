@@ -68,7 +68,11 @@
 namespace MueLuTests {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, Constructor, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -80,7 +84,11 @@ namespace MueLuTests {
 
   } // Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, Build, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, Build, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -122,7 +130,11 @@ namespace MueLuTests {
       Galeri::Xpetra::BuildProblem<Scalar, LocalOrdinal, GlobalOrdinal, Map, CrsMatrixWrap, MultiVector>("Laplace2D", map, matrixList);
     RCP<Matrix> A = Pr->BuildMatrix();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(map, false);
+#else
+    RCP<Xpetra::Vector<GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,Node>::Build(map, false);
+#endif
     RCP<MultiVector>                  coords        = MultiVectorFactory::Build(map, 2);
     Teuchos::ArrayRCP<GlobalOrdinal> partitionThisDofBelongsTo;
     if (decomposition->getLocalLength())
@@ -174,7 +186,11 @@ namespace MueLuTests {
     level.Set<int>              ("number of partitions", numPartitions);
 
     level.Request("Partition", zoltan.get());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     level.Set<RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > >("Partition", decomposition, zoltan.get());
+#else
+    level.Set<RCP<Xpetra::Vector<GlobalOrdinal,Node> > >("Partition", decomposition, zoltan.get());
+#endif
 
     RCP<RepartitionFactory> repart = rcp(new RepartitionFactory());
     Teuchos::ParameterList paramList;
@@ -194,7 +210,11 @@ namespace MueLuTests {
     RCP<const Import> importer;
     level.Get("Importer", importer, repart.get());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > result = Xpetra::VectorFactory<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(importer->getTargetMap(), false);
+#else
+    RCP<Xpetra::Vector<GlobalOrdinal,Node> > result = Xpetra::VectorFactory<GlobalOrdinal,Node>::Build(importer->getTargetMap(), false);
+#endif
     result->doImport(*decomposition, *importer, Xpetra::INSERT);
     Teuchos::ArrayRCP<GlobalOrdinal> resultData;
     if (result->getLocalLength() > 0)
@@ -219,7 +239,11 @@ namespace MueLuTests {
 
   } // Build
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement1, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement1, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -257,7 +281,11 @@ namespace MueLuTests {
       Galeri::Xpetra::BuildProblem<Scalar, LocalOrdinal, GlobalOrdinal, Map, CrsMatrixWrap, MultiVector>("Laplace2D", map, matrixList);
     RCP<Matrix> A = Pr->BuildMatrix();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(map, false);
+#else
+    RCP<Xpetra::Vector<GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,Node>::Build(map, false);
+#endif
     Teuchos::ArrayRCP<GlobalOrdinal> partitionThisDofBelongsTo = decomposition->getDataNonConst(0);
 
     // Assign the partition that each unknown belongs to. In this case: part0 has 6, part1 has 6, part2 has 9, part3 has 6
@@ -339,7 +367,11 @@ namespace MueLuTests {
     }
   } // DeterminePartitionPlacement1
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement2, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -375,7 +407,11 @@ namespace MueLuTests {
       Galeri::Xpetra::BuildProblem<Scalar, LocalOrdinal, GlobalOrdinal, Map, CrsMatrixWrap, MultiVector>("Laplace2D", map, matrixList);
     RCP<Matrix> A = Pr->BuildMatrix();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(map, false);
+#else
+    RCP<Xpetra::Vector<GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,Node>::Build(map, false);
+#endif
     Teuchos::ArrayRCP<GlobalOrdinal> partitionThisDofBelongsTo = decomposition->getDataNonConst(0);
 
     // Assign the partition that each unknown belongs to. In this case: part0 has 6, part1 has 6, parth2 has 9, part3 has 6
@@ -457,7 +493,11 @@ namespace MueLuTests {
     }
   } // DeterminePartitionPlacement2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement3, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -498,7 +538,11 @@ namespace MueLuTests {
       Galeri::Xpetra::BuildProblem<Scalar, LocalOrdinal, GlobalOrdinal, Map, CrsMatrixWrap, MultiVector>("Laplace2D", map, matrixList);
     RCP<Matrix> A = Pr->BuildMatrix();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(map, false);
+#else
+    RCP<Xpetra::Vector<GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,Node>::Build(map, false);
+#endif
     Teuchos::ArrayRCP<GlobalOrdinal> partitionThisDofBelongsTo;
     if (decomposition->getLocalLength())
       partitionThisDofBelongsTo = decomposition->getDataNonConst(0);
@@ -556,7 +600,11 @@ namespace MueLuTests {
     }
   } // DeterminePartitionPlacement3
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement4, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement4, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -599,7 +647,11 @@ namespace MueLuTests {
       Galeri::Xpetra::BuildProblem<Scalar, LocalOrdinal, GlobalOrdinal, Map, CrsMatrixWrap, MultiVector>("Laplace2D", map, matrixList);
     RCP<Matrix> A = Pr->BuildMatrix();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(map, false);
+#else
+    RCP<Xpetra::Vector<GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,Node>::Build(map, false);
+#endif
     Teuchos::ArrayRCP<GlobalOrdinal> partitionThisDofBelongsTo;
     if (decomposition->getLocalLength())
       partitionThisDofBelongsTo = decomposition->getDataNonConst(0);
@@ -665,7 +717,11 @@ namespace MueLuTests {
     }
   } // DeterminePartitionPlacement4
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement5, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, DeterminePartitionPlacement5, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -708,7 +764,11 @@ namespace MueLuTests {
       Galeri::Xpetra::BuildProblem<Scalar, LocalOrdinal, GlobalOrdinal, Map, CrsMatrixWrap, MultiVector>("Laplace2D", map, matrixList);
     RCP<Matrix> A = Pr->BuildMatrix();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(map, false);
+#else
+    RCP<Xpetra::Vector<GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,Node>::Build(map, false);
+#endif
     Teuchos::ArrayRCP<GlobalOrdinal> partitionThisDofBelongsTo;
     if (decomposition->getLocalLength())
       partitionThisDofBelongsTo = decomposition->getDataNonConst(0);
@@ -759,7 +819,11 @@ namespace MueLuTests {
 
   } // DeterminePartitionPlacement5
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, Correctness, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, Correctness, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -805,7 +869,11 @@ namespace MueLuTests {
       Galeri::Xpetra::BuildProblem<Scalar, LocalOrdinal, GlobalOrdinal, Map, CrsMatrixWrap, MultiVector>("Laplace2D", map, matrixList);
     RCP<Matrix> A = Pr->BuildMatrix();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(map, false);
+#else
+    RCP<Xpetra::Vector<GlobalOrdinal,Node> > decomposition = Xpetra::VectorFactory<GlobalOrdinal,Node>::Build(map, false);
+#endif
     RCP<MultiVector>                  coords        = MultiVectorFactory::Build(map, 2);
     Teuchos::ArrayRCP<GlobalOrdinal> partitionThisDofBelongsTo;
     if (decomposition->getLocalLength())
@@ -857,7 +925,11 @@ namespace MueLuTests {
     level.Set<int>              ("number of partitions", numPartitions);
 
     level.Request("Partition", zoltan.get());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     level.Set<RCP<Xpetra::Vector<GlobalOrdinal,LocalOrdinal,GlobalOrdinal,Node> > >("Partition", decomposition, zoltan.get());
+#else
+    level.Set<RCP<Xpetra::Vector<GlobalOrdinal,Node> > >("Partition", decomposition, zoltan.get());
+#endif
 
     RCP<RepartitionFactory> repart = rcp(new RepartitionFactory());
     Teuchos::ParameterList paramList;
@@ -901,7 +973,11 @@ namespace MueLuTests {
 
   } // Correctness
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, CoordinateMap, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, CoordinateMap, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -938,8 +1014,13 @@ namespace MueLuTests {
     }
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> mv_type_double;
     typedef Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> MVFactory_double;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> mv_type_double;
+    typedef Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> MVFactory_double;
+#endif
 
     // Create a matrix and coordinates.
     RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
@@ -950,12 +1031,20 @@ namespace MueLuTests {
     Teuchos::ParameterList galeriList;
     galeriList.set("nx", nx);
     galeriList.set("ny", ny);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> map = Galeri::Xpetra::CreateMap<LocalOrdinal, GlobalOrdinal, Node>(TestHelpers::Parameters::getLib(), "Cartesian2D", comm, galeriList);
+#else
+    RCP<const Map> map = Galeri::Xpetra::CreateMap<Node>(TestHelpers::Parameters::getLib(), "Cartesian2D", comm, galeriList);
+#endif
 
     //build coordinates before expanding map (nodal coordinates, not dof-based)
     //RCP<MultiVector> coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<Scalar,LocalOrdinal,GlobalOrdinal,Map,MultiVector>("2D", map, galeriList);
     RCP<mv_type_double> coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LocalOrdinal,GlobalOrdinal,Map,mv_type_double>("2D", map, galeriList);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Xpetra::MapFactory<LocalOrdinal,GlobalOrdinal,Node>::Build(map, 2); //expand map for 2 DOFs per node
+#else
+    map = Xpetra::MapFactory<Node>::Build(map, 2); //expand map for 2 DOFs per node
+#endif
 
     galeriList.set("right boundary" , "Neumann");
     galeriList.set("bottom boundary", "Neumann");
@@ -969,7 +1058,11 @@ namespace MueLuTests {
     RCP<Matrix> A = Pr->BuildMatrix();
     A->SetFixedBlockSize(2);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Xpetra::IO<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Write("A.mm", *A);
+#else
+    Xpetra::IO<Scalar, Node>::Write("A.mm", *A);
+#endif
     comm->barrier();
 
     RCP<HierarchyManager> mueLuFactory = rcp(new ParameterListInterpreter("testCoordinates.xml", *comm));
@@ -1013,7 +1106,11 @@ namespace MueLuTests {
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, NodePartition, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Repartition, NodePartition, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -1040,8 +1137,13 @@ namespace MueLuTests {
     }
 
  
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> mv_type_double;
     typedef Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> MVFactory_double;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> mv_type_double;
+    typedef Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> MVFactory_double;
+#endif
 
     // Create a matrix and coordinates.
     RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
@@ -1052,7 +1154,11 @@ namespace MueLuTests {
     Teuchos::ParameterList galeriList;
     galeriList.set("nx", nx);
     galeriList.set("ny", ny);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> map = Galeri::Xpetra::CreateMap<LocalOrdinal, GlobalOrdinal, Node>(TestHelpers::Parameters::getLib(), "Cartesian2D", comm, galeriList);
+#else
+    RCP<const Map> map = Galeri::Xpetra::CreateMap<Node>(TestHelpers::Parameters::getLib(), "Cartesian2D", comm, galeriList);
+#endif
 
     // build coordinates 
     RCP<mv_type_double> coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LocalOrdinal,GlobalOrdinal,Map,mv_type_double>("2D", map, galeriList);
@@ -1095,6 +1201,7 @@ namespace MueLuTests {
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(Scalar, LO, GO, Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,Constructor,Scalar,LO,GO,Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,Build,Scalar,LO,GO,Node) \
@@ -1106,6 +1213,19 @@ namespace MueLuTests {
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,Correctness,Scalar,LO,GO,Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,CoordinateMap,Scalar,LO,GO,Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,NodePartition,Scalar,LO,GO,Node) \
+#else
+#define MUELU_ETI_GROUP(Scalar, Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,Constructor,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,Build,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,DeterminePartitionPlacement1,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,DeterminePartitionPlacement2,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,DeterminePartitionPlacement3,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,DeterminePartitionPlacement4,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,DeterminePartitionPlacement5,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,Correctness,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,CoordinateMap,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Repartition,NodePartition,Scalar,Node) \
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

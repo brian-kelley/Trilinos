@@ -433,8 +433,13 @@ std::string TriDiContainer<MatrixType, LocalScalarType>::getName()
   return "TriDi";
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_TRIDICONTAINER_INSTANT(S,LO,GO,N) \
   template class Ifpack2::TriDiContainer< Tpetra::RowMatrix<S, LO, GO, N>, S >;
+#else
+#define IFPACK2_TRIDICONTAINER_INSTANT(S,N) \
+  template class Ifpack2::TriDiContainer< Tpetra::RowMatrix<S, N>, S >;
+#endif
 
 } // namespace Ifpack2
 

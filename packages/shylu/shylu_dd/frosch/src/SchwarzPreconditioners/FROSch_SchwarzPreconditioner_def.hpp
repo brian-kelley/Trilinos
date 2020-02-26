@@ -50,8 +50,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     SchwarzPreconditioner<SC,LO,GO,NO>::SchwarzPreconditioner(ParameterListPtr parameterList,
+#else
+    template <class SC,class NO>
+    SchwarzPreconditioner<SC,NO>::SchwarzPreconditioner(ParameterListPtr parameterList,
+#endif
                                                               CommPtr comm) :
     MpiComm_ (comm),
     ParameterList_ (parameterList),
@@ -61,26 +66,46 @@ namespace FROSch {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     SchwarzPreconditioner<SC,LO,GO,NO>::~SchwarzPreconditioner()
+#else
+    template <class SC,class NO>
+    SchwarzPreconditioner<SC,NO>::~SchwarzPreconditioner()
+#endif
     {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool SchwarzPreconditioner<SC,LO,GO,NO>::isInitialized() const
+#else
+    template <class SC,class NO>
+    bool SchwarzPreconditioner<SC,NO>::isInitialized() const
+#endif
     {
         return IsInitialized_; // TODO: Das hat noch keine Bedeutung
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool SchwarzPreconditioner<SC,LO,GO,NO>::isComputed() const
+#else
+    template <class SC,class NO>
+    bool SchwarzPreconditioner<SC,NO>::isComputed() const
+#endif
     {
         return IsComputed_; // TODO: Das hat noch keine Bedeutung
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     void SchwarzPreconditioner<SC,LO,GO,NO>::residual(const XMultiVector & X,
+#else
+    template <class SC,class NO>
+    void SchwarzPreconditioner<SC,NO>::residual(const XMultiVector & X,
+#endif
                                                       const XMultiVector & B,
                                                       XMultiVector& R) const 
     {

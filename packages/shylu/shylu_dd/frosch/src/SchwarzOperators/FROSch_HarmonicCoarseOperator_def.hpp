@@ -50,13 +50,26 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     HarmonicCoarseOperator<SC,LO,GO,NO>::HarmonicCoarseOperator(ConstXMatrixPtr k,
+#else
+    template <class SC,class NO>
+    HarmonicCoarseOperator<SC,NO>::HarmonicCoarseOperator(ConstXMatrixPtr k,
+#endif
                                                                 ParameterListPtr parameterList) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     CoarseOperator<SC,LO,GO,NO> (k,parameterList),
+#else
+    CoarseOperator<SC,NO> (k,parameterList),
+#endif
     ExtensionSolver_ (),
     InterfaceCoarseSpaces_ (0),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AssembledInterfaceCoarseSpace_ (new CoarseSpace<SC,LO,GO,NO>(this->MpiComm_,this->SerialComm_)),
+#else
+    AssembledInterfaceCoarseSpace_ (new CoarseSpace<SC,NO>(this->MpiComm_,this->SerialComm_)),
+#endif
     Dimensions_ (0),
     DofsPerNode_ (0),
     GammaDofs_ (0),
@@ -67,8 +80,13 @@ namespace FROSch {
         FROSCH_TIMER_START_LEVELID(harmonicCoarseOperatorTime,"HarmonicCoarseOperator::HarmonicCoarseOperator");
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename HarmonicCoarseOperator<SC,LO,GO,NO>::XMapPtr HarmonicCoarseOperator<SC,LO,GO,NO>::computeCoarseSpace(CoarseSpacePtr coarseSpace)
+#else
+    template <class SC,class NO>
+    typename HarmonicCoarseOperator<SC,NO>::XMapPtr HarmonicCoarseOperator<SC,NO>::computeCoarseSpace(CoarseSpacePtr coarseSpace)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(computeCoarseSpaceTime,"HarmonicCoarseOperator::computeCoarseSpace");
         XMapPtr repeatedMap = AssembleSubdomainMap(NumberOfBlocks_,DofsMaps_,DofsPerNode_);
@@ -111,8 +129,13 @@ namespace FROSch {
         return repeatedMap;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int HarmonicCoarseOperator<SC,LO,GO,NO>::assembleInterfaceCoarseSpace()
+#else
+    template <class SC,class NO>
+    int HarmonicCoarseOperator<SC,NO>::assembleInterfaceCoarseSpace()
+#endif
     {
         FROSCH_TIMER_START_LEVELID(assembleInterfaceCoarseSpaceTime,"HarmonicCoarseOperator::assembleInterfaceCoarseSpace");
         LO ii=0;
@@ -129,8 +152,13 @@ namespace FROSch {
         return this->AssembledInterfaceCoarseSpace_->assembleCoarseSpace();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int HarmonicCoarseOperator<SC,LO,GO,NO>::addZeroCoarseSpaceBlock(ConstXMapPtr dofsMap)
+#else
+    template <class SC,class NO>
+    int HarmonicCoarseOperator<SC,NO>::addZeroCoarseSpaceBlock(ConstXMapPtr dofsMap)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(addZeroCoarseSpaceBlockTime,"HarmonicCoarseOperator::addZeroCoarseSpaceBlock");
         // Das könnte man noch ändern
@@ -158,11 +186,20 @@ namespace FROSch {
         XMultiVectorPtr mVPhiGamma;
         XMapPtr blockCoarseMap;
         if (useForCoarseSpace) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             InterfaceCoarseSpaces_[blockId].reset(new CoarseSpace<SC,LO,GO,NO>(this->MpiComm_,this->SerialComm_));
+#else
+            InterfaceCoarseSpaces_[blockId].reset(new CoarseSpace<SC,NO>(this->MpiComm_,this->SerialComm_));
+#endif
 
             //Epetra_SerialComm serialComm;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XMapPtr serialGammaMap = MapFactory<LO,GO,NO>::Build(dofsMap->lib(),dofsMap->getNodeNumElements(),0,this->SerialComm_);
             mVPhiGamma = MultiVectorFactory<LO,GO,NO>::Build(serialGammaMap,dofsMap->getNodeNumElements());
+#else
+            XMapPtr serialGammaMap = MapFactory<NO>::Build(dofsMap->lib(),dofsMap->getNodeNumElements(),0,this->SerialComm_);
+            mVPhiGamma = MultiVectorFactory<NO>::Build(serialGammaMap,dofsMap->getNodeNumElements());
+#endif
         }
 
         for (int i=0; i<dofsMap->getNodeNumElements(); i++) {
@@ -176,7 +213,11 @@ namespace FROSch {
         IDofs_[blockId] = LOVecPtr(0);
 
         if (useForCoarseSpace) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             blockCoarseMap = MapFactory<LO,GO,NO>::Build(dofsMap->lib(),-1,GammaDofs_[blockId](),0,this->MpiComm_);
+#else
+            blockCoarseMap = MapFactory<NO>::Build(dofsMap->lib(),-1,GammaDofs_[blockId](),0,this->MpiComm_);
+#endif
 
             InterfaceCoarseSpaces_[blockId]->addSubspace(blockCoarseMap,mVPhiGamma);
             InterfaceCoarseSpaces_[blockId]->assembleCoarseSpace();
@@ -190,8 +231,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int HarmonicCoarseOperator<SC,LO,GO,NO>::computeVolumeFunctions(UN blockId,
+#else
+    template <class SC,class NO>
+    int HarmonicCoarseOperator<SC,NO>::computeVolumeFunctions(UN blockId,
+#endif
                                                                     UN dimension,
                                                                     ConstXMapPtr nodesMap,
                                                                     ConstXMultiVectorPtr nodeList,
@@ -220,7 +266,11 @@ namespace FROSch {
         }
 
         if (useForCoarseSpace) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             InterfaceCoarseSpaces_[blockId].reset(new CoarseSpace<SC,LO,GO,NO>(this->MpiComm_,this->SerialComm_));
+#else
+            InterfaceCoarseSpaces_[blockId].reset(new CoarseSpace<SC,NO>(this->MpiComm_,this->SerialComm_));
+#endif
 
             interior->buildEntityMap(nodesMap);
 
@@ -256,16 +306,29 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename HarmonicCoarseOperator<SC,LO,GO,NO>::XMultiVectorPtrVecPtr HarmonicCoarseOperator<SC,LO,GO,NO>::computeTranslations(UN blockId,
+#else
+    template <class SC,class NO>
+    typename HarmonicCoarseOperator<SC,NO>::XMultiVectorPtrVecPtr HarmonicCoarseOperator<SC,NO>::computeTranslations(UN blockId,
+#endif
                                                                                                                                  EntitySetConstPtr entitySet)
     {
         FROSCH_TIMER_START_LEVELID(computeTranslationsTime,"HarmonicCoarseOperator::computeTranslations");
         XMultiVectorPtrVecPtr translations(this->DofsPerNode_[blockId]);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         XMapPtr serialGammaMap = MapFactory<LO,GO,NO>::Build(this->K_->getRangeMap()->lib(),this->GammaDofs_[blockId].size(),0,this->SerialComm_);
+#else
+        XMapPtr serialGammaMap = MapFactory<NO>::Build(this->K_->getRangeMap()->lib(),this->GammaDofs_[blockId].size(),0,this->SerialComm_);
+#endif
         for (UN i=0; i<this->DofsPerNode_[blockId]; i++) {
             if (entitySet->getNumEntities()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 translations[i] = MultiVectorFactory<SC,LO,GO,NO>::Build(serialGammaMap,entitySet->getNumEntities());
+#else
+                translations[i] = MultiVectorFactory<SC,NO>::Build(serialGammaMap,entitySet->getNumEntities());
+#endif
             } else {
                 translations[i] = null;
             }
@@ -281,8 +344,13 @@ namespace FROSch {
         return translations;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename HarmonicCoarseOperator<SC,LO,GO,NO>::XMultiVectorPtrVecPtr HarmonicCoarseOperator<SC,LO,GO,NO>::computeRotations(UN blockId,
+#else
+    template <class SC,class NO>
+    typename HarmonicCoarseOperator<SC,NO>::XMultiVectorPtrVecPtr HarmonicCoarseOperator<SC,NO>::computeRotations(UN blockId,
+#endif
                                                                                                                               UN dimension,
                                                                                                                               ConstXMultiVectorPtr nodeList,
                                                                                                                               EntitySetConstPtr entitySet,
@@ -309,10 +377,18 @@ namespace FROSch {
         }
 
         XMultiVectorPtrVecPtr rotations(rotationsPerEntity);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         XMapPtr serialGammaMap = MapFactory<LO,GO,NO>::Build(this->K_->getRangeMap()->lib(),this->GammaDofs_[blockId].size(),0,this->SerialComm_);
+#else
+        XMapPtr serialGammaMap = MapFactory<NO>::Build(this->K_->getRangeMap()->lib(),this->GammaDofs_[blockId].size(),0,this->SerialComm_);
+#endif
         for (UN i=0; i<rotationsPerEntity; i++) {
             if (entitySet->getNumEntities()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 rotations[i] = MultiVectorFactory<SC,LO,GO,NO>::Build(serialGammaMap,entitySet->getNumEntities());
+#else
+                rotations[i] = MultiVectorFactory<SC,NO>::Build(serialGammaMap,entitySet->getNumEntities());
+#endif
             } else {
                 rotations[i] = null;
             }
@@ -443,8 +519,13 @@ namespace FROSch {
         return rotations;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename HarmonicCoarseOperator<SC,LO,GO,NO>::XMultiVectorPtr HarmonicCoarseOperator<SC,LO,GO,NO>::computeExtensions(ConstXMapPtr localMap,
+#else
+    template <class SC,class NO>
+    typename HarmonicCoarseOperator<SC,NO>::XMultiVectorPtr HarmonicCoarseOperator<SC,NO>::computeExtensions(ConstXMapPtr localMap,
+#endif
                                                                                                                          ConstXMapPtr coarseMap,
                                                                                                                          GOVecView indicesGammaDofsAll,
                                                                                                                          GOVecView indicesIDofsAll,
@@ -453,12 +534,22 @@ namespace FROSch {
     {
         FROSCH_TIMER_START_LEVELID(computeExtensionsTime,"HarmonicCoarseOperator::computeExtensions");
         //this->Phi_ = MatrixFactory<SC,LO,GO,NO>::Build(this->K_->getRangeMap(),coarseMap,coarseMap->getNodeNumElements()); // Nonzeroes abhängig von dim/dofs!!!
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         XMultiVectorPtr mVPhi = MultiVectorFactory<SC,LO,GO,NO>::Build(localMap,coarseMap->getNodeNumElements());
         XMultiVectorPtr mVtmp = MultiVectorFactory<SC,LO,GO,NO>::Build(kII->getRowMap(),coarseMap->getNodeNumElements());
         XMultiVectorPtr mVPhiI = MultiVectorFactory<SC,LO,GO,NO>::Build(kII->getRowMap(),coarseMap->getNodeNumElements());
+#else
+        XMultiVectorPtr mVPhi = MultiVectorFactory<SC,NO>::Build(localMap,coarseMap->getNodeNumElements());
+        XMultiVectorPtr mVtmp = MultiVectorFactory<SC,NO>::Build(kII->getRowMap(),coarseMap->getNodeNumElements());
+        XMultiVectorPtr mVPhiI = MultiVectorFactory<SC,NO>::Build(kII->getRowMap(),coarseMap->getNodeNumElements());
+#endif
 
         //Build mVPhiGamma
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         XMultiVectorPtr mVPhiGamma = MultiVectorFactory<SC,LO,GO,NO>::Build(kIGamma->getDomainMap(),coarseMap->getNodeNumElements());
+#else
+        XMultiVectorPtr mVPhiGamma = MultiVectorFactory<SC,NO>::Build(kIGamma->getDomainMap(),coarseMap->getNodeNumElements());
+#endif
         if (AssembledInterfaceCoarseSpace_->hasAssembledBasis()) {
             for (UN i=0; i<AssembledInterfaceCoarseSpace_->getAssembledBasis()->getNumVectors(); i++) {
                 ConstSCVecPtr assembledInterfaceCoarseSpaceData = AssembledInterfaceCoarseSpace_->getAssembledBasis()->getData(i);
@@ -496,7 +587,11 @@ namespace FROSch {
 
         // Jetzt der solver für kII
         if (indicesIDofsAll.size()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             ExtensionSolver_.reset(new SubdomainSolver<SC,LO,GO,NO>(kII,sublist(this->ParameterList_,"ExtensionSolver")));
+#else
+            ExtensionSolver_.reset(new SubdomainSolver<SC,NO>(kII,sublist(this->ParameterList_,"ExtensionSolver")));
+#endif
             ExtensionSolver_->initialize();
             ExtensionSolver_->compute();
             ExtensionSolver_->apply(*mVtmp,*mVPhiI);

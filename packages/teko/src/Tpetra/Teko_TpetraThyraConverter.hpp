@@ -99,7 +99,11 @@ namespace TpetraHelpers {
   *       Notice that this does not include the <code>SpmdVectorBase</code> class. A fix of this might involve a more
   *       general implementation and use of <code>DetachedSpmdMultiVectorView</code>.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void blockTpetraToThyra(const Tpetra::MultiVector<ST,LO,GO,NT> & tpetraX,const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyraX); 
+#else
+void blockTpetraToThyra(const Tpetra::MultiVector<ST,NT> & tpetraX,const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyraX); 
+#endif
 
 /** \brief Convert a Thyra::MultiVectorBase object to a Epetra_MultiVector object with
   *        the map defined by the Epetra_Map.
@@ -138,7 +142,11 @@ void blockTpetraToThyra(const Tpetra::MultiVector<ST,LO,GO,NT> & tpetraX,const T
   *       Notice that this does not include the <code>SpmdVectorBase</code> class. A fix of this might involve a more
   *       general implementation and use of <code>ConstDetachedSpmdMultiVectorView</code>.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void blockThyraToTpetra(const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > & thyraX,Tpetra::MultiVector<ST,LO,GO,NT> & tpetraX);
+#else
+void blockThyraToTpetra(const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > & thyraX,Tpetra::MultiVector<ST,NT> & tpetraX);
+#endif
 
 /** \brief From a Thyra vector space create a compatable Epetra_Map
   *
@@ -168,7 +176,11 @@ void blockThyraToTpetra(const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > & 
   *      Thyra::SpmdMultiVectorBase objects.
   * </ul>
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const Teuchos::RCP<Tpetra::Map<LO,GO,NT> >
+#else
+const Teuchos::RCP<Tpetra::Map<NT> >
+#endif
 thyraVSToTpetraMap(const Thyra::VectorSpaceBase<ST> & vs,const Teuchos::RCP<const Teuchos::Comm<Thyra::Ordinal> > & comm);
 
 } // end namespace Epetra

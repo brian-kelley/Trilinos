@@ -48,8 +48,13 @@
 #define ALBANY_BUILD
 #include "Piro_InvertMassMatrixDecorator.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+Piro::VelocityVerletSolver<Scalar, Node>::
+#endif
 VelocityVerletSolver(const Teuchos::RCP<Teuchos::ParameterList> &appParams_,
                           const Teuchos::RCP<Thyra::ModelEvaluator<Scalar> > &model_,
                           const Teuchos::RCP<Thyra::AdaptiveSolutionManager> &solMgr_,
@@ -97,24 +102,44 @@ VelocityVerletSolver(const Teuchos::RCP<Teuchos::ParameterList> &appParams_,
     Teuchos::RCP<Thyra::ModelEvaluator<Scalar> > origModel = model;
     bool lump=vvPL->get("Lump Mass Matrix", false);
     *out << "\nB) Using InvertMassMatrix Decorator\n";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar, LocalOrdinal, GlobalOrdinal, Node>(
+#else
+    model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar, Node>(
+#endif
              sublist(vvPL,"Stratimikos", true), origModel,
              true, lump, true));
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_x() const
+#else
+Piro::VelocityVerletSolver<Scalar, Node>::get_x() const
+#endif
 {
 
   return model->get_x();
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_x_dot() const
+#else
+Piro::VelocityVerletSolver<Scalar, Node>::get_x_dot() const
+#endif
 {
 
   return model->get_x_dot();
@@ -122,9 +147,17 @@ Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_x_dot
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_p_space(int l) const
+#else
+Piro::VelocityVerletSolver<Scalar, Node>::get_p_space(int l) const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION(
       l >= num_p || l < 0,
@@ -137,9 +170,17 @@ Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_p_spa
   return model->get_p_space(l);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_g_space(int j) const
+#else
+Piro::VelocityVerletSolver<Scalar, Node>::get_g_space(int j) const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION(
       j > num_g || j < 0,
@@ -157,9 +198,17 @@ Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_g_spa
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNominalValues() const
+#else
+Piro::VelocityVerletSolver<Scalar, Node>::getNominalValues() const
+#endif
 {
   Thyra::ModelEvaluatorBase::InArgs<Scalar> result = this->createInArgs();
   const Thyra::ModelEvaluatorBase::InArgs<Scalar> modelNominalValues = model->getNominalValues();
@@ -169,9 +218,17 @@ Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNomina
   return result;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::createInArgs() const
+#else
+Piro::VelocityVerletSolver<Scalar, Node>::createInArgs() const
+#endif
 {
   Thyra::ModelEvaluatorBase::InArgsSetup<Scalar> inArgs;
   inArgs.setModelEvalDescription(this->description());
@@ -179,9 +236,17 @@ Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::createInA
   return inArgs;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Thyra::ModelEvaluatorBase::OutArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::createOutArgsImpl() const
+#else
+Piro::VelocityVerletSolver<Scalar, Node>::createOutArgsImpl() const
+#endif
 {
   Thyra::ModelEvaluatorBase::OutArgsSetup<Scalar> outArgs;
   outArgs.setModelEvalDescription(this->description());
@@ -241,9 +306,17 @@ Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::createOut
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::evalModelImpl(
+#else
+Piro::VelocityVerletSolver<Scalar, Node>::evalModelImpl(
+#endif
     const Thyra::ModelEvaluatorBase::InArgs<Scalar>& inArgs,
     const Thyra::ModelEvaluatorBase::OutArgs<Scalar>& outArgs) const
 {
@@ -290,12 +363,21 @@ Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::evalModel
   Teuchos::RCP<Thyra::DefaultModelEvaluatorWithSolveFactory<Scalar> >
       DMEWSF(Teuchos::rcp_dynamic_cast<Thyra::DefaultModelEvaluatorWithSolveFactory<Scalar> >(model));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Piro::TransientDecorator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > dec =
        Teuchos::rcp_dynamic_cast<const Piro::TransientDecorator<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+  Teuchos::RCP<const Piro::TransientDecorator<Scalar, Node> > dec =
+       Teuchos::rcp_dynamic_cast<const Piro::TransientDecorator<Scalar, Node> >
+#endif
            (DMEWSF->getUnderlyingModel());
 
   TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::is_null(dec), std::logic_error,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       "Underlying model in VelovityVerletSolver does not cast to a Piro::TransientDecorator<Scalar, LocalOrdinal, GlobalOrdinal, Node>"
+#else
+      "Underlying model in VelovityVerletSolver does not cast to a Piro::TransientDecorator<Scalar, Node>"
+#endif
       << std::endl);
 
   Teuchos::RCP<Thyra::VectorBase<Scalar> > a = dec->get_x_dotdot()->clone_v();
@@ -366,9 +448,17 @@ Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::evalModel
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Teuchos::ParameterList>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getValidVelocityVerletParameters() const
+#else
+Piro::VelocityVerletSolver<Scalar, Node>::getValidVelocityVerletParameters() const
+#endif
 {
   Teuchos::RCP<Teuchos::ParameterList> validPL =
      Teuchos::rcp(new Teuchos::ParameterList("ValidVelocityVerletParams"));;

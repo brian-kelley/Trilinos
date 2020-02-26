@@ -87,7 +87,11 @@ class ScatterResidual_Tpetra;
 // Residual 
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterResidual_Tpetra<panzer::Traits::Residual,TRAITS,LO,GO,NodeT>
+#else
+class ScatterResidual_Tpetra<panzer::Traits::Residual,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Residual, TRAITS>,
     public panzer::CloneableEvaluator {
@@ -107,7 +111,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterResidual_Tpetra<panzer::Traits::Residual,TRAITS,LO,GO,NodeT>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterResidual_Tpetra<panzer::Traits::Residual,TRAITS,NodeT>(globalIndexer_,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Residual::ScalarT ScalarT;
@@ -130,7 +138,11 @@ private:
   Teuchos::RCP<const std::map<std::string,std::string> > fieldMap_;
 
   std::string globalDataKey_; // what global data does this fill?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TpetraLinearObjContainer<double,LO,GO,NodeT> > tpetraContainer_;
+#else
+  Teuchos::RCP<const TpetraLinearObjContainer<double,NodeT> > tpetraContainer_;
+#endif
 
   Kokkos::View<int**,PHX::Device> scratch_lids_;
   std::vector<Kokkos::View<int*,PHX::Device> > scratch_offsets_;
@@ -142,7 +154,11 @@ private:
 // Tangent 
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterResidual_Tpetra<panzer::Traits::Tangent,TRAITS,LO,GO,NodeT>
+#else
+class ScatterResidual_Tpetra<panzer::Traits::Tangent,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Tangent, TRAITS>,
     public panzer::CloneableEvaluator {
@@ -162,7 +178,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterResidual_Tpetra<panzer::Traits::Tangent,TRAITS,LO,GO,NodeT>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterResidual_Tpetra<panzer::Traits::Tangent,TRAITS,NodeT>(globalIndexer_,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Tangent::ScalarT ScalarT;
@@ -195,7 +215,11 @@ private:
 // Jacobian
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterResidual_Tpetra<panzer::Traits::Jacobian,TRAITS,LO,GO,NodeT>
+#else
+class ScatterResidual_Tpetra<panzer::Traits::Jacobian,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Jacobian, TRAITS>, 
     public panzer::CloneableEvaluator {
@@ -216,7 +240,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterResidual_Tpetra<panzer::Traits::Jacobian,TRAITS,LO,GO,NodeT>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterResidual_Tpetra<panzer::Traits::Jacobian,TRAITS,NodeT>(globalIndexer_,pl)); }
+#endif
 
 private:
 
@@ -240,7 +268,11 @@ private:
   Teuchos::RCP<const std::map<std::string,std::string> > fieldMap_;
 
   std::string globalDataKey_; // what global data does this fill?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TpetraLinearObjContainer<double,LO,GO,NodeT> > tpetraContainer_;
+#else
+  Teuchos::RCP<const TpetraLinearObjContainer<double,NodeT> > tpetraContainer_;
+#endif
 
   ScatterResidual_Tpetra();
 

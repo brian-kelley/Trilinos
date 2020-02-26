@@ -58,8 +58,10 @@
 namespace Xpetra {
 
   template <class Packet,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class DistObject
     : virtual public Teuchos::Describable
@@ -67,6 +69,10 @@ namespace Xpetra {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructor/Destructor Methods
     //@{
 
@@ -79,16 +85,32 @@ namespace Xpetra {
     //@{
 
     //! Import data into this object using an Import object ("forward mode").
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doImport(const DistObject< Packet, LocalOrdinal, GlobalOrdinal, Node > &source, const Import< LocalOrdinal, GlobalOrdinal, Node > &importer, CombineMode CM)= 0;
+#else
+    virtual void doImport(const DistObject< Packet, Node > &source, const Import<Node > &importer, CombineMode CM)= 0;
+#endif
 
     //! Export data into this object using an Export object ("forward mode").
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doExport(const DistObject< Packet, LocalOrdinal, GlobalOrdinal, Node > &source, const Export< LocalOrdinal, GlobalOrdinal, Node > &exporter, CombineMode CM)= 0;
+#else
+    virtual void doExport(const DistObject< Packet, Node > &source, const Export<Node > &exporter, CombineMode CM)= 0;
+#endif
 
     //! Import data into this object using an Export object ("reverse mode").
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doImport(const DistObject< Packet, LocalOrdinal, GlobalOrdinal, Node > &source, const Export< LocalOrdinal, GlobalOrdinal, Node > &exporter, CombineMode CM)= 0;
+#else
+    virtual void doImport(const DistObject< Packet, Node > &source, const Export<Node > &exporter, CombineMode CM)= 0;
+#endif
 
     //! Export data into this object using an Import object ("reverse mode").
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doExport(const DistObject< Packet, LocalOrdinal, GlobalOrdinal, Node > &source, const Import< LocalOrdinal, GlobalOrdinal, Node > &importer, CombineMode CM)= 0;
+#else
+    virtual void doExport(const DistObject< Packet, Node > &source, const Import<Node > &importer, CombineMode CM)= 0;
+#endif
 
     //@}
 
@@ -96,7 +118,11 @@ namespace Xpetra {
     //@{
 
     //! The Map describing the parallel distribution of this object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getMap() const = 0;
+#else
+    virtual Teuchos::RCP< const Map<Node > > getMap() const = 0;
+#endif
 
     //@}
 

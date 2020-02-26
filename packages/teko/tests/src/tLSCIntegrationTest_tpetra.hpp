@@ -81,20 +81,39 @@ protected:
 
    double tolerance_;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > velMap_;  // map of velocity space
    Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > prsMap_;  // map of pressure space
    Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > fullMap_; // map of pressure space
+#else
+   Teuchos::RCP<const Tpetra::Map<NT> > velMap_;  // map of velocity space
+   Teuchos::RCP<const Tpetra::Map<NT> > prsMap_;  // map of pressure space
+   Teuchos::RCP<const Tpetra::Map<NT> > fullMap_; // map of pressure space
+#endif
 
    // stable discretizations matrices
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > sF_;
    Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > sB_;
    Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > sBt_;
    Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > sQu_;
    Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > sA_;
+#else
+   Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> > sF_;
+   Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> > sB_;
+   Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> > sBt_;
+   Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> > sQu_;
+   Teuchos::RCP<Tpetra::Operator<ST,NT> > sA_;
+#endif
 
    // stable rhs and IFISS solution
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Tpetra::Vector<ST,LO,GO,NT> > rhs_;
    Teuchos::RCP<const Tpetra::Vector<ST,LO,GO,NT> > sExact_;
+#else
+   Teuchos::RCP<Tpetra::Vector<ST,NT> > rhs_;
+   Teuchos::RCP<const Tpetra::Vector<ST,NT> > sExact_;
+#endif
 };
 
 } // end namespace Tests

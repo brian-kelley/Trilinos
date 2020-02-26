@@ -109,14 +109,20 @@ namespace MueLu {
   */
 
 template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal = DefaultLocalOrdinal,
           class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
           class Node = DefaultNode>
   class IntrepidPCoarsenFactory : public PFactory {
 #undef MUELU_INTREPIDPCOARSENFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> LOFieldContainer;
     typedef Kokkos::DynRankView<double,typename Node::device_type> SCFieldContainer;
     typedef Intrepid2::Basis<typename Node::device_type::execution_space,double,double> Basis; // Hardwired on purpose
@@ -202,7 +208,11 @@ template <class Scalar = DefaultScalar,
 
     template<class LocalOrdinal, class GlobalOrdinal, class Node, class LOFieldContainer>
     void GenerateLoNodeInHiViaGIDs(const std::vector<std::vector<size_t> > & candidates,const LOFieldContainer & hi_elemToNode,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > & hi_columnMap,
+#else
+                                   RCP<const Xpetra::Map<Node> > & hi_columnMap,
+#endif
                                    LOFieldContainer & lo_elemToHiRepresentativeNode);
 
     template <class LocalOrdinal, class LOFieldContainer>
@@ -225,8 +235,13 @@ template <class Scalar = DefaultScalar,
                                              int & lo_numOwnedNodes);
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LocalOrdinal, class GlobalOrdinal, class Node>
     void GenerateColMapFromImport(const Xpetra::Import<LocalOrdinal,GlobalOrdinal,Node> & hi_importer,const std::vector<LocalOrdinal> &hi_to_lo_map,const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> & lo_domainMap, const size_t & lo_columnMapLength, RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > & lo_columnMap);
+#else
+    template <class Node>
+    void GenerateColMapFromImport(const Xpetra::Import<Node> & hi_importer,const std::vector<LocalOrdinal> &hi_to_lo_map,const Xpetra::Map<Node> & lo_domainMap, const size_t & lo_columnMapLength, RCP<const Xpetra::Map<Node> > & lo_columnMap);
+#endif
 
 
     template<class Basis, class SCFieldContainer>
@@ -239,8 +254,13 @@ template <class Scalar = DefaultScalar,
     template<class Basis, class LOFieldContainer, class LocalOrdinal, class GlobalOrdinal, class Node>
     void FindGeometricSeedOrdinals(Teuchos::RCP<Basis> basis, const LOFieldContainer &elementToNodeMap,
                                    std::vector<std::vector<LocalOrdinal> > &seeds,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> &rowMap,
                                    const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> &columnMap);
+#else
+                                   const Xpetra::Map<Node> &rowMap,
+                                   const Xpetra::Map<Node> &columnMap);
+#endif
 
   }//namespace MueLuIntrepid
 } //namespace MueLu

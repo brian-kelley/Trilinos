@@ -107,8 +107,10 @@ namespace MueLu {
 
   //FIXME: this class should not be templated
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class NodePartitionInterface : public SingleLevelFactoryBase {
 #undef MUELU_NODEPARTITIONINTERFACE_SHORT
@@ -116,6 +118,10 @@ namespace MueLu {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors
     //@{
 

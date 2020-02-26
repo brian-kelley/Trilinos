@@ -54,14 +54,24 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   MatlabSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MatlabSmoother(const Teuchos::ParameterList& paramList)
+#else
+  template <class Scalar, class Node>
+  MatlabSmoother<Scalar, Node>::MatlabSmoother(const Teuchos::ParameterList& paramList)
+#endif
   {
     SetParameterList(paramList);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MatlabSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetParameterList(const Teuchos::ParameterList& paramList)
+#else
+  template <class Scalar, class Node>
+  void MatlabSmoother<Scalar, Node>::SetParameterList(const Teuchos::ParameterList& paramList)
+#endif
   {
     Factory::SetParameterList(paramList);
     ParameterList& pL = const_cast<ParameterList&>(this->GetParameterList());
@@ -70,8 +80,13 @@ namespace MueLu {
     solveDataSize_ = pL.get("Number of Solver Args", 0);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MatlabSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const
+#else
+  template <class Scalar, class Node>
+  void MatlabSmoother<Scalar, Node>::DeclareInput(Level &currentLevel) const
+#endif
   {
     using namespace std;
     this->Input(currentLevel, "A");
@@ -85,14 +100,23 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MatlabSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(Level& currentLevel)
+#else
+  template <class Scalar, class Node>
+  void MatlabSmoother<Scalar, Node>::Setup(Level& currentLevel)
+#endif
   {
     using namespace std;
     FactoryMonitor m(*this, "Setup Smoother", currentLevel);
     if (this->IsSetup() == true)
       this->GetOStream(Warnings0) << "MueLu::MatlabSmoother::Setup(): Setup() has already been called";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     vector<RCP<MuemexArg>> InputArgs = processNeeds<Scalar, LocalOrdinal, GlobalOrdinal, Node>(this, needsSetup_, currentLevel);
+#else
+    vector<RCP<MuemexArg>> InputArgs = processNeeds<Scalar, Node>(this, needsSetup_, currentLevel);
+#endif
     A_ = Factory::Get<RCP<Matrix>>(currentLevel, "A");
     RCP<MuemexArg> AmatArg = rcp_implicit_cast<MuemexArg>(rcp(new MuemexData<RCP<Matrix>>(A_)));
     //Always add A to the beginning of InputArgs
@@ -105,8 +129,13 @@ namespace MueLu {
     this->IsSetup(true); //mark the smoother as set up
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MatlabSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Apply(MultiVector& X, const MultiVector& B, bool InitialGuessIsZero) const
+#else
+  template <class Scalar, class Node>
+  void MatlabSmoother<Scalar, Node>::Apply(MultiVector& X, const MultiVector& B, bool InitialGuessIsZero) const
+#endif
   {
     TEUCHOS_TEST_FOR_EXCEPTION(SmootherPrototype::IsSetup() == false, Exceptions::RuntimeError, "MueLu::MatlabSmoother::Apply(): Setup() has not been called");
     using namespace Teuchos;
@@ -130,16 +159,26 @@ namespace MueLu {
     X = *(mydata->getData());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node>> MatlabSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Copy() const
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::SmootherPrototype<Scalar, Node>> MatlabSmoother<Scalar, Node>::Copy() const
+#endif
   {
     RCP<MatlabSmoother> smoother = rcp(new MatlabSmoother(*this) );
     smoother->SetParameterList(this->GetParameterList());
     return smoother;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string MatlabSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string MatlabSmoother<Scalar, Node>::description() const {
+#endif
     std::ostringstream out;
     if (SmootherPrototype::IsSetup()) {
       out << "Matlab Smoother("<<setupFunction_<<"/"<<solveFunction_<<")";
@@ -149,8 +188,13 @@ namespace MueLu {
     return out.str();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MatlabSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void MatlabSmoother<Scalar, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#endif
     MUELU_DESCRIBE;
 
     if (verbLevel & Parameters0)

@@ -559,7 +559,12 @@ fusedCase (vector_type& W,
 } // namespace Details
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_CHEBYSHEVKERNEL_INSTANT(SC,LO,GO,NT) \
   template class Ifpack2::Details::ChebyshevKernel<Tpetra::Operator<SC, LO, GO, NT> >;
+#else
+#define IFPACK2_DETAILS_CHEBYSHEVKERNEL_INSTANT(SC,NT) \
+  template class Ifpack2::Details::ChebyshevKernel<Tpetra::Operator<SC, NT> >;
+#endif
 
 #endif // IFPACK2_DETAILS_CHEBYSHEVKERNEL_DEF_HPP

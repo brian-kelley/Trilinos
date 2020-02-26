@@ -91,20 +91,38 @@ void tExplicitOps_tpetra::initializeTest()
    FGallery.Set("nx",nx);
    FGallery.Set("ny",ny);
    Epetra_CrsMatrix & epetraF = FGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraF = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(rcpFromRef(epetraF),comm_tpetra);
    F_ = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraF->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraF->getRangeMap()),tpetraF);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > tpetraF = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(rcpFromRef(epetraF),comm_tpetra);
+   F_ = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraF->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraF->getRangeMap()),tpetraF);
+#endif
 
    // create some big blocks to play with
    Trilinos_Util::CrsMatrixGallery GGallery("laplace_2d",comm_epetra,false);
    GGallery.Set("nx",nx);
    GGallery.Set("ny",ny);
    Epetra_CrsMatrix & epetraG = GGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraG = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(rcpFromRef(epetraG),comm_tpetra);
    G_ = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraG->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraG->getRangeMap()),tpetraG);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > tpetraG = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(rcpFromRef(epetraG),comm_tpetra);
+   G_ = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraG->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraG->getRangeMap()),tpetraG);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Vector<ST,LO,GO,NT> > v = rcp(new Tpetra::Vector<ST,LO,GO,NT> (tpetraF->getRangeMap()));
+#else
+   RCP<Tpetra::Vector<ST,NT> > v = rcp(new Tpetra::Vector<ST,NT> (tpetraF->getRangeMap()));
+#endif
    v->randomize();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Thyra::VectorBase<ST> > tV = Thyra::createVector<ST,LO,GO,NT>(v,Thyra::createVectorSpace<ST,LO,GO,NT>(tpetraF->getRowMap())); 
+#else
+   RCP<Thyra::VectorBase<ST> > tV = Thyra::createVector<ST,NT>(v,Thyra::createVectorSpace<ST,NT>(tpetraF->getRowMap())); 
+#endif
    D_ = Thyra::diagonal(tV);
 }
 
@@ -258,8 +276,13 @@ bool tExplicitOps_tpetra::test_mult_modScaleMatProd(int verbosity,std::ostream &
    thyOp = Teko::multiply(Teko::scale(-4.0,F_),D_,Teko::adjoint(G_));
    expOp = Teko::explicitMultiply(Teko::scale(-4.0,F_),D_,Teko::adjoint(G_),expOp);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp1 = Teuchos::rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(expOp,true);
    RCP<const Tpetra::Operator<ST,LO,GO,NT> > eop1 = tOp1->getConstTpetraOperator();
+#else
+   RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp1 = Teuchos::rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(expOp,true);
+   RCP<const Tpetra::Operator<ST,NT> > eop1 = tOp1->getConstTpetraOperator();
+#endif
 
    {
       std::stringstream ss;
@@ -272,13 +295,23 @@ bool tExplicitOps_tpetra::test_mult_modScaleMatProd(int verbosity,std::ostream &
          os << ss.str(); 
    }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Thyra::TpetraLinearOp<ST,LO,GO,NT> > tF = Teuchos::rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,LO,GO,NT> >(F_);
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > crsF = Teuchos::rcp_dynamic_cast<Tpetra::CrsMatrix<ST,LO,GO,NT> >(tF->getTpetraOperator(),true);
+#else
+   RCP<Thyra::TpetraLinearOp<ST,NT> > tF = Teuchos::rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,NT> >(F_);
+   RCP<Tpetra::CrsMatrix<ST,NT> > crsF = Teuchos::rcp_dynamic_cast<Tpetra::CrsMatrix<ST,NT> >(tF->getTpetraOperator(),true);
+#endif
    crsF->resumeFill();
    crsF->scale(5.0);
    crsF->fillComplete();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Thyra::TpetraLinearOp<ST,LO,GO,NT> > tG = Teuchos::rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,LO,GO,NT> >(G_);
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > crsG = Teuchos::rcp_dynamic_cast<Tpetra::CrsMatrix<ST,LO,GO,NT> >(tG->getTpetraOperator(),true);
+#else
+   RCP<Thyra::TpetraLinearOp<ST,NT> > tG = Teuchos::rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,NT> >(G_);
+   RCP<Tpetra::CrsMatrix<ST,NT> > crsG = Teuchos::rcp_dynamic_cast<Tpetra::CrsMatrix<ST,NT> >(tG->getTpetraOperator(),true);
+#endif
    crsG->resumeFill();
    crsG->scale(2.0);
    crsG->fillComplete();
@@ -305,8 +338,13 @@ bool tExplicitOps_tpetra::test_mult_modScaleMatProd(int verbosity,std::ostream &
    thyOp = Teko::multiply(Teko::scale(-4.0,F_),D_,Teko::adjoint(G_));
    expOp = Teko::explicitMultiply(Teko::scale(-4.0,F_),D_,Teko::adjoint(G_),expOp);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp2 = Teuchos::rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(expOp,true);
    RCP<const Tpetra::Operator<ST,LO,GO,NT> > eop2 = tOp2->getConstTpetraOperator();
+#else
+   RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp2 = Teuchos::rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(expOp,true);
+   RCP<const Tpetra::Operator<ST,NT> > eop2 = tOp2->getConstTpetraOperator();
+#endif
 
    {
       std::stringstream ss;
@@ -366,8 +404,13 @@ bool tExplicitOps_tpetra::test_add_mod(int verbosity,std::ostream & os)
    thyOp = Teko::add(Teko::scale(-4.0,F_),Teko::adjoint(G_));
    expOp = Teko::explicitAdd(Teko::scale(-4.0,F_),Teko::adjoint(G_),expOp);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp1 = Teuchos::rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(expOp,true);
    RCP<const Tpetra::Operator<ST,LO,GO,NT> > eop1 = tOp1->getConstTpetraOperator();
+#else
+   RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp1 = Teuchos::rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(expOp,true);
+   RCP<const Tpetra::Operator<ST,NT> > eop1 = tOp1->getConstTpetraOperator();
+#endif
 
    {
       std::stringstream ss;
@@ -380,13 +423,23 @@ bool tExplicitOps_tpetra::test_add_mod(int verbosity,std::ostream & os)
          os << ss.str(); 
    }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Thyra::TpetraLinearOp<ST,LO,GO,NT> > tF = Teuchos::rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,LO,GO,NT> >(F_);
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > crsF = Teuchos::rcp_dynamic_cast<Tpetra::CrsMatrix<ST,LO,GO,NT> >(tF->getTpetraOperator(),true);
+#else
+   RCP<Thyra::TpetraLinearOp<ST,NT> > tF = Teuchos::rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,NT> >(F_);
+   RCP<Tpetra::CrsMatrix<ST,NT> > crsF = Teuchos::rcp_dynamic_cast<Tpetra::CrsMatrix<ST,NT> >(tF->getTpetraOperator(),true);
+#endif
    crsF->resumeFill();
    crsF->scale(5.0);
    crsF->fillComplete();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Thyra::TpetraLinearOp<ST,LO,GO,NT> > tG = Teuchos::rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,LO,GO,NT> >(G_);
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > crsG = Teuchos::rcp_dynamic_cast<Tpetra::CrsMatrix<ST,LO,GO,NT> >(tG->getTpetraOperator(),true);
+#else
+   RCP<Thyra::TpetraLinearOp<ST,NT> > tG = Teuchos::rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,NT> >(G_);
+   RCP<Tpetra::CrsMatrix<ST,NT> > crsG = Teuchos::rcp_dynamic_cast<Tpetra::CrsMatrix<ST,NT> >(tG->getTpetraOperator(),true);
+#endif
    crsG->resumeFill();
    crsG->scale(2.0);
    crsG->fillComplete();
@@ -413,8 +466,13 @@ bool tExplicitOps_tpetra::test_add_mod(int verbosity,std::ostream & os)
    thyOp = Teko::add(Teko::scale(-4.0,F_),Teko::adjoint(G_));
    expOp = Teko::explicitAdd(Teko::scale(-4.0,F_),Teko::adjoint(G_),expOp);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp2 = Teuchos::rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(expOp,true);
    RCP<const Tpetra::Operator<ST,LO,GO,NT> > eop2 = tOp2->getConstTpetraOperator();
+#else
+   RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp2 = Teuchos::rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(expOp,true);
+   RCP<const Tpetra::Operator<ST,NT> > eop2 = tOp2->getConstTpetraOperator();
+#endif
 
    {
       std::stringstream ss;

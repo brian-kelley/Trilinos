@@ -106,7 +106,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL( MapOutputInput, ContigUniformIndexBase0, LO, 
   }
   std::ostringstream mapOutStream;
   // The Scalar type doesn't matter, since we're just writing a Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<double, LO, GO> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<double> crs_matrix_type;
+#endif
   typedef Tpetra::MatrixMarket::Writer<crs_matrix_type> writer_type;
   writer_type::writeMap (mapOutStream, map, false && globallyVerbose);
 
@@ -219,7 +223,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL( MapOutputInput, ContigUniformIndexBase1, LO, 
   out << "Writing Map to output stream" << endl;
   std::ostringstream mapOutStream;
   // The Scalar type doesn't matter, since we're just writing a Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<double, LO, GO> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<double> crs_matrix_type;
+#endif
   typedef Tpetra::MatrixMarket::Writer<crs_matrix_type> writer_type;
   writer_type::writeMap (mapOutStream, map, debug);
   out << "Result of writing the Map:" << endl;
@@ -264,7 +272,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL( MapOutputInput, ContigNonuniformIndexBase0, L
   out << "Writing Map to output stream" << endl;
   std::ostringstream mapOutStream;
   // The Scalar type doesn't matter, since we're just writing a Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<double, LO, GO> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<double> crs_matrix_type;
+#endif
   typedef Tpetra::MatrixMarket::Writer<crs_matrix_type> writer_type;
   writer_type::writeMap (mapOutStream, map, debug);
   out << "Result of writing the Map:" << endl;
@@ -308,7 +320,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL( MapOutputInput, ContigNonuniformIndexBase1, L
   out << "Writing Map to output stream" << endl;
   std::ostringstream mapOutStream;
   // The Scalar type doesn't matter, since we're just writing a Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<double, LO, GO> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<double> crs_matrix_type;
+#endif
   typedef Tpetra::MatrixMarket::Writer<crs_matrix_type> writer_type;
   writer_type::writeMap (mapOutStream, map, debug);
   out << "Result of writing the Map:" << endl;
@@ -358,7 +374,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL( MapOutputInput, NoncontigIndexBase0, LO, GO )
   out << "Writing Map to output stream" << endl;
   std::ostringstream mapOutStream;
   // The Scalar type doesn't matter, since we're just writing a Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<double, LO, GO> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<double> crs_matrix_type;
+#endif
   typedef Tpetra::MatrixMarket::Writer<crs_matrix_type> writer_type;
   writer_type::writeMap (mapOutStream, map, debug);
   out << "Result of writing the Map:" << endl;
@@ -408,7 +428,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL( MapOutputInput, NoncontigIndexBase1, LO, GO )
   out << "Writing Map to output stream" << endl;
   std::ostringstream mapOutStream;
   // The Scalar type doesn't matter, since we're just writing a Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<double, LO, GO> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<double> crs_matrix_type;
+#endif
   typedef Tpetra::MatrixMarket::Writer<crs_matrix_type> writer_type;
   writer_type::writeMap (mapOutStream, map, debug);
   out << "Result of writing the Map:" << endl;
@@ -463,7 +487,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL( MapOutputInput, NoncontigOvrlpngIndBase0, LO,
   out << "Writing Map to output stream" << endl;
   std::ostringstream mapOutStream;
   // The Scalar type doesn't matter, since we're just writing a Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<double, LO, GO> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<double> crs_matrix_type;
+#endif
   typedef Tpetra::MatrixMarket::Writer<crs_matrix_type> writer_type;
   writer_type::writeMap (mapOutStream, map, debug);
   out << "Result of writing the Map:" << endl;

@@ -29,9 +29,17 @@ solve (const sparse_mat_type& A,
   using std::cout;
   using std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<scalar_type, LO, GO, node_type> row_matrix_type;
+#else
+  typedef Tpetra::RowMatrix<scalar_type, node_type> row_matrix_type;
+#endif
   typedef Ifpack2::AdditiveSchwarz<row_matrix_type> outer_prec_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Operator<scalar_type, LO, GO, node_type> op_type;
+#else
+  typedef Tpetra::Operator<scalar_type, node_type> op_type;
+#endif
 
   RCP<const Teuchos::Comm<int> > comm = A.getRowMap ()->getComm ();
   const int myRank = comm->getRank ();

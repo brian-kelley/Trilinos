@@ -125,7 +125,11 @@ namespace Belos {
 }
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
@@ -138,7 +142,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
   typedef Teuchos::ScalarTraits<SC> STS;
   SC zero = STS::zero(), one = STS::one();
   typedef typename STS::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   bool success = true;
   bool verbose = true;
@@ -200,24 +208,44 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       // In the future, we hope to be able to first create a Galeri problem, and then request map and coordinates from it
       // At the moment, however, things are fragile as we hope that the Problem uses same map and coordinates inside
       if (matrixType == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian1D", comm, galeriParameters);
+#else
+        map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian1D", comm, galeriParameters);
+#endif
         coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,RealValuedMultiVector>("1D", map, galeriParameters);
 
       } else if (matrixType == "Laplace2D" || matrixType == "Star2D" ||
                  matrixType == "BigStar2D" || matrixType == "Elasticity2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian2D", comm, galeriParameters);
+#else
+        map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian2D", comm, galeriParameters);
+#endif
         coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,RealValuedMultiVector>("2D", map, galeriParameters);
 
       } else if (matrixType == "Laplace3D" || matrixType == "Brick3D" || matrixType == "Elasticity3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian3D", comm, galeriParameters);
+#else
+        map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian3D", comm, galeriParameters);
+#endif
         coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,RealValuedMultiVector>("3D", map, galeriParameters);
       }
 
       // Expand map to do multiple DOF per node for block problems
       if (matrixType == "Elasticity2D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 2);
+#else
+        map = Xpetra::MapFactory<Node>::Build(map, 2);
+#endif
       if (matrixType == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 3);
+#else
+        map = Xpetra::MapFactory<Node>::Build(map, 3);
+#endif
 
 #if 0
       out << "========================================================\n" << xpetraParameters << galeriParameters;
@@ -369,8 +397,13 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
           typedef Belos::OperatorT<MV> OP;
 
           // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<OP> belosOp   = rcp(new Belos::XpetraOp<SC, LO, GO, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
           RCP<OP> belosPrec = rcp(new Belos::MueLuOp <SC, LO, GO, NO>(H)); // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+          RCP<OP> belosOp   = rcp(new Belos::XpetraOp<SC, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
+          RCP<OP> belosPrec = rcp(new Belos::MueLuOp <SC, NO>(H)); // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
 
           // Construct a Belos LinearProblem object
           RCP< Belos::LinearProblem<SC, MV, OP> > belosProblem = rcp(new Belos::LinearProblem<SC, MV, OP>(belosOp, X, B));

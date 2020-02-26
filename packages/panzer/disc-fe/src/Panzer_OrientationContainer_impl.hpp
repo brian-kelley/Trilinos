@@ -50,7 +50,11 @@
 namespace panzer {
 
 template <typename Scalar,typename Array,typename LocalOrdinal,typename GlobalOrdinal>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 OrientationContainer<Scalar,Array,LocalOrdinal,GlobalOrdinal>::
+#else
+OrientationContainer<Scalar,Array>::
+#endif
 OrientationContainer(const Teuchos::RCP<const GlobalIndexer> & globalIndexer,
                      const std::string & fieldName)
   : globalIndexer_(globalIndexer)
@@ -60,7 +64,11 @@ OrientationContainer(const Teuchos::RCP<const GlobalIndexer> & globalIndexer,
 
 template <typename Scalar,typename Array,typename LocalOrdinal,typename GlobalOrdinal>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 OrientationContainer<Scalar,Array,LocalOrdinal,GlobalOrdinal>::
+#else
+OrientationContainer<Scalar,Array>::
+#endif
 getOrientations(const std::string & blockId,
                 const std::vector<std::size_t> & cell_local_ids,
                 Array & orientationsArray) const
@@ -100,7 +108,11 @@ buildOrientationContainer(const Teuchos::RCP<const GlobalIndexer> & globalIndexe
     RCP<const GlobalIndexer> ugi 
         = rcp_dynamic_cast<const GlobalIndexer>(globalIndexer);
     if(ugi!=Teuchos::null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return rcp(new OrientationContainer<Scalar,Array,LO,GO>(ugi,fieldName));
+#else
+      return rcp(new OrientationContainer<Scalar,Array>(ugi,fieldName));
+#endif
   }
 
   // int, panzer::GlobalOrdinal
@@ -111,7 +123,11 @@ buildOrientationContainer(const Teuchos::RCP<const GlobalIndexer> & globalIndexe
     RCP<const GlobalIndexer> ugi 
         = rcp_dynamic_cast<const GlobalIndexer>(globalIndexer);
     if(ugi!=Teuchos::null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return rcp(new OrientationContainer<Scalar,Array,LO,GO>(ugi,fieldName));
+#else
+      return rcp(new OrientationContainer<Scalar,Array>(ugi,fieldName));
+#endif
   }
 
   // int, pair<int,int>
@@ -122,7 +138,11 @@ buildOrientationContainer(const Teuchos::RCP<const GlobalIndexer> & globalIndexe
     RCP<const GlobalIndexer> ugi 
         = rcp_dynamic_cast<const GlobalIndexer>(globalIndexer);
     if(ugi!=Teuchos::null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return rcp(new OrientationContainer<Scalar,Array,LO,GO>(ugi,fieldName));
+#else
+      return rcp(new OrientationContainer<Scalar,Array>(ugi,fieldName));
+#endif
   }
 
   // int, pair<int,panzer::GlobalOrdinal>
@@ -133,7 +153,11 @@ buildOrientationContainer(const Teuchos::RCP<const GlobalIndexer> & globalIndexe
     RCP<const GlobalIndexer> ugi 
         = rcp_dynamic_cast<const GlobalIndexer>(globalIndexer);
     if(ugi!=Teuchos::null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return rcp(new OrientationContainer<Scalar,Array,LO,GO>(ugi,fieldName));
+#else
+      return rcp(new OrientationContainer<Scalar,Array>(ugi,fieldName));
+#endif
   }
 
   TEUCHOS_TEST_FOR_EXCEPTION(true,std::logic_error,

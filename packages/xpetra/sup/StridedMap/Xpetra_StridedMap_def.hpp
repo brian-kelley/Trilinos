@@ -62,8 +62,13 @@ namespace Xpetra {
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+StridedMap<Node>::
+#endif
 StridedMap(UnderlyingLib                                 xlib,
            global_size_t                                 numGlobalElements,
            GlobalOrdinal                                 indexBase,
@@ -74,7 +79,11 @@ StridedMap(UnderlyingLib                                 xlib,
            LocalGlobal                                   lg)
     : stridingInfo_(stridingInfo), stridedBlockId_(stridedBlockId), offset_(offset), indexBase_(indexBase)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using MapFactory_t = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using MapFactory_t = Xpetra::MapFactory<Node>;
+#endif
     
     size_t blkSize = getFixedBlockSize();
 
@@ -175,8 +184,13 @@ StridedMap(UnderlyingLib                                 xlib,
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+StridedMap<Node>::
+#endif
 StridedMap(UnderlyingLib                                 xlib,
            global_size_t                                 numGlobalElements,
            size_t                                        numLocalElements,
@@ -187,7 +201,11 @@ StridedMap(UnderlyingLib                                 xlib,
            GlobalOrdinal                                 offset)
     : stridingInfo_(stridingInfo), stridedBlockId_(stridedBlockId), offset_(offset), indexBase_(indexBase)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using MapFactory_t = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using MapFactory_t = Xpetra::MapFactory<Node>;
+#endif
     
     size_t blkSize = getFixedBlockSize();
     TEUCHOS_TEST_FOR_EXCEPTION(stridingInfo.size() == 0,
@@ -304,8 +322,13 @@ StridedMap(UnderlyingLib                                 xlib,
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+StridedMap<Node>::
+#endif
 StridedMap(UnderlyingLib                                  xlib,
            global_size_t                                  numGlobalElements,
            const Teuchos::ArrayView<const GlobalOrdinal>& elementList,
@@ -315,7 +338,11 @@ StridedMap(UnderlyingLib                                  xlib,
            LocalOrdinal                                   stridedBlockId)
     : stridingInfo_(stridingInfo), stridedBlockId_(stridedBlockId), indexBase_(indexBase)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using MapFactory_t = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using MapFactory_t = Xpetra::MapFactory<Node>;
+#endif
     
     size_t blkSize = getFixedBlockSize();
 
@@ -397,8 +424,13 @@ StridedMap(UnderlyingLib                                  xlib,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+StridedMap<Node>::
+#endif
 StridedMap(const RCP<const Map>& map,
            std::vector<size_t>&  stridingInfo,
            GlobalOrdinal         /* indexBase */,
@@ -424,34 +456,63 @@ StridedMap(const RCP<const Map>& map,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+StridedMap<Node>::
+#endif
 ~StridedMap() 
 {
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 std::vector<size_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getStridingData() const
 {
     return stridingInfo_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 setStridingData(std::vector<size_t> stridingInfo)
 {
     stridingInfo_ = stridingInfo;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getFixedBlockSize() const
 {
     size_t blkSize = 0;
@@ -463,54 +524,102 @@ getFixedBlockSize() const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LocalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getStridedBlockId() const
 {
     return stridedBlockId_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 isStrided() const
 {
     return stridingInfo_.size() > 1 ? true : false;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 isBlocked() const
 {
     return getFixedBlockSize() > 1 ? true : false;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getOffset() const
 {
     return offset_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 setOffset(GlobalOrdinal offset)
 {
     offset_ = offset;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 GID2StridingBlockId(GlobalOrdinal gid) const
 {
     GlobalOrdinal tgid = gid - offset_ - indexBase_;
@@ -531,18 +640,32 @@ GID2StridingBlockId(GlobalOrdinal gid) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+RCP<const Xpetra::Map<Node>>
+StridedMap<Node>::
+#endif
 getMap() const
 {
     return map_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 CheckConsistency()
 {
 #ifndef HAVE_XPETRA_DEBUG
@@ -624,108 +747,204 @@ CheckConsistency()
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 global_size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getGlobalNumElements() const
 {
     return map_->getGlobalNumElements();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getNodeNumElements() const
 {
     return map_->getNodeNumElements();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getIndexBase() const
 {
     return map_->getIndexBase();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LocalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getMinLocalIndex() const
 {
     return map_->getMinLocalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LocalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getMaxLocalIndex() const
 {
     return map_->getMaxLocalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getMinGlobalIndex() const
 {
     return map_->getMinGlobalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getMaxGlobalIndex() const
 {
     return map_->getMaxGlobalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getMinAllGlobalIndex() const
 {
     return map_->getMinAllGlobalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getMaxAllGlobalIndex() const
 {
     return map_->getMaxAllGlobalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LocalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getLocalElement(GlobalOrdinal globalIndex) const
 {
     return map_->getLocalElement(globalIndex);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getGlobalElement(LocalOrdinal localIndex) const
 {
     return map_->getGlobalElement(localIndex);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getRemoteIndexList(const Teuchos::ArrayView<const GlobalOrdinal>& GIDList,
                    const Teuchos::ArrayView<int>&                 nodeIDList,
                    const Teuchos::ArrayView<LocalOrdinal>&        LIDList) const
@@ -734,9 +953,17 @@ getRemoteIndexList(const Teuchos::ArrayView<const GlobalOrdinal>& GIDList,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getRemoteIndexList(const Teuchos::ArrayView<const GlobalOrdinal>& GIDList, 
                    const Teuchos::ArrayView<int>&                 nodeIDList) const
 {
@@ -744,72 +971,136 @@ getRemoteIndexList(const Teuchos::ArrayView<const GlobalOrdinal>& GIDList,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 Teuchos::ArrayView<const GlobalOrdinal>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getNodeElementList() const
 {
     return map_->getNodeElementList();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 isNodeLocalElement(LocalOrdinal localIndex) const
 {
     return map_->isNodeLocalElement(localIndex);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 isNodeGlobalElement(GlobalOrdinal globalIndex) const
 {
     return map_->isNodeGlobalElement(globalIndex);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 isContiguous() const
 {
     return map_->isContiguous();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 isDistributed() const
 {
     return map_->isDistributed();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 isCompatible(const Map& map) const
 {
     return map_->isCompatible(map);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 isSameAs(const Map& map) const
 {
     return map_->isSameAs(map);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 Teuchos::RCP<const Teuchos::Comm<int>>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 getComm() const
 {
     return map_->getComm();
@@ -818,45 +1109,81 @@ getComm() const
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+RCP<const Xpetra::Map<Node>>
+StridedMap<Node>::
+#endif
 removeEmptyProcesses() const
 {
     return map_->removeEmptyProcesses();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+RCP<const Xpetra::Map<Node>>
+StridedMap<Node>::
+#endif
 replaceCommWithSubset(const Teuchos::RCP<const Teuchos::Comm<int>>& newComm) const
 {
     return map_->replaceCommWithSubset(newComm);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 description() const
 {
     return map_->description();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 describe(Teuchos::FancyOStream& out, const Teuchos::EVerbosityLevel verbLevel) const
 {
     map_->describe(out, verbLevel);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 UnderlyingLib
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 StridedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+StridedMap<Node>::
+#endif
 lib() const
 {
     return map_->lib();

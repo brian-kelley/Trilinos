@@ -83,13 +83,23 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   HybridAggregationFactory<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  HybridAggregationFactory<Node>::
+#endif
   HybridAggregationFactory() : bDefinitionPhase_(true)
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> HybridAggregationFactory<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  RCP<const ParameterList> HybridAggregationFactory<Node>::
+#endif
   GetValidParameterList() const {
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
@@ -155,8 +165,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void HybridAggregationFactory<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void HybridAggregationFactory<Node>::
+#endif
   DeclareInput(Level& currentLevel) const {
     Input(currentLevel, "Graph");
 
@@ -236,8 +251,13 @@ namespace MueLu {
     }
   } // DeclareInput()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void HybridAggregationFactory<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void HybridAggregationFactory<Node>::
+#endif
   Build(Level &currentLevel) const {
     FactoryMonitor m(*this, "Build", currentLevel);
 
@@ -335,8 +355,13 @@ namespace MueLu {
       }
 
       // Now that we have extracted info from the level, create the IndexManager
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<MueLu::IndexManager<LO,GO,NO> > geoData;
       geoData = rcp(new MueLu::UncoupledIndexManager<LO,GO,NO>(fineMap->getComm(),
+#else
+      RCP<MueLu::IndexManager<NO> > geoData;
+      geoData = rcp(new MueLu::UncoupledIndexManager<NO>(fineMap->getComm(),
+#endif
                                                                false,
                                                                numDimensions,
                                                                interpolationOrder,
@@ -439,8 +464,13 @@ namespace MueLu {
     *out << "HybridAggregation done!" << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void HybridAggregationFactory<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void HybridAggregationFactory<Node>::
+#endif
   BuildInterfaceAggregates(Level& currentLevel, RCP<Aggregates> aggregates,
                            std::vector<unsigned>& aggStat, LO& numNonAggregatedNodes,
                            Array<LO> coarseRate) const {

@@ -53,28 +53,52 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO,
               class GO,
+#endif
               class NO>
     class EntitySet {
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMap                          = Map<LO,GO,NO>;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using XMap                          = Map<NO>;
+#endif
         using XMapPtr                       = RCP<XMap>;
         using ConstXMapPtr                  = RCP<const XMap>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrix                       = Matrix<SC,LO,GO,NO>;
+#else
+        using XMatrix                       = Matrix<SC,NO>;
+#endif
         using XMatrixPtr                    = RCP<XMatrix>;
         using ConstXMatrixPtr               = RCP<const XMatrix>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector                  = MultiVector<SC,LO,GO,NO>;
+#else
+        using XMultiVector                  = MultiVector<SC,NO>;
+#endif
         using XMultiVectorPtr               = RCP<XMultiVector>;
         using ConstXMultiVectorPtr          = RCP<const XMultiVector>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using EntitySetPtr                  = RCP<EntitySet<SC,LO,GO,NO> >;
+#else
+        using EntitySetPtr                  = RCP<EntitySet<SC,NO> >;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using InterfaceEntityPtr            = RCP<InterfaceEntity<SC,LO,GO,NO> >;
+#else
+        using InterfaceEntityPtr            = RCP<InterfaceEntity<SC,NO> >;
+#endif
         using InterfaceEntityPtrVec         = Array<InterfaceEntityPtr>;
         using InterfaceEntityPtrVecPtr      = ArrayRCP<InterfaceEntityPtr>;
 

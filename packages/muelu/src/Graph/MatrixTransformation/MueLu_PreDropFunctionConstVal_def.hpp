@@ -54,26 +54,46 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   PreDropFunctionConstVal<Scalar, LocalOrdinal, GlobalOrdinal, Node>::PreDropFunctionConstVal(const Scalar threshold)
+#else
+  template <class Scalar, class Node>
+  PreDropFunctionConstVal<Scalar, Node>::PreDropFunctionConstVal(const Scalar threshold)
+#endif
     : threshold_(threshold) { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   bool PreDropFunctionConstVal<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Drop(size_t /* lrow */, GlobalOrdinal grow, size_t k, LocalOrdinal /* lcid */, GlobalOrdinal gcid, const Teuchos::ArrayView<const LocalOrdinal> & /* indices */, const Teuchos::ArrayView<const Scalar> & vals) {
+#else
+  template <class Scalar, class Node>
+  bool PreDropFunctionConstVal<Scalar, Node>::Drop(size_t /* lrow */, GlobalOrdinal grow, size_t k, LocalOrdinal /* lcid */, GlobalOrdinal gcid, const Teuchos::ArrayView<const LocalOrdinal> & /* indices */, const Teuchos::ArrayView<const Scalar> & vals) {
+#endif
     if(Teuchos::ScalarTraits<Scalar>::magnitude(vals[k]) > Teuchos::ScalarTraits<Scalar>::magnitude(threshold_) || grow == gcid ) {
       return false; // keep values
     }
     return true;    // values too small -> drop them
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   Scalar PreDropFunctionConstVal<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetThreshold() const {
+#else
+  template <class Scalar, class Node>
+  Scalar PreDropFunctionConstVal<Scalar, Node>::GetThreshold() const {
+#endif
     return threshold_;
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string PreDropFunctionConstVal<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string PreDropFunctionConstVal<Scalar, Node>::description() const {
+#endif
     std::ostringstream out;
     out << "PreDropFunctionConstVal: threshold = " << threshold_ << std::endl;
     return out.str();

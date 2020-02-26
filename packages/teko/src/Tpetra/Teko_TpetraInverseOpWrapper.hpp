@@ -63,10 +63,18 @@ public:
        : TpetraOperatorWrapper(thyraOp) {}
 
     /** */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void apply(const Tpetra::MultiVector<ST,LO,GO,NT>& X, Tpetra::MultiVector<ST,LO,GO,NT>& Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, ST alpha=Teuchos::ScalarTraits< ST >::one(), ST beta=Teuchos::ScalarTraits< ST >::zero()) const;
+#else
+    virtual void apply(const Tpetra::MultiVector<ST,NT>& X, Tpetra::MultiVector<ST,NT>& Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, ST alpha=Teuchos::ScalarTraits< ST >::one(), ST beta=Teuchos::ScalarTraits< ST >::zero()) const;
+#endif
 
     /** */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void applyInverse(const Tpetra::MultiVector<ST,LO,GO,NT>& X, Tpetra::MultiVector<ST,LO,GO,NT>& Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, ST alpha=Teuchos::ScalarTraits< ST >::one(), ST beta=Teuchos::ScalarTraits< ST >::zero()) const;
+#else
+    virtual void applyInverse(const Tpetra::MultiVector<ST,NT>& X, Tpetra::MultiVector<ST,NT>& Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, ST alpha=Teuchos::ScalarTraits< ST >::one(), ST beta=Teuchos::ScalarTraits< ST >::zero()) const;
+#endif
 
 //    /** */
 //    virtual const Epetra_Map& OperatorDomainMap() const; 

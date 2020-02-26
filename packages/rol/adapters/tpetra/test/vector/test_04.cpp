@@ -56,8 +56,13 @@ typedef double ElementT;
 typedef Tpetra::Map<>::local_ordinal_type LO;
 typedef Tpetra::Map<>::global_ordinal_type GO;
 typedef Tpetra::Map<>::node_type Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::Map<LO, GO, Node> Map;
 typedef Tpetra::MultiVector<RealT, LO, GO, Node> MV;
+#else
+typedef Tpetra::Map<Node> Map;
+typedef Tpetra::MultiVector<RealT,Node> MV;
+#endif
 
 
 int main(int argc, char* argv[]) 

@@ -49,8 +49,13 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   ImportExportData<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  ImportExportData<Node>::
+#endif
   ImportExportData (const Teuchos::RCP<const map_type>& source,
                     const Teuchos::RCP<const map_type>& target,
                     const Teuchos::RCP<Teuchos::FancyOStream>& out,
@@ -65,36 +70,61 @@ namespace Tpetra {
     TEUCHOS_ASSERT( ! out_.is_null () );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   ImportExportData<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  ImportExportData<Node>::
+#endif
   ImportExportData (const Teuchos::RCP<const map_type>& source,
                     const Teuchos::RCP<const map_type>& target) :
     ImportExportData (source, target, Teuchos::null, Teuchos::null)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   ImportExportData<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  ImportExportData<Node>::
+#endif
   ImportExportData (const Teuchos::RCP<const map_type>& source,
                     const Teuchos::RCP<const map_type>& target,
                     const Teuchos::RCP<Teuchos::FancyOStream>& out) :
     ImportExportData (source, target, out, Teuchos::null)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   ImportExportData<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  ImportExportData<Node>::
+#endif
   ImportExportData (const Teuchos::RCP<const map_type>& source,
                     const Teuchos::RCP<const map_type>& target,
                     const Teuchos::RCP<Teuchos::ParameterList>& plist) :
     ImportExportData (source, target, Teuchos::null, plist)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<ImportExportData<LocalOrdinal, GlobalOrdinal, Node> >
   ImportExportData<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  Teuchos::RCP<ImportExportData<Node> >
+  ImportExportData<Node>::
+#endif
   reverseClone ()
   {
     using Teuchos::ArrayView;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using data_type = ImportExportData<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using data_type = ImportExportData<Node>;
+#endif
 
     auto tData = Teuchos::rcp (new data_type (target_, source_, out_));
 
@@ -144,7 +174,12 @@ namespace Tpetra {
 // LO: The local ordinal type.
 // GO: The global ordinal type.
 // NODE: The Kokkos Node type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_IMPORTEXPORTDATA_INSTANT(LO, GO, NODE) \
   template class ImportExportData< LO , GO , NODE >;
+#else
+#define TPETRA_IMPORTEXPORTDATA_INSTANT(NODE) \
+  template class ImportExportData<NODE >;
+#endif
 
 #endif // TPETRA_IMPORTEXPORTDATA_DEF_HPP

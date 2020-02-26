@@ -89,8 +89,13 @@ TEUCHOS_UNIT_TEST(NOX_Tpetra_Heq, AnalyticJacobian_NoPrec)
 
   // Create the model evaluator object
   Scalar omega = 0.95;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<EvaluatorTpetraHeq<Scalar,LO,GO,Node> > model =
     evaluatorTpetraHeq<Scalar,LO,GO,Node>(comm, numGlobalElements, omega);
+#else
+  Teuchos::RCP<EvaluatorTpetraHeq<Scalar,Node> > model =
+    evaluatorTpetraHeq<Scalar,Node>(comm, numGlobalElements, omega);
+#endif
 
   Stratimikos::DefaultLinearSolverBuilder builder;
 
@@ -184,8 +189,13 @@ TEUCHOS_UNIT_TEST(NOX_Tpetra_Heq, JFNK_NoPrec)
 
   // Create the model evaluator object
   Scalar omega = 0.9;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<EvaluatorTpetraHeq<Scalar,LO,GO,Node> > model =
     evaluatorTpetraHeq<Scalar,LO,GO,Node>(comm, numGlobalElements, omega);
+#else
+  Teuchos::RCP<EvaluatorTpetraHeq<Scalar,Node> > model =
+    evaluatorTpetraHeq<Scalar,Node>(comm, numGlobalElements, omega);
+#endif
 
   Stratimikos::DefaultLinearSolverBuilder builder;
 
@@ -302,8 +312,13 @@ TEUCHOS_UNIT_TEST(NOX_Tpetra_Heq, JFNK_UserPrec)
 
   // Create the model evaluator object
   Scalar omega = 0.9;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<EvaluatorTpetraHeq<Scalar,LO,GO,Node> > model =
     evaluatorTpetraHeq<Scalar,LO,GO,Node>(comm, numGlobalElements, omega);
+#else
+  Teuchos::RCP<EvaluatorTpetraHeq<Scalar,Node> > model =
+    evaluatorTpetraHeq<Scalar,Node>(comm, numGlobalElements, omega);
+#endif
 
   Stratimikos::DefaultLinearSolverBuilder builder;
 

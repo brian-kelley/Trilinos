@@ -61,21 +61,39 @@ namespace Xpetra {
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
     // forward declaration of Vector, needed to prevent circular inclusions
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class S, class LO, class GO, class N> class Vector;
+#else
+    template<class S, class N> class Vector;
+#endif
 
     // forward declaration of MapExtractor, we just need the class sig here.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class S, class LO, class GO, class N> class MapExtractor;
+#else
+    template<class S, class N> class MapExtractor;
+#endif
 #endif
 
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class BlockedMultiVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >
+#else
+    : public MultiVector< Scalar, Node >
+#endif
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_type;
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
@@ -116,7 +134,11 @@ namespace Xpetra {
      * \param bmap BlockedMap object containing information about the block splitting
      * \param v MultiVector that is to be splitted into a blocked multi vector
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlockedMultiVector(Teuchos::RCP<const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node> > bmap,
+#else
+    BlockedMultiVector(Teuchos::RCP<const Xpetra::BlockedMap<Node> > bmap,
+#endif
                        Teuchos::RCP<const MultiVector> v);
 
 
@@ -131,7 +153,11 @@ namespace Xpetra {
      * \param mapExtractor MapExtractor object containing information about the block splitting
      * \param v MultiVector that is to be splitted into a blocked multi vector
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlockedMultiVector(Teuchos::RCP<const Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node>> mapExtractor,
+#else
+    BlockedMultiVector(Teuchos::RCP<const Xpetra::MapExtractor<Scalar,Node>> mapExtractor,
+#endif
                        Teuchos::RCP<const MultiVector> v);
 
 
@@ -157,7 +183,11 @@ namespace Xpetra {
     ///
     /// \note This currently only works if both <tt>*this</tt> and the
     ///   input argument are instances of the same subclass.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& operator=(const MultiVector& rhs);
+#else
+    BlockedMultiVector<Scalar, Node>& operator=(const MultiVector& rhs);
+#endif
 
 
     //@}
@@ -186,11 +216,19 @@ namespace Xpetra {
 
 
     //! Return a Vector which is a const view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> getVector(size_t j) const;
+#else
+    virtual Teuchos::RCP<const Xpetra::Vector<Scalar, Node>> getVector(size_t j) const;
+#endif
 
 
     //! Return a Vector which is a nonconst view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> getVectorNonConst(size_t j);
+#else
+    virtual Teuchos::RCP<Xpetra::Vector<Scalar, Node>> getVectorNonConst(size_t j);
+#endif
 
 
     //! Const view of the local values in a particular vector of this multivector.
@@ -255,7 +293,11 @@ namespace Xpetra {
 
 
     //! Element-wise multiply of a Vector A with a MultiVector B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void elementWiseMultiply(Scalar scalarAB, const Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>&A, const MultiVector&B, Scalar scalarThis);
+#else
+    virtual void elementWiseMultiply(Scalar scalarAB, const Xpetra::Vector<Scalar,Node>&A, const MultiVector&B, Scalar scalarThis);
+#endif
 
 
     //@}
@@ -276,7 +318,11 @@ namespace Xpetra {
 
 
     //! Local number of rows on the calling process.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual bool isSameSize(const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & vec) const;
+#else
+    virtual bool isSameSize(const Xpetra::MultiVector<Scalar,Node> & vec) const;
+#endif
 
 
     //@}
@@ -296,19 +342,35 @@ namespace Xpetra {
 
 
     //! Import.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &/* source */, const Import& /* importer */, CombineMode /* CM */);
+#else
+    virtual void doImport(const DistObject<Scalar, Node> &/* source */, const Import& /* importer */, CombineMode /* CM */);
+#endif
 
 
     //! Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &/* dest */, const Import& /* importer */, CombineMode /* CM */);
+#else
+    virtual void doExport(const DistObject<Scalar, Node> &/* dest */, const Import& /* importer */, CombineMode /* CM */);
+#endif
 
 
     //! Import (using an Exporter).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &/* source */, const Export& /* exporter */, CombineMode /* CM */);
+#else
+    virtual void doImport(const DistObject<Scalar, Node> &/* source */, const Export& /* exporter */, CombineMode /* CM */);
+#endif
 
 
     //! Export (using an Importer).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &/* dest */, const Export& /* exporter */, CombineMode /* CM */);
+#else
+    virtual void doExport(const DistObject<Scalar, Node> &/* dest */, const Export& /* exporter */, CombineMode /* CM */);
+#endif
 
 
     //@}
@@ -378,7 +440,11 @@ namespace Xpetra {
 
 
     //! Access function for the underlying Map this DistObject was constructed with.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node> > getBlockedMap() const;
+#else
+    Teuchos::RCP< const Xpetra::BlockedMap<Node> > getBlockedMap() const;
+#endif
 
 
     /// return partial multivector associated with block row r

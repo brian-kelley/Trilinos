@@ -120,8 +120,13 @@ namespace {
   // with a reasonably small tolerance.  While this could also produce
   // a false-positive, it is less likely.
 #define TEST_WITH_MATRIX(MATNAME, transpose)                            \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef CrsMatrix<SCALAR,LO,GO> MAT;                                  \
   typedef MultiVector<SCALAR,LO,GO> MV;                                 \
+#else
+  typedef CrsMatrix<SCALAR> MAT;                                  \
+  typedef MultiVector<SCALAR> MV;                                 \
+#endif
   typedef ScalarTraits<SCALAR> ST;                                      \
   typedef typename ST::magnitudeType Mag;                               \
   typedef ScalarTraits<Mag> MT;                                         \

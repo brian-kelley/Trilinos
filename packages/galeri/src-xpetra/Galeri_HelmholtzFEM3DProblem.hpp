@@ -147,7 +147,11 @@ namespace Galeri {
       std::vector<Point>              nodes;
       std::vector< std::vector<LO> >  elements;
       std::vector<GO>                 local2Global_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       VelocityModel<SC,LO,GO>         velocitymodel_;
+#else
+      VelocityModel<SC>         velocitymodel_;
+#endif
 
       // Helmholtz/PML parameters
       double   hx_, hy_, hz_, shift_, delta_, omega_;

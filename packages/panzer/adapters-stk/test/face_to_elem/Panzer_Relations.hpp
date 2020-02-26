@@ -59,10 +59,17 @@ protected:
 
 
   typedef Kokkos::Compat::KokkosDeviceWrapperNode<PHX::Device> NodeType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal, GlobalOrdinal, NodeType> Map;
   typedef Tpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, NodeType> Graph;
   typedef Tpetra::Export<LocalOrdinal, GlobalOrdinal, NodeType> Export;
   typedef Tpetra::Import<LocalOrdinal, GlobalOrdinal, NodeType> Import;
+#else
+  typedef Tpetra::Map<NodeType> Map;
+  typedef Tpetra::CrsGraph<NodeType> Graph;
+  typedef Tpetra::Export<NodeType> Export;
+  typedef Tpetra::Import<NodeType> Import;
+#endif
 
 };
 }

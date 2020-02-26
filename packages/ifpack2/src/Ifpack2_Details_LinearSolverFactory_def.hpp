@@ -58,17 +58,28 @@
 namespace Ifpack2 {
 namespace Details {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 Teuchos::RCP<typename LinearSolverFactory<SC, LO, GO, NT>::solver_type>
 LinearSolverFactory<SC, LO, GO, NT>::
+#else
+template<class SC, class NT>
+Teuchos::RCP<typename LinearSolverFactory<SC, NT>::solver_type>
+LinearSolverFactory<SC, NT>::
+#endif
 getLinearSolver (const std::string& solverName)
 {
   using Teuchos::null;
   using Teuchos::RCP;
   using Teuchos::rcp_dynamic_cast;
   using Teuchos::TypeNameTraits;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::Preconditioner<SC, LO, GO, NT> prec_type;
   typedef Tpetra::RowMatrix<SC, LO, GO, NT> ROW;
+#else
+  typedef Ifpack2::Preconditioner<SC, NT> prec_type;
+  typedef Tpetra::RowMatrix<SC, NT> ROW;
+#endif
   const char prefix[] = "Ifpack2::Details::LinearSolverFactory::getLinearSolver: ";
 
   RCP<prec_type> solver;
@@ -100,20 +111,41 @@ getLinearSolver (const std::string& solverName)
      << ", NT = " << TypeNameTraits<NT>::name ()
      << ".  Ifpack2::Factory::create returned null.");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::Details::LinearSolver<SC, LO, GO, NT> impl_type;
+#else
+  typedef Ifpack2::Details::LinearSolver<SC, NT> impl_type;
+#endif
   return Teuchos::rcp (new impl_type (solver, solverName));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 LinearSolverFactory<SC, LO, GO, NT>::
+#else
+LinearSolverFactory<SC, NT>::
+#endif
 registerLinearSolverFactory ()
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<SC, LO, GO, NT> MV;
   typedef Tpetra::Operator<SC, LO, GO, NT> OP;
+#else
+  typedef Tpetra::MultiVector<SC, NT> MV;
+  typedef Tpetra::Operator<SC, NT> OP;
+#endif
   typedef typename MV::mag_type mag_type;
   typedef Trilinos::Details::LinearSolverFactory<MV, OP, mag_type> factory_base_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::Details::LinearSolverFactory<SC, LO, GO, NT> factory_impl_type;
+#else
+  typedef Ifpack2::Details::LinearSolverFactory<SC, NT> factory_impl_type;
+#endif
 
 #ifdef HAVE_TEUCHOSCORE_CXX11
   typedef std::shared_ptr<factory_base_type> base_ptr_type;
@@ -152,7 +184,12 @@ registerLinearSolverFactory ()
 
 // Do explicit instantiation of Ifpack2::Details::LinearSolverFactory,
 // for Tpetra objects, with the given Tpetra template parameters.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_LINEARSOLVERFACTORY_INSTANT( SC, LO, GO, NT ) \
   template class Ifpack2::Details::LinearSolverFactory<SC, LO, GO, NT>;
+#else
+#define IFPACK2_DETAILS_LINEARSOLVERFACTORY_INSTANT( SC, NT ) \
+  template class Ifpack2::Details::LinearSolverFactory<SC, NT>;
+#endif
 
 #endif // IFPACK2_DETAILS_LINEARSOLVERFACTORY_DEF_HPP

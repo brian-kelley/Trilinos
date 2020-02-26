@@ -60,28 +60,58 @@
 namespace Xpetra {
 
 // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> toTpetra(Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&);
+#else
+template<class Scalar, class Node>
+RCP<Tpetra::Vector<Scalar, Node>> toTpetra(Vector<Scalar, Node>&);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> toTpetra(const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&);
+#else
+template<class Scalar, class Node>
+RCP<Tpetra::Vector<Scalar, Node>> toTpetra(const Vector<Scalar, Node>&);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> toXpetra(RCP<const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> vec);
+#else
+template<class Scalar, class Node>
+RCP<const Vector<Scalar, Node>> toXpetra(RCP<const Tpetra::Vector<Scalar, Node>> vec);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> toXpetra(RCP<Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> vec);
+#else
+template<class Scalar, class Node>
+RCP<Vector<Scalar, Node>> toXpetra(RCP<Tpetra::Vector<Scalar, Node>> vec);
+#endif
 
 //
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+template<class Scalar, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
 class TpetraVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public virtual Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>
     , public TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+    : public virtual Vector<Scalar, Node>
+    , public TpetraMultiVector<Scalar, Node>
+#endif
 {
 
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dot;                     // overloading, not hiding
     using TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::norm1;                   // overloading, not hiding
     using TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::norm2;                   // overloading, not hiding
@@ -91,15 +121,36 @@ class TpetraVector
     using TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::sumIntoGlobalValue;      // overloading, not hiding
     using TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::replaceLocalValue;       // overloading, not hiding
     using TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::sumIntoLocalValue;       // overloading, not hiding
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    using TpetraMultiVector<Scalar, Node>::dot;                     // overloading, not hiding
+    using TpetraMultiVector<Scalar, Node>::norm1;                   // overloading, not hiding
+    using TpetraMultiVector<Scalar, Node>::norm2;                   // overloading, not hiding
+    using TpetraMultiVector<Scalar, Node>::normInf;                 // overloading, not hiding
+    using TpetraMultiVector<Scalar, Node>::meanValue;               // overloading, not hiding
+    using TpetraMultiVector<Scalar, Node>::replaceGlobalValue;      // overloading, not hiding
+    using TpetraMultiVector<Scalar, Node>::sumIntoGlobalValue;      // overloading, not hiding
+    using TpetraMultiVector<Scalar, Node>::replaceLocalValue;       // overloading, not hiding
+    using TpetraMultiVector<Scalar, Node>::sumIntoLocalValue;       // overloading, not hiding
+#endif
 
     //! @name Constructor/Destructor Methods
     //@{
 
     //! Sets all vector entries to zero.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraVector(const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node>>& map, bool zeroOut = true);
+#else
+    TpetraVector(const Teuchos::RCP<const Map<Node>>& map, bool zeroOut = true);
+#endif
 
     //! Set multi-vector values from an array using Teuchos memory management classes. (copy)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraVector(const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node>>& map, const Teuchos::ArrayView<const Scalar>& A);
+#else
+    TpetraVector(const Teuchos::RCP<const Map<Node>>& map, const Teuchos::ArrayView<const Scalar>& A);
+#endif
 
     //! Destructor.
     virtual ~TpetraVector();
@@ -152,20 +203,36 @@ class TpetraVector
     //@}
 
     //! Computes dot product of this Vector against input Vector x.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Scalar dot(const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& a) const;
+#else
+    Scalar dot(const Vector<Scalar, Node>& a) const;
+#endif
 
 //! @name Xpetra specific
     //@{
 
     //! TpetraMultiVector constructor to wrap a Tpetra::MultiVector object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraVector(const Teuchos::RCP<Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>& vec);
+#else
+    TpetraVector(const Teuchos::RCP<Tpetra::Vector<Scalar, Node>>& vec);
+#endif
 
     //! Get the underlying Tpetra multivector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> getTpetra_Vector() const;
+#else
+    RCP<Tpetra::Vector<Scalar, Node>> getTpetra_Vector() const;
+#endif
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type dual_view_type;
+#else
+    typedef typename Xpetra::MultiVector<Scalar, Node>::dual_view_type dual_view_type;
+#endif
 
     typename dual_view_type::t_host_um getHostLocalView() const;
 
@@ -195,40 +262,80 @@ class TpetraVector
 
 
 // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 toTpetra(Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x)
+#else
+template<class Scalar, class Node>
+RCP<Tpetra::Vector<Scalar, Node>>
+toTpetra(Vector<Scalar, Node>& x)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TpetraVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> TpetraVectorClass;
+#else
+    typedef TpetraVector<Scalar, Node> TpetraVectorClass;
+#endif
     XPETRA_DYNAMIC_CAST(TpetraVectorClass, x, tX, "toTpetra");
     return tX.getTpetra_Vector();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 toTpetra(const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x)
+#else
+template<class Scalar, class Node>
+RCP<Tpetra::Vector<Scalar, Node>>
+toTpetra(const Vector<Scalar, Node>& x)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TpetraVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> TpetraVectorClass;
+#else
+    typedef TpetraVector<Scalar, Node> TpetraVectorClass;
+#endif
     XPETRA_DYNAMIC_CAST(const TpetraVectorClass, x, tX, "toTpetra");
     return tX.getTpetra_Vector();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 toXpetra(RCP<Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> vec)
+#else
+template<class Scalar, class Node>
+RCP<Vector<Scalar, Node>>
+toXpetra(RCP<Tpetra::Vector<Scalar, Node>> vec)
+#endif
 {
     if(!vec.is_null())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp(new TpetraVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>(vec));
+#else
+        return rcp(new TpetraVector<Scalar, Node>(vec));
+#endif
 
     return Teuchos::null;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 toXpetra(RCP<const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> vec)
+#else
+template<class Scalar, class Node>
+RCP<const Vector<Scalar, Node>>
+toXpetra(RCP<const Tpetra::Vector<Scalar, Node>> vec)
+#endif
 {
     // We cast away the const to wrap the Tpetra vector into an Xpetra object. But it's OK because the Xpetra vector is returned as const.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return toXpetra(Teuchos::rcp_const_cast<Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>(vec));
+#else
+    return toXpetra(Teuchos::rcp_const_cast<Tpetra::Vector<Scalar, Node>>(vec));
+#endif
 }
 
 }      // namespace Xpetra

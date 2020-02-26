@@ -113,7 +113,11 @@
 #include <MueLu_CreateXpetraPreconditioner.hpp>
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
@@ -134,7 +138,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   typedef Teuchos::ScalarTraits<SC> STS;
   SC zero = STS::zero(), one = STS::one();
   typedef typename STS::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   // =========================================================================
   // Parameters initialization
@@ -213,7 +221,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   RCP<const Map>   map;
   RCP<RealValuedMultiVector> coordinates;
   typedef typename RealValuedMultiVector::scalar_type Real;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Xpetra::MultiVector<SC,LO,GO,NO> > nullspace;
+#else
+  RCP<Xpetra::MultiVector<SC,NO> > nullspace;
+#endif
   RCP<MultiVector> X, B;
 
   galeriStream << "========================================================\n" << xpetraParameters << galeriParameters;
@@ -239,26 +251,46 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   // At the moment, however, things are fragile as we hope that the Problem uses same map and coordinates inside
   if (matrixType == "Laplace1D") {
     numDimensions = 1;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,RealValuedMultiVector>("1D", map, galeriList);
 
   } else if (matrixType == "Laplace2D" || matrixType == "Star2D" ||
              matrixType == "BigStar2D" || matrixType == "Elasticity2D") {
     numDimensions = 2;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,RealValuedMultiVector>("2D", map, galeriList);
 
   } else if (matrixType == "Laplace3D" || matrixType == "Brick3D" || matrixType == "Elasticity3D") {
     numDimensions = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,RealValuedMultiVector>("3D", map, galeriList);
   }
 
   // Expand map to do multiple DOF per node for block problems
   if (matrixType == "Elasticity2D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 2);
+#else
+    map = Xpetra::MapFactory<Node>::Build(map, 2);
+#endif
   if (matrixType == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 3);
+#else
+    map = Xpetra::MapFactory<Node>::Build(map, 3);
+#endif
 
   galeriStream << "Processor subdomains in x direction: " << galeriList.get<GO>("mx") << std::endl
                << "Processor subdomains in y direction: " << galeriList.get<GO>("my") << std::endl

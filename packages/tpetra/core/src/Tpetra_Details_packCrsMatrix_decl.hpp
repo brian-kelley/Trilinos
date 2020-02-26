@@ -123,9 +123,17 @@ namespace Details {
 /// copies back in to the Teuchos::ArrayView objects, if needed).  When
 /// CrsMatrix migrates fully to adopting Kokkos::DualView objects for its storage
 /// of data, this procedure could be bypassed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename ST, typename LO, typename GO, typename NT>
+#else
+template<typename ST, typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsMatrix (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
+#else
+packCrsMatrix (const CrsMatrix<ST, NT>& sourceMatrix,
+#endif
                Teuchos::Array<char>& exports,
                const Teuchos::ArrayView<size_t>& numPacketsPerLID,
                const Teuchos::ArrayView<const LO>& exportLIDs,
@@ -163,15 +171,35 @@ packCrsMatrix (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
 /// This method implements CrsMatrix::packNew, and thus
 /// CrsMatrix::packAndPrepare, for the case where the matrix to
 /// pack has a valid KokkosSparse::CrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename ST, typename LO, typename GO, typename NT>
+#else
+template<typename ST, typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsMatrixNew (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
+#else
+packCrsMatrixNew (const CrsMatrix<ST, NT>& sourceMatrix,
+#endif
                   Kokkos::DualView<char*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     typename DistObject<char, LO, GO, NT>::buffer_device_type>& exports,
+#else
+                    typename DistObject<char,NT>::buffer_device_type>& exports,
+#endif
                   const Kokkos::DualView<size_t*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     typename DistObject<char, LO, GO, NT>::buffer_device_type>& numPacketsPerLID,
+#else
+                    typename DistObject<char,NT>::buffer_device_type>& numPacketsPerLID,
+#endif
                   const Kokkos::DualView<const LO*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     typename DistObject<char, LO, GO, NT>::buffer_device_type>& exportLIDs,
+#else
+                    typename DistObject<char,NT>::buffer_device_type>& exportLIDs,
+#endif
                   size_t& constantNumPackets,
                   Distributor& distor);
 
@@ -208,10 +236,19 @@ packCrsMatrixNew (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
 /// copies back in to the Teuchos::ArrayView objects, if needed).  When
 /// CrsMatrix migrates fully to adopting Kokkos::DualView objects for its storage
 /// of data, this procedure could be bypassed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename ST, typename LO, typename GO, typename NT>
+#else
+template<typename ST, typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsMatrixWithOwningPIDs (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
                              Kokkos::DualView<char*, typename DistObject<char, LO, GO, NT>::buffer_device_type>& exports_dv,
+#else
+packCrsMatrixWithOwningPIDs (const CrsMatrix<ST, NT>& sourceMatrix,
+                             Kokkos::DualView<char*, typename DistObject<char,NT>::buffer_device_type>& exports_dv,
+#endif
                              const Teuchos::ArrayView<size_t>& numPacketsPerLID,
                              const Teuchos::ArrayView<const LO>& exportLIDs,
                              const Teuchos::ArrayView<const int>& sourcePIDs,

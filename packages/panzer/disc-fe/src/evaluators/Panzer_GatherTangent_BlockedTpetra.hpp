@@ -96,7 +96,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData d);
 
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new GatherTangent_BlockedTpetra<EvalT,TRAITS,S,LO,GO>(gidIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new GatherTangent_BlockedTpetra<EvalT,TRAITS,S>(gidIndexer_,pl)); }
+#endif
 
 private:
 
@@ -104,6 +108,7 @@ private:
   //typedef typename panzer::Traits::RealType ScalarT;
   typedef typename EvalT::ScalarT ScalarT;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef BlockedTpetraLinearObjContainer<S,LO,GO,NodeT> ContainerType;
   typedef Tpetra::Vector<S,LO,GO,NodeT> VectorType;
   typedef Tpetra::CrsMatrix<S,LO,GO,NodeT> CrsMatrixType;
@@ -111,6 +116,15 @@ private:
   typedef Tpetra::Map<LO,GO,NodeT> MapType;
   typedef Tpetra::Import<LO,GO,NodeT> ImportType;
   typedef Tpetra::Export<LO,GO,NodeT> ExportType;
+#else
+  typedef BlockedTpetraLinearObjContainer<S,NodeT> ContainerType;
+  typedef Tpetra::Vector<S,NodeT> VectorType;
+  typedef Tpetra::CrsMatrix<S,NodeT> CrsMatrixType;
+  typedef Tpetra::CrsGraph<NodeT> CrsGraphType;
+  typedef Tpetra::Map<NodeT> MapType;
+  typedef Tpetra::Import<NodeT> ImportType;
+  typedef Tpetra::Export<NodeT> ExportType;
+#endif
 
   // maps the local (field,element,basis) triplet to a global ID
   // for scattering
@@ -124,7 +138,11 @@ private:
   bool useTimeDerivativeSolutionVector_;
   std::string globalDataKey_; // what global data does this fill?
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedTpetraLinearObjContainer<S,LO,GO,NodeT> > blockedContainer_;
+#else
+  Teuchos::RCP<const BlockedTpetraLinearObjContainer<S,NodeT> > blockedContainer_;
+#endif
 
   GatherTangent_BlockedTpetra();
 };

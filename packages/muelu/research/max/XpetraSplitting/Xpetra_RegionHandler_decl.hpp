@@ -111,9 +111,17 @@ private:
 
 //This is an auxiliary class to store row maps for the composite matrix, region matrices and
 //a regionToAll map to link region node indices with the composite ones
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 class Splitting_MapsInfo{
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   Array<Array< std::tuple<GlobalOrdinal,GlobalOrdinal> > > regionToAll_;//used as a map for a RegionToAll node index
   Array<GlobalOrdinal> composite_map_; //used as RowMap for composite matrices
   Array<Array<GlobalOrdinal> > region_maps_; //used as RowMap for region matrices
@@ -121,11 +129,19 @@ public:
 
 
 // This is the actual class that defines the regionHandler
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 class RegionHandler{
 
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   //! @name Constructor/Destructor Methods
   //@{
 
@@ -174,7 +190,11 @@ private:
   Array<GlobalOrdinal> num_region_nodes_;
 
   //Maps used for composite and region operators
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Splitting_MapsInfo<Scalar, LocalOrdinal, GlobalOrdinal, Node> maps_;
+#else
+  Splitting_MapsInfo<Scalar, Node> maps_;
+#endif
   //@}
 
   //! @Private Methods

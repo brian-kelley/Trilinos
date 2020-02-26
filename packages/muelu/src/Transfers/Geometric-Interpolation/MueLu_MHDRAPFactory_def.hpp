@@ -61,12 +61,22 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   MHDRAPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MHDRAPFactory()
+#else
+  template <class Scalar, class Node>
+  MHDRAPFactory<Scalar, Node>::MHDRAPFactory()
+#endif
     : implicitTranspose_(true) { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MHDRAPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void MHDRAPFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
 
     if (implicitTranspose_ == false)
       {
@@ -94,8 +104,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void MHDRAPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const { // FIXME make fineLevel const
+#else
+  template <class Scalar, class Node>
+  void MHDRAPFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const { // FIXME make fineLevel const
+#endif
     {
       FactoryMonitor m(*this, "Computing Ac", coarseLevel);
 
@@ -235,8 +250,13 @@ namespace MueLu {
   }
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string MHDRAPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::PrintLoadBalancingInfo(const Matrix & Ac, const std::string & msgTag) {
+#else
+  template <class Scalar, class Node>
+  std::string MHDRAPFactory<Scalar, Node>::PrintLoadBalancingInfo(const Matrix & Ac, const std::string & msgTag) {
+#endif
     std::stringstream ss(std::stringstream::out);
 
     // TODO: provide a option to skip this (to avoid global communication)

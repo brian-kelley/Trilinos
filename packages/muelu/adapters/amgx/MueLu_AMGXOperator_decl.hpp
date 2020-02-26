@@ -75,18 +75,33 @@ namespace MueLu {
       This templated version of the class throws errors in all methods as AmgX is not implemented for datatypes where scalar!=double/float and ordinal !=int
  */
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class AMGXOperator : public TpetraOperator<Scalar, LocalOrdinal, GlobalOrdinal, Node>, public BaseClass {
+#else
+  class AMGXOperator : public TpetraOperator<Scalar, Node>, public BaseClass {
+#endif
   private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar          SC;
     typedef LocalOrdinal    LO;
     typedef GlobalOrdinal   GO;
     typedef Node            NO;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO,GO,NO>            Map;
     typedef Tpetra::MultiVector<SC,LO,GO,NO> MultiVector;
+#else
+    typedef Tpetra::Map<NO>            Map;
+    typedef Tpetra::MultiVector<SC,NO> MultiVector;
+#endif
 
   public:
 
@@ -94,7 +109,11 @@ namespace MueLu {
     //@{
 
     //! Constructor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMGXOperator(const Teuchos::RCP<Tpetra::CrsMatrix<SC,LO,GO,NO> > &InA, Teuchos::ParameterList &paramListIn) { }
+#else
+    AMGXOperator(const Teuchos::RCP<Tpetra::CrsMatrix<SC,NO> > &InA, Teuchos::ParameterList &paramListIn) { }
+#endif
 
     //! Destructor.
     virtual ~AMGXOperator() {}
@@ -126,7 +145,11 @@ namespace MueLu {
       throw Exceptions::RuntimeError("Cannot use AMGXOperator with scalar != double and/or global ordinal != int \n");
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::Hierarchy<SC,LO,GO,NO> > GetHierarchy() const {
+#else
+    RCP<MueLu::Hierarchy<SC,NO> > GetHierarchy() const {
+#endif
       throw Exceptions::RuntimeError("AMGXOperator does not hold a MueLu::Hierarchy object \n");
     }
 
@@ -140,15 +163,24 @@ namespace MueLu {
       Creates an AmgX Solver object with a Tpetra Matrix. Partial specialization of the template for data types supported by AmgX.
   */
   template<class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class AMGXOperator<double, int, int, Node> : public TpetraOperator<double, int, int, Node> {
+#else
+  class AMGXOperator<double, Node> : public TpetraOperator<double, Node> {
+#endif
   private:
     typedef double  SC;
     typedef int     LO;
     typedef int     GO;
     typedef Node    NO;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO,GO,NO>            Map;
     typedef Tpetra::MultiVector<SC,LO,GO,NO> MultiVector;
+#else
+    typedef Tpetra::Map<NO>            Map;
+    typedef Tpetra::MultiVector<SC,NO> MultiVector;
+#endif
 
    
     void printMaps(Teuchos::RCP<const Teuchos::Comm<int> >& comm, const std::vector<std::vector<int> >& vec, const std::vector<int>& perm,
@@ -175,7 +207,11 @@ namespace MueLu {
 
     //! @name Constructor/Destructor
     //@{
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMGXOperator(const Teuchos::RCP<Tpetra::CrsMatrix<SC,LO,GO,NO> > &inA, Teuchos::ParameterList &paramListIn) {
+#else
+    AMGXOperator(const Teuchos::RCP<Tpetra::CrsMatrix<SC,NO> > &inA, Teuchos::ParameterList &paramListIn) {
+#endif
       RCP<const Teuchos::Comm<int> > comm = inA->getRowMap()->getComm();
       int numProcs = comm->getSize();
       int myRank   = comm->getRank();
@@ -258,7 +294,11 @@ namespace MueLu {
 
       // Construct AMGX communication pattern
       if (numProcs > 1) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Tpetra::Import<LO,GO,NO> > importer = inA->getCrsGraph()->getImporter();
+#else
+        RCP<const Tpetra::Import<NO> > importer = inA->getCrsGraph()->getImporter();
+#endif
 
         TEUCHOS_TEST_FOR_EXCEPTION(importer.is_null(), MueLu::Exceptions::RuntimeError, "The matrix A has no Import object.");
 
@@ -482,7 +522,11 @@ namespace MueLu {
     //! Indicates whether this operator supports applying the adjoint operator.
     bool hasTransposeApply() const;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::Hierarchy<SC,LO,GO,NO> > GetHierarchy() const {
+#else
+    RCP<MueLu::Hierarchy<SC,NO> > GetHierarchy() const {
+#endif
       throw Exceptions::RuntimeError("AMGXOperator does not hold a MueLu::Hierarchy object \n");
     }
 

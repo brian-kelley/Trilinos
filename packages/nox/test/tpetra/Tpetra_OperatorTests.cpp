@@ -25,15 +25,26 @@ typedef Tpetra::Vector<>::global_ordinal_type GO;
 typedef Tpetra::Vector<>::node_type Node;
 
 typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::Map<LO,GO,Node> Map;
 typedef Tpetra::Vector<Scalar,LO,GO,Node> TV;
 typedef Tpetra::MultiVector<Scalar,LO,GO,Node> TMV;
 typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> CRSM;
+#else
+typedef Tpetra::Map<Node> Map;
+typedef Tpetra::Vector<Scalar,Node> TV;
+typedef Tpetra::MultiVector<Scalar,Node> TMV;
+typedef Tpetra::CrsMatrix<Scalar,Node> CRSM;
+#endif
 typedef Thyra::VectorSpaceBase<Scalar> TVSB;
 typedef Thyra::VectorBase<Scalar> TVB;
 typedef Thyra::MultiVectorBase<Scalar> TMVB;
 typedef Thyra::LinearOpBase<Scalar> TLOB;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Thyra::TpetraOperatorVectorExtraction<Scalar,LO,GO,Node> TOVE;
+#else
+typedef Thyra::TpetraOperatorVectorExtraction<Scalar,Node> TOVE;
+#endif
 typedef NOX::Thyra::Vector NTV;
 typedef NOX::Thyra::MultiVector NTMV;
 typedef typename TMV::mag_type mag_type;
@@ -156,7 +167,11 @@ TEUCHOS_UNIT_TEST(Tpetra_OpTests, VecNoTrans)
   const Tpetra::global_size_t numGlobalElements = comm->getSize()*numLocalElements;
 
   Teuchos::RCP<const Map> map = Teuchos::rcp(new const Map(numGlobalElements, numLocalElements, 0, comm));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TVSB> space = Thyra::createVectorSpace<Scalar,LO,GO,Node>(map);
+#else
+  Teuchos::RCP<const TVSB> space = Thyra::createVectorSpace<Scalar,Node>(map);
+#endif
 
   // Create vector objects
   Teuchos::RCP<TVB> x = Thyra::createMember(space);
@@ -177,7 +192,11 @@ TEUCHOS_UNIT_TEST(Tpetra_OpTests, VecNoTrans)
 
   // Create operator objects
   Teuchos::RCP<CRSM> op_tpetra = createTpetraOp(map);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<TLOB> op = Thyra::tpetraLinearOp<Scalar,LO,GO,Node>(space, space, op_tpetra);
+#else
+  Teuchos::RCP<TLOB> op = Thyra::tpetraLinearOp<Scalar,Node>(space, space, op_tpetra);
+#endif
   TEUCHOS_TEST_EQUALITY(Thyra::opSupported(*op, Thyra::NOTRANS), true, out, success);
 
   // Apply op with Tpetra directly
@@ -212,7 +231,11 @@ TEUCHOS_UNIT_TEST(Tpetra_OpTests, MultiVecNoTrans)
   const std::size_t numCols = 5;
 
   Teuchos::RCP<const Map> map = Teuchos::rcp(new const Map(numGlobalElements, numLocalElements, 0, comm));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TVSB> space = Thyra::createVectorSpace<Scalar,LO,GO,Node>(map);
+#else
+  Teuchos::RCP<const TVSB> space = Thyra::createVectorSpace<Scalar,Node>(map);
+#endif
 
   // Create vector objects
   Teuchos::RCP<TMVB> x = Thyra::createMembers(space, numCols);
@@ -238,7 +261,11 @@ TEUCHOS_UNIT_TEST(Tpetra_OpTests, MultiVecNoTrans)
 
   // Create operator objects
   Teuchos::RCP<CRSM> op_tpetra = createTpetraOp(map);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<TLOB> op = Thyra::tpetraLinearOp<Scalar,LO,GO,Node>(space, space, op_tpetra);
+#else
+  Teuchos::RCP<TLOB> op = Thyra::tpetraLinearOp<Scalar,Node>(space, space, op_tpetra);
+#endif
   TEUCHOS_TEST_EQUALITY(Thyra::opSupported(*op, Thyra::NOTRANS), true, out, success);
 
   // Apply op with Tpetra directly
@@ -271,7 +298,11 @@ TEUCHOS_UNIT_TEST(Tpetra_OpTests, VecTrans)
   const Tpetra::global_size_t numGlobalElements = comm->getSize()*numLocalElements;
 
   Teuchos::RCP<const Map> map = Teuchos::rcp(new const Map(numGlobalElements, numLocalElements, 0, comm));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TVSB> space = Thyra::createVectorSpace<Scalar,LO,GO,Node>(map);
+#else
+  Teuchos::RCP<const TVSB> space = Thyra::createVectorSpace<Scalar,Node>(map);
+#endif
 
   // Create vector objects
   Teuchos::RCP<TVB> x = Thyra::createMember(space);
@@ -292,7 +323,11 @@ TEUCHOS_UNIT_TEST(Tpetra_OpTests, VecTrans)
 
   // Create operator objects
   Teuchos::RCP<CRSM> op_tpetra = createTpetraOp(map);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<TLOB> op = Thyra::tpetraLinearOp<Scalar,LO,GO,Node>(space, space, op_tpetra);
+#else
+  Teuchos::RCP<TLOB> op = Thyra::tpetraLinearOp<Scalar,Node>(space, space, op_tpetra);
+#endif
   TEUCHOS_TEST_EQUALITY(Thyra::opSupported(*op, Thyra::TRANS), true, out, success);
 
   // Apply op with Tpetra directly
@@ -328,7 +363,11 @@ TEUCHOS_UNIT_TEST(Tpetra_OpTests, MultiVecTrans)
   const std::size_t numCols = 5;
 
   Teuchos::RCP<const Map> map = Teuchos::rcp(new const Map(numGlobalElements, numLocalElements, 0, comm));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TVSB> space = Thyra::createVectorSpace<Scalar,LO,GO,Node>(map);
+#else
+  Teuchos::RCP<const TVSB> space = Thyra::createVectorSpace<Scalar,Node>(map);
+#endif
 
   // Create vector objects
   Teuchos::RCP<TMVB> x = Thyra::createMembers(space, numCols);
@@ -354,7 +393,11 @@ TEUCHOS_UNIT_TEST(Tpetra_OpTests, MultiVecTrans)
 
   // Create operator objects
   Teuchos::RCP<CRSM> op_tpetra = createTpetraOp(map);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<TLOB> op = Thyra::tpetraLinearOp<Scalar,LO,GO,Node>(space, space, op_tpetra);
+#else
+  Teuchos::RCP<TLOB> op = Thyra::tpetraLinearOp<Scalar,Node>(space, space, op_tpetra);
+#endif
   TEUCHOS_TEST_EQUALITY(Thyra::opSupported(*op, Thyra::TRANS), true, out, success);
 
   // Apply op with Tpetra directly

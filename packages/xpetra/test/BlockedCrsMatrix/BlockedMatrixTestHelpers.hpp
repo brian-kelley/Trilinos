@@ -37,7 +37,11 @@ Teuchos::RCP<Epetra_Map> SplitMap(const Epetra_Map& Amap, const Epetra_Map& Agiv
 
 // Xpetra version of SplitMap
 template<class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > SplitMap(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> & Amap, const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> & Agiven) {
+#else
+Teuchos::RCP<Xpetra::Map<Node> > SplitMap(const Xpetra::Map<Node> & Amap, const Xpetra::Map<Node> & Agiven) {
+#endif
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Amap.getComm();
 
   GlobalOrdinal count=0;
@@ -70,7 +74,11 @@ Teuchos::RCP<Epetra_Map> CreateMap(const std::set<int>& gids, const Epetra_Comm&
 
 // Xpetra version of CreateMap
 template<class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(const std::set<GlobalOrdinal>& gids, const Teuchos::Comm<int>& comm) {
+#else
+Teuchos::RCP<Xpetra::Map<Node> > CreateMap(const std::set<GlobalOrdinal>& gids, const Teuchos::Comm<int>& comm) {
+#endif
   Teuchos::Array<GlobalOrdinal> mapvec;
   mapvec.reserve(gids.size());
   mapvec.assign(gids.begin(), gids.end());
@@ -78,7 +86,11 @@ Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(const st
   GlobalOrdinal gcount;
   Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, count, Teuchos::outArg(gcount));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > map =
+#else
+  Teuchos::RCP<Xpetra::Map<Node> > map =
+#endif
       Teuchos::rcp(new MapType(gcount,
           mapvec(),
           0,
@@ -88,6 +100,7 @@ Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(const st
 }
 
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlockDiagonalExampleMatrix(int noBlocks, const Teuchos::Comm<int>& comm) {
   typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
   typedef Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> CrsMatrix;
@@ -95,6 +108,15 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
   typedef Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node> MapExtractor;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedCrsMatrix;
   typedef Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node> CrsMatrixWrap;
+#else
+Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlockDiagonalExampleMatrix(int noBlocks, const Teuchos::Comm<int>& comm) {
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::CrsMatrix<Scalar, Node> CrsMatrix;
+  typedef Xpetra::CrsMatrixFactory<Scalar,Node> CrsMatrixFactory;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractor;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrix;
+  typedef Xpetra::CrsMatrixWrap<Scalar,Node> CrsMatrixWrap;
+#endif
 
   GlobalOrdinal nOverallDOFGidsPerProc = Teuchos::as<GlobalOrdinal>(Teuchos::ScalarTraits<GlobalOrdinal>::pow(2,noBlocks-2)) * 10;
 
@@ -104,7 +126,11 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
   for(GlobalOrdinal i = 0; i < nOverallDOFGidsPerProc; i++)
     myDOFGids.insert(i + procOffset);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Map> fullmap = CreateMap<LocalOrdinal,GlobalOrdinal,Node,MapType>(myDOFGids, comm);
+#else
+  Teuchos::RCP<Map> fullmap = CreateMap<Node,MapType>(myDOFGids, comm);
+#endif
 
   std::vector<Teuchos::RCP<const Map> > maps(noBlocks, Teuchos::null);
   GlobalOrdinal nPartGIDs = nOverallDOFGidsPerProc;
@@ -120,9 +146,17 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
     for(GlobalOrdinal j = 0; j < nPartGIDs; j++)
       myHalfGIDs.insert(j + procOffset);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Map> halfmap = CreateMap<LocalOrdinal,GlobalOrdinal,Node,MapType> (myHalfGIDs, comm);
+#else
+    Teuchos::RCP<Map> halfmap = CreateMap<Node,MapType> (myHalfGIDs, comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Map> secondmap = SplitMap<LocalOrdinal,GlobalOrdinal,Node,MapType>(*remainingpartmap, *halfmap);
+#else
+    Teuchos::RCP<Map> secondmap = SplitMap<Node,MapType>(*remainingpartmap, *halfmap);
+#endif
     remainingpartmap = halfmap;
 
     maps[noBlocks - 1 - it]  = secondmap;
@@ -161,6 +195,7 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
 }
 
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class MapType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlockDiagonalExampleMatrixThyra(int noBlocks, const Teuchos::Comm<int>& comm) {
   typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
   typedef Xpetra::MapFactory<LocalOrdinal,GlobalOrdinal,Node> MapFactory;
@@ -169,6 +204,16 @@ Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
   typedef Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node> MapExtractor;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedCrsMatrix;
   typedef Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node> CrsMatrixWrap;
+#else
+Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlockDiagonalExampleMatrixThyra(int noBlocks, const Teuchos::Comm<int>& comm) {
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::MapFactory<Node> MapFactory;
+  typedef Xpetra::CrsMatrix<Scalar, Node> CrsMatrix;
+  typedef Xpetra::CrsMatrixFactory<Scalar,Node> CrsMatrixFactory;
+  typedef Xpetra::MapExtractor<Scalar,Node> MapExtractor;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BlockedCrsMatrix;
+  typedef Xpetra::CrsMatrixWrap<Scalar,Node> CrsMatrixWrap;
+#endif
 
   std::vector<Teuchos::RCP<const Map> > maps(noBlocks, Teuchos::null);
 

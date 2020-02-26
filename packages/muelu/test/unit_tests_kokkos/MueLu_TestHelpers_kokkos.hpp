@@ -136,18 +136,31 @@ namespace MueLuTests {
       }
     };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     class TestFactory {
 #include "MueLu_UseShortNames.hpp"
 
     private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       TestFactory() {} // static class
 
     public:
 
       typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
       typedef Xpetra::MultiVectorFactory<real_type,LO,GO,NO> RealValuedMultiVectorFactory;
+#else
+      typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+      typedef Xpetra::MultiVectorFactory<real_type,NO> RealValuedMultiVectorFactory;
+#endif
 
       // Create a map containing a specified number of local elements per process.
       static const RCP<const Map> BuildMap(LO numElementsPerProc) {
@@ -591,11 +604,19 @@ namespace MueLuTests {
     // GO=int/long long and/or Node=Serial/OpenMP. We need partial specializations
     // with an empty BuildBlockMatrix routine for all instantiations Teptra is not
     // enabled for, but are existing in Xpetra due to Epetra enabled.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     class TpetraTestFactory {
 #include "MueLu_UseShortNames.hpp"
     public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       // Create a matrix as specified by parameter list options
       static RCP<Matrix> BuildBlockMatrix(Teuchos::ParameterList &matrixList, Xpetra::UnderlyingLib lib) {
         RCP<const Teuchos::Comm<int> > comm = TestHelpers_kokkos::Parameters::getDefaultComm();
@@ -611,16 +632,34 @@ namespace MueLuTests {
          // Thanks for the code, Travis!
 
          // Make the graph
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > FirstMatrix = TestHelpers_kokkos::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMatrix(matrixList,lib);
          RCP<const Xpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node> > Graph = FirstMatrix->getCrsGraph();
+#else
+         RCP<Xpetra::Matrix<Scalar, Node> > FirstMatrix = TestHelpers_kokkos::TestFactory<Scalar, Node>::BuildMatrix(matrixList,lib);
+         RCP<const Xpetra::CrsGraph<Node> > Graph = FirstMatrix->getCrsGraph();
+#endif
 
          int blocksize = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<const Xpetra::TpetraCrsGraph<LocalOrdinal, GlobalOrdinal, Node> > TGraph = rcp_dynamic_cast<const Xpetra::TpetraCrsGraph<LocalOrdinal, GlobalOrdinal, Node> >(Graph);
          RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > TTGraph = TGraph->getTpetra_CrsGraph();
+#else
+         RCP<const Xpetra::TpetraCrsGraph<Node> > TGraph = rcp_dynamic_cast<const Xpetra::TpetraCrsGraph<Node> >(Graph);
+         RCP<const Tpetra::CrsGraph<Node> > TTGraph = TGraph->getTpetra_CrsGraph();
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<Tpetra::BlockCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > bcrsmatrix = rcp(new Tpetra::BlockCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> (*TTGraph, blocksize));
+#else
+         RCP<Tpetra::BlockCrsMatrix<Scalar, Node> > bcrsmatrix = rcp(new Tpetra::BlockCrsMatrix<Scalar, Node> (*TTGraph, blocksize));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& meshRowMap = *bcrsmatrix->getRowMap();
+#else
+         const Tpetra::Map<Node>& meshRowMap = *bcrsmatrix->getRowMap();
+#endif
          const Scalar zero   = Teuchos::ScalarTraits<Scalar>::zero();
          const Scalar one   = Teuchos::ScalarTraits<Scalar>::one();
          const Scalar two   = one+one;
@@ -639,8 +678,13 @@ namespace MueLuTests {
            bcrsmatrix->replaceLocalValues(lclRowInd, lclColInds.getRawPtr(), &basematrix[0], 1);
          }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > temp = rcp(new Xpetra::TpetraBlockCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(bcrsmatrix));
          Op = rcp(new Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node>(temp));
+#else
+         RCP<Xpetra::CrsMatrix<Scalar, Node> > temp = rcp(new Xpetra::TpetraBlockCrsMatrix<Scalar, Node>(bcrsmatrix));
+         Op = rcp(new Xpetra::CrsMatrixWrap<Scalar, Node>(temp));
+#endif
 #endif
          return Op;
       } // BuildBlockMatrix()
@@ -656,7 +700,11 @@ namespace MueLuTests {
     // partial specializations (GO=int not enabled with Tpetra)
 #if !defined(HAVE_TPETRA_INST_INT_INT)
     template <class Scalar, class LocalOrdinal, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class TpetraTestFactory<Scalar, LocalOrdinal, int, Node> {
+#else
+    class TpetraTestFactory<Scalar, Node> {
+#endif
       typedef int GlobalOrdinal;
 #include "MueLu_UseShortNames.hpp"
     public:
@@ -669,7 +717,11 @@ namespace MueLuTests {
     // partial specializations (GO=long long not enabled with Tpetra)
 #if !defined(HAVE_TPETRA_INST_INT_LONG_LONG)
     template <class Scalar, class LocalOrdinal, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class TpetraTestFactory<Scalar, LocalOrdinal, long long, Node> {
+#else
+    class TpetraTestFactory<Scalar, Node> {
+#endif
       typedef long long GlobalOrdinal;
 #include "MueLu_UseShortNames.hpp"
     public:
@@ -683,8 +735,15 @@ namespace MueLuTests {
 #if ((defined(EPETRA_HAVE_OMP) && !(defined(HAVE_TPETRA_INST_OPENMP))) || \
     (!defined(EPETRA_HAVE_OMP) && !(defined(HAVE_TPETRA_INST_SERIAL))))
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal>
     class TpetraTestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Xpetra::EpetraNode> {
+#else
+    template <class Scalar,>
+    class TpetraTestFactory<Scalar, Xpetra::EpetraNode> {
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       typedef Xpetra::EpetraNode Node;
 #include "MueLu_UseShortNames.hpp"
     public:

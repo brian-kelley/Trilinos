@@ -58,12 +58,21 @@
 namespace Xpetra {
 
   template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal,
            class GlobalOrdinal,
+#endif
            class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class Operator : virtual public Teuchos::Describable {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MultiVector;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::Map<Node> Map;
+    typedef Xpetra::MultiVector<Scalar,Node> MultiVector;
+#endif
   public:
     virtual ~Operator() { }
     /** \name Typedefs that give access to the template parameters. */

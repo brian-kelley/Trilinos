@@ -50,8 +50,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     SubdomainSolver<SC,LO,GO,NO>::SubdomainSolver(ConstXMatrixPtr k,
+#else
+    template<class SC,class NO>
+    SubdomainSolver<SC,NO>::SubdomainSolver(ConstXMatrixPtr k,
+#endif
                                                   ParameterListPtr parameterList,
                                                   GOVecPtr blockCoarseSize) :
     K_ (k),
@@ -66,7 +71,11 @@ namespace FROSch {
           FROSCH_ASSERT(K_->getRowMap()->lib()==UseEpetra,"UnderlyingLib!=UseEpetra");
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
             // AH 10/18/2017: Dies könnten wir nach initialize() verschieben, oder?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const CrsMatrixWrap<SC,LO,GO,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,LO,GO,NO>&>(*K_);
+#else
+            const CrsMatrixWrap<SC,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,NO>&>(*K_);
+#endif
             const EpetraCrsMatrixT<GO,NO>& xEpetraMat = dynamic_cast<const EpetraCrsMatrixT<GO,NO>&>(*crsOp.getCrsMatrix());
             ECrsMatrixPtr epetraMat = xEpetraMat.getEpetra_CrsMatrixNonConst();
             TEUCHOS_TEST_FOR_EXCEPT(epetraMat.is_null());
@@ -88,7 +97,11 @@ namespace FROSch {
         } else if (!ParameterList_->get("SolverType","Amesos").compare("Amesos2")) {
             if (K_->getRowMap()->lib()==UseEpetra) {
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const CrsMatrixWrap<SC,LO,GO,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,LO,GO,NO>&>(*K_);
+#else
+                const CrsMatrixWrap<SC,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,NO>&>(*K_);
+#endif
                 const EpetraCrsMatrixT<GO,NO>& xEpetraMat = dynamic_cast<const EpetraCrsMatrixT<GO,NO>&>(*crsOp.getCrsMatrix());
                 ECrsMatrixPtr epetraMat = xEpetraMat.getEpetra_CrsMatrixNonConst();
                 TEUCHOS_TEST_FOR_EXCEPT(epetraMat.is_null());
@@ -104,8 +117,13 @@ namespace FROSch {
                 ThrowErrorMissingPackage("FROSch::SubdomainSolver", "Epetra");
 #endif
             } else if (K_->getRowMap()->lib()==UseTpetra) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const CrsMatrixWrap<SC,LO,GO,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,LO,GO,NO>&>(*K_);
                 const TpetraCrsMatrix<SC,LO,GO,NO>& xTpetraMat = dynamic_cast<const TpetraCrsMatrix<SC,LO,GO,NO>&>(*crsOp.getCrsMatrix());
+#else
+                const CrsMatrixWrap<SC,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,NO>&>(*K_);
+                const TpetraCrsMatrix<SC,NO>& xTpetraMat = dynamic_cast<const TpetraCrsMatrix<SC,NO>&>(*crsOp.getCrsMatrix());
+#endif
                 ConstTCrsMatrixPtr tpetraMat = xTpetraMat.getTpetra_CrsMatrix();
                 TEUCHOS_TEST_FOR_EXCEPT(tpetraMat.is_null());
 
@@ -121,7 +139,11 @@ namespace FROSch {
             }
         } else if (!ParameterList_->get("SolverType","Amesos").compare("MueLu")) {
 #ifdef HAVE_SHYLU_DDFROSCH_MUELU
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             MueLuFactory_ = rcp(new MueLu::ParameterListInterpreter<SC,LO,GO,NO>(parameterList->sublist("MueLu").sublist("MueLu Parameter")));
+#else
+            MueLuFactory_ = rcp(new MueLu::ParameterListInterpreter<SC,NO>(parameterList->sublist("MueLu").sublist("MueLu Parameter")));
+#endif
             RCP<XMultiVector> nullspace;
 
             if (!ParameterList_->sublist("MueLu").get("NullSpace","Laplace").compare("Laplace")) {
@@ -155,8 +177,13 @@ namespace FROSch {
             FROSCH_ASSERT(K_->getRowMap()->lib()==UseTpetra,"FROSch::SubdomainSolver : ERROR: Ifpack2 is not compatible with Epetra.")
 
             // Convert matrix to Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const CrsMatrixWrap<SC,LO,GO,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,LO,GO,NO>&>(*K_);
             const TpetraCrsMatrix<SC,LO,GO,NO>& xTpetraMat = dynamic_cast<const TpetraCrsMatrix<SC,LO,GO,NO>&>(*crsOp.getCrsMatrix());
+#else
+            const CrsMatrixWrap<SC,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,NO>&>(*K_);
+            const TpetraCrsMatrix<SC,NO>& xTpetraMat = dynamic_cast<const TpetraCrsMatrix<SC,NO>&>(*crsOp.getCrsMatrix());
+#endif
             ConstTCrsMatrixPtr tpetraMat = xTpetraMat.getTpetra_CrsMatrix();
             TEUCHOS_TEST_FOR_EXCEPT(tpetraMat.is_null());
 
@@ -174,7 +201,11 @@ namespace FROSch {
             RCP<XMultiVector> xSolution;// = FROSch::ConvertToXpetra<SC, LO, GO, NO>(UseTpetra,*this->solution_,TeuchosComm);
             RCP<XMultiVector> xRightHandSide;// = FROSch::ConvertToXpetra<SC, LO, GO, NO>(UseTpetra,*residualVec_,TeuchosComm);//hier residualVec. Bei linProb rhs_
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             RCP<const Belos::OperatorT<XMultiVector> > OpK = rcp_dynamic_cast<const Belos::XpetraOp<SC,LO,GO,NO> >(K_);
+#else
+            RCP<const Belos::OperatorT<XMultiVector> > OpK = rcp_dynamic_cast<const Belos::XpetraOp<SC,NO> >(K_);
+#endif
             TEUCHOS_TEST_FOR_EXCEPT(OpK.is_null());
 
             BelosLinearProblem_.reset(new Belos::LinearProblem<SC,XMultiVector,Belos::OperatorT<XMultiVector> >(OpK,xSolution,xRightHandSide));
@@ -193,8 +224,13 @@ namespace FROSch {
         }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     SubdomainSolver<SC,LO,GO,NO>::~SubdomainSolver()
+#else
+    template<class SC,class NO>
+    SubdomainSolver<SC,NO>::~SubdomainSolver()
+#endif
     {
         FROSCH_TIMER_START(subdomainSolverTime,"SubdomainSolver::~SubdomainSolver");
 #ifdef HAVE_SHYLU_DDFROSCH_AMESOS
@@ -224,8 +260,13 @@ namespace FROSch {
 #endif
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int SubdomainSolver<SC,LO,GO,NO>::initialize()
+#else
+    template<class SC,class NO>
+    int SubdomainSolver<SC,NO>::initialize()
+#endif
     {
         FROSCH_TIMER_START(initializeTime,"SubdomainSolver::initialize");
 #ifdef HAVE_SHYLU_DDFROSCH_AMESOS
@@ -269,8 +310,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int SubdomainSolver<SC,LO,GO,NO>::compute()
+#else
+    template<class SC,class NO>
+    int SubdomainSolver<SC,NO>::compute()
+#endif
     {
         FROSCH_TIMER_START(computeTime,"SubdomainSolver::compute");
         FROSCH_ASSERT(this->IsInitialized_,"ERROR: SubdomainSolver has to be initialized before calling compute()");
@@ -306,12 +352,20 @@ namespace FROSch {
             ParameterListPtr solverParameterList = sublist(ParameterList_,"Belos");
             if (solverParameterList->get("OneLevelPreconditioner",false)) {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 RCP<FROSch::OneLevelPreconditioner<SC,LO,GO,NO> > prec = rcp(new OneLevelPreconditioner<SC,LO,GO,NO> (K_, solverParameterList));
+#else
+                RCP<FROSch::OneLevelPreconditioner<SC,NO> > prec = rcp(new OneLevelPreconditioner<SC,NO> (K_, solverParameterList));
+#endif
 
                 bool buildRepeatedMap = solverParameterList->get("Build Repeated Map",false);
                 prec->initialize(solverParameterList->get("Overlap",1),buildRepeatedMap);
                 prec->compute();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 RCP<Belos::OperatorT<MultiVector<SC,LO,GO,NO> > > OpP = rcp(new Belos::XpetraOp<SC, LO, GO, NO>(prec));
+#else
+                RCP<Belos::OperatorT<MultiVector<SC,NO> > > OpP = rcp(new Belos::XpetraOp<SC, NO>(prec));
+#endif
 
                 if (!solverParameterList->get("PreconditionerPosition","left").compare("left")) {
                     BelosLinearProblem_->setLeftPrec(OpP);
@@ -334,8 +388,13 @@ namespace FROSch {
     }
 
     // Y = alpha * A^mode * X + beta * Y
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     void SubdomainSolver<SC,LO,GO,NO>::apply(const XMultiVector &x,
+#else
+    template<class SC,class NO>
+    void SubdomainSolver<SC,NO>::apply(const XMultiVector &x,
+#endif
                                              XMultiVector &y,
                                              ETransp mode,
                                              SC alpha,
@@ -380,12 +439,20 @@ namespace FROSch {
                 Amesos2SolverEpetra_->solve(); // Was ist, wenn man mit der transponierten Matrix lösen will
 #endif
             } else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const TpetraMultiVector<SC,LO,GO,NO> * xTpetraMultiVectorX = dynamic_cast<const TpetraMultiVector<SC,LO,GO,NO> *>(&x);
+#else
+                const TpetraMultiVector<SC,NO> * xTpetraMultiVectorX = dynamic_cast<const TpetraMultiVector<SC,NO> *>(&x);
+#endif
                 TMultiVectorPtr tpetraMultiVectorX = xTpetraMultiVectorX->getTpetra_MultiVector();
 
                 if (YTmp_.is_null()) YTmp_ = XMultiVectorFactory::Build(y.getMap(),x.getNumVectors());
                 *YTmp_ = y;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const TpetraMultiVector<SC,LO,GO,NO> * xTpetraMultiVectorY = dynamic_cast<const TpetraMultiVector<SC,LO,GO,NO> *>(YTmp_.get());
+#else
+                const TpetraMultiVector<SC,NO> * xTpetraMultiVectorY = dynamic_cast<const TpetraMultiVector<SC,NO> *>(YTmp_.get());
+#endif
                 TMultiVectorPtr tpetraMultiVectorY = xTpetraMultiVectorY->getTpetra_MultiVector();
 
                 Amesos2SolverTpetra_->setX(tpetraMultiVectorY);
@@ -409,12 +476,20 @@ namespace FROSch {
 #endif
 #ifdef HAVE_SHYLU_DDFROSCH_IFPACK2
         } else if (!ParameterList_->get("SolverType","Amesos").compare("Ifpack2")) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const TpetraMultiVector<SC,LO,GO,NO> * xTpetraMultiVectorX = dynamic_cast<const TpetraMultiVector<SC,LO,GO,NO> *>(&x);
+#else
+            const TpetraMultiVector<SC,NO> * xTpetraMultiVectorX = dynamic_cast<const TpetraMultiVector<SC,NO> *>(&x);
+#endif
             TMultiVectorPtr tpetraMultiVectorX = xTpetraMultiVectorX->getTpetra_MultiVector();
 
             if (YTmp_.is_null()) YTmp_ = XMultiVectorFactory::Build(y.getMap(),x.getNumVectors());
             *YTmp_ = y;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const TpetraMultiVector<SC,LO,GO,NO> * xTpetraMultiVectorY = dynamic_cast<const TpetraMultiVector<SC,LO,GO,NO> *>(YTmp_.get());
+#else
+            const TpetraMultiVector<SC,NO> * xTpetraMultiVectorY = dynamic_cast<const TpetraMultiVector<SC,NO> *>(YTmp_.get());
+#endif
             TMultiVectorPtr tpetraMultiVectorY = xTpetraMultiVectorY->getTpetra_MultiVector();
 
             Ifpack2Preconditioner_->apply(*tpetraMultiVectorX,*tpetraMultiVectorY,mode,alpha,beta);
@@ -434,45 +509,80 @@ namespace FROSch {
         y.update(alpha,*YTmp_,beta);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename SubdomainSolver<SC,LO,GO,NO>::ConstXMapPtr SubdomainSolver<SC,LO,GO,NO>::getDomainMap() const
+#else
+    template<class SC,class NO>
+    typename SubdomainSolver<SC,NO>::ConstXMapPtr SubdomainSolver<SC,NO>::getDomainMap() const
+#endif
     {
         return K_->getDomainMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename SubdomainSolver<SC,LO,GO,NO>::ConstXMapPtr SubdomainSolver<SC,LO,GO,NO>::getRangeMap() const
+#else
+    template<class SC,class NO>
+    typename SubdomainSolver<SC,NO>::ConstXMapPtr SubdomainSolver<SC,NO>::getRangeMap() const
+#endif
     {
         return K_->getRangeMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     void SubdomainSolver<SC,LO,GO,NO>::describe(FancyOStream &out,
+#else
+    template<class SC,class NO>
+    void SubdomainSolver<SC,NO>::describe(FancyOStream &out,
+#endif
                                                 const EVerbosityLevel verbLevel) const
     {
         FROSCH_ASSERT(false,"describe() has to be implemented properly...");
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     std::string SubdomainSolver<SC,LO,GO,NO>::description() const
+#else
+    template<class SC,class NO>
+    std::string SubdomainSolver<SC,NO>::description() const
+#endif
     {
         return "Subdomain Solver";
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     bool SubdomainSolver<SC,LO,GO,NO>::isInitialized() const
+#else
+    template<class SC,class NO>
+    bool SubdomainSolver<SC,NO>::isInitialized() const
+#endif
     {
         return IsInitialized_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     bool SubdomainSolver<SC,LO,GO,NO>::isComputed() const
+#else
+    template<class SC,class NO>
+    bool SubdomainSolver<SC,NO>::isComputed() const
+#endif
     {
         return IsComputed_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int SubdomainSolver<SC,LO,GO,NO>::resetMatrix(ConstXMatrixPtr k,
+#else
+    template<class SC,class NO>
+    int SubdomainSolver<SC,NO>::resetMatrix(ConstXMatrixPtr k,
+#endif
                                                    bool reuseInitialize)
     {
         FROSCH_TIMER_START(resetMatrixTime,"SubdomainSolver::resetMatrix");
@@ -483,7 +593,11 @@ namespace FROSch {
             FROSCH_ASSERT(K_->getRowMap()->lib()==UseEpetra,"UnderlyingLib!=UseEpetra");
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
             // AH 10/18/2017: Dies könnten wir nach initialize() verschieben, oder?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const CrsMatrixWrap<SC,LO,GO,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,LO,GO,NO>&>(*K_);
+#else
+            const CrsMatrixWrap<SC,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,NO>&>(*K_);
+#endif
             const EpetraCrsMatrixT<GO,NO>& xEpetraMat = dynamic_cast<const EpetraCrsMatrixT<GO,NO>&>(*crsOp.getCrsMatrix());
             ECrsMatrixPtr epetraMat = xEpetraMat.getEpetra_CrsMatrixNonConst();
             TEUCHOS_TEST_FOR_EXCEPT(epetraMat.is_null());
@@ -496,7 +610,11 @@ namespace FROSch {
         } else if (!ParameterList_->get("SolverType","Amesos").compare("Amesos2")) {
             if (K_->getRowMap()->lib()==UseEpetra) {
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const CrsMatrixWrap<SC,LO,GO,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,LO,GO,NO>&>(*K_);
+#else
+                const CrsMatrixWrap<SC,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,NO>&>(*K_);
+#endif
                 const EpetraCrsMatrixT<GO,NO>& xEpetraMat = dynamic_cast<const EpetraCrsMatrixT<GO,NO>&>(*crsOp.getCrsMatrix());
                 ECrsMatrixPtr epetraMat = xEpetraMat.getEpetra_CrsMatrixNonConst();
                 TEUCHOS_TEST_FOR_EXCEPT(epetraMat.is_null());
@@ -511,8 +629,13 @@ namespace FROSch {
                 ThrowErrorMissingPackage("FROSch::SubdomainSolver", "Epetra");
 #endif
             } else if (K_->getRowMap()->lib()==UseTpetra) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const CrsMatrixWrap<SC,LO,GO,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,LO,GO,NO>&>(*K_);
                 const TpetraCrsMatrix<SC,LO,GO,NO>& xTpetraMat = dynamic_cast<const TpetraCrsMatrix<SC,LO,GO,NO>&>(*crsOp.getCrsMatrix());
+#else
+                const CrsMatrixWrap<SC,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,NO>&>(*K_);
+                const TpetraCrsMatrix<SC,NO>& xTpetraMat = dynamic_cast<const TpetraCrsMatrix<SC,NO>&>(*crsOp.getCrsMatrix());
+#endif
                 ConstTCrsMatrixPtr tpetraMat = xTpetraMat.getTpetra_CrsMatrix();
                 TEUCHOS_TEST_FOR_EXCEPT(tpetraMat.is_null());
                 
@@ -536,8 +659,13 @@ namespace FROSch {
             FROSCH_ASSERT(K_->getRowMap()->lib()==UseTpetra,"FROSch::SubdomainSolver : ERROR: Ifpack2 is not compatible with Epetra.")
             
             // Convert matrix to Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const CrsMatrixWrap<SC,LO,GO,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,LO,GO,NO>&>(*K_);
             const TpetraCrsMatrix<SC,LO,GO,NO>& xTpetraMat = dynamic_cast<const TpetraCrsMatrix<SC,LO,GO,NO>&>(*crsOp.getCrsMatrix());
+#else
+            const CrsMatrixWrap<SC,NO>& crsOp = dynamic_cast<const CrsMatrixWrap<SC,NO>&>(*K_);
+            const TpetraCrsMatrix<SC,NO>& xTpetraMat = dynamic_cast<const TpetraCrsMatrix<SC,NO>&>(*crsOp.getCrsMatrix());
+#endif
             ConstTCrsMatrixPtr tpetraMat = xTpetraMat.getTpetra_CrsMatrix();
             TEUCHOS_TEST_FOR_EXCEPT(tpetraMat.is_null());
             
@@ -557,8 +685,13 @@ namespace FROSch {
         return 0;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     void SubdomainSolver<SC,LO,GO,NO>::residual(const XMultiVector & X,
+#else
+    template<class SC,class NO>
+    void SubdomainSolver<SC,NO>::residual(const XMultiVector & X,
+#endif
                                                 const XMultiVector & B,
                                                 XMultiVector& R) const {
     SC one = Teuchos::ScalarTraits<SC>::one(), negone = -one;

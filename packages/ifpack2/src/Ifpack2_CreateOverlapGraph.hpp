@@ -75,12 +75,17 @@ createOverlapGraph (const Teuchos::RCP<const GraphType>& inputGraph,
 {
   using Teuchos::RCP;
   using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<typename GraphType::local_ordinal_type,
                       typename GraphType::global_ordinal_type,
                       typename GraphType::node_type> map_type;
   typedef Tpetra::Import<typename GraphType::local_ordinal_type,
                          typename GraphType::global_ordinal_type,
                          typename GraphType::node_type> import_type;
+#else
+  typedef Tpetra::Map<typename GraphType::node_type> map_type;
+  typedef Tpetra::Import<typename GraphType::node_type> import_type;
+#endif
   TEUCHOS_TEST_FOR_EXCEPTION(
     overlapLevel < 0, std::invalid_argument,
     "Ifpack2::createOverlapGraph: overlapLevel must be >= 0, "
@@ -143,9 +148,13 @@ createOverlapMatrix (const Teuchos::RCP<const MatrixType>& inputMatrix,
   using Teuchos::RCP;
   using Teuchos::rcp;
   typedef typename MatrixType::map_type map_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Import<typename MatrixType::local_ordinal_type,
     typename MatrixType::global_ordinal_type,
     typename MatrixType::node_type> import_type;
+#else
+  typedef Tpetra::Import<typename MatrixType::node_type> import_type;
+#endif
 
   TEUCHOS_TEST_FOR_EXCEPTION(
     overlapLevel < 0, std::invalid_argument,

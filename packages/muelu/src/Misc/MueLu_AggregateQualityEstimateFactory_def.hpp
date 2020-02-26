@@ -62,15 +62,30 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AggregateQualityEstimateFactory()
+#else
+  template <class Scalar, class Node>
+  AggregateQualityEstimateFactory<Scalar, Node>::AggregateQualityEstimateFactory()
+#endif
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~AggregateQualityEstimateFactory() {}
+#else
+  template <class Scalar, class Node>
+  AggregateQualityEstimateFactory<Scalar, Node>::~AggregateQualityEstimateFactory() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void AggregateQualityEstimateFactory<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
 
     Input(currentLevel, "A");
     Input(currentLevel, "Aggregates");
@@ -78,8 +93,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> AggregateQualityEstimateFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -97,8 +117,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void AggregateQualityEstimateFactory<Scalar, Node>::Build(Level & currentLevel) const {
+#endif
 
     FactoryMonitor m(*this, "Build", currentLevel);
 
@@ -106,7 +131,11 @@ namespace MueLu {
     RCP<Aggregates> aggregates = Get<RCP<Aggregates>>(currentLevel, "Aggregates");
 
     RCP<const Map> map = Get< RCP<const Map> >(currentLevel, "CoarseMap");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<magnitudeType,LO,GO,NO>> aggregate_qualities = Xpetra::MultiVectorFactory<magnitudeType,LO,GO,NO>::Build(map, 1);
+#else
+    RCP<Xpetra::MultiVector<magnitudeType,NO>> aggregate_qualities = Xpetra::MultiVectorFactory<magnitudeType,NO>::Build(map, 1);
+#endif
 
     assert(!aggregates->AggregatesCrossProcessors());
     ComputeAggregateQualities(A, aggregates, aggregate_qualities);
@@ -117,8 +146,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ConvertAggregatesData(RCP<const Aggregates> aggs, ArrayRCP<LO>& aggSortedVertices, ArrayRCP<LO>& aggsToIndices, ArrayRCP<LO>& aggSizes) {
+#else
+  template <class Scalar, class Node>
+  void AggregateQualityEstimateFactory<Scalar, Node>::ConvertAggregatesData(RCP<const Aggregates> aggs, ArrayRCP<LO>& aggSortedVertices, ArrayRCP<LO>& aggsToIndices, ArrayRCP<LO>& aggSizes) {
+#endif
 
     // Reorder local aggregate information into a format amenable to computing
     // per-aggregate quantities. Specifically, we compute a format
@@ -160,8 +194,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ComputeAggregateQualities(RCP<const Matrix> A, RCP<const Aggregates> aggs, RCP<Xpetra::MultiVector<magnitudeType,LO,GO,Node>> agg_qualities) const {
+#else
+  template <class Scalar, class Node>
+  void AggregateQualityEstimateFactory<Scalar, Node>::ComputeAggregateQualities(RCP<const Matrix> A, RCP<const Aggregates> aggs, RCP<Xpetra::MultiVector<magnitudeType,Node>> agg_qualities) const {
+#endif
 
     const SC SCALAR_ONE = Teuchos::ScalarTraits<SC>::one();
     const SC SCALAR_TWO = SCALAR_ONE + SCALAR_ONE;
@@ -345,8 +384,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::OutputAggQualities(const Level& level, RCP<const Xpetra::MultiVector<magnitudeType,LO,GO,Node>> agg_qualities) const {
+#else
+  template <class Scalar, class Node>
+  void AggregateQualityEstimateFactory<Scalar, Node>::OutputAggQualities(const Level& level, RCP<const Xpetra::MultiVector<magnitudeType,Node>> agg_qualities) const {
+#endif
 
     ParameterList pL = GetParameterList();
 
@@ -373,7 +417,11 @@ namespace MueLu {
 
     if (pL.get<bool>("aggregate qualities: file output")) {
       std::string filename = pL.get<std::string>("aggregate qualities: file base")+"."+std::to_string(level.GetLevelID());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<magnitudeType,LO,GO,Node>::Write(filename, *agg_qualities);
+#else
+      Xpetra::IO<magnitudeType,Node>::Write(filename, *agg_qualities);
+#endif
     }
 
   }

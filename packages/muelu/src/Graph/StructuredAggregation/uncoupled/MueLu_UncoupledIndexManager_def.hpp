@@ -52,8 +52,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  UncoupledIndexManager<Node>::
+#endif
   UncoupledIndexManager(const RCP<const Teuchos::Comm<int> > comm, const bool coupled,
                                  const int NumDimensions, const int interpolationOrder,
                                  const int MyRank, const int NumRanks,
@@ -81,16 +86,26 @@ namespace MueLu {
     this->gNumCoarseNodes   = Teuchos::OrdinalTraits<GO>::invalid();
   } // Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   computeGlobalCoarseParameters() {
     GO input[1] = {as<GO>(this->lNumCoarseNodes)}, output[1] = {0};
     Teuchos::reduceAll(*(this->comm_), Teuchos::REDUCE_SUM, 1, input, output);
     this->gNumCoarseNodes = output[0];
   } // computeGlobalCoarseParameters
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getGhostedNodesData(const RCP<const Map>/* fineMap */,
                       Array<LO>&  ghostedNodeCoarseLIDs,
                       Array<int>& ghostedNodeCoarsePIDs,
@@ -106,8 +121,13 @@ namespace MueLu {
     }
   } // getGhostedNodesData
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getCoarseNodesData(const RCP<const Map> fineCoordinatesMap,
                      Array<GO>& coarseNodeCoarseGIDs,
                      Array<GO>& coarseNodeFineGIDs) const {
@@ -143,20 +163,35 @@ namespace MueLu {
     }
   } // getCoarseNodesData
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   std::vector<std::vector<GlobalOrdinal> > UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  std::vector<std::vector<GlobalOrdinal> > UncoupledIndexManager<Node>::
+#endif
   getCoarseMeshData() const {
     std::vector<std::vector<GO> > coarseMeshData;
     return coarseMeshData;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getFineNodeGlobalTuple(const GO /* myGID */, GO& /* i */, GO& /* j */, GO& /* k */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getFineNodeLocalTuple(const LO myLID, LO& i, LO& j, LO& k) const {
     LO tmp;
     k   = myLID / this->lNumFineNodes10;
@@ -165,8 +200,13 @@ namespace MueLu {
     i   = tmp   % this->lFineNodesPerDir[0];
   } // getFineNodeLocalTuple
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getFineNodeGhostedTuple(const LO myLID, LO& i, LO& j, LO& k) const {
     LO tmp;
     k   = myLID / this->lNumFineNodes10;
@@ -179,23 +219,43 @@ namespace MueLu {
     i += this->offsets[0];
   } // getFineNodeGhostedTuple
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getFineNodeGID(const GO /* i */, const GO /* j */, const GO /* k */, GO& /* myGID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getFineNodeLID(const LO /* i */, const LO /* j */, const LO /* k */, LO& /* myLID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getCoarseNodeGlobalTuple(const GO /* myGID */, GO& /* i */, GO& /* j */, GO& /* k */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getCoarseNodeLocalTuple(const LO myLID, LO& i, LO& j, LO& k) const {
     LO tmp;
     k   = myLID / this->lNumCoarseNodes10;
@@ -204,34 +264,64 @@ namespace MueLu {
     i   = tmp   % this->lCoarseNodesPerDir[0];
   } // getCoarseNodeLocalTuple
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getCoarseNodeGID(const GO /* i */, const GO /* j */, const GO /* k */, GO& /* myGID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getCoarseNodeLID(const LO /* i */, const LO /* j */, const LO /* k */, LO& /* myLID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getCoarseNodeGhostedLID(const LO i, const LO j, const LO k, LO& myLID) const {
     myLID = k*this->numGhostedNodes10 + j*this->ghostedNodesPerDir[0] + i;
   } // getCoarseNodeGhostedLID
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getCoarseNodeFineLID(const LO /* i */, const LO /* j */, const LO /* k */, LO& /* myLID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getGhostedNodeFineLID(const LO /* i */, const LO /* j */, const LO /* k */, LO& /* myLID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void UncoupledIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void UncoupledIndexManager<Node>::
+#endif
   getGhostedNodeCoarseLID(const LO /* i */, const LO /* j */, const LO /* k */, LO& /* myLID */) const {
   }
 

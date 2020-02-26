@@ -150,8 +150,13 @@ int main (int argc, char *argv[]) {
   bddc::getNodeSend(numNodeUse, nodeGlobalIDsUse.data(), Comm, nodeSend);
   MPI_Barrier(Comm);
   double startTimeBDDCPre = test.getTime();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP< bddc::PreconditionerBDDC<SX,SM,LO,GO> > Preconditioner =
     rcp( new bddc::PreconditionerBDDC<SX,SM,LO,GO>
+#else
+  RCP< bddc::PreconditionerBDDC<SX,SM> > Preconditioner =
+    rcp( new bddc::PreconditionerBDDC<SX,SM>
+#endif
 	 (numNodeUse, nodeGlobalIDsUse.data(), xUse.data(), yUse.data(), 
 	  zUse.data(), rowBegin, columns, values, parametersBDDC, Comm, level, 
 	  &nodeSend) );
@@ -167,8 +172,13 @@ int main (int argc, char *argv[]) {
   MPI_Barrier(Comm);
   // initialize Krylov solver
   startTimeKrylovInit = test.getTime();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP< bddc::KrylovSolver<SX,SM,LO,GO> > Solver =
     rcp ( new bddc::KrylovSolver<SX,SM,LO,GO>(Preconditioner, parametersBDDC) );
+#else
+  RCP< bddc::KrylovSolver<SX,SM> > Solver =
+    rcp ( new bddc::KrylovSolver<SX,SM>(Preconditioner, parametersBDDC) );
+#endif
   std::vector<SX> sol(numMyRows), Ax(numMyRows);
   MPI_Barrier(Comm);
   // solve equations

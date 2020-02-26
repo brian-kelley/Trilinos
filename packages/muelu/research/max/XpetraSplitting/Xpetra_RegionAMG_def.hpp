@@ -56,10 +56,19 @@
 
 namespace Xpetra{
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RegionAMG(
+#else
+template<class Scalar, class Node>
+RegionAMG<Scalar, Node>::RegionAMG(
+#endif
     Teuchos::RCP<tpetra_splitting> matrixSplitting,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node> > regionHandler,
+#else
+    Teuchos::RCP<Xpetra::RegionHandler<Scalar, Node> > regionHandler,
+#endif
     RCP<const Teuchos::Comm<int> > comm, Teuchos::ParameterList muelu,
     GlobalOrdinal num_levels, GlobalOrdinal coarsening_factor) :
     num_levels_(num_levels), coarsening_factor_(coarsening_factor), comm_(comm), muelu_(
@@ -79,8 +88,13 @@ RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RegionAMG(
   SetUpHierarchy();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetUpHierarchy()
+#else
+template<class Scalar, class Node>
+void RegionAMG<Scalar, Node>::SetUpHierarchy()
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( num_levels_<=0, Exceptions::RuntimeError, "Number of levels must be a positive integer number \n" );
   TEUCHOS_TEST_FOR_EXCEPTION( num_regions_<=0 , Exceptions::RuntimeError, "No existing regions \n");
@@ -137,7 +151,11 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetUpHierarchy()
     }
 
     //We create as many MueLu::Hierarchy objects as the nubmer of region that partition the composite domain
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     regionHierarchies_[region_idx] = MueLu::CreateXpetraPreconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node>( matrixSplitting_->getRegionMatrix( region_idx), *list, coords );
+#else
+    regionHierarchies_[region_idx] = MueLu::CreateXpetraPreconditioner<Scalar,Node>( matrixSplitting_->getRegionMatrix( region_idx), *list, coords );
+#endif
 
     // // The following commented line here below should replace the line right above if the MueLu parameter list is passed through an .xml file
     //regionHierarchies_[region_idx] = MueLu::CreateXpetraPreconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node>( matrixSplitting_->getRegionMatrix( region_idx), muelu_, coords );
@@ -153,8 +171,13 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetUpHierarchy()
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DefineLevels ( )
+#else
+template<class Scalar, class Node>
+void RegionAMG<Scalar, Node>::DefineLevels ( )
+#endif
 {
   levels_.clear();
   Array<RCP<matrix_type> > P;
@@ -219,8 +242,13 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DefineLevels ( )
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::regionToAllCoarsen (const level& fine, level& coarse)
+#else
+template<class Scalar, class Node>
+void RegionAMG<Scalar, Node>::regionToAllCoarsen (const level& fine, level& coarse)
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( fine.GetNumRegions()!=coarse.GetNumRegions(), Exceptions::RuntimeError, "Level "<<fine.GetLevelID()<<"has "<<fine.GetNumRegions()<<" regions instantiated whereas level "<<coarse.GetLevelID()<<"has "<<coarse.GetNumRegions()<<" regions instantiated \n" );
 
@@ -257,8 +285,13 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::regionToAllCoarsen (c
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::computeRegionX (const multivector_type& X, Array<RCP<multivector_type> > regionX)const
+#else
+template<class Scalar, class Node>
+void RegionAMG<Scalar, Node>::computeRegionX (const multivector_type& X, Array<RCP<multivector_type> > regionX)const
+#endif
 {
 
   //Array to store extended region Maps (needed to copy composite entries of the input vector into region partitioning of it)
@@ -295,9 +328,15 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::computeRegionX (const
     {
       aux = X.getMap()->getNodeElementList();
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<map_type> overlapping_composite_map = MapFactory< LocalOrdinal, GlobalOrdinal, Node >::Build( Xpetra::UseTpetra, X.getGlobalLength(), aux, 0, comm_ );
     composite_overlapping_X[region_idx] = MultiVectorFactory< Scalar, LocalOrdinal, GlobalOrdinal, Node >::Build(overlapping_composite_map, X.getNumVectors());
     RCP<Import<LocalOrdinal, GlobalOrdinal, Node> > Import1 = ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build( X.getMap(), overlapping_composite_map );
+#else
+    RCP<map_type> overlapping_composite_map = MapFactory<Node >::Build( Xpetra::UseTpetra, X.getGlobalLength(), aux, 0, comm_ );
+    composite_overlapping_X[region_idx] = MultiVectorFactory< Scalar, Node >::Build(overlapping_composite_map, X.getNumVectors());
+    RCP<Import<Node> > Import1 = ImportFactory<Node>::Build( X.getMap(), overlapping_composite_map );
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION( X.getMap()->getMinAllGlobalIndex()!=composite_overlapping_X[region_idx]->getMap()->getMinAllGlobalIndex(), Exceptions::RuntimeError, "Minimal index in old an new maps do not coincide \n" );
     TEUCHOS_TEST_FOR_EXCEPTION( X.getMap()->getMaxAllGlobalIndex()!=composite_overlapping_X[region_idx]->getMap()->getMaxAllGlobalIndex(), Exceptions::RuntimeError, "Maximal index in old an new maps do not coincide \n" );
     composite_overlapping_X[region_idx]->doImport( X, *Import1, Xpetra::INSERT );
@@ -325,8 +364,13 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::computeRegionX (const
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::computeCompositeY (Array<RCP<const multivector_type> > regionY, multivector_type& Y)const
+#else
+template<class Scalar, class Node>
+void RegionAMG<Scalar, Node>::computeCompositeY (Array<RCP<const multivector_type> > regionY, multivector_type& Y)const
+#endif
 {
 
   //Array to store extended region Maps (needed to copy composite entries of the input vector into region partitioning of it)
@@ -351,8 +395,13 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::computeCompositeY (Ar
 
   //We split at first the input and output multivectors into region ones
   RCP<multivector_type> composite_overlapping_Y;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<map_type> overlapping_composite_map = MapFactory< LocalOrdinal, GlobalOrdinal, Node >::Build( Xpetra::UseTpetra, Y.getGlobalLength(), overlapping_composite, 0, comm_ );
   composite_overlapping_Y = MultiVectorFactory< Scalar, LocalOrdinal, GlobalOrdinal, Node >::Build(overlapping_composite_map, Y.getNumVectors());
+#else
+  RCP<map_type> overlapping_composite_map = MapFactory<Node >::Build( Xpetra::UseTpetra, Y.getGlobalLength(), overlapping_composite, 0, comm_ );
+  composite_overlapping_Y = MultiVectorFactory< Scalar, Node >::Build(overlapping_composite_map, Y.getNumVectors());
+#endif
 
   //Safety checks to guarantee the legitimacy of non-unique source composite map and unique target composite map
   //The unique target composite map must be a subset of the non-unique source composite map
@@ -382,7 +431,11 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::computeCompositeY (Ar
   }
 
   //Import object needed to transfer output composite multivector from non-unique map to unique map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Import<LocalOrdinal, GlobalOrdinal, Node> > Import1 = ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build( composite_overlapping_Y->getMap(), Y.getMap() );
+#else
+  RCP<Import<Node> > Import1 = ImportFactory<Node>::Build( composite_overlapping_Y->getMap(), Y.getMap() );
+#endif
 
   //IMPORTANT: ALWAYS USE IMPORT-EXPORT OBJECTS IN FORWARD MODE (i.e. doImport methods must use Import objects and doExport methods must use Export objects)
   //Reverse mode (i.e. crossed use of doImport/doExport methods with Export/Import objects makes the code possibly crash due to undefined behavior)
@@ -392,8 +445,13 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::computeCompositeY (Ar
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::rescaleInterfaceEntries (Array<RCP<multivector_type> > regionY)const
+#else
+template<class Scalar, class Node>
+void RegionAMG<Scalar, Node>::rescaleInterfaceEntries (Array<RCP<multivector_type> > regionY)const
+#endif
 {
 
   Array<Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > > regionToAll = levels_[0]->GetRegionToAll();
@@ -428,8 +486,13 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::rescaleInterfaceEntri
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::apply (const multivector_type& X, multivector_type& Y, Teuchos::ETransp mode, Scalar alpha, Scalar beta)const
+#else
+template<class Scalar, class Node>
+void RegionAMG<Scalar, Node>::apply (const multivector_type& X, multivector_type& Y, Teuchos::ETransp mode, Scalar alpha, Scalar beta)const
+#endif
 {
 
   //N.B.: currently Scalar quantities alpha and beta are passed as input parameters to have the apply method signature match with the apply signature of an Xpetra::Operator
@@ -451,8 +514,13 @@ void RegionAMG<Scalar, LocalOrdinal, GlobalOrdinal, Node>::apply (const multivec
   //Associate Maps to region input (regionX) and output vectors (regionY)
   for( int region_idx = 0; region_idx<num_regions_; ++region_idx )
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     regionX[region_idx] =  MultiVectorFactory< Scalar, LocalOrdinal, GlobalOrdinal, Node >::Build(levels_[0]->GetRegionMatrix(region_idx)->getDomainMap(), X.getNumVectors());
     regionY[region_idx] =  MultiVectorFactory< Scalar, LocalOrdinal, GlobalOrdinal, Node >::Build(levels_[0]->GetRegionMatrix(region_idx)->getRangeMap(), Y.getNumVectors());
+#else
+    regionX[region_idx] =  MultiVectorFactory< Scalar, Node >::Build(levels_[0]->GetRegionMatrix(region_idx)->getDomainMap(), X.getNumVectors());
+    regionY[region_idx] =  MultiVectorFactory< Scalar, Node >::Build(levels_[0]->GetRegionMatrix(region_idx)->getRangeMap(), Y.getNumVectors());
+#endif
   }
 
   //Split the composite input multivector	X into region multivector regionX

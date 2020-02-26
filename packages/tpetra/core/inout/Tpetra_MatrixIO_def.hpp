@@ -52,15 +52,28 @@ namespace Tpetra {
 namespace Utils {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 void
 readHBMatrix (const std::string &filename,
               const Teuchos::RCP<const Teuchos::Comm<int> > &comm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               Teuchos::RCP< Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &A,
               Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > rowMap,
+#else
+              Teuchos::RCP< Tpetra::CrsMatrix<Scalar,Node> > &A,
+              Teuchos::RCP< const Tpetra::Map<Node> > rowMap,
+#endif
               const Teuchos::RCP<Teuchos::ParameterList> &params)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+#endif
 
   const int myRank = comm->getRank();
   int numRows,numCols,numNZ;
@@ -201,9 +214,17 @@ readHBMatrix (const std::string &filename,
     domMap = rowMap;
   }
   else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     domMap = createUniformContigMapWithNode<LocalOrdinal,GlobalOrdinal,Node>(numCols,comm);
+#else
+    domMap = createUniformContigMapWithNode<Node>(numCols,comm);
+#endif
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   A = rcp(new Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rowMap, myNNZ (), Tpetra::StaticProfile));
+#else
+  A = rcp(new Tpetra::CrsMatrix<Scalar,Node>(rowMap, myNNZ (), Tpetra::StaticProfile));
+#endif
   // free this locally, A will keep it allocated as long as it is needed by A (up until allocation of nonzeros)
   {
     // Classic idiom for freeing an std::vector; resize doesn't
@@ -239,12 +260,25 @@ readHBMatrix (const std::string &filename,
 //
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_MATRIXIO_INSTANT(SCALAR,LO,GO,NODE) \
+#else
+#define TPETRA_MATRIXIO_INSTANT(SCALAR,NODE) \
+#endif
   template void \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   readHBMatrix< SCALAR, LO, GO, NODE > (const std::string&, \
+#else
+  readHBMatrix< SCALAR, NODE > (const std::string&, \
+#endif
                                         const Teuchos::RCP<const Teuchos::Comm<int> > &, \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                         Teuchos::RCP<CrsMatrix< SCALAR, LO, GO, NODE > >&, \
                                         Teuchos::RCP<const Tpetra::Map< LO, GO, NODE> >, \
+#else
+                                        Teuchos::RCP<CrsMatrix< SCALAR, NODE > >&, \
+                                        Teuchos::RCP<const Tpetra::Map<NODE> >, \
+#endif
                                         const Teuchos::RCP<Teuchos::ParameterList>& ); 
 
 

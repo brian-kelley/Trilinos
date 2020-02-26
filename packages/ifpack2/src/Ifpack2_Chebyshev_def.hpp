@@ -120,8 +120,10 @@ getMatrix() const {
 
 template<class MatrixType>
 Teuchos::RCP<const Tpetra::CrsMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      typename MatrixType::local_ordinal_type,
                                      typename MatrixType::global_ordinal_type,
+#endif
                                      typename MatrixType::node_type> >
 Chebyshev<MatrixType>::
 getCrsMatrix() const {
@@ -504,7 +506,12 @@ typename MatrixType::scalar_type Chebyshev<MatrixType>::getLambdaMaxForApply () 
 
 }//namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_CHEBYSHEV_INSTANT(S,LO,GO,N)                            \
   template class Ifpack2::Chebyshev< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_CHEBYSHEV_INSTANT(S,N)                            \
+  template class Ifpack2::Chebyshev< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif // IFPACK2_CHEBYSHEV_DEF_HPP

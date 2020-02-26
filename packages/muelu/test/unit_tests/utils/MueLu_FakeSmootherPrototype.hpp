@@ -56,16 +56,28 @@ namespace MueLu {
   class Level;
 
   template <class Scalar = SmootherPrototype<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal = typename SmootherPrototype<Scalar>::local_ordinal_type,
            class GlobalOrdinal = typename SmootherPrototype<Scalar, LocalOrdinal>::global_ordinal_type,
            class Node = typename SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
+#else
+           class Node = typename SmootherPrototype<Scalar>::node_type>
+#endif
              class FakeSmootherPrototype :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                public SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node> {
+#else
+               public SmootherPrototype<Scalar,Node> {
+#endif
 
 #include "MueLu_UseShortNames.hpp"
 
                  public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+                   using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+                   using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
                    FakeSmootherPrototype(int param=0) : param_(param), numOfSetup_(0), numOfSetupCall_(0) {}
 
                    virtual ~FakeSmootherPrototype() {}

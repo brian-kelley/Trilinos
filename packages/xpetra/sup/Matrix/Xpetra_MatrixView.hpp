@@ -62,11 +62,19 @@ Declarations for the class Xpetra::MatrixView.
 namespace Xpetra {
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class MatrixView { // TODO : virtual public Teuchos::Describable {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> Map;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::Map<Node> Map;
+#endif
 
   public:
 

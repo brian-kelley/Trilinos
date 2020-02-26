@@ -73,7 +73,11 @@ public:
    bool test_reorder(int verbosity,std::ostream & os,int total);
 
 protected:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    void buildBlockGIDs(std::vector<std::vector<GO> > & blocks,const Tpetra::Map<LO,GO,NT> & map) const;
+#else
+   void buildBlockGIDs(std::vector<std::vector<GO> > & blocks,const Tpetra::Map<NT> & map) const;
+#endif
 
    ST tolerance_;
 };

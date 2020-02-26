@@ -75,12 +75,22 @@ namespace MueLu {
   // See also: FactoryManager
   //
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class HierarchyManager : public HierarchyFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+  class HierarchyManager : public HierarchyFactory<Scalar, Node> {
+#endif
 #undef MUELU_HIERARCHYMANAGER_SHORT
 #include "MueLu_UseShortNames.hpp"
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef std::pair<std::string, const FactoryBase*> keep_pair;
 
   public:
@@ -355,14 +365,22 @@ namespace MueLu {
 	    // Try generating factory
             RCP<T> M = L->template Get< RCP<T> >(name,&*levelManagers_[data[i]]->GetFactory(name));
             if (!M.is_null()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               Xpetra::IO<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Write(fileName,* M);
+#else
+              Xpetra::IO<Scalar, Node>::Write(fileName,* M);
+#endif
             }
           }
 	  else if (L->IsAvailable(name)) {
 	    // Try nofactory
             RCP<T> M = L->template Get< RCP<T> >(name);
             if (!M.is_null()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               Xpetra::IO<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Write(fileName,* M);
+#else
+              Xpetra::IO<Scalar, Node>::Write(fileName,* M);
+#endif
             }
 	  }
 
@@ -399,10 +417,18 @@ namespace MueLu {
       size_t num_vecs =(size_t) fcont.extent(1);
 
       // Generate rowMap
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Map> rowMap = Xpetra::MapFactory<LO,GO,NO>::Build(colMap.lib(),Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),fcont.extent(0),colMap.getIndexBase(),colMap.getComm());
+#else
+      Teuchos::RCP<const Map> rowMap = Xpetra::MapFactory<NO>::Build(colMap.lib(),Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),fcont.extent(0),colMap.getIndexBase(),colMap.getComm());
+#endif
 
       // Fill multivector to use *petra dump routines
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<GOMultiVector> vec = Xpetra::MultiVectorFactory<GO, LO, GO, NO>::Build(rowMap,num_vecs);
+#else
+      RCP<GOMultiVector> vec = Xpetra::MultiVectorFactory<GO, NO>::Build(rowMap,num_vecs);
+#endif
 
       for(size_t j=0; j<num_vecs; j++)  {
         Teuchos::ArrayRCP<GO> v = vec->getDataNonConst(j);
@@ -410,7 +436,11 @@ namespace MueLu {
           v[i] = colMap.getGlobalElement(fcont(i,j));
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::IO<GO,LO,GO,NO>::Write(fileName,*vec);
+#else
+      Xpetra::IO<GO,NO>::Write(fileName,*vec);
+#endif
     }
 
 

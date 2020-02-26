@@ -67,8 +67,13 @@ namespace TpetraHelpers {
 //       map  - original Epetra_Map to be broken up
 //       comm - Epetra_Comm object related to the map
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BasicMappingStrategy::BasicMappingStrategy(const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > & rMap,
                                            const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > & dMap, const Teuchos::Comm<Thyra::Ordinal> & /* comm */)
+#else
+BasicMappingStrategy::BasicMappingStrategy(const Teuchos::RCP<const Tpetra::Map<NT> > & rMap,
+                                           const Teuchos::RCP<const Tpetra::Map<NT> > & dMap, const Teuchos::Comm<Thyra::Ordinal> & /* comm */)
+#endif
 {
    rangeMap_ = rMap;
    domainMap_ = dMap;
@@ -82,14 +87,23 @@ BasicMappingStrategy::BasicMappingStrategy(const Teuchos::RCP<const Tpetra::Map<
 //      X       - source Epetra_MultiVector
 //      thyra_X - destination Thyra::MultiVectorBase
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void BasicMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,GO,NT>& X,
+#else
+void BasicMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector<ST,NT>& X,
+#endif
                                                const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyra_X) const
 {
    // perform a simple copy
    //RCP<Thyra::DefaultSpmdMultiVector<ST> > vec 
    //         = rcp_dynamic_cast<Thyra::DefaultSpmdMultiVector<ST> >(Teuchos::rcpFromRef(*thyra_X)); 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Thyra::TpetraMultiVector<ST,LO,GO,NT> > vec = rcp_dynamic_cast<Thyra::TpetraMultiVector<ST,LO,GO,NT> >(Teuchos::rcpFromRef(*thyra_X));
    Teuchos::RCP<Tpetra::MultiVector<ST,LO,GO,NT> > ptrX = Teuchos::rcp_const_cast<Tpetra::MultiVector<ST,LO,GO,NT> >(Teuchos::rcpFromRef(X));
+#else
+      RCP<Thyra::TpetraMultiVector<ST,NT> > vec = rcp_dynamic_cast<Thyra::TpetraMultiVector<ST,NT> >(Teuchos::rcpFromRef(*thyra_X));
+   Teuchos::RCP<Tpetra::MultiVector<ST,NT> > ptrX = Teuchos::rcp_const_cast<Tpetra::MultiVector<ST,NT> >(Teuchos::rcpFromRef(X));
+#endif
    fillDefaultSpmdMultiVector(vec,ptrX);
 }
 
@@ -102,10 +116,18 @@ void BasicMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,G
 //      Y       - destination Epetra_MultiVector
 //
 void BasicMappingStrategy::copyThyraIntoTpetra(const RCP<const Thyra::MultiVectorBase<ST> > & thyra_Y,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                  Tpetra::MultiVector<ST,LO,GO,NT>& Y) const
+#else
+                                                 Tpetra::MultiVector<ST,NT>& Y) const
+#endif
 {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > tSrc = Thyra::TpetraOperatorVectorExtraction<ST,LO,GO,NT>::getConstTpetraMultiVector(thyra_Y);
+#else
+   RCP<const Tpetra::MultiVector<ST,NT> > tSrc = Thyra::TpetraOperatorVectorExtraction<ST,NT>::getConstTpetraMultiVector(thyra_Y);
+#endif
 
    Y = *tSrc;
 }

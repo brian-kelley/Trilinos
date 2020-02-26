@@ -113,9 +113,17 @@ namespace Anasazi {
   /// correspond exactly to the four template parameters of
   /// Tpetra::MultiVector.  See the Tpetra::MultiVector documentation
   /// for more information.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   class MultiVecTraits<Scalar, Tpetra::MultiVector<Scalar,LO,GO,Node> > {
     typedef Tpetra::MultiVector<Scalar, LO, GO, Node> MV;
+#else
+  template<class Scalar, class Node>
+  class MultiVecTraits<Scalar, Tpetra::MultiVector<Scalar,Node> > {
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Tpetra::MultiVector<Scalar, Node> MV;
+#endif
   public:
     /// \brief Create a new MultiVector with \c numVecs columns.
     ///
@@ -364,7 +372,11 @@ namespace Anasazi {
       using Teuchos::ArrayView;
       using Teuchos::Comm;
       using Teuchos::rcpFromRef;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+      typedef Tpetra::Map<Node> map_type;
+#endif
 
 #ifdef HAVE_ANASAZI_TPETRA_TIMERS
       const std::string timerName ("Anasazi::MVT::MvTimesMatAddMv");
@@ -437,7 +449,11 @@ namespace Anasazi {
       using Teuchos::RCP;
       using Teuchos::rcp;
       using Teuchos::TimeMonitor;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::Map<LO,GO,Node> map_type;
+#else
+      typedef Tpetra::Map<Node> map_type;
+#endif
 
 #ifdef HAVE_ANASAZI_TPETRA_TIMERS
       const std::string timerName ("Anasazi::MVT::MvTransMv");
@@ -708,31 +724,62 @@ namespace Anasazi {
 #ifdef HAVE_ANASAZI_TSQR
     /// \typedef tsqr_adaptor_type
     /// \brief TsqrAdaptor specialization for Tpetra::MultiVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::TsqrAdaptor<Tpetra::MultiVector<Scalar, LO, GO, Node> > tsqr_adaptor_type;
+#else
+    typedef Tpetra::TsqrAdaptor<Tpetra::MultiVector<Scalar, Node> > tsqr_adaptor_type;
+#endif
 #endif // HAVE_ANASAZI_TSQR
   };
 
 
   //! Partial specialization of OperatorTraits for Tpetra objects.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LO, class GO, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class OperatorTraits<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        Tpetra::MultiVector<Scalar,LO,GO,Node>,
                        Tpetra::Operator<Scalar,LO,GO,Node> >
+#else
+                       Tpetra::MultiVector<Scalar,Node>,
+                       Tpetra::Operator<Scalar,Node> >
+#endif
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Apply (const Tpetra::Operator<Scalar,LO,GO,Node>& Op,
            const Tpetra::MultiVector<Scalar,LO,GO,Node>& X,
            Tpetra::MultiVector<Scalar,LO,GO,Node>& Y)
+#else
+    Apply (const Tpetra::Operator<Scalar,Node>& Op,
+           const Tpetra::MultiVector<Scalar,Node>& X,
+           Tpetra::MultiVector<Scalar,Node>& Y)
+#endif
     {
       Op.apply (X, Y, Teuchos::NO_TRANS);
     }
   };
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class ST, class LO, class GO, class NT>
 struct OutputStreamTraits<Tpetra::Operator<ST, LO, GO, NT> > {
   typedef Tpetra::Operator<ST, LO, GO, NT> operator_type;
+#else
+template<class ST, class NT>
+struct OutputStreamTraits<Tpetra::Operator<ST, NT> > {
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::Operator<ST, NT> operator_type;
+#endif
 
   static Teuchos::RCP<Teuchos::FancyOStream>
   getOutputStream (const operator_type& op, int rootRank = 0)

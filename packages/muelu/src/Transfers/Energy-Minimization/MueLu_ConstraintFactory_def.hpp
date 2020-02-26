@@ -57,8 +57,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> ConstraintFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> ConstraintFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("FineNullspace",    Teuchos::null, "Generating factory for the nullspace");
@@ -68,15 +73,25 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ConstraintFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ConstraintFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level& coarseLevel) const {
+#endif
     Input(fineLevel,   "Nullspace", "FineNullspace");
     Input(coarseLevel, "Nullspace", "CoarseNullspace");
     Input(coarseLevel, "Ppattern");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ConstraintFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ConstraintFactory<Scalar, Node>::Build(Level &fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Constraint", coarseLevel);
 
     RCP<MultiVector> fineNullspace   = Get< RCP<MultiVector> >(fineLevel,   "Nullspace", "FineNullspace");

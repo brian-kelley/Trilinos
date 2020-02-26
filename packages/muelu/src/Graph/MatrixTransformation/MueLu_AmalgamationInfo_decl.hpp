@@ -75,9 +75,13 @@ namespace MueLu {
   current processor.  That mapping is used for unamalgamation.
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
            class Node = DefaultNode>
+#else
+  template<class Node = DefaultNode>
+#endif
   class AmalgamationInfo
     : public BaseClass {
 #undef MUELU_AMALGAMATIONINFO_SHORT
@@ -85,11 +89,19 @@ namespace MueLu {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     AmalgamationInfo(RCP<Array<LO> > rowTranslation,
                      RCP<Array<LO> > colTranslation,
                      RCP<const Map> nodeRowMap,
                      RCP<const Map> nodeColMap,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      RCP< const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > const &columnMap,
+#else
+                     RCP< const Xpetra::Map<Node> > const &columnMap,
+#endif
                      LO fullblocksize, GO offset, LO blockid, LO nStridedOffset, LO stridedblocksize) :
                      rowTranslation_(rowTranslation),
                      colTranslation_(colTranslation),
@@ -138,7 +150,11 @@ namespace MueLu {
     /*! @brief ComputeUnamalgamatedImportDofMap
      * build overlapping dof row map from aggregates needed for overlapping null space
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > ComputeUnamalgamatedImportDofMap(const Aggregates& aggregates) const;
+#else
+    Teuchos::RCP< Xpetra::Map<Node> > ComputeUnamalgamatedImportDofMap(const Aggregates& aggregates) const;
+#endif
 
     /*! @brief ComputeGlobalDOF
      * return global dof id associated with global node id gNodeID and dof index k
@@ -178,7 +194,11 @@ namespace MueLu {
 
     //! @brief DOF map (really column map of A)
     // keep an RCP on the column map to make sure that the map is still valid when it is used
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > columnMap_;
+#else
+    Teuchos::RCP< const Xpetra::Map<Node> > columnMap_;
+#endif
 
     //@}
 

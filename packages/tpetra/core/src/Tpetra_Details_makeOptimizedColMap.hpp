@@ -384,15 +384,23 @@ namespace Details {
                        bool& lclErr,
                        const MapType& domMap,
                        const MapType& colMap,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        const Tpetra::Import<
                          typename MapType::local_ordinal_type,
                          typename MapType::global_ordinal_type,
                          typename MapType::node_type>* oldImport = nullptr)
+#else
+                       const Tpetra::Import<typename MapType::node_type>* oldImport = nullptr)
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = ::Tpetra::Map<
       typename MapType::local_ordinal_type,
       typename MapType::global_ordinal_type,
       typename MapType::node_type>;
+#else
+    using map_type = ::Tpetra::Map<typename MapType::node_type>;
+#endif
     using impl_type = OptColMap<map_type>;
     auto mapPtr = impl_type::makeOptColMap (errStream, lclErr,
                                             domMap, colMap, oldImport);

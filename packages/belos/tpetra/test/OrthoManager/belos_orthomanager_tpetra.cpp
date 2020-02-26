@@ -203,11 +203,22 @@ getCmdLineArgs (const Teuchos::Comm<int>& comm, int argc, char* argv[])
 // filename == "", then the user doesn't want to read in a sparse
 // matrix, so we can just create the appropriate Map and be done with
 // it.  Otherwise, raise an exception at run time.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class ScalarType, class LocalOrdinalType, class GlobalOrdinalType, class NodeType>
+#else
+template<class ScalarType, class NodeType>
+#endif
 class SparseMatrixLoader {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinalType, GlobalOrdinalType, NodeType> map_type;
   typedef Tpetra::CrsMatrix<ScalarType, LocalOrdinalType, GlobalOrdinalType, NodeType> matrix_type;
+#else
+  using LocalOrdinalType = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinalType = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::Map<NodeType> map_type;
+  typedef Tpetra::CrsMatrix<ScalarType, NodeType> matrix_type;
+#endif
 
   static void
   load (Teuchos::RCP<map_type>& map,
@@ -227,11 +238,23 @@ public:
 };
 
 // We _do_ know how to read a Harwell-Boeing sparse matrix file with Scalar=double.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinalType, class GlobalOrdinalType, class NodeType>
 class SparseMatrixLoader<double, LocalOrdinalType, GlobalOrdinalType, NodeType> {
+#else
+template<class NodeType>
+class SparseMatrixLoader<double, NodeType> {
+#endif
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinalType, GlobalOrdinalType, NodeType> map_type;
   typedef Tpetra::CrsMatrix<double, LocalOrdinalType, GlobalOrdinalType, NodeType> matrix_type;
+#else
+  using LocalOrdinalType = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinalType = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::Map<NodeType> map_type;
+  typedef Tpetra::CrsMatrix<double, NodeType> matrix_type;
+#endif
 
   static void
   load (Teuchos::RCP<map_type>& map,
@@ -243,9 +266,13 @@ public:
     // modify numRows to be the number of rows in the sparse matrix.
     // Otherwise, it will leave numRows alone.
     std::pair<Teuchos::RCP<map_type>, Teuchos::RCP<matrix_type> > results =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Belos::Test::loadSparseMatrix<LocalOrdinalType,
       GlobalOrdinalType,
       NodeType> (comm, filename, numRows, debugOut);
+#else
+      Belos::Test::loadSparseMatrix<NodeType> (comm, filename, numRows, debugOut);
+#endif
     map = results.first;
     M = results.second;
   }
@@ -257,7 +284,11 @@ public:
 // test are ScalarType and NodeType.
 //
 // Return true if test passed, else return false.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class ScalarType, class LocalOrdinalType, class GlobalOrdinalType, class NodeType>
+#else
+template<class ScalarType, class NodeType>
+#endif
 bool runTest (const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
 {
   using Teuchos::ParameterList;

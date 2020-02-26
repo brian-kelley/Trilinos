@@ -60,8 +60,13 @@ namespace MueLuTests {
     namespace Smoothers {
 
       // SmootherPrototype test
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
       void testApplyNoSetup(const MueLu::SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node>& smoother, Teuchos::FancyOStream & out, bool & success) {
+#else
+      template<class Scalar, class Node>
+      void testApplyNoSetup(const MueLu::SmootherPrototype<Scalar,Node>& smoother, Teuchos::FancyOStream & out, bool & success) {
+#endif
 #include "MueLu_UseShortNames.hpp"
 
         GO numGlobalElements = 125;
@@ -74,12 +79,23 @@ namespace MueLuTests {
       }
 
       // SmootherBase test
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+      template<class Scalar, class Node>
+#endif
       typename Teuchos::ScalarTraits<Scalar>::magnitudeType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       testApply(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& A,
                 const MueLu::SmootherBase<Scalar,LocalOrdinal,GlobalOrdinal,Node>& smoother,
                 Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & X,
                 const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& RHS,
+#else
+      testApply(const Xpetra::Matrix<Scalar,Node>& A,
+                const MueLu::SmootherBase<Scalar,Node>& smoother,
+                Xpetra::MultiVector<Scalar,Node> & X,
+                const Xpetra::MultiVector<Scalar,Node>& RHS,
+#endif
                 Teuchos::FancyOStream & out, bool & success) {
 #include "MueLu_UseShortNames.hpp"
         typedef Teuchos::ScalarTraits<SC> ST;
@@ -104,10 +120,19 @@ namespace MueLuTests {
       }
 
       // SmootherBase test
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+      template<class Scalar, class Node>
+#endif
       typename Teuchos::ScalarTraits<Scalar>::magnitudeType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       testApply_X1_RHS0(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& A,
                         const MueLu::SmootherBase<Scalar,LocalOrdinal,GlobalOrdinal,Node>& smoother,
+#else
+      testApply_X1_RHS0(const Xpetra::Matrix<Scalar,Node>& A,
+                        const MueLu::SmootherBase<Scalar,Node>& smoother,
+#endif
                         Teuchos::FancyOStream & out, bool & success) {
 #include "MueLu_UseShortNames.hpp"
 
@@ -120,10 +145,19 @@ namespace MueLuTests {
       }
 
       // SmootherBase test
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+      template<class Scalar, class Node>
+#endif
       typename Teuchos::ScalarTraits<Scalar>::magnitudeType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       testApply_X0_RandomRHS(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& A,
                              const MueLu::SmootherBase<Scalar,LocalOrdinal,GlobalOrdinal,Node>& smoother,
+#else
+      testApply_X0_RandomRHS(const Xpetra::Matrix<Scalar,Node>& A,
+                             const MueLu::SmootherBase<Scalar,Node>& smoother,
+#endif
                              Teuchos::FancyOStream & out, bool & success) {
 #include "MueLu_UseShortNames.hpp"
 
@@ -149,45 +183,84 @@ namespace MueLuTests {
       }
 
       // SmootherPrototype helper function
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
       void setupSmoother(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>>& A,
                          MueLu::SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node>& smoother,
+#else
+      template<class Scalar, class Node>
+      void setupSmoother(Teuchos::RCP<Xpetra::Matrix<Scalar,Node>>& A,
+                         MueLu::SmootherPrototype<Scalar,Node>& smoother,
+#endif
                          Teuchos::FancyOStream & out, bool & success) {
 #include "MueLu_UseShortNames.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Level level; TestHelpers::TestFactory<SC,LO,GO,NO>::createSingleLevelHierarchy(level);
+#else
+        Level level; TestHelpers::TestFactory<SC,NO>::createSingleLevelHierarchy(level);
+#endif
         level.Set("A", A);
         smoother.Setup(level);
       }
 
       // SmootherPrototype test
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+      template<class Scalar, class Node>
+#endif
       typename Teuchos::ScalarTraits<Scalar>::magnitudeType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       testApply_A125_X1_RHS0(MueLu::SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node>& smoother,
+#else
+      testApply_A125_X1_RHS0(MueLu::SmootherPrototype<Scalar,Node>& smoother,
+#endif
                              Teuchos::FancyOStream & out, bool & success) {
 #include "MueLu_UseShortNames.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(125);
+#else
+        Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(125);
+#endif
 
         setupSmoother(A, smoother, out, success);
         return testApply_X1_RHS0(*A, smoother, out, success); // in MueLuTests::SmootherBase
       }
 
       // SmootherPrototype test
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+      template<class Scalar, class Node>
+#endif
       typename Teuchos::ScalarTraits<Scalar>::magnitudeType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       testApply_A125_X0_RandomRHS(MueLu::SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node>& smoother,
+#else
+      testApply_A125_X0_RandomRHS(MueLu::SmootherPrototype<Scalar,Node>& smoother,
+#endif
                                   Teuchos::FancyOStream & out, bool & success) {
 #include "MueLu_UseShortNames.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(125);
+#else
+        Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(125);
+#endif
 
         setupSmoother(A, smoother, out, success);
         return testApply_X0_RandomRHS(*A, smoother, out, success); // in MueLuTests::SmootherBase
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
       void testDirectSolver(MueLu::SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node>& smoother,
+#else
+      template<class Scalar, class Node>
+      void testDirectSolver(MueLu::SmootherPrototype<Scalar,Node>& smoother,
+#endif
                             Teuchos::FancyOStream & out, bool & success) {
 #include "MueLu_UseShortNames.hpp"
 

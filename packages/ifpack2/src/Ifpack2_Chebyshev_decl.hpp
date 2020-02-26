@@ -198,12 +198,16 @@ namespace Ifpack2 {
 template<class MatrixType>
 class Chebyshev :
     virtual public Ifpack2::Preconditioner<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                            typename MatrixType::local_ordinal_type,
                                            typename MatrixType::global_ordinal_type,
+#endif
                                            typename MatrixType::node_type>,
     virtual public Ifpack2::Details::CanChangeMatrix<Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                        typename MatrixType::local_ordinal_type,
                                                                        typename MatrixType::global_ordinal_type,
+#endif
                                                                        typename MatrixType::node_type> >
 {
 public:
@@ -674,7 +678,11 @@ public:
   ///   to be called; P is ready for use as a preconditioner.  This is
   ///   true regardless of the current state of <tt>*this</tt>.
   template <typename NewMatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Chebyshev<Tpetra::RowMatrix<typename NewMatrixType::scalar_type, typename NewMatrixType::local_ordinal_type, typename NewMatrixType::global_ordinal_type, typename NewMatrixType::node_type> > >
+#else
+  Teuchos::RCP<Chebyshev<Tpetra::RowMatrix<typename NewMatrixType::scalar_type, typename NewMatrixType::node_type> > >
+#endif
   clone (const Teuchos::RCP<const NewMatrixType>& A_newnode,
          const Teuchos::ParameterList& params) const;
 
@@ -756,15 +764,21 @@ private:
 
 template <typename MatrixType>
 template <typename NewMatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Chebyshev<Tpetra::RowMatrix<typename NewMatrixType::scalar_type, typename NewMatrixType::local_ordinal_type, typename NewMatrixType::global_ordinal_type, typename NewMatrixType::node_type> > >
+#else
+Teuchos::RCP<Chebyshev<Tpetra::RowMatrix<typename NewMatrixType::scalar_type, typename NewMatrixType::node_type> > >
+#endif
 Chebyshev<MatrixType>::
 clone (const Teuchos::RCP<const NewMatrixType>& A_newnode,
        const Teuchos::ParameterList& params) const
 {
   using Teuchos::RCP;
   typedef Tpetra::RowMatrix<typename NewMatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typename NewMatrixType::local_ordinal_type,
     typename NewMatrixType::global_ordinal_type,
+#endif
     typename NewMatrixType::node_type> new_row_matrix_type;
   typedef Ifpack2::Chebyshev<new_row_matrix_type> new_prec_type;
 

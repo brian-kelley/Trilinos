@@ -80,11 +80,17 @@ namespace Tpetra {
   /// matrices, direct solvers, iterative solvers, and
   /// preconditioners.
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   class Operator : virtual public Teuchos::Describable {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     /** \name Typedefs that give access to the template parameters. */
     //@{
 
@@ -105,10 +111,18 @@ namespace Tpetra {
     //@{
 
     //! The Map associated with the domain of this operator, which must be compatible with X.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const = 0;
+#else
+    virtual Teuchos::RCP<const Map<Node> > getDomainMap() const = 0;
+#endif
 
     //! The Map associated with the range of this operator, which must be compatible with Y.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const = 0;
+#else
+    virtual Teuchos::RCP<const Map<Node> > getRangeMap() const = 0;
+#endif
 
     //! \brief Computes the operator-multivector application.
     /*! Loosely, performs \f$Y = \alpha \cdot A^{\textrm{mode}} \cdot X + \beta \cdot Y\f$. However, the details of operation
@@ -117,8 +131,13 @@ namespace Tpetra {
         - if <tt>alpha == 0</tt>, apply() <b>may</b> short-circuit the operator, so that any values in \c X (including NaNs) are ignored.
      */
     virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     apply (const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
            MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+    apply (const MultiVector<Scalar,Node> &X,
+           MultiVector<Scalar,Node> &Y,
+#endif
            Teuchos::ETransp mode = Teuchos::NO_TRANS,
            Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
            Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const = 0;
@@ -134,8 +153,13 @@ namespace Tpetra {
     //@}
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node>::hasTransposeApply() const {
+#else
+  template <class Scalar, class Node>
+  bool Operator<Scalar,Node>::hasTransposeApply() const {
+#endif
     return false;
   }
 

@@ -81,17 +81,32 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::IndefBlockedDiagonalSmoother()
+#else
+  template <class Scalar, class Node>
+  IndefBlockedDiagonalSmoother<Scalar, Node>::IndefBlockedDiagonalSmoother()
+#endif
     : type_("IndefiniteBlockDiagonalSmoother"), A_(Teuchos::null)
   {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~IndefBlockedDiagonalSmoother() {}
+#else
+  template <class Scalar, class Node>
+  IndefBlockedDiagonalSmoother<Scalar, Node>::~IndefBlockedDiagonalSmoother() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> IndefBlockedDiagonalSmoother<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A",                  Teuchos::null, "Generating factory of the matrix A (must be a 2x2 block matrix)");
@@ -103,8 +118,13 @@ namespace MueLu {
   }
 
   //! Add a factory manager at a specific position
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager, int pos) {
+#else
+  template <class Scalar, class Node>
+  void IndefBlockedDiagonalSmoother<Scalar, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager, int pos) {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(pos < 0, Exceptions::RuntimeError, "MueLu::IndefBlockedDiagonalSmoother::AddFactoryManager: parameter \'pos\' must not be negative! error.");
 
     size_t myPos = Teuchos::as<size_t>(pos);
@@ -124,8 +144,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void IndefBlockedDiagonalSmoother<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     currentLevel.DeclareInput("A",this->GetFactory("A").get());
 
     TEUCHOS_TEST_FOR_EXCEPTION(FactManager_.size() != 2, Exceptions::RuntimeError,"MueLu::IndefBlockedDiagonalSmoother::DeclareInput: You have to declare two FactoryManagers with a \"Smoother\" object: One for predicting the primary variable and one for the SchurComplement system. The smoother for the SchurComplement system needs a SchurComplementFactory as input for variable \"A\"!");
@@ -141,8 +166,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(Level &currentLevel) {
+#else
+  template <class Scalar, class Node>
+  void IndefBlockedDiagonalSmoother<Scalar, Node>::Setup(Level &currentLevel) {
+#endif
     FactoryMonitor m(*this, "Setup for indefinite blocked diagonal smoother", currentLevel);
 
     if (SmootherPrototype::IsSetup() == true)
@@ -208,8 +238,13 @@ namespace MueLu {
     SmootherPrototype::IsSetup(true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Apply(MultiVector& X, const MultiVector& B, bool /* InitialGuessIsZero */) const
+#else
+  template <class Scalar, class Node>
+  void IndefBlockedDiagonalSmoother<Scalar, Node>::Apply(MultiVector& X, const MultiVector& B, bool /* InitialGuessIsZero */) const
+#endif
   {
     TEUCHOS_TEST_FOR_EXCEPTION(SmootherPrototype::IsSetup() == false, Exceptions::RuntimeError, "MueLu::IndefBlockedDiagonalSmoother::Apply(): Setup() has not been called");
 
@@ -252,7 +287,11 @@ namespace MueLu {
     bB = Teuchos::rcp_dynamic_cast<const BlockedMultiVector>(rcpB);
 
     // check the type of operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > rbA = Teuchos::rcp_dynamic_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(bA);
+#else
+    RCP<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> > rbA = Teuchos::rcp_dynamic_cast<Xpetra::ReorderedBlockedCrsMatrix<Scalar,Node> >(bA);
+#endif
     if(rbA.is_null() == false) {
       // A is a ReorderedBlockedCrsMatrix
       Teuchos::RCP<const Xpetra::BlockReorderManager > brm = rbA->getBlockReorderManager();
@@ -331,22 +370,38 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Copy() const {
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::SmootherPrototype<Scalar, Node> >
+  IndefBlockedDiagonalSmoother<Scalar, Node>::Copy() const {
+#endif
     return rcp( new IndefBlockedDiagonalSmoother(*this) );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string IndefBlockedDiagonalSmoother<Scalar, Node>::description() const {
+#endif
     std::ostringstream out;
     out << SmootherPrototype::description();
     out << "{type = " << type_ << "}";
     return out.str();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void IndefBlockedDiagonalSmoother<Scalar, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#endif
     MUELU_DESCRIBE;
 
     if (verbLevel & Parameters0) {
@@ -357,8 +412,13 @@ namespace MueLu {
       out0 << "IsSetup: " << Teuchos::toString(SmootherPrototype::IsSetup()) << std::endl;
     }
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t IndefBlockedDiagonalSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNodeSmootherComplexity() const {
+#else
+  template <class Scalar, class Node>
+  size_t IndefBlockedDiagonalSmoother<Scalar, Node>::getNodeSmootherComplexity() const {
+#endif
     // FIXME: This is a placeholder
     return Teuchos::OrdinalTraits<size_t>::invalid();
   }

@@ -65,15 +65,31 @@ namespace Belos {
 /*! \brief Template specialization of Belos::StatusTestGenResSubNorm class using the
  * Xpetra::MultiVector and Belos::OperatorT MueLu adapter class.
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 class StatusTestGenResSubNorm<Scalar,Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>,Belos::OperatorT<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > >
    : public StatusTestResNorm<Scalar,Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>,Belos::OperatorT<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > > {
+#else
+template <class Scalar, class Node>
+class StatusTestGenResSubNorm<Scalar,Xpetra::MultiVector<Scalar,Node>,Belos::OperatorT<Xpetra::MultiVector<Scalar,Node> > >
+   : public StatusTestResNorm<Scalar,Xpetra::MultiVector<Scalar,Node>,Belos::OperatorT<Xpetra::MultiVector<Scalar,Node> > > {
+#endif
 
  public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   // Convenience typedefs
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>      MV;
   typedef Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> BCRS;
   typedef Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node>     ME;
+#else
+  typedef Xpetra::MultiVector<Scalar,Node>      MV;
+  typedef Xpetra::BlockedCrsMatrix<Scalar,Node> BCRS;
+  typedef Xpetra::MapExtractor<Scalar,Node>     ME;
+#endif
   typedef Belos::OperatorT<MV> OP;
 
   typedef Teuchos::ScalarTraits<Scalar> SCT;
@@ -447,17 +463,36 @@ class StatusTestGenResSubNorm<Scalar,Xpetra::MultiVector<Scalar,LocalOrdinal,Glo
 
       // try to access the underlying blocked operator
       Teuchos::RCP<const OP> Op = lp.getOperator();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Belos::XpetraOp<Scalar,LocalOrdinal,GlobalOrdinal,Node> > xOp =
           Teuchos::rcp_dynamic_cast<const Belos::XpetraOp<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(Op);
+#else
+      Teuchos::RCP<const Belos::XpetraOp<Scalar,Node> > xOp =
+          Teuchos::rcp_dynamic_cast<const Belos::XpetraOp<Scalar,Node> >(Op);
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(xOp.is_null(), MueLu::Exceptions::BadCast, "Bad cast from \'const Belos::OperatorT\' to \'const Belos::XpetraOp\'. The origin type is "  << typeid(const OP).name() << ".");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> > xIntOp =
+#else
+      Teuchos::RCP<const Xpetra::Operator<Scalar, Node> > xIntOp =
+#endif
           xOp->getOperator();
       TEUCHOS_TEST_FOR_EXCEPTION(xIntOp.is_null(), MueLu::Exceptions::BadCast, "Cannot access Xpetra::Operator stored in Belos::XpetraOperator.");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > xMat =
           Teuchos::rcp_dynamic_cast<const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(xIntOp);
+#else
+      Teuchos::RCP<const Xpetra::Matrix<Scalar, Node> > xMat =
+          Teuchos::rcp_dynamic_cast<const Xpetra::Matrix<Scalar, Node> >(xIntOp);
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(xMat.is_null(), MueLu::Exceptions::RuntimeError, "Cannot access Xpetra::Matrix stored in Belos::XpetraOp. Error.");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > bMat = Teuchos::rcp_dynamic_cast<const Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(xMat);
       TEUCHOS_TEST_FOR_EXCEPTION(bMat.is_null(), MueLu::Exceptions::BadCast, "Bad cast from \'const Xpetra::Matrix\' to \'const Xpetra::BlockedCrsMatrix\'. The origin type is "  << typeid(const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>).name() << ". Note: you need a BlockedCrsMatrix object for the StatusTestGenResSubNorm to work!");
+#else
+      Teuchos::RCP<const Xpetra::BlockedCrsMatrix<Scalar, Node> > bMat = Teuchos::rcp_dynamic_cast<const Xpetra::BlockedCrsMatrix<Scalar, Node> >(xMat);
+      TEUCHOS_TEST_FOR_EXCEPTION(bMat.is_null(), MueLu::Exceptions::BadCast, "Bad cast from \'const Xpetra::Matrix\' to \'const Xpetra::BlockedCrsMatrix\'. The origin type is "  << typeid(const Xpetra::Matrix<Scalar, Node>).name() << ". Note: you need a BlockedCrsMatrix object for the StatusTestGenResSubNorm to work!");
+#endif
       mapExtractor_ = bMat->getRangeMapExtractor();
       TEUCHOS_TEST_FOR_EXCEPTION(mapExtractor_.is_null(), MueLu::Exceptions::RuntimeError, "Could not extract map extractor from BlockedCrsMatrix. Error.");
       TEUCHOS_TEST_FOR_EXCEPTION(mapExtractor_->NumMaps()<=subIdx_, MueLu::Exceptions::RuntimeError, "The multivector is only split into " << mapExtractor_->NumMaps() << " sub parts. Cannot access sub-block " << subIdx_ << ".");

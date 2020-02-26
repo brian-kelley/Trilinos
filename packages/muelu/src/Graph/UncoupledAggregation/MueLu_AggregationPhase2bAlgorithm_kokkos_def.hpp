@@ -64,8 +64,13 @@ namespace MueLu {
 
   // Try to stick unaggregated nodes into a neighboring aggregate if they are
   // not already too big
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationPhase2bAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationPhase2bAlgorithm_kokkos<Node>::
+#endif
   BuildAggregates(const ParameterList& params,
                   const LWGraph_kokkos& graph,
                   Aggregates_kokkos& aggregates,
@@ -82,8 +87,13 @@ namespace MueLu {
 
   } // BuildAggregates
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LO, class GO, class Node>
   void AggregationPhase2bAlgorithm_kokkos<LO, GO, Node>::
+#else
+  template <class Node>
+  void AggregationPhase2bAlgorithm_kokkos<Node>::
+#endif
   BuildAggregatesRandom(const ParameterList& params,
                         const LWGraph_kokkos& graph,
                         Aggregates_kokkos& aggregates,
@@ -184,8 +194,13 @@ namespace MueLu {
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LO, class GO, class Node>
   void AggregationPhase2bAlgorithm_kokkos<LO, GO, Node>::
+#else
+  template <class Node>
+  void AggregationPhase2bAlgorithm_kokkos<Node>::
+#endif
   BuildAggregatesDeterministic(const ParameterList& params,
                                const LWGraph_kokkos& graph,
                                Aggregates_kokkos& aggregates,

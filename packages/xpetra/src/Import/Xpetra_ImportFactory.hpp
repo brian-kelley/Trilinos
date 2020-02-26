@@ -61,19 +61,32 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,
             class GlobalOrdinal,
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class ImportFactory {
   private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Private constructor. This is a static class.
     ImportFactory() {}
 
   public:
 
     //! Constructor specifying the number of non-zeros for all rows.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Import<LocalOrdinal, GlobalOrdinal, Node> > Build(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &source,
                                                                  const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &target,
+#else
+    static RCP<Import<Node> > Build(const RCP<const Map<Node> > &source,
+                                                                 const RCP<const Map<Node> > &target,
+#endif
                                                                  const Teuchos::RCP<Teuchos::ParameterList>& plist = Teuchos::null) {
       XPETRA_MONITOR("ImportFactory::Build");
 
@@ -81,7 +94,11 @@ namespace Xpetra {
 
 #ifdef HAVE_XPETRA_TPETRA
       if (source->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraImport<LocalOrdinal, GlobalOrdinal, Node>(source, target, plist));
+#else
+        return rcp( new TpetraImport<Node>(source, target, plist));
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(source->lib());
@@ -108,15 +125,24 @@ namespace Xpetra {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Import<LocalOrdinal, GlobalOrdinal, Node> > Build(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &source,
                                                                  const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &target,
+#else
+    static RCP<Import<Node> > Build(const RCP<const Map<Node> > &source,
+                                                                 const RCP<const Map<Node> > &target,
+#endif
                                                                  const Teuchos::RCP<Teuchos::ParameterList>& plist = Teuchos::null) {
       XPETRA_MONITOR("ImportFactory::Build");
       TEUCHOS_TEST_FOR_EXCEPTION(source->lib() != target->lib(), Xpetra::Exceptions::RuntimeError, "");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (source->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraImport<LocalOrdinal, GlobalOrdinal, Node>(source, target,plist));
+#else
+        return rcp( new TpetraImport<Node>(source, target,plist));
+#endif
 #endif
 
       if (source->lib() == UseEpetra)
@@ -143,15 +169,24 @@ namespace Xpetra {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Import<LocalOrdinal, GlobalOrdinal, Node> > Build(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &source,
                                                                  const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &target,
+#else
+    static RCP<Import<Node> > Build(const RCP<const Map<Node> > &source,
+                                                                 const RCP<const Map<Node> > &target,
+#endif
                                                                  const Teuchos::RCP<Teuchos::ParameterList>& plist = Teuchos::null) {
       XPETRA_MONITOR("ImportFactory::Build");
       TEUCHOS_TEST_FOR_EXCEPTION(source->lib() != target->lib(), Xpetra::Exceptions::RuntimeError, "");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (source->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraImport<LocalOrdinal, GlobalOrdinal, Node>(source, target, plist));
+#else
+        return rcp( new TpetraImport<Node>(source, target, plist));
+#endif
 #endif
 
       if (source->lib() == UseEpetra)

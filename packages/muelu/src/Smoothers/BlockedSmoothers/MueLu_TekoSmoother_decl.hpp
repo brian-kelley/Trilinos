@@ -80,12 +80,23 @@ namespace MueLu {
   */
 
   template <class Scalar = SmootherPrototype<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = typename SmootherPrototype<Scalar>::local_ordinal_type,
             class GlobalOrdinal = typename SmootherPrototype<Scalar, LocalOrdinal>::global_ordinal_type,
             class Node = typename SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
   class TekoSmoother : public SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node>
+#else
+            class Node = typename SmootherPrototype<Scalar>::node_type>
+  class TekoSmoother : public SmootherPrototype<Scalar,Node>
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node> MapExtractorClass;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::MapExtractor<Scalar, Node> MapExtractorClass;
+#endif
 
 #undef MUELU_TEKOSMOOTHER_SHORT
 #include "MueLu_UseShortNames.hpp"
@@ -184,13 +195,25 @@ namespace MueLu {
 
     Note, that the underlying Thyra package is only templated on the Scalar (not the node type).
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class GlobalOrdinal,
             class Node>
   class TekoSmoother<double,int,GlobalOrdinal,Node> : public SmootherPrototype<double,int,GlobalOrdinal,Node>
+#else
+  template <class Node>
+  class TekoSmoother<double,Node> : public SmootherPrototype<double,Node>
+#endif
   {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef int LocalOrdinal;
     typedef double Scalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node> MapExtractorClass;
+#else
+    typedef Xpetra::MapExtractor<Scalar, Node> MapExtractorClass;
+#endif
 
 #undef MUELU_TEKOSMOOTHER_SHORT
 #include "MueLu_UseShortNames.hpp"
@@ -297,7 +320,11 @@ namespace MueLu {
           "MueLu::TekoSmoother::Apply: Failed to cast range space to product range space.");
 
       // copy RHS vector B to Thyra::MultiVectorBase thyProdB
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::updateThyra(Teuchos::rcpFromRef(B), rgMapExtractor, thyProdB);
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::updateThyra(Teuchos::rcpFromRef(B), rgMapExtractor, thyProdB);
+#endif
 
       // create a Thyra SOL vector
       Teuchos::RCP<Thyra::MultiVectorBase<Scalar> > thyX = Thyra::createMembers(Teuchos::rcp_dynamic_cast<const Thyra::VectorSpaceBase<Scalar> >(bThyOp_->productDomain()),Teuchos::as<int>(X.getNumVectors()));
@@ -307,7 +334,11 @@ namespace MueLu {
           "MueLu::TekoSmoother::Apply: Failed to cast domain space to product domain space.");
 
       // copy RHS vector X to Thyra::MultiVectorBase thyProdX
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::updateThyra(Teuchos::rcpFromRef(X), rgMapExtractor, thyProdX);
+#else
+      Xpetra::ThyraUtils<Scalar,Node>::updateThyra(Teuchos::rcpFromRef(X), rgMapExtractor, thyProdX);
+#endif
 
       inverseOp_->apply(
         Thyra::NOTRANS,
@@ -317,14 +348,23 @@ namespace MueLu {
         0.0);
 
       // copy back content of Ptr<Thyra::MultiVectorBase> thyX into X
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > XX =
             Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toXpetra(thyX, comm);
+#else
+      Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > XX =
+            Xpetra::ThyraUtils<Scalar,Node>::toXpetra(thyX, comm);
+#endif
 
       X.update(Teuchos::ScalarTraits<Scalar>::one(), *XX, Teuchos::ScalarTraits<Scalar>::zero());
     }
     //@}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<SmootherPrototype> Copy() const { return Teuchos::rcp (new MueLu::TekoSmoother<double,int,GlobalOrdinal,Node> (*this)); }
+#else
+    RCP<SmootherPrototype> Copy() const { return Teuchos::rcp (new MueLu::TekoSmoother<double,Node> (*this)); }
+#endif
 
     //! @name Overridden from Teuchos::Describable
     //@{

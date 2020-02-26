@@ -150,7 +150,11 @@ bool tInterlacedTpetra::test_buildSubMaps_num(int verbosity,std::ostream & os)
    const Teuchos::Comm<int> & comm = *GetComm_tpetra();
 
    try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       std::vector<std::pair<int,RCP<Tpetra::Map<LO,GO,NT> > > > subMaps;
+#else
+      std::vector<std::pair<int,RCP<Tpetra::Map<NT> > > > subMaps;
+#endif
       GO globals = 10;
       int numVars = 3;
 
@@ -169,7 +173,11 @@ bool tInterlacedTpetra::test_buildSubMaps_num(int verbosity,std::ostream & os)
    }
 
    try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       std::vector<std::pair<int,RCP<Tpetra::Map<LO,GO,NT> > > > subMaps;
+#else
+      std::vector<std::pair<int,RCP<Tpetra::Map<NT> > > > subMaps;
+#endif
       GO globals = 9;
       int numVars = 3;
 
@@ -240,7 +248,11 @@ bool tInterlacedTpetra::test_buildSubMaps_vec(int verbosity,std::ostream & os)
    const Teuchos::Comm<int> & comm = *GetComm_tpetra();
 
    try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       std::vector<std::pair<int,RCP<Tpetra::Map<LO,GO,NT> > > > subMaps;
+#else
+      std::vector<std::pair<int,RCP<Tpetra::Map<NT> > > > subMaps;
+#endif
       GO globals = 15;
 
       std::vector<int> vars(3);
@@ -263,7 +275,11 @@ bool tInterlacedTpetra::test_buildSubMaps_vec(int verbosity,std::ostream & os)
    }
 
    try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       std::vector<std::pair<int,RCP<Tpetra::Map<LO,GO,NT> > > > subMaps;
+#else
+      std::vector<std::pair<int,RCP<Tpetra::Map<NT> > > > subMaps;
+#endif
       GO globals = 18;
 
       std::vector<int> vars(3);
@@ -342,10 +358,18 @@ bool tInterlacedTpetra::test_buildMaps(int verbosity,std::ostream & os)
    GO size = 3*1000;
 
    TEST_MSG("\n   Builing Tpetra::Map");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(size,0,GetComm_tpetra()));
+#else
+   RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(size,0,GetComm_tpetra()));
+#endif
 
    TEST_MSG("\n   Building sub maps");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > subMaps;
+#else
+   std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > subMaps;
+#endif
    std::vector<int> vec(2); vec[0] = 2; vec[1] = 1;
    Strided::buildSubMaps(size,vec,*GetComm_tpetra(),subMaps);
 
@@ -356,15 +380,25 @@ bool tInterlacedTpetra::test_buildMaps(int verbosity,std::ostream & os)
          "   tInterlacedTpetra::test_buildMaps (" << Teko::Test::toString(status) << "): "
       << "  second map unknowns is " << subMaps[1].first << " ( should be " << vec[1] << ")");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > globalMaps(2);
    std::vector<Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > contigMaps(2);
+#else
+   std::vector<Teuchos::RCP<Tpetra::Map<NT> > > globalMaps(2);
+   std::vector<Teuchos::RCP<Tpetra::Map<NT> > > contigMaps(2);
+#endif
 
    // get sub maps for convenient use and access
    globalMaps[0] = subMaps[0].second;
    globalMaps[1] = subMaps[1].second;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    contigMaps[0] = Teuchos::get_extra_data<Teuchos::RCP<Tpetra::Map<LO,GO,NT> > >(globalMaps[0],"contigMap");
    contigMaps[1] = Teuchos::get_extra_data<Teuchos::RCP<Tpetra::Map<LO,GO,NT> > >(globalMaps[1],"contigMap");
+#else
+   contigMaps[0] = Teuchos::get_extra_data<Teuchos::RCP<Tpetra::Map<NT> > >(globalMaps[0],"contigMap");
+   contigMaps[1] = Teuchos::get_extra_data<Teuchos::RCP<Tpetra::Map<NT> > >(globalMaps[1],"contigMap");
+#endif
 
    // test that the extra data is attached
    TEST_ASSERT(contigMaps[0]!=Teuchos::null,
@@ -439,27 +473,53 @@ bool tInterlacedTpetra::test_one2many(int verbosity,std::ostream & os)
 
    GO size = 3*1000;
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Builing Epetra_Map and source vector");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(size,0,GetComm_tpetra()));
    RCP<Tpetra::MultiVector<ST,LO,GO,NT> > v = rcp(new Tpetra::MultiVector<ST,LO,GO,NT>(map,1));
+#else
+   RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(size,0,GetComm_tpetra()));
+   RCP<Tpetra::MultiVector<ST,NT> > v = rcp(new Tpetra::MultiVector<ST,NT>(map,1));
+#endif
    v->randomize();
 
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Building sub maps");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > subMaps;
+#else
+   std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > subMaps;
+#endif
    std::vector<int> vec(2); vec[0] = 2; vec[1] = 1;
    Strided::buildSubMaps(size,vec,*GetComm_tpetra(),subMaps);
 
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Building Export/Import");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::Export<LO,GO,NT> > > subExport;
    std::vector<RCP<Tpetra::Import<LO,GO,NT> > > subImport;
+#else
+   std::vector<RCP<Tpetra::Export<NT> > > subExport;
+   std::vector<RCP<Tpetra::Import<NT> > > subImport;
+#endif
    Strided::buildExportImport(*map,subMaps,subExport,subImport);
 
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Building sub vectors");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > subVectors;
+#else
+   std::vector<RCP<Tpetra::MultiVector<ST,NT> > > subVectors;
+#endif
    Strided::buildSubVectors(subMaps,subVectors,1);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > >::const_iterator itr;
+#else
+   std::vector<RCP<Tpetra::MultiVector<ST,NT> > >::const_iterator itr;
+#endif
    for(itr=subVectors.begin();itr!=subVectors.end();++itr) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Tpetra::Map<LO,GO,NT> > lm = Teuchos::get_extra_data<RCP<Tpetra::Map<LO,GO,NT> > >(*itr,"globalMap");
+#else
+      RCP<const Tpetra::Map<NT> > lm = Teuchos::get_extra_data<RCP<Tpetra::Map<NT> > >(*itr,"globalMap");
+#endif
       TEST_ASSERT(lm!=Teuchos::null,
             "   tInterlacedTpetra::test_buildMaps (" << Teko::Test::toString(status) << "): "
          << "check that vector contains \"globalMap\" in RCP");
@@ -480,27 +540,53 @@ bool tInterlacedTpetra::test_many2one(int verbosity,std::ostream & os)
 
    GO size = 3*1000;
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Builing Tpetra_Map and source vector");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(size,0,GetComm_tpetra()));
    RCP<Tpetra::MultiVector<ST,LO,GO,NT> > v = rcp(new Tpetra::MultiVector<ST,LO,GO,NT>(map,4));
+#else
+   RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(size,0,GetComm_tpetra()));
+   RCP<Tpetra::MultiVector<ST,NT> > v = rcp(new Tpetra::MultiVector<ST,NT>(map,4));
+#endif
    v->randomize();
 
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Building sub maps");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > > subMaps;
+#else
+   std::vector<std::pair<int,Teuchos::RCP<Tpetra::Map<NT> > > > subMaps;
+#endif
    std::vector<int> vec(2); vec[0] = 2; vec[1] = 1;
    Strided::buildSubMaps(size,vec,*GetComm_tpetra(),subMaps);
 
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Building Export/Import");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::Export<LO,GO,NT> > > subExport;
    std::vector<RCP<Tpetra::Import<LO,GO,NT> > > subImport;
+#else
+   std::vector<RCP<Tpetra::Export<NT> > > subExport;
+   std::vector<RCP<Tpetra::Import<NT> > > subImport;
+#endif
    Strided::buildExportImport(*map,subMaps,subExport,subImport);
 
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Building sub vectors");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > subVectors;
+#else
+   std::vector<RCP<Tpetra::MultiVector<ST,NT> > > subVectors;
+#endif
    Strided::buildSubVectors(subMaps,subVectors,4);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > >::const_iterator itr;
+#else
+   std::vector<RCP<Tpetra::MultiVector<ST,NT> > >::const_iterator itr;
+#endif
    for(itr=subVectors.begin();itr!=subVectors.end();++itr) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Tpetra::Map<LO,GO,NT> > lm = Teuchos::get_extra_data<RCP<Tpetra::Map<LO,GO,NT> > >(*itr,"globalMap");
+#else
+      RCP<const Tpetra::Map<NT> > lm = Teuchos::get_extra_data<RCP<Tpetra::Map<NT> > >(*itr,"globalMap");
+#endif
       TEST_ASSERT(lm!=Teuchos::null,
             "   tInterlacedTpetra::test_buildMaps (" << Teko::Test::toString(status) << "): "
          << "check that vector contains \"globalMap\" in RCP");
@@ -509,12 +595,20 @@ bool tInterlacedTpetra::test_many2one(int verbosity,std::ostream & os)
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Performing one2many");
    Strided::one2many(subVectors,*v,subImport);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > > cSubVectors;
+#else
+   std::vector<RCP<const Tpetra::MultiVector<ST,NT> > > cSubVectors;
+#endif
    for(itr=subVectors.begin();itr!=subVectors.end();++itr)
       cSubVectors.push_back(*itr);
 
    TEST_MSG("\n   tInterlacedTpetra::test_one2many: Performing many2one");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::MultiVector<ST,LO,GO,NT> > one = rcp(new Tpetra::MultiVector<ST,LO,GO,NT>(map,4));
+#else
+   RCP<Tpetra::MultiVector<ST,NT> > one = rcp(new Tpetra::MultiVector<ST,NT>(map,4));
+#endif
    Strided::many2one(*one,cSubVectors,subExport);
 
    one->update(1.0,*v,-1.0);

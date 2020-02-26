@@ -56,7 +56,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Zoltan, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Zoltan, Constructor, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -69,7 +73,11 @@ namespace MueLuTests {
 
   } //Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Zoltan, Build, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Zoltan, Build, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -110,7 +118,11 @@ namespace MueLuTests {
     // Create a vector with random integer entries in [1,maxEntriesPerRow].
     ST::seedrandom(666*comm->getRank());
     LO maxNnzPerRow = 0;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<LO,LO,GO,NO> > entriesPerRow = Xpetra::VectorFactory<LO,LO,GO,NO>::Build(map,false);
+#else
+    RCP<Xpetra::Vector<LO,NO> > entriesPerRow = Xpetra::VectorFactory<LO,NO>::Build(map,false);
+#endif
     Teuchos::ArrayRCP<LO> eprData = entriesPerRow->getDataNonConst(0);
     for (typename Teuchos::ArrayRCP<LO>::iterator i=eprData.begin(); i!=eprData.end(); ++i) {
       *i = static_cast<LO>(std::floor(((Teuchos::ScalarTraits<double>::random()+1)*0.5*maxEntriesPerRow)+1));
@@ -145,7 +157,11 @@ namespace MueLuTests {
     Teuchos::ParameterList list;
     list.set("nx",nx);
     list.set("ny",ny);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType, LocalOrdinal, GlobalOrdinal, Node> double_multivector_type;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> double_multivector_type;
+#endif
     RCP<double_multivector_type> XYZ = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LO,GO,Map,double_multivector_type>("2D",rowMap,list);
     level.Set("Coordinates",XYZ);
 
@@ -157,7 +173,11 @@ namespace MueLuTests {
     level.Request("Partition",zoltan.get());
     zoltan->Build(level);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition = level.Get<RCP<Xpetra::Vector<GO,LO,GO,NO> > >("Partition",zoltan.get());
+#else
+    RCP<Xpetra::Vector<GO,NO> > decomposition = level.Get<RCP<Xpetra::Vector<GO,NO> > >("Partition",zoltan.get());
+#endif
     /* //TODO temporary code to have the trivial decomposition (no change)
        ArrayRCP<GO> decompEntries = decomposition->getDataNonConst(0);
        for (ArrayRCP<GO>::iterator i = decompEntries.begin(); i != decompEntries.end(); ++i)
@@ -173,7 +193,11 @@ namespace MueLuTests {
     RCP<const Map> partitionMap = MapFactory::Build(TestHelpers::Parameters::getLib(),
         Teuchos::OrdinalTraits<global_size_t>::invalid(), partsView,
         map->getIndexBase(),comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<LO,LO,GO,NO> > localPartsVec = Xpetra::VectorFactory<LO,LO,GO,NO>::Build(partitionMap);
+#else
+    RCP<Xpetra::Vector<LO,NO> > localPartsVec = Xpetra::VectorFactory<LO,NO>::Build(partitionMap);
+#endif
 
     //For the local rows in each partition, tally up the number of nonzeros.  This is what
     //Zoltan should be load-balancing.
@@ -199,7 +223,11 @@ namespace MueLuTests {
         mysize,
         map->getIndexBase(),
         comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<LO,LO,GO,NO> > globalTallyVec = Xpetra::VectorFactory<LO,LO,GO,NO>::Build(globalTallyMap);
+#else
+    RCP<Xpetra::Vector<LO,NO> > globalTallyVec = Xpetra::VectorFactory<LO,NO>::Build(globalTallyMap);
+#endif
     RCP<const Export> exporter = ExportFactory::Build( partitionMap, globalTallyMap);
     globalTallyVec->doExport(*localPartsVec,*exporter,Xpetra::ADD);
 
@@ -297,7 +325,11 @@ namespace MueLuTests {
   } //Build
 
 #ifdef DISABLED // JG: FIXME: coordinates format
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Zoltan, Build3PDEs, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Zoltan, Build3PDEs, Scalar, Node)
+#endif
   {
 
     typedef Teuchos::ScalarTraits<Scalar> ST;
@@ -356,7 +388,11 @@ namespace MueLuTests {
     // Populate CrsMatrix with random number of entries (up to maxEntriesPerRow) per row.
     // Create a vector with random integer entries in [1,maxEntriesPerRow].
     ST::seedrandom(666*comm->getRank());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<LO,LO,GO,NO> > entriesPerRow = Xpetra::VectorFactory<LO,LO,GO,NO>::Build(map,false);
+#else
+    RCP<Xpetra::Vector<LO,NO> > entriesPerRow = Xpetra::VectorFactory<LO,NO>::Build(map,false);
+#endif
     Teuchos::ArrayRCP<LO> eprData = entriesPerRow->getDataNonConst(0);
     for (Teuchos::ArrayRCP<LO>::iterator i=eprData.begin(); i!=eprData.end(); ++i) {
       *i = (LO)(std::floor(((ST::random()+1)*0.5*maxEntriesPerRow)+1));
@@ -437,7 +473,11 @@ namespace MueLuTests {
     level.Request("Partition",zoltan.get());
     zoltan->Build(level);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition = level.Get<RCP<Xpetra::Vector<GO,LO,GO,NO> > >("Partition",zoltan.get());
+#else
+    RCP<Xpetra::Vector<GO,NO> > decomposition = level.Get<RCP<Xpetra::Vector<GO,NO> > >("Partition",zoltan.get());
+#endif
     /* //temporary code to have the trivial decomposition (no change)
        ArrayRCP<GO> decompEntries = decomposition->getDataNonConst(0);
        for (ArrayRCP<GO>::iterator i = decompEntries.begin(); i != decompEntries.end(); ++i)
@@ -453,9 +493,17 @@ namespace MueLuTests {
     RCP<const Map> partitionMap = MapFactory::Build(TestHelpers::Parameters::getLib(),
         Teuchos::OrdinalTraits<global_size_t>::invalid(), partsView,
         map->getIndexBase(),comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<LO,LO,GO,NO> > localPartsVec = Xpetra::VectorFactory<LO,LO,GO,NO>::Build(partitionMap);
+#else
+    RCP<Xpetra::Vector<LO,NO> > localPartsVec = Xpetra::VectorFactory<LO,NO>::Build(partitionMap);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<LO,LO,GO,NO> > nnzPerRow = Xpetra::VectorFactory<LO,LO,GO,NO>::Build(A->getRowMap());
+#else
+    RCP<Xpetra::Vector<LO,NO> > nnzPerRow = Xpetra::VectorFactory<LO,NO>::Build(A->getRowMap());
+#endif
     Teuchos::ArrayRCP<GO> nnzData = nnzPerRow->getDataNonConst(0);
     //For the local rows in each partition, tally up the number of nonzeros.  This is what
     //Zoltan should be load-balancing.
@@ -495,7 +543,11 @@ namespace MueLuTests {
         mysize,
         map->getIndexBase(),
         comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<LO,LO,GO,NO> > globalTallyVec = Xpetra::VectorFactory<LO,LO,GO,NO>::Build(globalTallyMap);
+#else
+    RCP<Xpetra::Vector<LO,NO> > globalTallyVec = Xpetra::VectorFactory<LO,NO>::Build(globalTallyMap);
+#endif
     RCP<const Export> exporter = ExportFactory::Build( partitionMap, globalTallyMap);
     globalTallyVec->doExport(*localPartsVec,*exporter,Xpetra::ADD);
 
@@ -596,9 +648,15 @@ namespace MueLuTests {
   } //Build3PDEs
 #endif // TMP
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Zoltan,Constructor,SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Zoltan,Build,SC,LO,GO,NO)
+#else
+#define MUELU_ETI_GROUP(SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Zoltan,Constructor,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Zoltan,Build,SC,NO)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

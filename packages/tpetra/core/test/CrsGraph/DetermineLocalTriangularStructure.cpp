@@ -61,8 +61,13 @@ using LocalCrsGraph = Kokkos::StaticCrsGraph<LocalOrdinalType, Kokkos::LayoutLef
 //   KokkosSparse::CrsMatrix<ScalarType, LocalOrdinalType, DeviceType, void,
 //                           typename KokkosCrsGraph<LocalOrdinalType, DeviceType>::size_type>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinalType, class GlobalOrdinalType, class DeviceType>
 using LocalMap = typename Tpetra::Map<LocalOrdinalType, GlobalOrdinalType, DeviceType>::local_map_type;
+#else
+template<class DeviceType>
+using LocalMap = typename Tpetra::Map<DeviceType>::local_map_type;
+#endif
 
 template<class LO, class GO, class DT>
 LocalCrsGraph<LO, DT>

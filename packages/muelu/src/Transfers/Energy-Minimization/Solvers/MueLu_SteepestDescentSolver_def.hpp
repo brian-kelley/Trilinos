@@ -60,13 +60,23 @@ namespace MueLu {
 
   using Teuchos::rcp_const_cast;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   SteepestDescentSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SteepestDescentSolver(size_t Its, SC StepLength)
+#else
+  template <class Scalar, class Node>
+  SteepestDescentSolver<Scalar, Node>::SteepestDescentSolver(size_t Its, SC StepLength)
+#endif
   : nIts_(Its), stepLength_(StepLength)
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void SteepestDescentSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Iterate(const Matrix& Aref, const Constraint& C, const Matrix& P0, RCP<Matrix>& P) const {
+#else
+  template <class Scalar, class Node>
+  void SteepestDescentSolver<Scalar, Node>::Iterate(const Matrix& Aref, const Constraint& C, const Matrix& P0, RCP<Matrix>& P) const {
+#endif
     PrintMonitor m(*this, "SD iterations");
 
     RCP<const Matrix> A = rcpFromRef(Aref);
@@ -84,11 +94,19 @@ namespace MueLu {
     P = rcp_const_cast<Matrix>(rcpFromRef(P0));
 
     for (size_t k = 0; k < nIts_; k++) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AP = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *P, false, mmfancy, true, true);
+#else
+      AP = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *P, false, mmfancy, true, true);
+#endif
 #if 0
       // gradient = -2 A^T * A * P
       SC stepLength = 2*stepLength_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       G = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, true, *AP, false, true, true);
+#else
+      G = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, true, *AP, false, true, true);
+#endif
       C.Apply(*G, *Ptmp);
 #else
       // gradient = - A * P
@@ -98,7 +116,11 @@ namespace MueLu {
 #endif
 
       RCP<Matrix> newP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TwoMatrixAdd(*Ptmp, false, -stepLength, *P, false, Teuchos::ScalarTraits<Scalar>::one(), newP, mmfancy);
+#else
+      Xpetra::MatrixMatrix<Scalar, Node>::TwoMatrixAdd(*Ptmp, false, -stepLength, *P, false, Teuchos::ScalarTraits<Scalar>::one(), newP, mmfancy);
+#endif
       newP->fillComplete(P->getDomainMap(), P->getRangeMap() );
       P = newP;
     }

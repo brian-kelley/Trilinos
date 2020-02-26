@@ -98,11 +98,21 @@ namespace Details {
 /// \param resultOnDevice [in] Whether \c resultRaw points to memory
 ///   accessible from device.  If not, it may only be accessed from a
 ///   host execution space.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resultRaw,
            const ::Tpetra::MultiVector<SC, LO, GO, NT>& X,
            const ::Tpetra::MultiVector<SC, LO, GO, NT>& Y,
+#else
+lclDotRaw (typename ::Tpetra::MultiVector<SC, NT>::dot_type* const resultRaw,
+           const ::Tpetra::MultiVector<SC, NT>& X,
+           const ::Tpetra::MultiVector<SC, NT>& Y,
+#endif
            const bool resultOnDevice)
 {
   using ::Kokkos::Impl::MemorySpaceAccess;
@@ -111,7 +121,11 @@ lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resul
   using ::Kokkos::subview;
   using ::Kokkos::View;
   typedef ::Kokkos::pair<size_t, size_t> pair_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::MultiVector<SC, LO, GO, NT> MV;
+#else
+  typedef ::Tpetra::MultiVector<SC, NT> MV;
+#endif
   typedef typename MV::dot_type dot_type;
   typedef typename MV::device_type device_type;
   typedef typename MV::dual_view_type::t_dev::memory_space dev_memory_space;
@@ -365,17 +379,31 @@ lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resul
 /// or Stokhos packages, \c dot_type may be a different type.  Most
 /// users should not have to worry about this, but Tpetra developers
 /// may need to worry about this.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 std::shared_ptr< ::Tpetra::Details::CommRequest>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 idot (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* resultRaw,
       const ::Tpetra::MultiVector<SC, LO, GO, NT>& X,
       const ::Tpetra::MultiVector<SC, LO, GO, NT>& Y)
+#else
+idot (typename ::Tpetra::MultiVector<SC, NT>::dot_type* resultRaw,
+      const ::Tpetra::MultiVector<SC, NT>& X,
+      const ::Tpetra::MultiVector<SC, NT>& Y)
+#endif
 {
   using ::Kokkos::Impl::MemorySpaceAccess;
   using ::Kokkos::HostSpace;
   using ::Kokkos::View;
   using ::Tpetra::Details::iallreduce;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::MultiVector<SC, LO, GO, NT> MV;
+#else
+  typedef ::Tpetra::MultiVector<SC, NT> MV;
+#endif
   typedef typename MV::dot_type dot_type;
   typedef typename MV::device_type device_type;
   typedef View<dot_type*, device_type> result_dev_view_type;
@@ -472,18 +500,33 @@ idot (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* resultRaw,
 /// found in the Sacado or Stokhos packages, \c dot_type may be a
 /// different type.  Most users should not have to worry about this,
 /// but Tpetra developers may need to worry about this.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 std::shared_ptr< ::Tpetra::Details::CommRequest>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 idot (const Kokkos::View<typename ::Tpetra::Vector<SC, LO, GO, NT>::dot_type,
         typename ::Tpetra::Vector<SC, LO, GO, NT>::device_type>& result,
       const ::Tpetra::Vector<SC, LO, GO, NT>& X,
       const ::Tpetra::Vector<SC, LO, GO, NT>& Y)
+#else
+idot (const Kokkos::View<typename ::Tpetra::Vector<SC, NT>::dot_type,
+        typename ::Tpetra::Vector<SC, NT>::device_type>& result,
+      const ::Tpetra::Vector<SC, NT>& X,
+      const ::Tpetra::Vector<SC, NT>& Y)
+#endif
 {
   using ::Kokkos::Impl::MemorySpaceAccess;
   using ::Kokkos::HostSpace;
   using ::Kokkos::View;
   using ::Tpetra::Details::iallreduce;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::MultiVector<SC, LO, GO, NT> MV;
+#else
+  typedef ::Tpetra::MultiVector<SC, NT> MV;
+#endif
   typedef typename MV::dot_type dot_type;
   typedef typename MV::device_type device_type;
   typedef View<dot_type, device_type> result_view_type;
@@ -570,18 +613,33 @@ idot (const Kokkos::View<typename ::Tpetra::Vector<SC, LO, GO, NT>::dot_type,
 /// found in the Sacado or Stokhos packages, \c dot_type may be a
 /// different type.  Most users should not have to worry about this,
 /// but Tpetra developers may need to worry about this.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 std::shared_ptr< ::Tpetra::Details::CommRequest>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 idot (const Kokkos::View<typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type*,
         typename ::Tpetra::MultiVector<SC, LO, GO, NT>::device_type>& result,
       const ::Tpetra::MultiVector<SC, LO, GO, NT>& X,
       const ::Tpetra::MultiVector<SC, LO, GO, NT>& Y)
+#else
+idot (const Kokkos::View<typename ::Tpetra::MultiVector<SC, NT>::dot_type*,
+        typename ::Tpetra::MultiVector<SC, NT>::device_type>& result,
+      const ::Tpetra::MultiVector<SC, NT>& X,
+      const ::Tpetra::MultiVector<SC, NT>& Y)
+#endif
 {
   using ::Kokkos::Impl::MemorySpaceAccess;
   using ::Kokkos::HostSpace;
   using ::Kokkos::View;
   using ::Tpetra::Details::iallreduce;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::MultiVector<SC, LO, GO, NT> MV;
+#else
+  typedef ::Tpetra::MultiVector<SC, NT> MV;
+#endif
   typedef typename MV::dot_type dot_type;
   typedef typename MV::device_type device_type;
   typedef View<dot_type*, device_type> result_view_type;

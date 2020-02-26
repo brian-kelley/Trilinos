@@ -102,14 +102,24 @@ namespace {
   }
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( Map, Create,        M, MV, V, Scalar, LocalOrdinal, GlobalOrdinal , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( Map, Create,        M, MV, V, Scalar, Node )
+#endif
   {
     typedef LocalOrdinal LO;
     typedef GlobalOrdinal GO;
     typedef Scalar scalar_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> map_type;
     typedef Xpetra::MapFactory<LO, GO, Node> map_factory_type;
     typedef Xpetra::ThyraUtils<Scalar, LO, GO, Node> th_utils_type;
+#else
+    typedef Xpetra::Map<Node> map_type;
+    typedef Xpetra::MapFactory<Node> map_factory_type;
+    typedef Xpetra::ThyraUtils<Scalar, Node> th_utils_type;
+#endif
 
     Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm ();
     EXTRACT_LIB(comm,M) // returns mylib
@@ -153,15 +163,26 @@ namespace {
   }
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( MultiVector, Create,        M, MV, V, Scalar, LocalOrdinal, GlobalOrdinal , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( MultiVector, Create,        M, MV, V, Scalar, Node )
+#endif
   {
     typedef LocalOrdinal LO;
     typedef GlobalOrdinal GO;
     typedef Scalar scalar_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> map_type;
     typedef Xpetra::MapFactory<LO, GO, Node> map_factory_type;
     typedef Xpetra::MultiVector<Scalar, LO, GO, Node> mv_type;
     typedef Xpetra::ThyraUtils<Scalar, LO, GO, Node> th_utils_type;
+#else
+    typedef Xpetra::Map<Node> map_type;
+    typedef Xpetra::MapFactory<Node> map_factory_type;
+    typedef Xpetra::MultiVector<Scalar, Node> mv_type;
+    typedef Xpetra::ThyraUtils<Scalar, Node> th_utils_type;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> STS;
 
     Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm ();
@@ -228,15 +249,26 @@ namespace {
   }
 
   ////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( MultiVector, CreateProductMV,        M, MV, V, Scalar, LocalOrdinal, GlobalOrdinal , Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( MultiVector, CreateProductMV,        M, MV, V, Scalar, Node )
+#endif
   {
     typedef LocalOrdinal LO;
     typedef GlobalOrdinal GO;
     typedef Scalar scalar_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> map_type;
     typedef Xpetra::MapFactory<LO, GO, Node> map_factory_type;
     typedef Xpetra::MultiVector<Scalar, LO, GO, Node> mv_type;
     typedef Xpetra::ThyraUtils<Scalar, LO, GO, Node> th_utils_type;
+#else
+    typedef Xpetra::Map<Node> map_type;
+    typedef Xpetra::MapFactory<Node> map_factory_type;
+    typedef Xpetra::MultiVector<Scalar, Node> mv_type;
+    typedef Xpetra::ThyraUtils<Scalar, Node> th_utils_type;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> STS;
 
     Teuchos::RCP<const Teuchos::Comm<int> > comm = getDefaultComm ();
@@ -350,16 +382,27 @@ namespace {
 //
 #ifdef HAVE_XPETRA_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_TPETRA_TYPES( S, LO, GO, N) \
     typedef typename Xpetra::TpetraMap<LO,GO,N> M##LO##GO##N; \
     typedef typename Xpetra::TpetraMultiVector<S,LO,GO,N> MV##S##LO##GO##N; \
     typedef typename Xpetra::TpetraVector<S,LO,GO,N> V##S##LO##GO##N;       \
+#else
+  #define XPETRA_TPETRA_TYPES( S, N) \
+    typedef typename Xpetra::TpetraMap<N> M##LO##GO##N; \
+    typedef typename Xpetra::TpetraMultiVector<S,N> MV##S##LO##GO##N; \
+    typedef typename Xpetra::TpetraVector<S,N> V##S##LO##GO##N;       \
+#endif
 
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_EPETRA_TYPES( S, LO, GO, N) \
+#else
+  #define XPETRA_EPETRA_TYPES( S, N) \
+#endif
     typedef typename Xpetra::EpetraMapT<GO,N> M##LO##GO##N; \
     typedef typename Xpetra::EpetraMultiVectorT<GO,N> MV##S##LO##GO##N; \
     typedef typename Xpetra::EpetraVectorT<GO,N> V##S##LO##GO##N;       \
@@ -367,10 +410,17 @@ namespace {
 #endif
 
 // list of all tests which run both with Epetra and Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define XP_THYRAMULTIVECTOR_INSTANT(S,LO,GO,N) \
   TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( Map,         Create,          M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S, LO, GO, N ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( MultiVector, Create,          M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S, LO, GO, N ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( MultiVector, CreateProductMV, M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S, LO, GO, N ) \
+#else
+#define XP_THYRAMULTIVECTOR_INSTANT(S,N) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( Map,         Create,          M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S,N ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( MultiVector, Create,          M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S,N ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( MultiVector, CreateProductMV, M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S,N ) \
+#endif
 
 #if defined(HAVE_XPETRA_TPETRA)
   #include <TpetraCore_config.h>

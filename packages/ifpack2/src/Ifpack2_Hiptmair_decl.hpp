@@ -70,8 +70,10 @@ namespace Ifpack2 {
   template<class MatrixType>
   class Hiptmair :
     virtual public Ifpack2::Preconditioner<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                            typename MatrixType::local_ordinal_type,
                                            typename MatrixType::global_ordinal_type,
+#endif
                                            typename MatrixType::node_type>
   {
   public:
@@ -164,12 +166,16 @@ namespace Ifpack2 {
 
     void
     applyHiptmairSmoother(const Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           typename MatrixType::local_ordinal_type,
                           typename MatrixType::global_ordinal_type,
+#endif
                           typename MatrixType::node_type>& X,
                           Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           typename MatrixType::local_ordinal_type,
                           typename MatrixType::global_ordinal_type,
+#endif
                           typename MatrixType::node_type>& Y) const;
 
     //! Tpetra::Map representing the domain of this operator.

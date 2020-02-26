@@ -104,18 +104,33 @@ namespace Amesos2 {
      * \ingroup amesos2_utils
      */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LO, typename GO, typename GS, typename Node>
     const Teuchos::RCP<const Tpetra::Map<LO,GO,Node> >
     getGatherMap( const Teuchos::RCP< const Tpetra::Map<LO,GO,Node> > &map );
+#else
+    template <typename GS, typename Node>
+    const Teuchos::RCP<const Tpetra::Map<Node> >
+    getGatherMap( const Teuchos::RCP< const Tpetra::Map<Node> > &map );
+#endif
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LO, typename GO, typename GS, typename Node>
     const Teuchos::RCP<const Tpetra::Map<LO,GO,Node> >
+#else
+    template <typename GS, typename Node>
+    const Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
     getDistributionMap(EDistribution distribution,
                        GS num_global_elements,
                        const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                        GO indexBase = 0,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        const Teuchos::RCP<const Tpetra::Map<LO,GO,Node> >& map = Teuchos::null);
+#else
+                       const Teuchos::RCP<const Tpetra::Map<Node> >& map = Teuchos::null);
+#endif
 
 
 #ifdef HAVE_AMESOS2_EPETRA
@@ -125,8 +140,13 @@ namespace Amesos2 {
      *
      * \ingroup amesos2_utils
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LO, typename GO, typename GS, typename Node>
     RCP<Tpetra::Map<LO,GO,Node> >
+#else
+    template <typename GS, typename Node>
+    RCP<Tpetra::Map<Node> >
+#endif
     epetra_map_to_tpetra_map(const Epetra_BlockMap& map);
 
     /**
@@ -134,9 +154,17 @@ namespace Amesos2 {
      *
      * \ingroup amesos2_utils
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LO, typename GO, typename GS, typename Node>
+#else
+    template <typename GS, typename Node>
+#endif
     RCP<Epetra_Map>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tpetra_map_to_epetra_map(const Tpetra::Map<LO,GO,Node>& map);
+#else
+    tpetra_map_to_epetra_map(const Tpetra::Map<Node>& map);
+#endif
 
     /**
      * \brief Transform an Epetra_Comm object into a Teuchos::Comm object
@@ -673,45 +701,81 @@ namespace Amesos2 {
     ////////////////////////////////////////
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LO, typename GO, typename GS, typename Node>
     const Teuchos::RCP<const Tpetra::Map<LO,GO,Node> >
     getGatherMap( const Teuchos::RCP< const Tpetra::Map<LO,GO,Node> > &map )
+#else
+    template <typename GS, typename Node>
+    const Teuchos::RCP<const Tpetra::Map<Node> >
+    getGatherMap( const Teuchos::RCP< const Tpetra::Map<Node> > &map )
+#endif
     {
       //RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream( Teuchos::null ); // may need to pass an osstream to computeGatherMap for debugging cases...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP< const Tpetra::Map<LO,GO,Node> > gather_map = Tpetra::Details::computeGatherMap(map, Teuchos::null);
+#else
+      Teuchos::RCP< const Tpetra::Map<Node> > gather_map = Tpetra::Details::computeGatherMap(map, Teuchos::null);
+#endif
       return gather_map;
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LO, typename GO, typename GS, typename Node>
     const Teuchos::RCP<const Tpetra::Map<LO,GO,Node> >
+#else
+    template <typename GS, typename Node>
+    const Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
     getDistributionMap(EDistribution distribution,
                        GS num_global_elements,
                        const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                        GO indexBase,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        const Teuchos::RCP<const Tpetra::Map<LO,GO,Node> >& map)
+#else
+                       const Teuchos::RCP<const Tpetra::Map<Node> >& map)
+#endif
     {
         // TODO: Need to add indexBase to cases other than ROOTED
         //  We do not support these maps in any solver now.
       switch( distribution ){
       case DISTRIBUTED:
       case DISTRIBUTED_NO_OVERLAP:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return Tpetra::createUniformContigMapWithNode<LO,GO, Node>(num_global_elements, comm);
+#else
+        return Tpetra::createUniformContigMapWithNode<Node>(num_global_elements, comm);
+#endif
       case GLOBALLY_REPLICATED:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return Tpetra::createLocalMapWithNode<LO,GO, Node>(num_global_elements, comm);
+#else
+        return Tpetra::createLocalMapWithNode<Node>(num_global_elements, comm);
+#endif
       case ROOTED:
         {
           int rank = Teuchos::rank(*comm);
           size_t my_num_elems = Teuchos::OrdinalTraits<size_t>::zero();
           if( rank == 0 ) { my_num_elems = num_global_elements; }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           return rcp(new Tpetra::Map<LO,GO, Node>(num_global_elements,
+#else
+          return rcp(new Tpetra::Map<Node>(num_global_elements,
+#endif
                                                   my_num_elems, indexBase, comm));
         }
       case CONTIGUOUS_AND_ROOTED:
         {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           const Teuchos::RCP<const Tpetra::Map<LO,GO,Node> > gathermap
           = getGatherMap<LO,GO,GS,Node>( map );  //getMap must be the map returned, NOT rowmap or colmap
+#else
+          const Teuchos::RCP<const Tpetra::Map<Node> > gathermap
+          = getGatherMap<GS,Node>( map );  //getMap must be the map returned, NOT rowmap or colmap
+#endif
           return gathermap;
         }
       default:
@@ -728,8 +792,13 @@ namespace Amesos2 {
     //#pragma message "include 3"
     //#include <Epetra_Map.h>
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LO, typename GO, typename GS, typename Node>
     Teuchos::RCP<Tpetra::Map<LO,GO,Node> >
+#else
+    template <typename GS, typename Node>
+    Teuchos::RCP<Tpetra::Map<Node> >
+#endif
     epetra_map_to_tpetra_map(const Epetra_BlockMap& map)
     {
       using Teuchos::as;
@@ -753,7 +822,11 @@ namespace Amesos2 {
         my_gbl_inds = av_reinterpret_cast<GO> (my_global_elements ());
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::Map<LO,GO,Node> map_t;
+#else
+      typedef Tpetra::Map<Node> map_t;
+#endif
       RCP<map_t> tmap = rcp(new map_t(Teuchos::OrdinalTraits<GS>::invalid(),
                                       my_gbl_inds(),
                                       as<GO>(map.IndexBase()),
@@ -761,9 +834,17 @@ namespace Amesos2 {
       return tmap;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <typename LO, typename GO, typename GS, typename Node>
+#else
+    template <typename GS, typename Node>
+#endif
     Teuchos::RCP<Epetra_Map>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tpetra_map_to_epetra_map(const Tpetra::Map<LO,GO,Node>& map)
+#else
+    tpetra_map_to_epetra_map(const Tpetra::Map<Node>& map)
+#endif
     {
       using Teuchos::as;
 

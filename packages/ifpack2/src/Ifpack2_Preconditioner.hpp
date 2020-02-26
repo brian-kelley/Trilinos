@@ -98,15 +98,29 @@ namespace Ifpack2 {
 /// the preconditioner.
 template<class Scalar =
            Tpetra::Operator<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal =
            typename Tpetra::Operator<Scalar>::local_ordinal_type,
          class GlobalOrdinal =
            typename Tpetra::Operator<Scalar, LocalOrdinal>::global_ordinal_type,
+#endif
          class Node =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            typename Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
+#else
+           typename Tpetra::Operator<Scalar>::node_type>
+#endif
 class Preconditioner :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual public Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+  virtual public Tpetra::Operator<Scalar, Node> {
+#endif
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   //! The type of the magnitude (absolute value) of a matrix entry.
   typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType magnitude_type;
 
@@ -120,14 +134,22 @@ public:
   ///
   /// The domain Map describes the distribution of valid input vectors
   /// X to the apply() method.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
   getDomainMap () const = 0;
 
   /// @brief The range Map of this operator.
   ///
   /// The range Map describes the distribution of valid output vectors
   /// Y to the apply() method.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
   getRangeMap () const = 0;
 
   /// @brief Apply the preconditioner to X, putting the result in Y.
@@ -136,8 +158,13 @@ public:
   /// \f$F \cdot X$\f$, then this method computes \f$\beta Y + \alpha F \cdot X\f$.
   /// The typical case is \f$\beta = 0\f$ and \f$\alpha = 1\f$.
   virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   apply (const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
          Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+  apply (const Tpetra::MultiVector<Scalar,Node> &X,
+         Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
          Teuchos::ETransp mode = Teuchos::NO_TRANS,
          Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
          Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const = 0;
@@ -175,7 +202,11 @@ public:
   virtual bool isComputed() const = 0;
 
   //! The input matrix given to the constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > getMatrix() const = 0;
+#else
+  virtual Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> > getMatrix() const = 0;
+#endif
 
   //! The number of calls to initialize().
   virtual int getNumInitialize() const = 0;

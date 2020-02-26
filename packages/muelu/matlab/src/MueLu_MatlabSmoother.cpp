@@ -52,8 +52,13 @@
 #include "TpetraCore_ETIHelperMacros.h"
 
 #ifdef HAVE_MUELU_MATLAB
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_LOCAL_INSTANT(S,LO,GO,N) \
         template class MueLu::MatlabSmoother<S,LO,GO,N>;
+#else
+#define MUELU_LOCAL_INSTANT(S,N) \
+        template class MueLu::MatlabSmoother<S,N>;
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

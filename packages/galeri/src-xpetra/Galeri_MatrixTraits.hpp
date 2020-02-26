@@ -86,24 +86,54 @@ namespace Galeri {
 
     /* Specialized traits for:
        - Map = Xpetra::Map<...>, Matrix = Xpetra::CrsMatrix<...> */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     class MatrixTraits < ::Xpetra::Map<LocalOrdinal,GlobalOrdinal, Node>, ::Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal, Node> >
+#else
+    template <class Scalar, class Node>
+    class MatrixTraits < ::Xpetra::Map<Node>, ::Xpetra::CrsMatrix<Scalar, Node> >
+#endif
     {
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP< ::Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal, Node> > Build(const Teuchos::RCP<const ::Xpetra::Map<LocalOrdinal,GlobalOrdinal, Node> > &rowMap, size_t maxNumEntriesPerRow)
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      static Teuchos::RCP< ::Xpetra::CrsMatrix<Scalar, Node> > Build(const Teuchos::RCP<const ::Xpetra::Map<Node> > &rowMap, size_t maxNumEntriesPerRow)
+#endif
       // Use the CrsMatrixFactory to decide what kind of matrix to create (Xpetra::TpetraCrsMatrix or Xpetra::EpetraCrsMatrix).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       { return ::Xpetra::CrsMatrixFactory<Scalar,LocalOrdinal,GlobalOrdinal, Node>::Build(rowMap,  maxNumEntriesPerRow); };
+#else
+      { return ::Xpetra::CrsMatrixFactory<Scalar, Node>::Build(rowMap,  maxNumEntriesPerRow); };
+#endif
     };
 
     /* Specialized traits for:
        - Map = Xpetra::Map<...>, Matrix = Xpetra::Matrix<...> */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     class MatrixTraits < ::Xpetra::Map<LocalOrdinal,GlobalOrdinal, Node>, ::Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal, Node> >
+#else
+    template <class Scalar, class Node>
+    class MatrixTraits < ::Xpetra::Map<Node>, ::Xpetra::Matrix<Scalar, Node> >
+#endif
     {
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP< ::Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal, Node> > Build(const Teuchos::RCP<const ::Xpetra::Map<LocalOrdinal,GlobalOrdinal, Node> > &rowMap, size_t maxNumEntriesPerRow)
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      static Teuchos::RCP< ::Xpetra::Matrix<Scalar, Node> > Build(const Teuchos::RCP<const ::Xpetra::Map<Node> > &rowMap, size_t maxNumEntriesPerRow)
+#endif
       // Use the CrsMatrixFactory to decide what kind of matrix to create (Xpetra::TpetraCrsMatrix or Xpetra::EpetraCrsMatrix).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       { return ::Xpetra::MatrixFactory<Scalar,LocalOrdinal,GlobalOrdinal, Node>::Build(rowMap, maxNumEntriesPerRow); };
+#else
+      { return ::Xpetra::MatrixFactory<Scalar, Node>::Build(rowMap, maxNumEntriesPerRow); };
+#endif
     };
 
 #endif

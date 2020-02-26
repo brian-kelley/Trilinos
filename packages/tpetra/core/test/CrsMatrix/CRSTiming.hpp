@@ -49,9 +49,15 @@
 #include <Teuchos_TimeMonitor.hpp>
 
 template <class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void CRSTiming(const Teuchos::RCP<const Tpetra::CrsMatrix<double,int,int,Node> > &A) {
   typedef Tpetra::Map<int,int,Node>                Map;
   typedef Tpetra::Vector<double,int,int,Node>      Vector;
+#else
+void CRSTiming(const Teuchos::RCP<const Tpetra::CrsMatrix<double,Node> > &A) {
+  typedef Tpetra::Map<Node>                Map;
+  typedef Tpetra::Vector<double,Node>      Vector;
+#endif
 
   Teuchos::RCP<const Map> map = A->getRowMap();
   Teuchos::RCP<const Teuchos::Comm<int> > comm = map->getComm();

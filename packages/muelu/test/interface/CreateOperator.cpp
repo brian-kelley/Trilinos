@@ -83,8 +83,13 @@ const std::string prefSeparator = "=====================================";
 
 namespace MueLuExamples {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void setup_system_list(Xpetra::UnderlyingLib& lib, Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& A, Teuchos::ParameterList& mueluList, const std::string& fname) {
+#else
+  template<class Scalar, class Node>
+  void setup_system_list(Xpetra::UnderlyingLib& lib, Teuchos::RCP<Xpetra::Matrix<Scalar,Node> >& A, Teuchos::ParameterList& mueluList, const std::string& fname) {
+#endif
 #include <MueLu_UseShortNames.hpp>
     using Teuchos::RCP;
     using Teuchos::rcp;
@@ -94,10 +99,17 @@ namespace MueLuExamples {
     std::streambuf* oldbuffer = NULL;
 
 #ifdef HAVE_MUELU_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Operator<SC,LO,GO,NO> Tpetra_Operator;
     typedef Tpetra::CrsMatrix<SC,LO,GO,NO> Tpetra_CrsMatrix;
     typedef Tpetra::Vector<SC,LO,GO,NO> Tpetra_Vector;
     typedef Tpetra::MultiVector<SC,LO,GO,NO> Tpetra_MultiVector;
+#else
+    typedef Tpetra::Operator<SC,NO> Tpetra_Operator;
+    typedef Tpetra::CrsMatrix<SC,NO> Tpetra_CrsMatrix;
+    typedef Tpetra::Vector<SC,NO> Tpetra_Vector;
+    typedef Tpetra::MultiVector<SC,NO> Tpetra_MultiVector;
+#endif
     if (lib == Xpetra::UseTpetra) {
       if (myRank == 0) {
         // Redirect output
@@ -105,8 +117,13 @@ namespace MueLuExamples {
         oldbuffer = std::cout.rdbuf(&buffer);
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Tpetra_CrsMatrix> At = Xpetra::Helpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Op2NonConstTpetraCrs(A);
       RCP<Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > opA(At);
+#else
+      RCP<Tpetra_CrsMatrix> At = Xpetra::Helpers<Scalar, Node>::Op2NonConstTpetraCrs(A);
+      RCP<Tpetra::Operator<Scalar,Node> > opA(At);
+#endif
       RCP<Tpetra_Operator>  Mt = MueLu::CreateTpetraPreconditioner(opA, mueluList);
 
       if (myRank == 0) {
@@ -124,7 +141,11 @@ namespace MueLuExamples {
         oldbuffer = std::cout.rdbuf(&buffer);
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Epetra_CrsMatrix>   Ae = Xpetra::Helpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Op2NonConstEpetraCrs(A);
+#else
+      RCP<Epetra_CrsMatrix>   Ae = Xpetra::Helpers<Scalar, Node>::Op2NonConstEpetraCrs(A);
+#endif
       RCP<Epetra_Operator>    Me = MueLu::CreateEpetraPreconditioner(Ae, mueluList);
 
       if (myRank == 0) {
@@ -137,34 +158,59 @@ namespace MueLuExamples {
   }
 
   // This routine generate's the user's original A matrix and nullspace
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void generate_user_matrix_and_nullspace(std::string &matrixType,  Xpetra::UnderlyingLib & lib, Teuchos::ParameterList &galeriList,  Teuchos::RCP<const Teuchos::Comm<int> > &comm, Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > & A, Teuchos::RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > & nullspace, Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> >& coordinates){
+#else
+  template<class Scalar, class Node>
+  void generate_user_matrix_and_nullspace(std::string &matrixType,  Xpetra::UnderlyingLib & lib, Teuchos::ParameterList &galeriList,  Teuchos::RCP<const Teuchos::Comm<int> > &comm, Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > & A, Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > & nullspace, Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> >& coordinates){
+#endif
 #include <MueLu_UseShortNames.hpp>
     using Teuchos::RCP;
 
     typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
     RCP<Teuchos::FancyOStream> fancy = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
     Teuchos::FancyOStream& out = *fancy;
 
     RCP<const Map>   map;
     if (matrixType == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian1D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian1D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,RealValuedMultiVector>("1D", map, galeriList);
 
     } else if (matrixType == "Laplace2D" || matrixType == "Star2D" || matrixType == "BigStar2D" || matrixType == "Elasticity2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian2D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian2D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,RealValuedMultiVector>("2D", map, galeriList);
 
     } else if (matrixType == "Laplace3D" || matrixType == "Brick3D" || matrixType == "Elasticity3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian3D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian3D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,RealValuedMultiVector>("3D", map, galeriList);
     }
 
     // Expand map to do multiple DOF per node for block problems
     if (matrixType == "Elasticity2D" || matrixType == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Xpetra::MapFactory<LO,GO,Node>::Build(map, (matrixType == "Elasticity2D" ? 2 : 3));
+#else
+      map = Xpetra::MapFactory<Node>::Build(map, (matrixType == "Elasticity2D" ? 2 : 3));
+#endif
 
     out << "Processor subdomains in x direction: " << galeriList.get<GO>("mx") << std::endl
         << "Processor subdomains in y direction: " << galeriList.get<GO>("my") << std::endl
@@ -264,7 +310,11 @@ namespace MueLuExamples {
 
 }//namespace
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
@@ -273,7 +323,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
   using Teuchos::TimeMonitor;
 
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   bool success = true;
   bool verbose = true;
@@ -318,7 +372,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
     RCP<RealValuedMultiVector> coordinates0;
     RCP<RealValuedMultiVector> coordinates1;
     std::string matrixType = galeriParameters.GetMatrixType();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MueLuExamples::generate_user_matrix_and_nullspace<Scalar,LocalOrdinal,GlobalOrdinal,Node>(matrixType, lib, galeriList, comm, A, nullspace, coordinates0);
+#else
+    MueLuExamples::generate_user_matrix_and_nullspace<Scalar,Node>(matrixType, lib, galeriList, comm, A, nullspace, coordinates0);
+#endif
     map = A->getRowMap();
 
     std::string prefix;
@@ -418,7 +476,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       level1.set("Nullspace",   nullspace);
       level1.set("Coordinates", coordinates1);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLuExamples::setup_system_list<Scalar,LocalOrdinal,GlobalOrdinal,Node>(lib, A, mueluList, fname);
+#else
+      MueLuExamples::setup_system_list<Scalar,Node>(lib, A, mueluList, fname);
+#endif
 
       bool passed = MueLuExamples::compare_to_gold(myRank, fname);
       success = success && passed;
@@ -449,7 +511,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       level1.set("Nullspace", nullspace);
       level1.set("Coordinates", coordinates1);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLuExamples::setup_system_list<Scalar,LocalOrdinal,GlobalOrdinal,Node>(lib, A, mueluList, fname);
+#else
+      MueLuExamples::setup_system_list<Scalar,Node>(lib, A, mueluList, fname);
+#endif
 
       bool passed = MueLuExamples::compare_to_gold(myRank, fname);
       success = success && passed;
@@ -480,7 +546,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       level1.set("Nullspace", nullspace);
       level1.set("Coordinates", coordinates1);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLuExamples::setup_system_list<Scalar,LocalOrdinal,GlobalOrdinal,Node>(lib, A, mueluList, fname);
+#else
+      MueLuExamples::setup_system_list<Scalar,Node>(lib, A, mueluList, fname);
+#endif
 
       bool passed = MueLuExamples::compare_to_gold(myRank, fname);
       success = success && passed;

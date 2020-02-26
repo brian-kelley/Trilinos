@@ -95,7 +95,11 @@ this directory.
 #include <BelosMueLuAdapter.hpp>
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
   // Most MueLu and Xpetra classes are templated on some or all of the
   // following template types: Scalar, LocalOrdinal, GlobalOrdinal,
@@ -229,15 +233,27 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
     // Create map (Map) and coordinates (MultiVector).  Xpetra's Map
     // and MultiVector imitate Tpetra's interface.
     if (matrixType == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("1D", map, galeriList);
 
     } else if (matrixType == "Laplace2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("2D", map, galeriList);
 
     } else if (matrixType == "Laplace3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("3D", map, galeriList);
     }
 
@@ -260,12 +276,24 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
     // (though you may avoid that in a serial run), a matrix (in a
     // MatrixMarket format), and a file with coordinates.
     if (!mapFile.empty())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Xpetra::IO<SC,LO,GO,Node>::ReadMap(mapFile, xpetraParameters.GetLib(), comm);
+#else
+      map = Xpetra::IO<SC,Node>::ReadMap(mapFile, xpetraParameters.GetLib(), comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     A = Xpetra::IO<SC,LO,GO,Node>::Read(matrixFile, map);
+#else
+    A = Xpetra::IO<SC,Node>::Read(matrixFile, map);
+#endif
 
     if (!coordFile.empty())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       coordinates = Xpetra::IO<SC,LO,GO,Node>::ReadMultiVector(coordFile, map);
+#else
+      coordinates = Xpetra::IO<SC,Node>::ReadMultiVector(coordFile, map);
+#endif
   }
 
   // For scalar equations, we assume that the constant vector is a
@@ -368,8 +396,13 @@ printf("after level print\n");
   // wrap MueLu and Xpetra objects into Belos operators.  This is only
   // one of many different ways one could choose to wrap MueLu and
   // Xpetra objects in order to get them to work with Belos.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<OP> belosOp   = rcp(new Belos::XpetraOp<SC, LO, GO, NO>(A));
   RCP<OP> belosPrec = rcp(new Belos::MueLuOp <SC, LO, GO, NO>(H));
+#else
+  RCP<OP> belosOp   = rcp(new Belos::XpetraOp<SC, NO>(A));
+  RCP<OP> belosPrec = rcp(new Belos::MueLuOp <SC, NO>(H));
+#endif
 
   // Construct a Belos LinearProblem object. This is a complete
   // problem formulation. All the data necessary to solve the system

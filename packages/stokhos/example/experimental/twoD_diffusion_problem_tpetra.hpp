@@ -66,12 +66,21 @@ template <typename Scalar,
 class twoD_diffusion_problem  {
 public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Tpetra_Map;
   typedef Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tpetra_Vector;
   typedef Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tpetra_Operator;
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tpetra_CrsMatrix;
   typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> Tpetra_CrsGraph;
   typedef Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node> Tpetra_Import;
+#else
+  typedef Tpetra::Map<Node> Tpetra_Map;
+  typedef Tpetra::Vector<Scalar,Node> Tpetra_Vector;
+  typedef Tpetra::Operator<Scalar,Node> Tpetra_Operator;
+  typedef Tpetra::CrsMatrix<Scalar,Node> Tpetra_CrsMatrix;
+  typedef Tpetra::CrsGraph<Node> Tpetra_CrsGraph;
+  typedef Tpetra::Import<Node> Tpetra_Import;
+#endif
 
   //! Constructor
   twoD_diffusion_problem(

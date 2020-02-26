@@ -1011,7 +1011,12 @@ std::string RILUK<MatrixType>::description () const
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_RILUK_INSTANT(S,LO,GO,N)                            \
   template class Ifpack2::RILUK< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_RILUK_INSTANT(S,N)                            \
+  template class Ifpack2::RILUK< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif

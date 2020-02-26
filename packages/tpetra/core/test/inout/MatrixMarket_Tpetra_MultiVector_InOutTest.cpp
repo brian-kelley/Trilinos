@@ -216,7 +216,11 @@ namespace {
   Teuchos::RCP<MV>
   testReadDenseFileWithInputMap (const std::string& inputFilename,
                                  const std::string& outputFilename,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                  const Teuchos::RCP<const Tpetra::Map<typename MV::local_ordinal_type, typename MV::global_ordinal_type, typename MV::node_type> >& map,
+#else
+                                 const Teuchos::RCP<const Tpetra::Map<typename MV::node_type> >& map,
+#endif
                                  const bool tolerant,
                                  const bool verbose,
                                  const bool debug)
@@ -508,8 +512,13 @@ main (int argc, char *argv[])
     typedef local_ordinal_type LO;
     typedef global_ordinal_type GO;
     typedef node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<ST, LO, GO, NT> MV;
     typedef Tpetra::Map<LO, GO, NT> MT;
+#else
+    typedef Tpetra::MultiVector<ST, NT> MV;
+    typedef Tpetra::Map<NT> MT;
+#endif
 
     // If not testing writes, don't do the sanity check that tests
     // input by comparing against output.
@@ -549,7 +558,11 @@ main (int argc, char *argv[])
       const GO indexBase = X->getMap()->getIndexBase();
       // Create the Map.
       RCP<const MT> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         rcp (new Tpetra::Map<LO, GO, NT> (globalNumRows, indexBase, comm,
+#else
+        rcp (new Tpetra::Map<NT> (globalNumRows, indexBase, comm,
+#endif
                                           Tpetra::GloballyDistributed));
       try {
         RCP<MV> X2 =
@@ -609,7 +622,11 @@ main (int argc, char *argv[])
 
       // Create the Map.
       RCP<const MT> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         rcp (new Tpetra::Map<LO, GO, NT> (globalNumRows, indexBase, comm,
+#else
+        rcp (new Tpetra::Map<NT> (globalNumRows, indexBase, comm,
+#endif
                                           Tpetra::GloballyDistributed));
       try {
         RCP<MV> X3 =
@@ -672,7 +689,11 @@ main (int argc, char *argv[])
 
       // Create the Map.
       RCP<const MT> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         rcp (new Tpetra::Map<LO, GO, NT> (globalNumRows, indexBase, comm,
+#else
+        rcp (new Tpetra::Map<NT> (globalNumRows, indexBase, comm,
+#endif
                                           Tpetra::GloballyDistributed));
       try {
         RCP<MV> X3 =
@@ -766,7 +787,11 @@ main (int argc, char *argv[])
       // Create the Map.
       using Tpetra::createNonContigMapWithNode;
       RCP<const MT> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         createNonContigMapWithNode<LO, GO, NT> (elementList(), comm);
+#else
+        createNonContigMapWithNode<NT> (elementList(), comm);
+#endif
       try {
         RCP<MV> X4 = testReadDenseFileWithInputMap<MV> (inputFilename, tmpFilename,
                                                         map, tolerant, verbose, debug);
@@ -841,7 +866,11 @@ main (int argc, char *argv[])
       // Create the Map.
       using Tpetra::createNonContigMapWithNode;
       RCP<const MT> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         createNonContigMapWithNode<LO, GO, NT> (elementList(), comm);
+#else
+        createNonContigMapWithNode<NT> (elementList(), comm);
+#endif
       try {
         RCP<MV> X5 = testReadDenseFileWithInputMap<MV> (inputFilename, tmpFilename,
                                                         map, tolerant, verbose, debug);
@@ -932,7 +961,11 @@ main (int argc, char *argv[])
       // Create the Map.
       using Tpetra::createNonContigMapWithNode;
       RCP<const MT> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         createNonContigMapWithNode<LO, GO, NT> (elementList(), comm);
+#else
+        createNonContigMapWithNode<NT> (elementList(), comm);
+#endif
       try {
         RCP<MV> X7 = testReadDenseFileWithInputMap<MV> (inputFilename, tmpFilename,
                                                         map, tolerant, verbose, debug);

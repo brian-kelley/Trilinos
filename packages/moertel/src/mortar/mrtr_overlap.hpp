@@ -95,13 +95,17 @@ Use at least the following lines in the configure of Trilinos:<br>
 namespace MoertelT
 {
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 class InterfaceT;
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 class IntegratorT;
 }
@@ -147,8 +151,10 @@ public:
   friend class Integrator;
 #ifdef HAVE_MOERTEL_TPETRA
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 friend class MoertelT::IntegratorT;
 #endif

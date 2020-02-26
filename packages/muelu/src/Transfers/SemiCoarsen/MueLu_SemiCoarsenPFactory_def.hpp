@@ -64,8 +64,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> SemiCoarsenPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> SemiCoarsenPFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -82,8 +87,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SemiCoarsenPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& fineLevel, Level& /* coarseLevel */) const {
+#else
+  template <class Scalar, class Node>
+  void SemiCoarsenPFactory<Scalar, Node>::DeclareInput(Level& fineLevel, Level& /* coarseLevel */) const {
+#endif
     Input(fineLevel, "A");
     Input(fineLevel, "Nullspace");
 
@@ -112,13 +122,23 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SemiCoarsenPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SemiCoarsenPFactory<Scalar, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     return BuildP(fineLevel, coarseLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SemiCoarsenPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SemiCoarsenPFactory<Scalar, Node>::BuildP(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
 
     // obtain general variables
@@ -171,7 +191,11 @@ namespace MueLu {
     // transfer coordinates
     if(bTransferCoordinates_) {
       //Teuchos::FancyOStream> out = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,LO,GO,NO> xdMV;
+#else
+      typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,NO> xdMV;
+#endif
       RCP<xdMV>    fineCoords = Teuchos::null;
       if (fineLevel.GetLevelID() == 0 &&
           fineLevel.IsAvailable("Coordinates", NoFactory::get())) {
@@ -230,7 +254,11 @@ namespace MueLu {
               Teuchos::as<size_t>(numLocalCoarseNodes),
               fineCoords->getMap()->getIndexBase(),
               fineCoords->getMap()->getComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<xdMV> coarseCoords   = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType,LO,GO,NO>::Build(coarseCoordMap, fineCoords->getNumVectors());
+#else
+      RCP<xdMV> coarseCoords   = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType,NO>::Build(coarseCoordMap, fineCoords->getNumVectors());
+#endif
       coarseCoords->putScalar(-1.0);
       ArrayRCP<typename Teuchos::ScalarTraits<Scalar>::coordinateType> cx = coarseCoords->getDataNonConst(0);
       ArrayRCP<typename Teuchos::ScalarTraits<Scalar>::coordinateType> cy = coarseCoords->getDataNonConst(1);
@@ -263,8 +291,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   LocalOrdinal SemiCoarsenPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::FindCpts(LocalOrdinal const PtsPerLine, LocalOrdinal const CoarsenRate, LocalOrdinal const Thin, LocalOrdinal **LayerCpts) const {
+#else
+  template <class Scalar, class Node>
+  LocalOrdinal SemiCoarsenPFactory<Scalar, Node>::FindCpts(LocalOrdinal const PtsPerLine, LocalOrdinal const CoarsenRate, LocalOrdinal const Thin, LocalOrdinal **LayerCpts) const {
+#endif
     /*
      * Given the number of points in the z direction (PtsPerLine) and a
      * coarsening rate (CoarsenRate), determine which z-points will serve
@@ -318,8 +351,13 @@ namespace MueLu {
 
 #define MaxHorNeighborNodes 75
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   LocalOrdinal SemiCoarsenPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  LocalOrdinal SemiCoarsenPFactory<Scalar, Node>::
+#endif
   MakeSemiCoarsenP(LO const Ntotal, LO const nz, LO const CoarsenRate, LO const LayerId[],
                    LO const VertLineId[], LO const DofsPerNode, RCP<Matrix> & Amat, RCP<Matrix>& P,
                    RCP<const Map>& coarseMap, const RCP<MultiVector> fineNullspace,
@@ -406,8 +444,13 @@ namespace MueLu {
     Teuchos::ArrayRCP<LO> TLayerdofs= Teuchos::arcp<LO>(Ntotal*DofsPerNode+Nghost+1); Layerdofs = TLayerdofs.getRawPtr();
     Teuchos::ArrayRCP<LO> TCol2Dof= Teuchos::arcp<LO>(Ntotal*DofsPerNode+Nghost+1); Col2Dof= TCol2Dof.getRawPtr();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<LO,LO,GO,NO> > localdtemp = Xpetra::VectorFactory<LO,LO,GO,NO>::Build(Amat->getDomainMap());
     RCP<Xpetra::Vector<LO,LO,GO,NO> > dtemp      = Xpetra::VectorFactory<LO,LO,GO,NO>::Build(Amat->getColMap());
+#else
+    RCP<Xpetra::Vector<LO,NO> > localdtemp = Xpetra::VectorFactory<LO,NO>::Build(Amat->getDomainMap());
+    RCP<Xpetra::Vector<LO,NO> > dtemp      = Xpetra::VectorFactory<LO,NO>::Build(Amat->getColMap());
+#endif
     ArrayRCP<LO> valptr= localdtemp->getDataNonConst(0);
 
     for (i = 0; i < Ntotal*DofsPerNode; i++)

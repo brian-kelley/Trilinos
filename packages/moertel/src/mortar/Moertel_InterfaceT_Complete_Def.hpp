@@ -58,10 +58,16 @@
  |  finalize construction of this interface                             |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::Complete()
+#else
+bool MoertelT::InterfaceT<ST, N>::Complete()
+#endif
 { 
   if (IsComplete())
   {

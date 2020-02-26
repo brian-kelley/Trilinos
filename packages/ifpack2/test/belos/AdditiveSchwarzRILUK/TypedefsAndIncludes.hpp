@@ -18,9 +18,15 @@ typedef Teuchos::ScalarTraits<scalar_type> STS;
 typedef STS::magnitudeType magnitude_type;
 typedef Teuchos::ScalarTraits<magnitude_type> STM;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::Map<LO, GO, node_type> map_type;
 typedef Tpetra::MultiVector<scalar_type, LO, GO, node_type> multivector_type;
 typedef Tpetra::CrsMatrix<scalar_type, LO, GO, node_type> sparse_mat_type;
+#else
+typedef Tpetra::Map<node_type> map_type;
+typedef Tpetra::MultiVector<scalar_type, node_type> multivector_type;
+typedef Tpetra::CrsMatrix<scalar_type, node_type> sparse_mat_type;
+#endif
 
 } // namespace Test
 } // namespace Ifpack2

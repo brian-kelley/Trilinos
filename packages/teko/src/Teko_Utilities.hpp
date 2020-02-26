@@ -121,7 +121,11 @@ using Thyra::block1x2;
   * \returns The graph Laplacian matrix to be filled according to the <code>stencil</code> matrix.
   */
 Teuchos::RCP<Epetra_CrsMatrix> buildGraphLaplacian(int dim,double * coords,const Epetra_CrsMatrix & stencil);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > buildGraphLaplacian(int dim,ST * coords,const Tpetra::CrsMatrix<ST,LO,GO,NT> & stencil);
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST,NT> > buildGraphLaplacian(int dim,ST * coords,const Tpetra::CrsMatrix<ST,NT> & stencil);
+#endif
 
 /** \brief Build a graph Laplacian stenciled on a Epetra_CrsMatrix.
   *
@@ -146,7 +150,11 @@ Teuchos::RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > buildGraphLaplacian(int dim,ST * c
   * \returns The graph Laplacian matrix to be filled according to the <code>stencil</code> matrix.
   */
 Teuchos::RCP<Epetra_CrsMatrix> buildGraphLaplacian(double * x,double * y,double * z,int stride,const Epetra_CrsMatrix & stencil);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > buildGraphLaplacian(ST * x,ST * y,ST * z,GO stride,const Tpetra::CrsMatrix<ST,LO,GO,NT> & stencil);
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST,NT> > buildGraphLaplacian(ST * x,ST * y,ST * z,GO stride,const Tpetra::CrsMatrix<ST,NT> & stencil);
+#endif
 
 /** \brief Function used internally by Teko to find the output stream.
   * 

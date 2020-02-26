@@ -181,7 +181,11 @@ OperatorBase<SX>* getOperator()
 }
 
 void openFiles
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   (RCP< bddc::PreconditionerBDDC<SX,SM,LO,GO> > & Preconditioner,
+#else
+  (RCP< bddc::PreconditionerBDDC<SX,SM> > & Preconditioner,
+#endif
    const bool resetFile)
 {
   Preconditioner->printBanner("dd_solver.dat", resetFile);
@@ -200,8 +204,13 @@ void openFiles
 }
 
 void printTimings
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 (RCP< bddc::PreconditionerBDDC<SX,SM,LO,GO> > & Preconditioner, 
  RCP< bddc::KrylovSolver<SX,SM,LO,GO> > & Solver,
+#else
+(RCP< bddc::PreconditionerBDDC<SX,SM> > & Preconditioner, 
+ RCP< bddc::KrylovSolver<SX,SM> > & Solver,
+#endif
  const LO krylovMethod)
 {
   RCP<const Teuchos::Comm<int> > Comm = Preconditioner->getComm();

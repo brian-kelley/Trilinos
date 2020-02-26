@@ -96,11 +96,19 @@ namespace TpetraHelpers {
   *
   * \returns A diagonal linear operator using the vector
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const Teuchos::RCP<const Thyra::LinearOpBase<ST> > thyraDiagOp(const RCP<const Tpetra::Vector<ST,LO,GO,NT> > & tv,const Tpetra::Map<LO,GO,NT> & map,
+#else
+const Teuchos::RCP<const Thyra::LinearOpBase<ST> > thyraDiagOp(const RCP<const Tpetra::Vector<ST,NT> > & tv,const Tpetra::Map<NT> & map,
+#endif
                                                                    const std::string & lbl)
 {
    const RCP<const Thyra::VectorBase<ST> > thyraVec  // need a Thyra::VectorBase object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          = Thyra::createConstVector<ST,LO,GO,NT>(tv,Thyra::createVectorSpace<ST,LO,GO,NT>(rcpFromRef(map)));
+#else
+         = Thyra::createConstVector<ST,NT>(tv,Thyra::createVectorSpace<ST,NT>(rcpFromRef(map)));
+#endif
    Teuchos::RCP<Thyra::LinearOpBase<ST> > op 
          = Teuchos::rcp(new Thyra::DefaultDiagonalLinearOp<ST>(thyraVec));
    op->setObjectLabel(lbl);
@@ -117,11 +125,19 @@ const Teuchos::RCP<const Thyra::LinearOpBase<ST> > thyraDiagOp(const RCP<const T
   *
   * \returns A diagonal linear operator using the vector
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const Teuchos::RCP<Thyra::LinearOpBase<ST> > thyraDiagOp(const RCP<Tpetra::Vector<ST,LO,GO,NT> > & tv,const Tpetra::Map<LO,GO,NT> & map,
+#else
+const Teuchos::RCP<Thyra::LinearOpBase<ST> > thyraDiagOp(const RCP<Tpetra::Vector<ST,NT> > & tv,const Tpetra::Map<NT> & map,
+#endif
                                                                    const std::string & lbl)
 {
    const RCP<Thyra::VectorBase<ST> > thyraVec  // need a Thyra::VectorBase object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          = Thyra::createVector<ST,LO,GO,NT>(tv,Thyra::createVectorSpace<ST,LO,GO,NT>(rcpFromRef(map)));
+#else
+         = Thyra::createVector<ST,NT>(tv,Thyra::createVectorSpace<ST,NT>(rcpFromRef(map)));
+#endif
    Teuchos::RCP<Thyra::LinearOpBase<ST> > op 
          = Teuchos::rcp(new Thyra::DefaultDiagonalLinearOp<ST>(thyraVec));
    op->setObjectLabel(lbl);
@@ -137,12 +153,21 @@ const Teuchos::RCP<Thyra::LinearOpBase<ST> > thyraDiagOp(const RCP<Tpetra::Vecto
   * \param[in,out] spmdMV Multi-vector to be filled.
   * \param[in]     mv     Epetra multi-vector to be used in filling the Thyra vector.
   */    
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void fillDefaultSpmdMultiVector(Teuchos::RCP<Thyra::TpetraMultiVector<ST,LO,GO,NT> > & spmdMV,
                                 Teuchos::RCP<Tpetra::MultiVector<ST,LO,GO,NT> > & tpetraMV)
+#else
+void fillDefaultSpmdMultiVector(Teuchos::RCP<Thyra::TpetraMultiVector<ST,NT> > & spmdMV,
+                                Teuchos::RCP<Tpetra::MultiVector<ST,NT> > & tpetraMV)
+#endif
 {
    // first get desired range and domain
    //const RCP<const Thyra::SpmdVectorSpaceBase<ST> > range  = spmdMV->spmdSpace();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Thyra::TpetraVectorSpace<ST,LO,GO,NT> > range  = Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraMV->getMap());
+#else
+   const RCP<Thyra::TpetraVectorSpace<ST,NT> > range  = Thyra::tpetraVectorSpace<ST,NT>(tpetraMV->getMap());
+#endif
    const RCP<const Thyra::ScalarProdVectorSpaceBase<ST> > domain 
          = rcp_dynamic_cast<const Thyra::ScalarProdVectorSpaceBase<ST> >(spmdMV->domain());
 
@@ -156,7 +181,11 @@ void fillDefaultSpmdMultiVector(Teuchos::RCP<Thyra::TpetraMultiVector<ST,LO,GO,N
    spmdMV->initialize(range, domain, tpetraMV);
 
    // make sure the Epetra_MultiVector doesn't disappear prematurely
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::set_extra_data<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > >(tpetraMV,"Tpetra::MultiVector",Teuchos::outArg(spmdMV));
+#else
+   Teuchos::set_extra_data<RCP<Tpetra::MultiVector<ST,NT> > >(tpetraMV,"Tpetra::MultiVector",Teuchos::outArg(spmdMV));
+#endif
 }
 
 /** \brief Build a vector of the dirchlet row indices. 
@@ -168,7 +197,11 @@ void fillDefaultSpmdMultiVector(Teuchos::RCP<Thyra::TpetraMultiVector<ST,LO,GO,N
   * \param[in]     mat      Matrix to be examined
   * \param[in,out] indices Output list of indices corresponding to dirchlet rows (GIDs).
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void identityRowIndices(const Tpetra::Map<LO,GO,NT> & rowMap, const Tpetra::CrsMatrix<ST,LO,GO,NT> & mat,std::vector<GO> & outIndices)
+#else
+void identityRowIndices(const Tpetra::Map<NT> & rowMap, const Tpetra::CrsMatrix<ST,NT> & mat,std::vector<GO> & outIndices)
+#endif
 {
    GO maxSz = mat.getGlobalMaxNumRowEntries();
    std::vector<ST> values(maxSz);
@@ -216,7 +249,11 @@ void identityRowIndices(const Tpetra::Map<LO,GO,NT> & rowMap, const Tpetra::CrsM
   * \param[in,out] mv           Vector whose entries will be zeroed
   * \param[in]     zeroIndices Indices local to this process that need to be zeroed
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void zeroMultiVectorRowIndices(Tpetra::MultiVector<ST,LO,GO,NT> & mv,const std::vector<GO> & zeroIndices)
+#else
+void zeroMultiVectorRowIndices(Tpetra::MultiVector<ST,NT> & mv,const std::vector<GO> & zeroIndices)
+#endif
 {
    LO colCnt = mv.getNumVectors();
    std::vector<GO>::const_iterator itr;
@@ -240,12 +277,20 @@ void zeroMultiVectorRowIndices(Tpetra::MultiVector<ST,LO,GO,NT> & mv,const std::
   * \param[in] op           Underlying epetra operator to use.
   */
 ZeroedOperator::ZeroedOperator(const std::vector<GO> & zeroIndices,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & op)
+#else
+                               const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & op)
+#endif
    : zeroIndices_(zeroIndices), tpetraOp_(op)
 { }
 
 //! Perform a matrix-vector product with certain rows zeroed out
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void ZeroedOperator::apply(const Tpetra::MultiVector<ST,LO,GO,NT> & X, Tpetra::MultiVector<ST,LO,GO,NT> & Y, Teuchos::ETransp mode, ST alpha, ST beta) const
+#else
+void ZeroedOperator::apply(const Tpetra::MultiVector<ST,NT> & X, Tpetra::MultiVector<ST,NT> & Y, Teuchos::ETransp mode, ST alpha, ST beta) const
+#endif
 {
 /*
    Epetra_MultiVector temp(X);
@@ -262,7 +307,11 @@ void ZeroedOperator::apply(const Tpetra::MultiVector<ST,LO,GO,NT> & X, Tpetra::M
 bool isTpetraLinearOp(const LinearOp & op)
 {
    // See if the operator is a TpetraLinearOp
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(op);
+#else
+   RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(op);
+#endif
    if (!tOp.is_null())
      return true;
 
@@ -271,19 +320,35 @@ bool isTpetraLinearOp(const LinearOp & op)
    Thyra::EOpTransp transp = Thyra::NOTRANS;
    RCP<const Thyra::LinearOpBase<ST> > wrapped_op;
    Thyra::unwrap(op, &scalar, &transp, &wrapped_op);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(wrapped_op);
+#else
+   tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(wrapped_op);
+#endif
    if (!tOp.is_null())
      return true;
 
    return false;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > getTpetraCrsMatrix(const LinearOp & op, ST *scalar, bool *transp)
+#else
+RCP<const Tpetra::CrsMatrix<ST,NT> > getTpetraCrsMatrix(const LinearOp & op, ST *scalar, bool *transp)
+#endif
 {
     // If the operator is a TpetraLinearOp
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(op);
+#else
+    RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(op);
+#endif
     if(!tOp.is_null()){
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > matrix = rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(tOp->getConstTpetraOperator(),true);
+#else
+      RCP<const Tpetra::CrsMatrix<ST,NT> > matrix = rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(tOp->getConstTpetraOperator(),true);
+#endif
       *scalar = 1.0;
       *transp = false;
       return matrix;
@@ -293,9 +358,17 @@ RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > getTpetraCrsMatrix(const LinearOp & o
     RCP<const Thyra::LinearOpBase<ST> > wrapped_op;
     Thyra::EOpTransp eTransp = Thyra::NOTRANS;
     Thyra::unwrap(op, scalar, &eTransp, &wrapped_op);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(wrapped_op,true);
+#else
+    tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(wrapped_op,true);
+#endif
     if(!tOp.is_null()){
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > matrix = rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(tOp->getConstTpetraOperator(),true);
+#else
+      RCP<const Tpetra::CrsMatrix<ST,NT> > matrix = rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(tOp->getConstTpetraOperator(),true);
+#endif
       *transp = true;
       if(eTransp == Thyra::NOTRANS)
         *transp = false;
@@ -306,7 +379,11 @@ RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > getTpetraCrsMatrix(const LinearOp & o
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > epetraCrsMatrixToTpetra(const RCP<const Epetra_CrsMatrix> A_e, const RCP<const Teuchos::Comm<int> > comm)
+#else
+RCP<const Tpetra::CrsMatrix<ST,NT> > epetraCrsMatrixToTpetra(const RCP<const Epetra_CrsMatrix> A_e, const RCP<const Teuchos::Comm<int> > comm)
+#endif
 {
    int* ptr;
    int* ind;
@@ -325,12 +402,23 @@ RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > epetraCrsMatrixToTpetra(const RCP<con
    std::copy (ind, ind + nnz, ind2.begin ());
    std::copy (val, val + nnz, val2.begin ());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::Map<LO,GO,NT> > rowMap = epetraMapToTpetra(A_e->RowMap(),comm);
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > A_t = Tpetra::createCrsMatrix<ST,LO,GO,NT>(rowMap, A_e->GlobalMaxNumEntries());
+#else
+   RCP<const Tpetra::Map<NT> > rowMap = epetraMapToTpetra(A_e->RowMap(),comm);
+   RCP<Tpetra::CrsMatrix<ST,NT> > A_t = Tpetra::createCrsMatrix<ST,NT>(rowMap, A_e->GlobalMaxNumEntries());
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::Map<LO,GO,NT> > domainMap = epetraMapToTpetra(A_e->OperatorDomainMap(),comm);
    RCP<const Tpetra::Map<LO,GO,NT> > rangeMap = epetraMapToTpetra(A_e->OperatorRangeMap(),comm);
    RCP<const Tpetra::Map<LO,GO,NT> > colMap = epetraMapToTpetra(A_e->ColMap(),comm);
+#else
+   RCP<const Tpetra::Map<NT> > domainMap = epetraMapToTpetra(A_e->OperatorDomainMap(),comm);
+   RCP<const Tpetra::Map<NT> > rangeMap = epetraMapToTpetra(A_e->OperatorRangeMap(),comm);
+   RCP<const Tpetra::Map<NT> > colMap = epetraMapToTpetra(A_e->ColMap(),comm);
+#endif
 
    A_t->replaceColMap(colMap);
    A_t->setAllValues (ptr2, ind2, val2);
@@ -339,7 +427,11 @@ RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > epetraCrsMatrixToTpetra(const RCP<con
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > nonConstEpetraCrsMatrixToTpetra(const RCP<Epetra_CrsMatrix> A_e, const RCP<const Teuchos::Comm<int> > comm)
+#else
+RCP<Tpetra::CrsMatrix<ST,NT> > nonConstEpetraCrsMatrixToTpetra(const RCP<Epetra_CrsMatrix> A_e, const RCP<const Teuchos::Comm<int> > comm)
+#endif
 {
    int* ptr;
    int* ind;
@@ -358,12 +450,23 @@ RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > nonConstEpetraCrsMatrixToTpetra(const RCP<E
    std::copy (ind, ind + nnz, ind2.begin ());
    std::copy (val, val + nnz, val2.begin ());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::Map<LO,GO,NT> > rowMap = epetraMapToTpetra(A_e->RowMap(),comm);
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > A_t = Tpetra::createCrsMatrix<ST,LO,GO,NT>(rowMap, A_e->GlobalMaxNumEntries());
+#else
+   RCP<const Tpetra::Map<NT> > rowMap = epetraMapToTpetra(A_e->RowMap(),comm);
+   RCP<Tpetra::CrsMatrix<ST,NT> > A_t = Tpetra::createCrsMatrix<ST,NT>(rowMap, A_e->GlobalMaxNumEntries());
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::Map<LO,GO,NT> > domainMap = epetraMapToTpetra(A_e->OperatorDomainMap(),comm);
    RCP<const Tpetra::Map<LO,GO,NT> > rangeMap = epetraMapToTpetra(A_e->OperatorRangeMap(),comm);
    RCP<const Tpetra::Map<LO,GO,NT> > colMap = epetraMapToTpetra(A_e->ColMap(),comm);
+#else
+   RCP<const Tpetra::Map<NT> > domainMap = epetraMapToTpetra(A_e->OperatorDomainMap(),comm);
+   RCP<const Tpetra::Map<NT> > rangeMap = epetraMapToTpetra(A_e->OperatorRangeMap(),comm);
+   RCP<const Tpetra::Map<NT> > colMap = epetraMapToTpetra(A_e->ColMap(),comm);
+#endif
 
    A_t->replaceColMap(colMap);
    A_t->setAllValues (ptr2, ind2, val2);
@@ -372,7 +475,11 @@ RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > nonConstEpetraCrsMatrixToTpetra(const RCP<E
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 RCP<const Tpetra::Map<LO,GO,NT> > epetraMapToTpetra(const Epetra_Map eMap, const RCP<const Teuchos::Comm<int> > comm)
+#else
+RCP<const Tpetra::Map<NT> > epetraMapToTpetra(const Epetra_Map eMap, const RCP<const Teuchos::Comm<int> > comm)
+#endif
 {
   std::vector<int> intGIDs(eMap.NumMyElements());
   eMap.MyGlobalElements(&intGIDs[0]);
@@ -381,7 +488,11 @@ RCP<const Tpetra::Map<LO,GO,NT> > epetraMapToTpetra(const Epetra_Map eMap, const
   for(int k = 0; k < eMap.NumMyElements(); k++)
     myGIDs[k] = (GO) intGIDs[k];
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return rcp(new const Tpetra::Map<LO,GO,NT>(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),Teuchos::ArrayView<GO>(myGIDs),0,comm));
+#else
+  return rcp(new const Tpetra::Map<NT>(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),Teuchos::ArrayView<GO>(myGIDs),0,comm));
+#endif
 }
 
 } // end namespace TpetraHelpers

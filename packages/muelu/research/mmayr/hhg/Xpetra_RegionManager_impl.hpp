@@ -247,8 +247,13 @@ Teuchos::Array<std::tuple<int,Teuchos::Array<GO> > > Xpetra::RegionNodes<GO>::ge
   return intNodesToRegions;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 Xpetra::RegionManager<SC,LO,GO,NO>::RegionManager(
+#else
+template<class SC, class NO>
+Xpetra::RegionManager<SC,NO>::RegionManager(
+#endif
     const std::string& mappingFileName,
     Teuchos::RCP<const Teuchos::Comm<int> > comm)
     : nodes_(Teuchos::null),
@@ -288,8 +293,13 @@ Xpetra::RegionManager<SC,LO,GO,NO>::RegionManager(
   return;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 void Xpetra::RegionManager<SC,LO,GO,NO>::readMappingFromFile(
+#else
+template<class SC, class NO>
+void Xpetra::RegionManager<SC,NO>::readMappingFromFile(
+#endif
     const std::string& mappingFileName)
 {
   std::ifstream inputFile(mappingFileName, std::ifstream::in);
@@ -365,8 +375,13 @@ void Xpetra::RegionManager<SC,LO,GO,NO>::readMappingFromFile(
   return;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 void Xpetra::RegionManager<SC,LO,GO,NO>::setupMappingNodesPerRegion()
+#else
+template<class SC, class NO>
+void Xpetra::RegionManager<SC,NO>::setupMappingNodesPerRegion()
+#endif
 {
   nodes_->setupMappingNodesPerRegion(numRegions_);
 
@@ -378,8 +393,13 @@ void Xpetra::RegionManager<SC,LO,GO,NO>::setupMappingNodesPerRegion()
   return;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 void Xpetra::RegionManager<SC,LO,GO,NO>::setupRowMaps()
+#else
+template<class SC, class NO>
+void Xpetra::RegionManager<SC,NO>::setupRowMaps()
+#endif
 {
   setupCompositeRowMap();
   setupRegionRowMaps();
@@ -387,8 +407,13 @@ void Xpetra::RegionManager<SC,LO,GO,NO>::setupRowMaps()
   return;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 void Xpetra::RegionManager<SC,LO,GO,NO>::setupCompositeRowMap()
+#else
+template<class SC, class NO>
+void Xpetra::RegionManager<SC,NO>::setupCompositeRowMap()
+#endif
 {
   /* Access list of GIDs owned by each proc. Conversion of RCP<Array> to ArrayView
    * is not done in the most elegant way, but it works.
@@ -398,7 +423,11 @@ void Xpetra::RegionManager<SC,LO,GO,NO>::setupCompositeRowMap()
   Teuchos::RCP<const Teuchos::Array<GO> > myNodesGIDsRcp = nodes_->getNodeGIDsPerProc(comm_->getRank());
   const Teuchos::Array<GO>& myNodesGIDs = *myNodesGIDsRcp;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   compositeMap_ = Xpetra::MapFactory<LO,GO,NO>::Build(Xpetra::UseTpetra, nodes_->getNumNodes(), myNodesGIDs(), 0, comm_);
+#else
+  compositeMap_ = Xpetra::MapFactory<NO>::Build(Xpetra::UseTpetra, nodes_->getNumNodes(), myNodesGIDs(), 0, comm_);
+#endif
 
   Teuchos::RCP<Teuchos::FancyOStream> out = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
   *out << std::endl << "compositeMap_:" << std::endl;
@@ -407,8 +436,13 @@ void Xpetra::RegionManager<SC,LO,GO,NO>::setupCompositeRowMap()
   return;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 void Xpetra::RegionManager<SC,LO,GO,NO>::setupRegionRowMaps()
+#else
+template<class SC, class NO>
+void Xpetra::RegionManager<SC,NO>::setupRegionRowMaps()
+#endif
 {
   comm_->barrier();
 
@@ -426,7 +460,11 @@ void Xpetra::RegionManager<SC,LO,GO,NO>::setupRegionRowMaps()
     Teuchos::RCP<const Teuchos::Array<GO> > myNodesGIDsRcp = nodes_->getNodeGIDsPerRegionAndProc(i, comm_->getRank());
     const Teuchos::Array<GO>& myNodesGIDs = *myNodesGIDsRcp;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     regionMaps_[i] = Xpetra::MapFactory<LO,GO,NO>::Build(Xpetra::UseTpetra, nodes_->getNumNodesPerRegion(i), myNodesGIDs(), 0, comm_);
+#else
+    regionMaps_[i] = Xpetra::MapFactory<NO>::Build(Xpetra::UseTpetra, nodes_->getNumNodesPerRegion(i), myNodesGIDs(), 0, comm_);
+#endif
   }
 
   comm_->barrier();
@@ -441,15 +479,25 @@ void Xpetra::RegionManager<SC,LO,GO,NO>::setupRegionRowMaps()
   return;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 const GO Xpetra::RegionManager<SC,LO,GO,NO>::getNumNodesPerRegion(
+#else
+template<class SC, class NO>
+const GO Xpetra::RegionManager<SC,NO>::getNumNodesPerRegion(
+#endif
     const GO regID) const
 {
   return regionMaps_[regID]->getGlobalNumElements();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 Teuchos::Array<std::tuple<GO,GO> > Xpetra::RegionManager<SC,LO,GO,NO>::getRegionToAll(
+#else
+template<class SC, class NO>
+Teuchos::Array<std::tuple<GO,GO> > Xpetra::RegionManager<SC,NO>::getRegionToAll(
+#endif
     const GO regID) const
 {
   const Teuchos::Array<GO> nodesPerRegion = *nodes_->getNodeGIDsPerRegion(regID);
@@ -464,9 +512,14 @@ Teuchos::Array<std::tuple<GO,GO> > Xpetra::RegionManager<SC,LO,GO,NO>::getRegion
   return regionToAll;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 Teuchos::Array<std::tuple<int,Teuchos::Array<GO> > > Xpetra::RegionManager<SC,
     LO,GO,NO>::getInterfaceNodesToRegions() const
+#else
+template<class SC, class NO>
+Teuchos::Array<std::tuple<int,Teuchos::Array<GO> > > Xpetra::RegionManager<SC,NO>::getInterfaceNodesToRegions() const
+#endif
 {
   return nodes_->getMappingInterfaceNodesToRegions();
 }

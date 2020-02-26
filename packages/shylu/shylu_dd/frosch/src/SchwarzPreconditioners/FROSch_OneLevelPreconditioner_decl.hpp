@@ -51,13 +51,20 @@ namespace FROSch {
     using namespace Xpetra;
     
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class OneLevelPreconditioner : public SchwarzPreconditioner<SC,LO,GO,NO> {
+#else
+    class OneLevelPreconditioner : public SchwarzPreconditioner<SC,NO> {
+#endif
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMapPtr                           = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMapPtr;
         using ConstXMapPtr                      = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMapPtr;
 
@@ -72,6 +79,24 @@ namespace FROSch {
         using MultiplicativeOperatorPtr         = typename SchwarzPreconditioner<SC,LO,GO,NO>::MultiplicativeOperatorPtr;
         using OverlappingOperatorPtr            = typename SchwarzPreconditioner<SC,LO,GO,NO>::OverlappingOperatorPtr;
         using AlgebraicOverlappingOperatorPtr   = typename SchwarzPreconditioner<SC,LO,GO,NO>::AlgebraicOverlappingOperatorPtr;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using XMapPtr                           = typename SchwarzPreconditioner<SC,NO>::XMapPtr;
+        using ConstXMapPtr                      = typename SchwarzPreconditioner<SC,NO>::ConstXMapPtr;
+
+        using XMatrixPtr                        = typename SchwarzPreconditioner<SC,NO>::XMatrixPtr;
+        using ConstXMatrixPtr                   = typename SchwarzPreconditioner<SC,NO>::ConstXMatrixPtr;
+
+        using XMultiVector                      = typename SchwarzPreconditioner<SC,NO>::XMultiVector;
+
+        using ParameterListPtr                  = typename SchwarzPreconditioner<SC,NO>::ParameterListPtr;
+
+        using SumOperatorPtr                    = typename SchwarzPreconditioner<SC,NO>::SumOperatorPtr;
+        using MultiplicativeOperatorPtr         = typename SchwarzPreconditioner<SC,NO>::MultiplicativeOperatorPtr;
+        using OverlappingOperatorPtr            = typename SchwarzPreconditioner<SC,NO>::OverlappingOperatorPtr;
+        using AlgebraicOverlappingOperatorPtr   = typename SchwarzPreconditioner<SC,NO>::AlgebraicOverlappingOperatorPtr;
+#endif
 
     public:
 

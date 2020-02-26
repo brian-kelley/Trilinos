@@ -63,19 +63,31 @@ namespace Xpetra {
 
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal,
          class GlobalOrdinal,
+#endif
          class Node = KokkosClassic::DefaultNode::DefaultNodeType>
 class BlockedVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public virtual Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>
     , public virtual Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+    : public virtual Xpetra::Vector<Scalar, Node>
+    , public virtual Xpetra::BlockedMultiVector<Scalar, Node>
+#endif
 {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     using scalar_type         = Scalar;
     using local_ordinal_type  = LocalOrdinal;
     using global_ordinal_type = GlobalOrdinal;
     using node_type           = Node;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dot;                     // overloading, not hiding
     using Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::norm1;                   // overloading, not hiding
     using Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::norm2;                   // overloading, not hiding
@@ -85,6 +97,17 @@ class BlockedVector
     using Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::sumIntoGlobalValue;      // overloading, not hiding
     using Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::replaceLocalValue;       // overloading, not hiding
     using Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::sumIntoLocalValue;       // overloading, not hiding
+#else
+    using Xpetra::Vector<Scalar, Node>::dot;                     // overloading, not hiding
+    using Xpetra::Vector<Scalar, Node>::norm1;                   // overloading, not hiding
+    using Xpetra::Vector<Scalar, Node>::norm2;                   // overloading, not hiding
+    using Xpetra::Vector<Scalar, Node>::normInf;                 // overloading, not hiding
+    using Xpetra::Vector<Scalar, Node>::meanValue;               // overloading, not hiding
+    using Xpetra::Vector<Scalar, Node>::replaceGlobalValue;      // overloading, not hiding
+    using Xpetra::Vector<Scalar, Node>::sumIntoGlobalValue;      // overloading, not hiding
+    using Xpetra::Vector<Scalar, Node>::replaceLocalValue;       // overloading, not hiding
+    using Xpetra::Vector<Scalar, Node>::sumIntoLocalValue;       // overloading, not hiding
+#endif
 
 
   private:
@@ -119,8 +142,13 @@ class BlockedVector
      * \param bmap BlockedMap object containing information about the block splitting
      * \param v Vector that is to be splitted into a blocked vector
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlockedVector(Teuchos::RCP<const Xpetra::BlockedMap<LocalOrdinal, GlobalOrdinal, Node>> bmap,
                   Teuchos::RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> v);
+#else
+    BlockedVector(Teuchos::RCP<const Xpetra::BlockedMap<Node>> bmap,
+                  Teuchos::RCP<Xpetra::Vector<Scalar, Node>> v);
+#endif
 
 
     /*!
@@ -134,8 +162,13 @@ class BlockedVector
      * \param mapExtractor MapExtractor object containing information about the block splitting
      * \param v Vector that is to be splitted into a blocked vector
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlockedVector(Teuchos::RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>> mapExtractor,
                   Teuchos::RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> v);
+#else
+    BlockedVector(Teuchos::RCP<const Xpetra::MapExtractor<Scalar, Node>> mapExtractor,
+                  Teuchos::RCP<Xpetra::Vector<Scalar, Node>> v);
+#endif
 
 
     //! Destructor.
@@ -149,8 +182,13 @@ class BlockedVector
     ///
     /// \note This currently only works if both <tt>*this</tt> and the
     ///   input argument are instances of the same subclass.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     BlockedVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&
     operator=(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs);
+#else
+    BlockedVector<Scalar, Node>&
+    operator=(const Xpetra::MultiVector<Scalar, Node>& rhs);
+#endif
 
 
     //@}
@@ -195,11 +233,19 @@ class BlockedVector
 
 
     //! Return a Vector which is a const view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
+#else
+    virtual Teuchos::RCP<const Xpetra::Vector<Scalar, Node>>
+#endif
     getVector(size_t j) const;
 
     //! Return a Vector which is a nonconst view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
+#else
+    virtual Teuchos::RCP<Xpetra::Vector<Scalar, Node>>
+#endif
     getVectorNonConst(size_t j);
 
     //! Const view of the local values in a particular vector of this vector.
@@ -214,17 +260,33 @@ class BlockedVector
     //@{
 
     //! Compute dot product of each corresponding pair of vectors, dots[i] = this[i].dot(A[i]).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void dot(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+    virtual void dot(const Xpetra::MultiVector<Scalar, Node>& A,
+#endif
                      const Teuchos::ArrayView<Scalar>& dots) const;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Scalar dot(const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A) const;
+#else
+    virtual Scalar dot(const Xpetra::Vector<Scalar, Node>& A) const;
+#endif
 
 
     //! Put element-wise absolute values of input vector in target: A = abs(this).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void abs(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A);
+#else
+    virtual void abs(const Xpetra::MultiVector<Scalar, Node>& A);
+#endif
 
     //! Put element-wise reciprocal values of input vector in target, this(i,j) = 1/A(i,j).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void reciprocal(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A);
+#else
+    virtual void reciprocal(const Xpetra::MultiVector<Scalar, Node>& A);
+#endif
 
     //! Scale the current values of a vector, this = alpha*this.
     virtual void scale(const Scalar& alpha);
@@ -233,15 +295,27 @@ class BlockedVector
     virtual void scale(Teuchos::ArrayView<const Scalar> alpha);
 
     virtual void update(const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+                        const Xpetra::MultiVector<Scalar, Node>& A,
+#endif
                         const Scalar& beta);
 
 
     //! Update vector with scaled values of A and B, this = gamma*this + alpha*A + beta*B.
     virtual void update(const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+                        const Xpetra::MultiVector<Scalar, Node>& A,
+#endif
                         const Scalar& beta,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+                        const Xpetra::MultiVector<Scalar, Node>& B,
+#endif
                         const Scalar& gamma);
 
     //! Compute 1-norm of vector.
@@ -272,27 +346,47 @@ class BlockedVector
     virtual void multiply(Teuchos::ETransp /* transA */,
                           Teuchos::ETransp /* transB */,
                           const Scalar& /* alpha */,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* A */,
                           const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* B */,
+#else
+                          const Xpetra::Vector<Scalar, Node>& /* A */,
+                          const Xpetra::Vector<Scalar, Node>& /* B */,
+#endif
                           const Scalar& /* beta */);
 
     virtual void multiply(Teuchos::ETransp /* transA */,
                           Teuchos::ETransp /* transB */,
                           const Scalar& /* alpha */,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* A */,
                           const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* B */,
+#else
+                          const Xpetra::MultiVector<Scalar, Node>& /* A */,
+                          const Xpetra::MultiVector<Scalar, Node>& /* B */,
+#endif
                           const Scalar& /* beta */);
 
 
     virtual void elementWiseMultiply(Scalar /* scalarAB */,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* A */,
                                      const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* B */,
+#else
+                                     const Xpetra::Vector<Scalar, Node>& /* A */,
+                                     const Xpetra::MultiVector<Scalar, Node>& /* B */,
+#endif
                                      Scalar /* scalarThis */);
 
     //! Element-wise multiply of a Vector A with a Vector B.
     virtual void elementWiseMultiply(Scalar /* scalarAB */,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
                                      const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+                                     const Xpetra::Vector<Scalar, Node>& A,
+                                     const Xpetra::Vector<Scalar, Node>& B,
+#endif
                                      Scalar /* scalarThis */);
 
 
@@ -313,7 +407,11 @@ class BlockedVector
     virtual global_size_t getGlobalLength() const;
 
     //! Local number of rows on the calling process.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual bool isSameSize(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* vec */) const;
+#else
+    virtual bool isSameSize(const Xpetra::MultiVector<Scalar, Node>& /* vec */) const;
+#endif
 
     //@}
 
@@ -330,22 +428,38 @@ class BlockedVector
     virtual void replaceMap(const RCP<const Map>& map);
 
     //! Import.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* source */,
+#else
+    virtual void doImport(const DistObject<Scalar, Node>& /* source */,
+#endif
                           const Import& /* importer */,
                           CombineMode /* CM */);
 
     //! Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* dest */,
+#else
+    virtual void doExport(const DistObject<Scalar, Node>& /* dest */,
+#endif
                           const Import& /* importer */,
                           CombineMode /* CM */);
 
     //! Import (using an Exporter).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* source */,
+#else
+    virtual void doImport(const DistObject<Scalar, Node>& /* source */,
+#endif
                           const Export& /* exporter */,
                           CombineMode /* CM */);
 
     //! Export (using an Importer).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* dest */,
+#else
+    virtual void doExport(const DistObject<Scalar, Node>& /* dest */,
+#endif
                           const Export& /* exporter */,
                           CombineMode /* CM */);
 
@@ -449,21 +563,37 @@ class BlockedVector
     Teuchos::RCP<const Map> getMap() const;
 
     /// return partial Vector associated with block row r
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP< Xpetra::MultiVector<Scalar, Node> >
+#endif
     getMultiVector(size_t r) const;
 
     /// return partial Vector associated with block row r
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP< Xpetra::MultiVector<Scalar, Node> >
+#endif
     getMultiVector(size_t r, bool bThyraMode) const;
 
     /// set partial Vector associated with block row r
     void
     setMultiVector(size_t r,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    Teuchos::RCP<const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > v,
+#else
+                   Teuchos::RCP<const Xpetra::Vector<Scalar, Node> > v,
+#endif
                    bool bThyraMode);
 
     /// merge BlockedVector blocks to a single Vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP< Xpetra::MultiVector<Scalar, Node> >
+#endif
     Merge() const;
 
 
@@ -474,7 +604,11 @@ class BlockedVector
     /// Each subclass must implement this.  This includes
     /// Xpetra::EpetraVector and Xpetra::TpetraVector as well as
     /// Xpetra::BockedVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void assign(const Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs);
+#else
+    virtual void assign(const Xpetra::MultiVector<Scalar, Node>& rhs);
+#endif
 
     // virtual void assign (const MultiVector& rhs);
 

@@ -10,11 +10,20 @@
 #include "../src/shylubasker_decl.hpp"
 
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class ExecSpace>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class Baskerilu : public Ifpack2::Preconditioner<Scalar,LocalOrdinal, GlobalOrdinal, Node>
+#else
+class Baskerilu : public Ifpack2::Preconditioner<Scalar, Node>
+#endif
 {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal,GlobalOrdinal,Node> TCrsMatrix;
   typedef Kokkos::CrsMatrix<Scalar, LocalOrdinal,GlobalOrdinal,Node> KCrsMatrix;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> TCrsMatrix;
+  typedef Kokkos::CrsMatrix<Scalar,Node> KCrsMatrix;
+#endif
   typedef Kokkos::View<LocalOrdinal*, ExecSpace> OrdinalArray;
   typedef Kokkos::View<Scalar*, ExecSpace> ScalarArray;
  
@@ -36,13 +45,21 @@ public:
   }
   
   //required by IfPack2
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
   getDomainMap() const
   {
     return mat->getDomainMap();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
   getRangeMap() const
   {
     return mat->getRangeMap();
@@ -51,8 +68,13 @@ public:
   void
   apply
   (
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const Tpetra::MultVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
    Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+   const Tpetra::MultVector<Scalar,Node> &X,
+   Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
    Teuchos::ETransp mode = Teuchos::NO_TRANS,
    Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
    Scalar beta   =Teuchos::ScalarTraits<Scalar>::two()
@@ -88,7 +110,11 @@ public:
     return false;
   }//end isComputed()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > 
+#else
+  Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> > 
+#endif
   getMatrix() const
   {
 

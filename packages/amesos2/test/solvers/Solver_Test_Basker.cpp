@@ -39,11 +39,21 @@ int main(int argc, char *argv[])
       typedef Tpetra::Map<>::local_ordinal_type LO;
       typedef Tpetra::Map<>::global_ordinal_type GO;
       typedef Tpetra::Map<>::node_type Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::MultiVector<Scalar,LO,GO,Node> TMV;
       typedef Tpetra::Operator<Scalar,LO,GO,Node>    TOP;
+#else
+      typedef Tpetra::MultiVector<Scalar,Node> TMV;
+      typedef Tpetra::Operator<Scalar,Node>    TOP;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node>  crs_matrix_type;
       typedef Tpetra::Map< LO, GO, Node>               map_type;
+#else
+      typedef Tpetra::CrsMatrix<Scalar, Node>  crs_matrix_type;
+      typedef Tpetra::Map<Node>               map_type;
+#endif
       
 
 

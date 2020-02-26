@@ -119,18 +119,38 @@ int main(int argc, char *argv[])
     GaleriList.set("my", 2);
     GaleriList.set("mz", 2);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,NO> > uniqueMap = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian3D",CommWorld,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
     RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Laplace3D",uniqueMap,GaleriList);
     RCP<Matrix<SC,LO,GO,NO> > K = Problem->BuildMatrix();
+#else
+    RCP<const Map<NO> > uniqueMap = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian3D",CommWorld,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+    RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Laplace3D",uniqueMap,GaleriList);
+    RCP<Matrix<SC,NO> > K = Problem->BuildMatrix();
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Matrix<SC,LO,GO,NO> > tmpMatrix;
     RCP<const Map<LO,GO,NO> > overlappingMap = MapFactory<LO,GO,NO>::Build(uniqueMap,1);
     FROSch::ExtendOverlapByOneLayer<SC,LO,GO,NO>(K.getConst(),overlappingMap,tmpMatrix,overlappingMap);
+#else
+    RCP<const Matrix<SC,NO> > tmpMatrix;
+    RCP<const Map<NO> > overlappingMap = MapFactory<NO>::Build(uniqueMap,1);
+    FROSch::ExtendOverlapByOneLayer<SC,NO>(K.getConst(),overlappingMap,tmpMatrix,overlappingMap);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     K = MatrixFactory<SC,LO,GO,NO>::Build(overlappingMap,tmpMatrix->getGlobalMaxNumRowEntries());
+#else
+    K = MatrixFactory<SC,NO>::Build(overlappingMap,tmpMatrix->getGlobalMaxNumRowEntries());
+#endif
 
     CommWorld->barrier(); if (CommWorld->getRank()==0) cout << "#############\n# Performing Import #\n#############\n" << endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Export<LO,GO,NO> > gather = ExportFactory<LO,GO,NO>::Build(overlappingMap,uniqueMap);
+#else
+    RCP<Export<NO> > gather = ExportFactory<NO>::Build(overlappingMap,uniqueMap);
+#endif
     K->doImport(*tmpMatrix,*gather,ADD);
 
     CommWorld->barrier(); if (CommWorld->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;

@@ -61,8 +61,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> RepartitionBlockDiagonalFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Scalar, class Node>
+ RCP<const ParameterList> RepartitionBlockDiagonalFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
     validParamList->set< RCP<const FactoryBase> >   ("A",             Teuchos::null, "Factory of the matrix A");
 
@@ -70,15 +75,29 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RepartitionBlockDiagonalFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level & currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RepartitionBlockDiagonalFactory<Scalar, Node>::DeclareInput(Level & currentLevel) const {
+#endif
     Input(currentLevel, "A");
   } //DeclareInput()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RepartitionBlockDiagonalFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RepartitionBlockDiagonalFactory<Scalar, Node>::Build(Level &currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", currentLevel);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>  BlockCrs;
+#else
+    typedef Xpetra::BlockedCrsMatrix<Scalar, Node>  BlockCrs;
+#endif
 
     RCP<Matrix> originalA = Get< RCP<Matrix> >(currentLevel, "A");    
     RCP<BlockCrs> A = Teuchos::rcp_dynamic_cast<BlockCrs>(originalA);

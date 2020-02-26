@@ -65,7 +65,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, SetCoreData, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, SetCoreData, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -73,9 +77,17 @@ namespace MueLuTests {
     out << "version: " << MueLu::Version() << std::endl;
 
     Level aLevel;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers::TestFactory<SC, LO, GO, NO>::createSingleLevelHierarchy(aLevel);
+#else
+    TestHelpers::TestFactory<SC, NO>::createSingleLevelHierarchy(aLevel);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(2); //can be an empty operator
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(2); //can be an empty operator
+#endif
 
     aLevel.Set("Hitchhiker's Guide", 42);
     int fff = aLevel.Get<int>("Hitchhiker's Guide");
@@ -109,7 +121,11 @@ namespace MueLuTests {
     TEST_EQUALITY(aLevel.GetLevelID(), 42); //TODO: test default value of LevelID
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, NumRequests, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, NumRequests, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -118,7 +134,11 @@ namespace MueLuTests {
 
     Level aLevel;
     aLevel.SetLevelID(0);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(2);
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(2);
+#endif
     aLevel.Set("A", A);
 
     RCP<FactoryManager> facManager = rcp(new FactoryManager());
@@ -135,7 +155,11 @@ namespace MueLuTests {
     TEST_EQUALITY(aLevel.IsRequested("Graph", factory.get()), false);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, RequestRelease, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, RequestRelease, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -143,7 +167,11 @@ namespace MueLuTests {
     Level l;
     l.SetLevelID(0);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(2);
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(2);
+#endif
     l.Set("A", A);
 
     RCP<FactoryManager> facManager = rcp(new FactoryManager());
@@ -159,7 +187,11 @@ namespace MueLuTests {
     TEST_EQUALITY(l.IsAvailable("Graph", factory.get()), false);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, RequestReleaseFactory, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, RequestReleaseFactory, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -170,7 +202,11 @@ namespace MueLuTests {
     RCP<FactoryManager> facManager = rcp(new FactoryManager());
     l.SetFactoryManager(facManager);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(2);
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(2);
+#endif
     l.Set("A", A);
 
     RCP<FactoryBase> graphFact = rcp(new CoalesceDropFactory());
@@ -192,7 +228,11 @@ namespace MueLuTests {
     TEST_EQUALITY(l.IsAvailable("Graph",      graphFact.get()), false);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, KeepFactory, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, KeepFactory, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -203,7 +243,11 @@ namespace MueLuTests {
     RCP<FactoryManager> facManager = rcp(new FactoryManager());
     l.SetFactoryManager(facManager);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(2);
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(2);
+#endif
     l.Set("A", A);
 
     RCP<Factory> graphFact = rcp(new CoalesceDropFactory());
@@ -232,7 +276,11 @@ namespace MueLuTests {
     TEST_EQUALITY(l.IsAvailable("Graph",      graphFact.get()), false);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, KeepAndBuildFactory, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, KeepAndBuildFactory, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -243,7 +291,11 @@ namespace MueLuTests {
     RCP<FactoryManager> facManager = rcp(new FactoryManager());
     l.SetFactoryManager(facManager);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(144);
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(144);
+#endif
     l.Set("A", A);
 
     RCP<CoalesceDropFactory>  graphFact = rcp(new CoalesceDropFactory());
@@ -300,7 +352,11 @@ namespace MueLuTests {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, KeepAndBuildFactory2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, KeepAndBuildFactory2, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -311,7 +367,11 @@ namespace MueLuTests {
     RCP<FactoryManager> facManager = rcp(new FactoryManager());
     l.SetFactoryManager(facManager);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(144);
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(144);
+#endif
     l.Set("A", A);
 
     RCP<CoalesceDropFactory>  graphFact = rcp(new CoalesceDropFactory());
@@ -366,13 +426,21 @@ namespace MueLuTests {
 
   // Helper class for unit test 'Level/CircularDependency'
   template
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  <class Scalar, class Node>
+#endif
   class CircularFactory : public MueLu::SingleLevelFactoryBase {
 
 #   include <MueLu_UseShortNames.hpp>
 
     public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       CircularFactory(int value) : value_(value) { }
 
       virtual ~CircularFactory() { }
@@ -398,17 +466,29 @@ namespace MueLuTests {
 
   //! Even though it's very special, a factory can generate data, that it requests itself.
   //  Level must avoid self-recursive calls of Request
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, CircularDependencyWith1Factory, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, CircularDependencyWith1Factory, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CircularFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> circular_factory_type;
+#else
+    typedef CircularFactory<Scalar, Node> circular_factory_type;
+#endif
     circular_factory_type A(2);
 
     A.SetCircularFactory(rcpFromRef(A));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Level level; TestHelpers::TestFactory<SC, LO, GO, NO>::createSingleLevelHierarchy(level);
+#else
+    Level level; TestHelpers::TestFactory<SC, NO>::createSingleLevelHierarchy(level);
+#endif
 
     level.Request("data", &A);
 
@@ -419,19 +499,31 @@ namespace MueLuTests {
 
   //! Test if circular dependencies between factories are allowed
   //  This test corresponds to a use-case found developping repartitionning capability
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, CircularDependencyWithTwoFactories, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Level, CircularDependencyWithTwoFactories, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CircularFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> circular_factory_type;
+#else
+    typedef CircularFactory<Scalar, Node> circular_factory_type;
+#endif
     circular_factory_type A(2);
     circular_factory_type B(3);
 
     A.SetCircularFactory(rcpFromRef(B));
     B.SetCircularFactory(rcpFromRef(A));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Level level; TestHelpers::TestFactory<SC, LO, GO, NO>::createSingleLevelHierarchy(level);
+#else
+    Level level; TestHelpers::TestFactory<SC, NO>::createSingleLevelHierarchy(level);
+#endif
 
     level.Request("data", &A);
 
@@ -444,6 +536,7 @@ namespace MueLuTests {
     level.Release("data", &A);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,SetCoreData,SC,LO,GO,NO) \
     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,NumRequests,SC,LO,GO,NO) \
@@ -454,6 +547,18 @@ namespace MueLuTests {
     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,KeepAndBuildFactory2,SC,LO,GO,NO) \
     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,CircularDependencyWith1Factory,SC,LO,GO,NO) \
     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,CircularDependencyWithTwoFactories,SC,LO,GO,NO)
+#else
+   #define MUELU_ETI_GROUP(SC,NO) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,SetCoreData,SC,NO) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,NumRequests,SC,NO) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,RequestRelease,SC,NO) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,RequestReleaseFactory,SC,NO) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,KeepFactory,SC,NO) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,KeepAndBuildFactory,SC,NO) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,KeepAndBuildFactory2,SC,NO) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,CircularDependencyWith1Factory,SC,NO) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Level,CircularDependencyWithTwoFactories,SC,NO)
+#endif
 
 } // namespace MueLuTests
 

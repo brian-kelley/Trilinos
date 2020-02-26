@@ -51,16 +51,35 @@
 namespace Belos {
 
   //! Partial specialization of OperatorTraits for Tpetra objects.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LO, class GO, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class OperatorTraits<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        ::Tpetra::MultiVector<Scalar,LO,GO,Node>,
                        ::Tpetra::Operator<Scalar,LO,GO,Node> >
+#else
+                       ::Tpetra::MultiVector<Scalar,Node>,
+                       ::Tpetra::Operator<Scalar,Node> >
+#endif
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Apply (const ::Tpetra::Operator<Scalar,LO,GO,Node>& Op,
            const ::Tpetra::MultiVector<Scalar,LO,GO,Node>& X,
            ::Tpetra::MultiVector<Scalar,LO,GO,Node>& Y,
+#else
+    Apply (const ::Tpetra::Operator<Scalar,Node>& Op,
+           const ::Tpetra::MultiVector<Scalar,Node>& X,
+           ::Tpetra::MultiVector<Scalar,Node>& Y,
+#endif
            const ETrans trans = NOTRANS)
     {
       Teuchos::ETransp teuchosTrans = Teuchos::NO_TRANS;
@@ -80,7 +99,11 @@ namespace Belos {
     }
 
     static bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     HasApplyTranspose (const ::Tpetra::Operator<Scalar,LO,GO,Node>& Op)
+#else
+    HasApplyTranspose (const ::Tpetra::Operator<Scalar,Node>& Op)
+#endif
     {
       return Op.hasTransposeApply ();
     }

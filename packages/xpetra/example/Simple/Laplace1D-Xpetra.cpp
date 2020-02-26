@@ -93,12 +93,20 @@ int main(int argc, char *argv[]) {
 
     Xpetra::UnderlyingLib lib = Xpetra::UseTpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > map = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::createUniformContigMap(lib, numGlobalElements, comm);
+#else
+    RCP<const Xpetra::Map<Node> > map = Xpetra::MapFactory<Node>::createUniformContigMap(lib, numGlobalElements, comm);
+#endif
 
     const size_t numMyElements = map->getNodeNumElements();
     Teuchos::ArrayView<const GlobalOrdinal> myGlobalElements = map->getNodeElementList();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > A =  Xpetra::CrsMatrixFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(map, 3);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > A =  Xpetra::CrsMatrixFactory<Scalar, Node>::Build(map, 3);
+#endif
 
     for (size_t i = 0; i < numMyElements; i++) {
       if (myGlobalElements[i] == 0) {

@@ -10,7 +10,11 @@
 namespace user_app {
 
 template <typename EvalT,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void ResponseEvaluatorFactory_HOFlux<EvalT,LO,GO>::
+#else
+void ResponseEvaluatorFactory_HOFlux<EvalT>::
+#endif
 buildAndRegisterEvaluators(const std::string & responseName,
                            PHX::FieldManager<panzer::Traits> & fm,
                            const panzer::PhysicsBlock & physicsBlock,
@@ -37,7 +41,11 @@ buildAndRegisterEvaluators(const std::string & responseName,
     this->template registerEvaluator<EvalT>(fm, eval);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   panzer::ResponseEvaluatorFactory_Functional<EvalT,LO,GO>::buildAndRegisterEvaluators(responseName,fm,physicsBlock,user_data);
+#else
+  panzer::ResponseEvaluatorFactory_Functional<EvalT>::buildAndRegisterEvaluators(responseName,fm,physicsBlock,user_data);
+#endif
 }
 
 }

@@ -84,7 +84,11 @@ void addToStratimikosBuilder(const RCP<Stratimikos::DefaultLinearSolverBuilder> 
    #ifdef HAVE_Teko_ENABLE_Ifpack2
    {
      typedef Thyra::PreconditionerFactoryBase<ST> Base;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<ST,LO,GO,NT> > Impl;
+#else
+     typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<ST,NT> > Impl;
+#endif
      builder->setPreconditioningStrategyFactory(Teuchos::abstractFactoryStd<Base, Impl>(), "Ifpack2");
    }
    #endif // IFPACK2

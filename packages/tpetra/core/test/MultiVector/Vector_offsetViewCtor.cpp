@@ -100,7 +100,11 @@ namespace { // (anonymous)
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Vector, OffsetViewCtor, ST, LO, GO, NT )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Vector, OffsetViewCtor, ST,NT )
+#endif
   {
     using Teuchos::outArg;
     using Teuchos::REDUCE_MIN;
@@ -109,8 +113,13 @@ namespace { // (anonymous)
     using Teuchos::rcp;
     using std::endl;
     using GST = Tpetra::global_size_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Tpetra::Map<LO, GO, NT>;
     using vector_type = Tpetra::Vector<ST, LO, GO, NT>;
+#else
+    using map_type = Tpetra::Map<NT>;
+    using vector_type = Tpetra::Vector<ST, NT>;
+#endif
     using IST = typename vector_type::impl_scalar_type;
     int lclSuccess = 1;
     int gblSuccess = 1;
@@ -189,8 +198,13 @@ namespace { // (anonymous)
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Vector, OffsetViewCtor, ST, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( Vector, OffsetViewCtor, ST,NT )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

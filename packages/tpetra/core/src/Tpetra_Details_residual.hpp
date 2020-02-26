@@ -131,11 +131,19 @@ residual_launch_parameters (int64_t numRows,
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 void localResidual(const CrsMatrix<SC,LO,GO,NO> &  A,
                    const MultiVector<SC,LO,GO,NO> & X,
                    const MultiVector<SC,LO,GO,NO> & B,
                    MultiVector<SC,LO,GO,NO> & R) {
+#else
+template<class SC, class NO>
+void localResidual(const CrsMatrix<SC,NO> &  A,
+                   const MultiVector<SC,NO> & X,
+                   const MultiVector<SC,NO> & B,
+                   MultiVector<SC,NO> & R) {
+#endif
   using Tpetra::Details::ProfilingRegion;
   using Teuchos::NO_TRANS;
   ProfilingRegion regionLocalApply ("Tpetra::CrsMatrix::localResidual");
@@ -202,7 +210,11 @@ void localResidual(const CrsMatrix<SC,LO,GO,NO> &  A,
   A.localApply(X,R,Teuchos::NO_TRANS, one, zero);
   R.update(one,B,negone);
 #else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using execution_space = typename CrsMatrix<SC,LO,GO,NO>::execution_space;
+#else
+  using execution_space = typename CrsMatrix<SC,NO>::execution_space;
+#endif
 
   if (A_lcl.numRows() == 0) {
     return;
@@ -222,7 +234,11 @@ void localResidual(const CrsMatrix<SC,LO,GO,NO> &  A,
   using policy_type = typename Kokkos::TeamPolicy<execution_space>;
   using team_member = typename policy_type::member_type;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using residual_value_type = typename  MultiVector<SC,LO,GO,NO>::dual_view_type::t_dev::non_const_value_type;
+#else
+  using residual_value_type = typename  MultiVector<SC,NO>::dual_view_type::t_dev::non_const_value_type;
+#endif
   using KAT = Kokkos::ArithTraits<residual_value_type>;
 
   policy_type policy (1, 1);
@@ -296,18 +312,30 @@ void localResidual(const CrsMatrix<SC,LO,GO,NO> &  A,
     
 
 //! Computes R = B - A * X 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
 void residual(const Operator<SC,LO,GO,NO> &   Aop,
               const MultiVector<SC,LO,GO,NO> & X_in,
               const MultiVector<SC,LO,GO,NO> & B_in,
               MultiVector<SC,LO,GO,NO> & R_in) {
+#else
+template<class SC, class NO>
+void residual(const Operator<SC,NO> &   Aop,
+              const MultiVector<SC,NO> & X_in,
+              const MultiVector<SC,NO> & B_in,
+              MultiVector<SC,NO> & R_in) {
+#endif
   using Tpetra::Details::ProfilingRegion;
   using Teuchos::RCP;
   using Teuchos::rcp;
   using Teuchos::rcp_const_cast;
   using Teuchos::rcpFromRef;
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<SC,LO,GO,NO> * Apt  = dynamic_cast<const CrsMatrix<SC,LO,GO,NO>*>(&Aop);
+#else
+  const CrsMatrix<SC,NO> * Apt  = dynamic_cast<const CrsMatrix<SC,NO>*>(&Aop);
+#endif
   if(!Apt) {
     // If we're not a CrsMatrix, we can't do fusion, so just do apply+update
      SC one = Teuchos::ScalarTraits<SC>::one(), negone = -one, zero = Teuchos::ScalarTraits<SC>::zero();    
@@ -315,11 +343,21 @@ void residual(const Operator<SC,LO,GO,NO> &   Aop,
      R_in.update(one,B_in,negone);
      return;
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<SC,LO,GO,NO> & A = *Apt;
+#else
+  const CrsMatrix<SC,NO> & A = *Apt;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using import_type = typename CrsMatrix<SC,LO,GO,NO>::import_type;
   using export_type = typename CrsMatrix<SC,LO,GO,NO>::export_type;
   using MV = MultiVector<SC,LO,GO,NO>;
+#else
+  using import_type = typename CrsMatrix<SC,NO>::import_type;
+  using export_type = typename CrsMatrix<SC,NO>::export_type;
+  using MV = MultiVector<SC,NO>;
+#endif
 
   // We treat the case of a replicated MV output specially.
   const bool R_is_replicated =

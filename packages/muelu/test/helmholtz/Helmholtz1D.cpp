@@ -74,6 +74,7 @@
 int main(int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<SC,LO,GO,NO>              TVEC;
   typedef Tpetra::MultiVector<SC,LO,GO,NO>         TMV;
   typedef Tpetra::CrsMatrix<SC,LO,GO,NO>           TCRS;
@@ -81,8 +82,21 @@ int main(int argc, char *argv[]) {
   typedef Xpetra::TpetraCrsMatrix<SC,LO,GO,NO>     XTCRS;
   typedef Xpetra::Matrix<SC,LO,GO,NO>              XMAT;
   typedef Xpetra::CrsMatrixWrap<SC,LO,GO,NO>       XWRAP;
+#else
+  typedef Tpetra::Vector<SC,NO>              TVEC;
+  typedef Tpetra::MultiVector<SC,NO>         TMV;
+  typedef Tpetra::CrsMatrix<SC,NO>           TCRS;
+  typedef Xpetra::CrsMatrix<SC,NO>           XCRS;
+  typedef Xpetra::TpetraCrsMatrix<SC,NO>     XTCRS;
+  typedef Xpetra::Matrix<SC,NO>              XMAT;
+  typedef Xpetra::CrsMatrixWrap<SC,NO>       XWRAP;
+#endif
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   typedef Belos::OperatorT<TMV>                    TOP;
   typedef Belos::OperatorTraits<SC,TMV,TOP>        TOPT;
@@ -132,7 +146,11 @@ int main(int argc, char *argv[]) {
     map = MapFactory::Build(xpetraParameters.GetLib(), matrixParameters.GetNumGlobalElements(), 0, comm);
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC, LO, GO, Map, RealValuedMultiVector>("1D", map, matrixParameters.GetParameterList());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Map<LO, GO, NO> > tmap = Xpetra::toTpetra(map);
+#else
+    RCP<const Tpetra::Map<NO> > tmap = Xpetra::toTpetra(map);
+#endif
 
     Teuchos::ParameterList matrixParams = matrixParameters.GetParameterList();
 
@@ -162,8 +180,13 @@ int main(int argc, char *argv[]) {
 
     // Solve Ax = b
     tm = rcp (new TimeMonitor(*TimeMonitor::getNewTimer("ScalingTest: 3 - LHS and RHS initialization")));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<TVEC> X = Tpetra::createVector<SC,LO,GO,NO>(tmap);
     RCP<TVEC> B = Tpetra::createVector<SC,LO,GO,NO>(tmap);
+#else
+    RCP<TVEC> X = Tpetra::createVector<SC,NO>(tmap);
+    RCP<TVEC> B = Tpetra::createVector<SC,NO>(tmap);
+#endif
     X->putScalar((SC) 0.0);
     B->putScalar((SC) 0.0);
     if(comm->getRank()==0) {
@@ -175,8 +198,13 @@ int main(int argc, char *argv[]) {
     tm = rcp (new TimeMonitor(*TimeMonitor::getNewTimer("ScalingTest: 4 - Belos Solve")));
 
     // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<TOP> belosOp   = rcp(new Belos::XpetraOp<SC,LO,GO,NO> (A) );    // Turns a Xpetra::Matrix object into a Belos operator
     RCP<TOP> belosPrec = rcp(new Belos::MueLuOp<SC,LO,GO,NO>  (H) );    // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+    RCP<TOP> belosOp   = rcp(new Belos::XpetraOp<SC,NO> (A) );    // Turns a Xpetra::Matrix object into a Belos operator
+    RCP<TOP> belosPrec = rcp(new Belos::MueLuOp<SC,NO>  (H) );    // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
 
     // Construct a Belos LinearProblem object
     RCP<TProblem> belosProblem = rcp(new TProblem(belosOp,X,B));

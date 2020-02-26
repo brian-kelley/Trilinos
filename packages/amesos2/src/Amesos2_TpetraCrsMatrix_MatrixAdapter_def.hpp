@@ -52,32 +52,50 @@
 namespace Amesos2 {
 
   template <typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             typename LocalOrdinal,
             typename GlobalOrdinal,
+#endif
             typename Node>
   ConcreteMatrixAdapter<
     Tpetra::CrsMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node>
     >::ConcreteMatrixAdapter(Teuchos::RCP<matrix_t> m)
       : AbstractConcreteMatrixAdapter<Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                         LocalOrdinal,
                                                         GlobalOrdinal,
+#endif
                                                         Node>,
                                       Tpetra::CrsMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                         LocalOrdinal,
                                                         GlobalOrdinal,
+#endif
                                                         Node> >(m) // with implicit cast
     {}
 
   template <typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             typename LocalOrdinal,
             typename GlobalOrdinal,
+#endif
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const MatrixAdapter<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > >
+#else
+  Teuchos::RCP<const MatrixAdapter<Tpetra::CrsMatrix<Scalar,Node> > >
+#endif
   ConcreteMatrixAdapter<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+    Tpetra::CrsMatrix<Scalar, Node>
+#endif
     >::get_impl(const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > map, EDistribution distribution) const
     {
       using Teuchos::RCP;

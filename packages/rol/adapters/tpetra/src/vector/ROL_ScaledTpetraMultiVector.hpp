@@ -67,14 +67,27 @@ template <class Real,
 class DualScaledTpetraMultiVector;
 
 template <class Real, class LO, class GO, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class PrimalScaledTpetraMultiVector : public TpetraMultiVector<Real,LO,GO,Node> {
+#else
+class PrimalScaledTpetraMultiVector : public TpetraMultiVector<Real,Node> {
+#endif
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const ROL::Ptr<const Tpetra::Vector<Real,LO,GO,Node> > scale_vec_;
+#else
+    const ROL::Ptr<const Tpetra::Vector<Real,Node> > scale_vec_;
+#endif
     mutable ROL::Ptr<DualScaledTpetraMultiVector<Real> > dual_vec_;
     mutable bool isDualInitialized_;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void applyScaling(Tpetra::MultiVector<Real,LO,GO,Node> &out,
                 const Tpetra::MultiVector<Real,LO,GO,Node> &in) const {
+#else
+    void applyScaling(Tpetra::MultiVector<Real,Node> &out,
+                const Tpetra::MultiVector<Real,Node> &in) const {
+#endif
       Real zero(0), one(1);
       out.elementWiseMultiply(one,*scale_vec_,in,zero);
     }
@@ -82,22 +95,43 @@ class PrimalScaledTpetraMultiVector : public TpetraMultiVector<Real,LO,GO,Node> 
   public:
     virtual ~PrimalScaledTpetraMultiVector() {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PrimalScaledTpetraMultiVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
                                   const ROL::Ptr<const Tpetra::Vector<Real,LO,GO,Node> > &scale_vec)
       : TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+    PrimalScaledTpetraMultiVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+                                  const ROL::Ptr<const Tpetra::Vector<Real,Node> > &scale_vec)
+      : TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         scale_vec_(scale_vec), isDualInitialized_(false) {}
 
     Real dot( const Vector<Real> &x ) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ROL_TEST_FOR_EXCEPTION( (TpetraMultiVector<Real,LO,GO,Node>::dimension() != x.dimension()),
+#else
+      ROL_TEST_FOR_EXCEPTION( (TpetraMultiVector<Real,Node>::dimension() != x.dimension()),
+#endif
                                   std::invalid_argument,
                                   "Error: Vectors must have the same dimension." );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::MultiVector<Real,LO,GO,Node> &ex
         = *(dynamic_cast<const TpetraMultiVector<Real,LO,GO,Node>&>(x).getVector());
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
         = *(TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      const Tpetra::MultiVector<Real,Node> &ex
+        = *(dynamic_cast<const TpetraMultiVector<Real,Node>&>(x).getVector());
+      const Tpetra::MultiVector<Real,Node> &ey
+        = *(TpetraMultiVector<Real,Node>::getVector());
+#endif
       size_t n = ey.getNumVectors();
       // Scale x with scale_vec_
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<Real,LO,GO,Node> wex(TpetraMultiVector<Real>::getMap(), n);
+#else
+      Tpetra::MultiVector<Real,Node> wex(TpetraMultiVector<Real>::getMap(), n);
+#endif
       applyScaling(wex,ex);
       // Perform Euclidean dot between *this and scaled x for each vector
       Teuchos::Array<Real> val(n,0);
@@ -111,41 +145,78 @@ class PrimalScaledTpetraMultiVector : public TpetraMultiVector<Real,LO,GO,Node> 
     }
 
     ROL::Ptr<Vector<Real> > clone() const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
         = *(TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      const Tpetra::MultiVector<Real,Node> &ey
+        = *(TpetraMultiVector<Real,Node>::getVector());
+#endif
       size_t n = ey.getNumVectors();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return ROL::makePtr<PrimalScaledTpetraMultiVector<Real,LO,GO,Node>>(
              ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(TpetraMultiVector<Real>::getMap(),n),
+#else
+      return ROL::makePtr<PrimalScaledTpetraMultiVector<Real,Node>>(
+             ROL::makePtr<Tpetra::MultiVector<Real,Node>>(TpetraMultiVector<Real>::getMap(),n),
+#endif
              scale_vec_);
     }
 
     const Vector<Real> & dual() const {
       if ( !isDualInitialized_ ) {
         // Create new memory for dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         size_t n = TpetraMultiVector<Real,LO,GO,Node>::getVector()->getNumVectors();
         dual_vec_ = ROL::makePtr<DualScaledTpetraMultiVector<Real,LO,GO,Node>>(
                     ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(TpetraMultiVector<Real>::getMap(),n),
+#else
+        size_t n = TpetraMultiVector<Real,Node>::getVector()->getNumVectors();
+        dual_vec_ = ROL::makePtr<DualScaledTpetraMultiVector<Real,Node>>(
+                    ROL::makePtr<Tpetra::MultiVector<Real,Node>>(TpetraMultiVector<Real>::getMap(),n),
+#endif
                     scale_vec_);
         isDualInitialized_ = true;
       }
       // Scale *this with scale_vec_ and place in dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       applyScaling(*(dual_vec_->getVector()),*(TpetraMultiVector<Real,LO,GO,Node>::getVector()));
+#else
+      applyScaling(*(dual_vec_->getVector()),*(TpetraMultiVector<Real,Node>::getVector()));
+#endif
       return *dual_vec_;
     }
 
 }; // class PrimalScaledTpetraMultiVector
 
 template <class Real, class LO, class GO, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class DualScaledTpetraMultiVector : public TpetraMultiVector<Real,LO,GO,Node> {
+#else
+class DualScaledTpetraMultiVector : public TpetraMultiVector<Real,Node> {
+#endif
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const ROL::Ptr<const Tpetra::Vector<Real,LO,GO,Node> > scale_vec_;
+#else
+    const ROL::Ptr<const Tpetra::Vector<Real,Node> > scale_vec_;
+#endif
     mutable ROL::Ptr<PrimalScaledTpetraMultiVector<Real> > primal_vec_;
     mutable bool isDualInitialized_;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void applyScaling(Tpetra::MultiVector<Real,LO,GO,Node> &out,
                 const Tpetra::MultiVector<Real,LO,GO,Node> &in) const {
+#else
+    void applyScaling(Tpetra::MultiVector<Real,Node> &out,
+                const Tpetra::MultiVector<Real,Node> &in) const {
+#endif
       Real zero(0), one(1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::Vector<Real,LO,GO,Node> W(scale_vec_->getMap());
+#else
+      Tpetra::Vector<Real,Node> W(scale_vec_->getMap());
+#endif
       W.reciprocal(*scale_vec_);
       out.elementWiseMultiply(one,W,in,zero);
     }
@@ -153,22 +224,42 @@ class DualScaledTpetraMultiVector : public TpetraMultiVector<Real,LO,GO,Node> {
   public:
     virtual ~DualScaledTpetraMultiVector() {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DualScaledTpetraMultiVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
                                 const ROL::Ptr<const Tpetra::Vector<Real,LO,GO,Node> > &scale_vec)
       : TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+    DualScaledTpetraMultiVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+                                const ROL::Ptr<const Tpetra::Vector<Real,Node> > &scale_vec)
+      : TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         scale_vec_(scale_vec), isDualInitialized_(false) {}
 
     Real dot( const Vector<Real> &x ) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ROL_TEST_FOR_EXCEPTION( (TpetraMultiVector<Real,LO,GO,Node>::dimension() != x.dimension()),
+#else
+      ROL_TEST_FOR_EXCEPTION( (TpetraMultiVector<Real,Node>::dimension() != x.dimension()),
+#endif
                                   std::invalid_argument,
                                   "Error: Vectors must have the same dimension." );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::MultiVector<Real,LO,GO,Node> &ex
         = *(dynamic_cast<const TpetraMultiVector<Real,LO,GO,Node>&>(x).getVector());
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
+#else
+      const Tpetra::MultiVector<Real,Node> &ex
+        = *(dynamic_cast<const TpetraMultiVector<Real,Node>&>(x).getVector());
+      const Tpetra::MultiVector<Real,Node> &ey
+#endif
         = *(TpetraMultiVector<Real>::getVector());
       size_t n = ey.getNumVectors();
       // Scale x with 1/scale_vec_
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<Real,LO,GO,Node> wex(TpetraMultiVector<Real>::getMap(), n);
+#else
+      Tpetra::MultiVector<Real,Node> wex(TpetraMultiVector<Real>::getMap(), n);
+#endif
       applyScaling(wex,ex);
       // Perform Euclidean dot between *this and scaled x for each vector
       Teuchos::Array<Real> val(n,0);
@@ -182,25 +273,45 @@ class DualScaledTpetraMultiVector : public TpetraMultiVector<Real,LO,GO,Node> {
     }
 
     ROL::Ptr<Vector<Real> > clone() const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
         = *(TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      const Tpetra::MultiVector<Real,Node> &ey
+        = *(TpetraMultiVector<Real,Node>::getVector());
+#endif
       size_t n = ey.getNumVectors();  
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return ROL::makePtr<DualScaledTpetraMultiVector<Real,LO,GO,Node>>(
              ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(TpetraMultiVector<Real>::getMap(),n),
+#else
+      return ROL::makePtr<DualScaledTpetraMultiVector<Real,Node>>(
+             ROL::makePtr<Tpetra::MultiVector<Real,Node>>(TpetraMultiVector<Real>::getMap(),n),
+#endif
              scale_vec_);
     }
 
     const Vector<Real> & dual() const {
       if ( !isDualInitialized_ ) {
         // Create new memory for dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         size_t n = TpetraMultiVector<Real,LO,GO,Node>::getVector()->getNumVectors();
         primal_vec_ = ROL::makePtr<PrimalScaledTpetraMultiVector<Real,LO,GO,Node>>(
                       ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(TpetraMultiVector<Real>::getMap(),n),
+#else
+        size_t n = TpetraMultiVector<Real,Node>::getVector()->getNumVectors();
+        primal_vec_ = ROL::makePtr<PrimalScaledTpetraMultiVector<Real,Node>>(
+                      ROL::makePtr<Tpetra::MultiVector<Real,Node>>(TpetraMultiVector<Real>::getMap(),n),
+#endif
                       scale_vec_);
         isDualInitialized_ = true;
       }
       // Scale *this with scale_vec_ and place in dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       applyScaling(*(primal_vec_->getVector()),*(TpetraMultiVector<Real,LO,GO,Node>::getVector()));
+#else
+      applyScaling(*(primal_vec_->getVector()),*(TpetraMultiVector<Real,Node>::getVector()));
+#endif
       return *primal_vec_;
     }
 

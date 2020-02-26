@@ -60,9 +60,15 @@ typedef double ElementT;
 typedef Tpetra::Map<>::local_ordinal_type LO;
 typedef Tpetra::Map<>::global_ordinal_type GO;
 typedef Tpetra::Map<>::node_type Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::Map<LO, GO, Node> Map;
 typedef Tpetra::MultiVector<RealT, LO, GO, Node> MV;
 typedef Tpetra::Vector<RealT, LO, GO, Node> V;
+#else
+typedef Tpetra::Map<Node> Map;
+typedef Tpetra::MultiVector<RealT,Node> MV;
+typedef Tpetra::Vector<RealT,Node> V;
+#endif
 typedef ROL::Ptr<MV> MVP;
 typedef ROL::Ptr<V> VP;
 
@@ -101,8 +107,13 @@ int main(int argc, char *argv[]) {
     W_ptr->putScalar(2.0);
 
     // Create ROL vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ROL::PrimalScaledTpetraMultiVector<RealT,LO,GO,Node> x(x_ptr,W_ptr);
     ROL::DualScaledTpetraMultiVector<RealT,LO,GO,Node>   y(y_ptr,W_ptr);
+#else
+    ROL::PrimalScaledTpetraMultiVector<RealT,Node> x(x_ptr,W_ptr);
+    ROL::DualScaledTpetraMultiVector<RealT,Node>   y(y_ptr,W_ptr);
+#endif
 
 //    const ROL::Vector<RealT> &g = x.dual();
 //    const ROL::Vector<RealT> &h = x.dual();
@@ -166,9 +177,15 @@ int main(int argc, char *argv[]) {
     MVP x1_ptr = ROL::makePtr<MV>(map,1,true); 
     MVP y1_ptr = ROL::makePtr<MV>(map,1,true); 
     MVP z1_ptr = ROL::makePtr<MV>(map,1,true); 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ROL::PrimalScaledTpetraMultiVector<RealT,LO,GO,Node> x1(x1_ptr,W_ptr);
     ROL::PrimalScaledTpetraMultiVector<RealT,LO,GO,Node> y1(y1_ptr,W_ptr);
     ROL::PrimalScaledTpetraMultiVector<RealT,LO,GO,Node> z1(z1_ptr,W_ptr);
+#else
+    ROL::PrimalScaledTpetraMultiVector<RealT,Node> x1(x1_ptr,W_ptr);
+    ROL::PrimalScaledTpetraMultiVector<RealT,Node> y1(y1_ptr,W_ptr);
+    ROL::PrimalScaledTpetraMultiVector<RealT,Node> z1(z1_ptr,W_ptr);
+#endif
     x1_ptr->randomize();
     y1_ptr->randomize();
     z1_ptr->randomize();

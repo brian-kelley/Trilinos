@@ -55,10 +55,16 @@
  |  build averaged normals                                              |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::BuildNormals()
+#else
+bool MoertelT::InterfaceT<ST, N>::BuildNormals()
+#endif
 { 
   //-------------------------------------------------------------------
   // interface needs to be complete
@@ -115,10 +121,16 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::BuildNormals()
  |  build averaged normals and make projection of nodes                 |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::Project()
+#else
+bool MoertelT::InterfaceT<ST, N>::Project()
+#endif
 { 
   bool ok = false;
   
@@ -174,12 +186,20 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::Project()
   // Then projects master nodes along the same normal field on slave
   // surfaces. Overrides the normals in the master nodes by the negative
   // of the normal field of their projection point
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if (GetProjectionType() == MoertelT::InterfaceT<ST, LO, GO, N>::proj_continousnormalfield)
+#else
+  if (GetProjectionType() == MoertelT::InterfaceT<ST, N>::proj_continousnormalfield)
+#endif
   {
     ok = ProjectNodes_NormalField();
     if (!ok) return false;
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   else if (GetProjectionType() == MoertelT::InterfaceT<ST, LO, GO, N>::proj_orthogonal)
+#else
+  else if (GetProjectionType() == MoertelT::InterfaceT<ST, N>::proj_orthogonal)
+#endif
   {
     ok = ProjectNodes_Orthogonal();
     if (!ok) return false;
@@ -199,10 +219,16 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::Project()
  | do projection of nodes on master and slave side                      |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_NormalField()
+#else
+bool MoertelT::InterfaceT<ST, N>::ProjectNodes_NormalField()
+#endif
 { 
   if (!IsComplete())
   {
@@ -228,10 +254,16 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_NormalField()
  | project the slave nodes onto master segments along slave normal field|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_SlavetoMaster_NormalField()
+#else
+bool MoertelT::InterfaceT<ST, N>::ProjectNodes_SlavetoMaster_NormalField()
+#endif
 { 
   if (!IsComplete())
   {
@@ -520,10 +552,16 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_SlavetoMaster_NormalField
  | project nodes master to slave along slave cont. normal field         |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_MastertoSlave_NormalField()
+#else
+bool MoertelT::InterfaceT<ST, N>::ProjectNodes_MastertoSlave_NormalField()
+#endif
 { 
   if (!IsComplete())
   {
@@ -779,10 +817,16 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_MastertoSlave_NormalField
  | do projection of nodes on master and slave side                      |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_Orthogonal()
+#else
+bool MoertelT::InterfaceT<ST, N>::ProjectNodes_Orthogonal()
+#endif
 { 
   if (!IsComplete())
   {
@@ -807,10 +851,16 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_Orthogonal()
  | project nodes master to slave along slave orthogonal         |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_MastertoSlave_Orthogonal()
+#else
+bool MoertelT::InterfaceT<ST, N>::ProjectNodes_MastertoSlave_Orthogonal()
+#endif
 { 
   if (!IsComplete())
   {
@@ -1015,10 +1065,16 @@ bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_MastertoSlave_Orthogonal(
  | project the slave nodes onto master segments orthogonal              |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MoertelT::InterfaceT<ST, LO, GO, N>::ProjectNodes_SlavetoMaster_Orthogonal()
+#else
+bool MoertelT::InterfaceT<ST, N>::ProjectNodes_SlavetoMaster_Orthogonal()
+#endif
 {
   if (!IsComplete())
   {

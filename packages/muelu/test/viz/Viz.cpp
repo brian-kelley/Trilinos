@@ -80,7 +80,11 @@
 #include <BelosMueLuAdapter.hpp>      // => This header defines Belos::MueLuOp
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -184,25 +188,45 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
       // In the future, we hope to be able to first create a Galeri problem, and then request map and coordinates from it
       // At the moment, however, things are fragile as we hope that the Problem uses same map and coordinates inside
       if (matrixType == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#else
+        map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#endif
         coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("1D", map, galeriList);
 
       } else if (matrixType == "Laplace2D" || matrixType == "Star2D" ||
           matrixType == "BigStar2D" || matrixType == "Elasticity2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#else
+        map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#endif
         coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("2D", map, galeriList);
 
       } else if (matrixType == "Laplace3D" || matrixType == "Brick3D" || matrixType == "Elasticity3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#else
+        map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#endif
         coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("3D", map, galeriList);
         ndims = 3;
       }
 
       // Expand map to do multiple DOF per node for block problems
       if (matrixType == "Elasticity2D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 2);
+#else
+        map = Xpetra::MapFactory<Node>::Build(map, 2);
+#endif
       if (matrixType == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 3);
+#else
+        map = Xpetra::MapFactory<Node>::Build(map, 3);
+#endif
 
       galeriStream << "Processor subdomains in x direction: " << galeriList.get<GO>("mx") << std::endl
                    << "Processor subdomains in y direction: " << galeriList.get<GO>("my") << std::endl
@@ -230,19 +254,34 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
 
     } else {
       if (!mapFile.empty())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Xpetra::IO<SC,LO,GO,Node>::ReadMap(mapFile, lib, comm);
+#else
+        map = Xpetra::IO<SC,Node>::ReadMap(mapFile, lib, comm);
+#endif
       comm->barrier();
 
       const bool binaryFormat = false;
 
       if (!binaryFormat && !map.is_null()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Map> colMap    = (!colMapFile.empty()    ? Xpetra::IO<SC,LO,GO,Node>::ReadMap(colMapFile,    lib, comm) : Teuchos::null);
         RCP<const Map> domainMap = (!domainMapFile.empty() ? Xpetra::IO<SC,LO,GO,Node>::ReadMap(domainMapFile, lib, comm) : Teuchos::null);
         RCP<const Map> rangeMap  = (!rangeMapFile.empty()  ? Xpetra::IO<SC,LO,GO,Node>::ReadMap(rangeMapFile,  lib, comm) : Teuchos::null);
         A = Xpetra::IO<SC,LO,GO,Node>::Read(matrixFile, map, colMap, domainMap, rangeMap);
+#else
+        RCP<const Map> colMap    = (!colMapFile.empty()    ? Xpetra::IO<SC,Node>::ReadMap(colMapFile,    lib, comm) : Teuchos::null);
+        RCP<const Map> domainMap = (!domainMapFile.empty() ? Xpetra::IO<SC,Node>::ReadMap(domainMapFile, lib, comm) : Teuchos::null);
+        RCP<const Map> rangeMap  = (!rangeMapFile.empty()  ? Xpetra::IO<SC,Node>::ReadMap(rangeMapFile,  lib, comm) : Teuchos::null);
+        A = Xpetra::IO<SC,Node>::Read(matrixFile, map, colMap, domainMap, rangeMap);
+#endif
 
       } else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         A = Xpetra::IO<SC,LO,GO,Node>::Read(matrixFile, lib, comm, binaryFormat);
+#else
+        A = Xpetra::IO<SC,Node>::Read(matrixFile, lib, comm, binaryFormat);
+#endif
 
         if (!map.is_null()) {
           RCP<Matrix> newMatrix = MatrixFactory::Build(map, 1);
@@ -260,11 +299,19 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
       if (!coordFile.empty()) {
         // NOTE: currently we only allow reading scalar matrices, thus coordinate
         // map is same as matrix map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         coordinates = Xpetra::IO<SC,LO,GO,Node>::ReadMultiVector(coordFile, map);
+#else
+        coordinates = Xpetra::IO<SC,Node>::ReadMultiVector(coordFile, map);
+#endif
       }
 
       if (!nullFile.empty())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         nullspace = Xpetra::IO<SC,LO,GO,Node>::ReadMultiVector(nullFile, map);
+#else
+        nullspace = Xpetra::IO<SC,Node>::ReadMultiVector(nullFile, map);
+#endif
     }
 
     comm->barrier();
@@ -434,8 +481,13 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           H->IsPreconditioner(true);
 
           // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
           Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp <SC, LO, GO, NO>(H)); // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+          Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, NO>(A)); // Turns a Xpetra::Matrix object into a Belos operator
+          Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp <SC, NO>(H)); // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
 
           // Construct a Belos LinearProblem object
           RCP< Belos::LinearProblem<SC, MV, OP> > belosProblem = rcp(new Belos::LinearProblem<SC, MV, OP>(belosOp, X, B));
@@ -548,7 +600,11 @@ int main(int argc, char* argv[]) {
 
     if (lib == Xpetra::UseEpetra) {
 #ifdef HAVE_MUELU_EPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return main_<double,int,int,Xpetra::EpetraNode>(clp, lib, argc, argv);
+#else
+      return main_<double,Xpetra::EpetraNode>(clp, lib, argc, argv);
+#endif
 #else
       throw MueLu::Exceptions::RuntimeError("Epetra is not available");
 #endif
@@ -560,14 +616,30 @@ int main(int argc, char* argv[]) {
         typedef KokkosClassic::DefaultNode::DefaultNodeType Node;
 
 #ifndef HAVE_MUELU_EXPLICIT_INSTANTIATION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
 #else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
+#else
 #    if   defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_INT_INT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,int,Node> (clp, lib, argc, argv);
+#else
+        return main_<double,Node> (clp, lib, argc, argv);
+#endif
 #  elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_INT_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #  elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_INT_LONG_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #  else
         throw MueLu::Exceptions::RuntimeError("Found no suitable instantiation");
 #  endif
@@ -577,14 +649,30 @@ int main(int argc, char* argv[]) {
         typedef Kokkos::Compat::KokkosSerialWrapperNode Node;
 
 #  ifndef HAVE_MUELU_EXPLICIT_INSTANTIATION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #  else
 #    if   defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_INT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,int,Node> (clp, lib, argc, argv);
+#else
+        return main_<double,Node> (clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_LONG_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    else
         throw MueLu::Exceptions::RuntimeError("Found no suitable instantiation");
 #    endif
@@ -597,14 +685,30 @@ int main(int argc, char* argv[]) {
         typedef Kokkos::Compat::KokkosOpenMPWrapperNode Node;
 
 #  ifndef HAVE_MUELU_EXPLICIT_INSTANTIATION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #  else
 #    if   defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_INT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,int,Node> (clp, lib, argc, argv);
+#else
+        return main_<double,Node> (clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_LONG_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    else
         throw MueLu::Exceptions::RuntimeError("Found no suitable instantiation");
 #    endif
@@ -617,14 +721,30 @@ int main(int argc, char* argv[]) {
         typedef Kokkos::Compat::KokkosCudaWrapperNode Node;
 
 #  ifndef HAVE_MUELU_EXPLICIT_INSTANTIATION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #  else
 #    if defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_CUDA) && defined(HAVE_TPETRA_INST_INT_INT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,int,Node> (clp, lib, argc, argv);
+#else
+        return main_<double,Node> (clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_CUDA) && defined(HAVE_TPETRA_INST_INT_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_CUDA) && defined(HAVE_TPETRA_INST_INT_LONG_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    else
         throw MueLu::Exceptions::RuntimeError("Found no suitable instantiation");
 #    endif

@@ -57,14 +57,26 @@
 namespace Tpetra {
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   class FEMultiVector :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+    public MultiVector<Scalar, Node>
+#endif
   {
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using base_type = ::Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    using base_type = ::Tpetra::MultiVector<Scalar, Node>;
+#endif
     friend base_type;
 
   public:
@@ -137,18 +149,34 @@ namespace Tpetra {
                    const bool zeroOut = true);
 
     //! Copy constructor (forbidden).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     FEMultiVector (const FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&) = delete;
+#else
+    FEMultiVector (const FEMultiVector<Scalar, Node>&) = delete;
+#endif
 
     //! Move constructor (forbidden).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     FEMultiVector (FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&&) = delete;
+#else
+    FEMultiVector (FEMultiVector<Scalar, Node>&&) = delete;
+#endif
 
     //! Copy assigment (forbidden).
     FEMultiVector&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     operator= (const FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&) = delete;
+#else
+    operator= (const FEMultiVector<Scalar, Node>&) = delete;
+#endif
 
     //! Move assigment (forbidden).
     FEMultiVector&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     operator= (FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&&) = delete;
+#else
+    operator= (FEMultiVector<Scalar, Node>&&) = delete;
+#endif
 
     /// \brief Destructor (virtual for memory safety of derived classes).
     ///

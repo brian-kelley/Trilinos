@@ -67,15 +67,25 @@
 namespace Xpetra {
 
   template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal,
            class GlobalOrdinal,
+#endif
            class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class TpetraRowMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>
+#else
+    : public RowMatrix<Scalar,Node>
+#endif
   {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Destructor Method
     //@{
 
@@ -88,10 +98,18 @@ namespace Xpetra {
     //@{
 
     //! Returns the Map that describes the row distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getRowMap() const { XPETRA_MONITOR("TpetraRowMatrix::getRowMap"); return toXpetra(mtx_->getRowMap()); }
+#else
+    const Teuchos::RCP< const Map<Node > >  getRowMap() const { XPETRA_MONITOR("TpetraRowMatrix::getRowMap"); return toXpetra(mtx_->getRowMap()); }
+#endif
 
     //! Returns the Map that describes the column distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getColMap() const { XPETRA_MONITOR("TpetraRowMatrix::getColMap"); return toXpetra(mtx_->getColMap()); }
+#else
+    const Teuchos::RCP< const Map<Node > >  getColMap() const { XPETRA_MONITOR("TpetraRowMatrix::getColMap"); return toXpetra(mtx_->getColMap()); }
+#endif
 
     //! Returns the number of global rows in this matrix.
     Tpetra::global_size_t getGlobalNumRows() const { XPETRA_MONITOR("TpetraRowMatrix::getGlobalNumRows"); return mtx_->getGlobalNumRows(); }
@@ -147,7 +165,11 @@ namespace Xpetra {
     void getLocalRowView(LocalOrdinal LocalRow, ArrayView< const LocalOrdinal > &indices, ArrayView< const Scalar > &values) const { XPETRA_MONITOR("TpetraRowMatrix::getLocalRowView"); mtx_->getLocalRowView(LocalRow, indices, values); }
 
     //! Get a copy of the diagonal entries owned by this node, with local row indices.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void getLocalDiagCopy(Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &diag) const { TEUCHOS_TEST_FOR_EXCEPTION(1, Xpetra::Exceptions::NotImplemented, "TODO"); }
+#else
+    void getLocalDiagCopy(Vector< Scalar, Node > &diag) const { TEUCHOS_TEST_FOR_EXCEPTION(1, Xpetra::Exceptions::NotImplemented, "TODO"); }
+#endif
     //{ XPETRA_MONITOR("TpetraRowMatrix::getLocalDiagCopy"); mtx_->getLocalDiagCopy(diag); }
 
     //@}
@@ -164,13 +186,25 @@ namespace Xpetra {
     //@{
 
     //! Returns the Map associated with the domain of this operator, which must be compatible with X.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getDomainMap() const  { XPETRA_MONITOR("TpetraRowMatrix::getDomainMap"); return toXpetra(mtx_->getDomainMap()); }
+#else
+    const Teuchos::RCP< const Map<Node > >  getDomainMap() const  { XPETRA_MONITOR("TpetraRowMatrix::getDomainMap"); return toXpetra(mtx_->getDomainMap()); }
+#endif
 
     //! Returns the Map associated with the range of this operator, which must be compatible with Y.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getRangeMap() const { XPETRA_MONITOR("TpetraRowMatrix::getRangeMap"); return toXpetra(mtx_->getRangeMap()); }
+#else
+    const Teuchos::RCP< const Map<Node > >  getRangeMap() const { XPETRA_MONITOR("TpetraRowMatrix::getRangeMap"); return toXpetra(mtx_->getRangeMap()); }
+#endif
 
     //! Computes the operator-multivector application.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void apply(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &X, MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, Scalar alpha=Teuchos::ScalarTraits< Scalar >::one(), Scalar beta=Teuchos::ScalarTraits< Scalar >::zero()) const { TEUCHOS_TEST_FOR_EXCEPTION(1, Xpetra::Exceptions::NotImplemented, "TODO"); }
+#else
+    void apply(const MultiVector< Scalar, Node > &X, MultiVector< Scalar, Node > &Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, Scalar alpha=Teuchos::ScalarTraits< Scalar >::one(), Scalar beta=Teuchos::ScalarTraits< Scalar >::zero()) const { TEUCHOS_TEST_FOR_EXCEPTION(1, Xpetra::Exceptions::NotImplemented, "TODO"); }
+#endif
     //{ XPETRA_MONITOR("TpetraRowMatrix::apply"); mtx_->apply(X, Y, mode, alpha, beta); }
 
     //@}
@@ -179,19 +213,35 @@ namespace Xpetra {
     //@{
 
     //! TpetraCrsMatrix constructor to wrap a Tpetra::CrsMatrix object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraRowMatrix(const Teuchos::RCP<Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > &mtx) : mtx_(mtx) {  }
+#else
+    TpetraRowMatrix(const Teuchos::RCP<Tpetra::RowMatrix<Scalar, Node> > &mtx) : mtx_(mtx) {  }
+#endif
 
     //! Get the underlying Tpetra matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > getTpetra_RowMatrix() const { return mtx_; }
+#else
+    RCP<const Tpetra::RowMatrix<Scalar, Node> > getTpetra_RowMatrix() const { return mtx_; }
+#endif
 
     //! Get the underlying Tpetra matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > getTpetra_RowMatrixNonConst() const { return mtx_; } //TODO: remove
+#else
+    RCP<Tpetra::RowMatrix<Scalar, Node> > getTpetra_RowMatrixNonConst() const { return mtx_; } //TODO: remove
+#endif
 
    //@}
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > mtx_;
+#else
+    RCP< Tpetra::RowMatrix<Scalar, Node> > mtx_;
+#endif
 
   }; // TpetraRowMatrix class
 

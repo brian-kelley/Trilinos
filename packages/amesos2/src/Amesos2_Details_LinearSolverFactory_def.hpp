@@ -90,7 +90,9 @@ struct GetMatrixType {
 
 #ifdef HAVE_AMESOS2_TPETRA
   static_assert(! std::is_same<OP, Tpetra::MultiVector<typename OP::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 typename OP::local_ordinal_type, typename OP::global_ordinal_type,
+#endif
                 typename OP::node_type> >::value,
                 "Amesos2::Details::GetMatrixType: OP = Tpetra::MultiVector.  "
                 "This probably means that you mixed up MV and OP.");
@@ -106,9 +108,17 @@ struct GetMatrixType<Epetra_Operator> {
 
 
 #ifdef HAVE_AMESOS2_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class S, class LO, class GO, class NT>
 struct GetMatrixType<Tpetra::Operator<S, LO, GO, NT> > {
   typedef Tpetra::CrsMatrix<S, LO, GO, NT> type;
+#else
+template<class S, class NT>
+struct GetMatrixType<Tpetra::Operator<S, NT> > {
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::CrsMatrix<S, NT> type;
+#endif
 };
 #endif // HAVE_AMESOS2_TPETRA
 
@@ -416,9 +426,16 @@ registerLinearSolverFactory ()
 //
 // We don't have to protect use of Tpetra objects here, or include
 // any header files for them, because this is a macro definition.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define AMESOS2_DETAILS_LINEARSOLVERFACTORY_INSTANT(SC, LO, GO, NT) \
   template class Amesos2::Details::LinearSolverFactory<Tpetra::MultiVector<SC, LO, GO, NT>, \
                                                        Tpetra::Operator<SC, LO, GO, NT>, \
                                                        typename Tpetra::MultiVector<SC, LO, GO, NT>::mag_type>;
+#else
+#define AMESOS2_DETAILS_LINEARSOLVERFACTORY_INSTANT(SC, NT) \
+  template class Amesos2::Details::LinearSolverFactory<Tpetra::MultiVector<SC, NT>, \
+                                                       Tpetra::Operator<SC, NT>, \
+                                                       typename Tpetra::MultiVector<SC, NT>::mag_type>;
+#endif
 
 #endif // AMESOS2_DETAILS_LINEARSOLVERFACTORY_DEF_HPP

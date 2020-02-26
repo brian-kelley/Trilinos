@@ -57,8 +57,13 @@
 
 namespace Xpetra{
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RegionHandler(const std::string &file_name, RCP< const Teuchos::Comm<int> > comm): comm_(comm)
+#else
+template <class Scalar, class Node>
+RegionHandler<Scalar, Node>::RegionHandler(const std::string &file_name, RCP< const Teuchos::Comm<int> > comm): comm_(comm)
+#endif
 {
   ReadFileInfo(file_name);
 
@@ -95,8 +100,13 @@ RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RegionHandler(const st
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ReadFileInfo(const std::string &file_name)
+#else
+template <class Scalar, class Node>
+void RegionHandler<Scalar, Node>::ReadFileInfo(const std::string &file_name)
+#endif
 {
   std::ifstream input_file_(file_name, std::ifstream::in);
   std::string  line;
@@ -148,8 +158,13 @@ void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ReadFileInfo(cons
 //ASSUMPTION: A PROCESS CANNOT OWN CHUNKS OF MULTIPLE REGIONS. EITHER A PROCESS IS CONFINED INSIDE A SINGLE REGION
 //OR IT MUST POSSESS ENTIRE REGIONS.
 //The distribution of regions (or portions of them) across processes is conductes so to guarantee load balancing
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ComputeProcRegions()
+#else
+template <class Scalar, class Node>
+void RegionHandler<Scalar, Node>::ComputeProcRegions()
+#endif
 {
   int tot_num_proc = comm_->getSize();
   int myPID = comm_->getRank();
@@ -248,8 +263,13 @@ void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ComputeProcRegion
 //This routine associates a globally indexed node with the list of regions it belongs to
 //This is helpful to spot which nodes lie on a interregion interface. In fact, these nodes must have
 //the list of regions with more than one element
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NodesToRegion()
+#else
+template <class Scalar, class Node>
+void RegionHandler<Scalar, Node>::NodesToRegion()
+#endif
 {
   nodesToRegion_.clear();
   interfaceNodes_.clear();
@@ -302,8 +322,13 @@ void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NodesToRegion()
 }
 
 //This routine creates row maps for composite and region matrices
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CreateRowMaps()
+#else
+template <class Scalar, class Node>
+void RegionHandler<Scalar, Node>::CreateRowMaps()
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( ( procs_per_region_.empty() && regions_per_proc_.empty() ), Exceptions::RuntimeError, "Process ID: "<<comm_->getRank()<<" - Information about region partitioning across processors is not consistent: incorrect values for number of processors or number of regions \n");
   Array<GlobalOrdinal> elements;
@@ -609,30 +634,50 @@ void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CreateRowMaps()
 
 
 // Get methods to allow a user to interface with private members of the RegionHandler class
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Array<GlobalOrdinal> RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetRegionRowMap(GlobalOrdinal region_index)const
+#else
+template <class Scalar, class Node>
+Array<GlobalOrdinal> RegionHandler<Scalar, Node>::GetRegionRowMap(GlobalOrdinal region_index)const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( region_index>=num_total_regions_, Exceptions::RuntimeError, "Value of region index exceeds total number of regions stored \n"<<"Trying to access informaiton about region "<<region_index<<" when the total number of regions stored is "<<num_total_regions_<<"\n");
   return maps_.region_maps_[region_index];
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Array<Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > > RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetRegionToAll()const
+#else
+template <class Scalar, class Node>
+Array<Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > > RegionHandler<Scalar, Node>::GetRegionToAll()const
+#endif
 {
   return maps_.regionToAll_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetRegionToAll(GlobalOrdinal region_index)const
+#else
+template <class Scalar, class Node>
+Array<std::tuple<GlobalOrdinal, GlobalOrdinal> > RegionHandler<Scalar, Node>::GetRegionToAll(GlobalOrdinal region_index)const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION( region_index>=num_total_regions_, Exceptions::RuntimeError, "Value of region index exceeds total number of regions stored \n"<<"Trying to access informaiton about region "<<region_index<<" when the total number of regions stored is "<<num_total_regions_<<"\n");
   return maps_.regionToAll_[region_index];
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::printView() const
+#else
+template <class Scalar, class Node>
+void RegionHandler<Scalar, Node>::printView() const
+#endif
 {
   if( 0==comm_->getRank() )
   {
@@ -647,8 +692,13 @@ void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::printView() const
 }
 
 //Print methods
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::printNodesToRegion() const
+#else
+template <class Scalar, class Node>
+void RegionHandler<Scalar, Node>::printNodesToRegion() const
+#endif
 {
   if( 0==comm_->getRank() )
   {
@@ -662,8 +712,13 @@ void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::printNodesToRegio
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node>::printInactive() const
+#else
+template <class Scalar, class Node>
+void RegionHandler<Scalar, Node>::printInactive() const
+#endif
 {
   if( maps_.composite_map_.empty() )
     std::cout<<"INACTIVE PROC ID: "<<comm_->getRank()<<std::endl;

@@ -61,24 +61,40 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,
             class GlobalOrdinal,
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class ExportFactory {
   private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Private constructor. This is a static class.
     ExportFactory() {}
 
   public:
 
     //! Constructor specifying the number of non-zeros for all rows.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Export<LocalOrdinal, GlobalOrdinal, Node> > Build(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &source, const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &target) {
+#else
+    static RCP<Export<Node> > Build(const RCP<const Map<Node> > &source, const RCP<const Map<Node> > &target) {
+#endif
       XPETRA_MONITOR("ExportFactory::Build");
       TEUCHOS_TEST_FOR_EXCEPTION(source->lib() != target->lib(), Xpetra::Exceptions::RuntimeError, "");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (source->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraExport<LocalOrdinal, GlobalOrdinal, Node>(source, target));
+#else
+        return rcp( new TpetraExport<Node>(source, target));
+#endif
 #endif
 
       XPETRA_FACTORY_ERROR_IF_EPETRA(source->lib());
@@ -102,14 +118,22 @@ namespace Xpetra {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Export<LocalOrdinal, GlobalOrdinal, Node> > Build(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &source, const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &target) {
+#else
+    static RCP<Export<Node> > Build(const RCP<const Map<Node> > &source, const RCP<const Map<Node> > &target) {
+#endif
       XPETRA_MONITOR("ExportFactory::Build");
 
       TEUCHOS_TEST_FOR_EXCEPTION(source->lib() != target->lib(), Xpetra::Exceptions::RuntimeError, "");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (source->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraExport<LocalOrdinal, GlobalOrdinal, Node>(source, target));
+#else
+        return rcp( new TpetraExport<Node>(source, target));
+#endif
 #endif
 
       if (source->lib() == UseEpetra)
@@ -136,14 +160,22 @@ namespace Xpetra {
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Export<LocalOrdinal, GlobalOrdinal, Node> > Build(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &source, const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > &target) {
+#else
+    static RCP<Export<Node> > Build(const RCP<const Map<Node> > &source, const RCP<const Map<Node> > &target) {
+#endif
       XPETRA_MONITOR("ExportFactory::Build");
 
       TEUCHOS_TEST_FOR_EXCEPTION(source->lib() != target->lib(), Xpetra::Exceptions::RuntimeError, "");
 
 #ifdef HAVE_XPETRA_TPETRA
       if (source->lib() == UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp( new TpetraExport<LocalOrdinal, GlobalOrdinal, Node>(source, target));
+#else
+        return rcp( new TpetraExport<Node>(source, target));
+#endif
 #endif
 
       if (source->lib() == UseEpetra)

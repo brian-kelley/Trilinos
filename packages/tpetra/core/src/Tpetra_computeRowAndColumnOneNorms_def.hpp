@@ -62,9 +62,17 @@
 namespace Tpetra {
 namespace Details {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 std::size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 lclMaxNumEntriesRowMatrix (const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
+#else
+lclMaxNumEntriesRowMatrix (const Tpetra::RowMatrix<SC, NT>& A)
+#endif
 {
   const auto& rowMap = * (A.getRowMap ());
   const LO lclNumRows = static_cast<LO> (rowMap.getNodeNumElements ());
@@ -77,9 +85,17 @@ lclMaxNumEntriesRowMatrix (const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
   return maxNumEnt;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 forEachLocalRowMatrixRow (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
+#else
+forEachLocalRowMatrixRow (const Tpetra::RowMatrix<SC, NT>& A,
+#endif
                           const LO lclNumRows,
                           const std::size_t maxNumEnt,
                           std::function<void (const LO lclRow,
@@ -99,9 +115,17 @@ forEachLocalRowMatrixRow (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 forEachLocalRowMatrixRow (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
+#else
+forEachLocalRowMatrixRow (const Tpetra::RowMatrix<SC, NT>& A,
+#endif
                           std::function<void (const LO lclRow,
                                               const Teuchos::ArrayView<LO>& /* ind */,
                                               const Teuchos::ArrayView<SC>& /* val */,
@@ -111,17 +135,29 @@ forEachLocalRowMatrixRow (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
   const LO lclNumRows = static_cast<LO> (rowMap.getNodeNumElements ());
   const std::size_t maxNumEnt = lclMaxNumEntriesRowMatrix (A);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   forEachLocalRowMatrixRow<SC, LO, GO, NT> (A, lclNumRows, maxNumEnt, doForEachRow);
+#else
+  forEachLocalRowMatrixRow<SC, NT> (A, lclNumRows, maxNumEnt, doForEachRow);
+#endif
 }
 
 /// \brief For a given Tpetra::RowMatrix that is not a
 ///   Tpetra::CrsMatrix, assume that result.rowNorms has been computed
 ///   (and globalized), and compute result.rowScaledColNorms.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 computeLocalRowScaledColumnNorms_RowMatrix (EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                                                               typename NT::device_type>& result,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                             const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
+#else
+                                            const Tpetra::RowMatrix<SC, NT>& A)
+#endif
 {
   using KAT = Kokkos::ArithTraits<SC>;
   using mag_type = typename KAT::mag_type;
@@ -130,7 +166,11 @@ computeLocalRowScaledColumnNorms_RowMatrix (EquilibrationInfo<typename Kokkos::A
   Kokkos::deep_copy (rowNorms_h, result.rowNorms);
   auto rowScaledColNorms_h = Kokkos::create_mirror_view (result.rowScaledColNorms);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   forEachLocalRowMatrixRow<SC, LO, GO, NT> (A,
+#else
+  forEachLocalRowMatrixRow<SC, NT> (A,
+#endif
     [&] (const LO lclRow,
          const Teuchos::ArrayView<LO>& ind,
          const Teuchos::ArrayView<SC>& val,
@@ -148,9 +188,17 @@ computeLocalRowScaledColumnNorms_RowMatrix (EquilibrationInfo<typename Kokkos::A
 
 /// \brief Implementation of computeLocalRowOneNorms for a
 ///   Tpetra::RowMatrix that is NOT a Tpetra::CrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type, typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeLocalRowOneNorms_RowMatrix (const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
+#else
+computeLocalRowOneNorms_RowMatrix (const Tpetra::RowMatrix<SC, NT>& A)
+#endif
 {
   using KAT = Kokkos::ArithTraits<SC>;
   using val_type = typename KAT::val_type;
@@ -167,7 +215,11 @@ computeLocalRowOneNorms_RowMatrix (const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
   equib_info_type result (lclNumRows, lclNumCols, assumeSymmetric);
   auto result_h = result.createMirrorView ();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   forEachLocalRowMatrixRow<SC, LO, GO, NT> (A,
+#else
+  forEachLocalRowMatrixRow<SC, NT> (A,
+#endif
     [&] (const LO lclRow,
          const Teuchos::ArrayView<LO>& ind,
          const Teuchos::ArrayView<SC>& val,
@@ -216,9 +268,17 @@ computeLocalRowOneNorms_RowMatrix (const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
 
 /// \brief Implementation of computeLocalRowAndColumnOneNorms for a
 ///   Tpetra::RowMatrix that is NOT a Tpetra::CrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type, typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeLocalRowAndColumnOneNorms_RowMatrix (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
+#else
+computeLocalRowAndColumnOneNorms_RowMatrix (const Tpetra::RowMatrix<SC, NT>& A,
+#endif
                                             const bool assumeSymmetric)
 {
   using KAT = Kokkos::ArithTraits<SC>;
@@ -236,7 +296,11 @@ computeLocalRowAndColumnOneNorms_RowMatrix (const Tpetra::RowMatrix<SC, LO, GO, 
     (lclNumRows, lclNumCols, assumeSymmetric);
   auto result_h = result.createMirrorView ();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   forEachLocalRowMatrixRow<SC, LO, GO, NT> (A,
+#else
+  forEachLocalRowMatrixRow<SC, NT> (A,
+#endif
     [&] (const LO lclRow,
          const Teuchos::ArrayView<LO>& ind,
          const Teuchos::ArrayView<SC>& val,
@@ -290,10 +354,20 @@ computeLocalRowAndColumnOneNorms_RowMatrix (const Tpetra::RowMatrix<SC, LO, GO, 
   return result;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class ComputeLocalRowScaledColumnNorms {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = ::Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  using crs_matrix_type = ::Tpetra::CrsMatrix<SC, NT>;
+#endif
   using val_type = typename Kokkos::ArithTraits<SC>::val_type;
   using mag_type = typename Kokkos::ArithTraits<val_type>::mag_type;
   using device_type = typename crs_matrix_type::device_type;
@@ -327,7 +401,11 @@ public:
   {
     using execution_space = typename device_type::execution_space;
     using range_type = Kokkos::RangePolicy<execution_space, LO>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using functor_type = ComputeLocalRowScaledColumnNorms<SC, LO, GO, NT>;
+#else
+    using functor_type = ComputeLocalRowScaledColumnNorms<SC, NT>;
+#endif
 
     functor_type functor (rowScaledColNorms, rowNorms, A);
     const LO lclNumRows =
@@ -344,23 +422,47 @@ private:
   local_matrix_type A_lcl_;
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 computeLocalRowScaledColumnNorms_CrsMatrix (EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                                                               typename NT::device_type>& result,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                             const Tpetra::CrsMatrix<SC, LO, GO, NT>& A)
+#else
+                                            const Tpetra::CrsMatrix<SC, NT>& A)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using impl_type = ComputeLocalRowScaledColumnNorms<SC, LO, GO, NT>;
+#else
+  using impl_type = ComputeLocalRowScaledColumnNorms<SC, NT>;
+#endif
   impl_type::run (result.rowScaledColNorms, result.rowNorms, A);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 computeLocalRowScaledColumnNorms (EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                                                     typename NT::device_type>& result,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
+#else
+                                  const Tpetra::RowMatrix<SC, NT>& A)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using val_type = typename Kokkos::ArithTraits<SC>::val_type;
   using mag_type = typename Kokkos::ArithTraits<val_type>::mag_type;
   using device_type = typename NT::device_type;
@@ -388,14 +490,27 @@ computeLocalRowScaledColumnNorms (EquilibrationInfo<typename Kokkos::ArithTraits
 
 // Kokkos::parallel_reduce functor that is part of the implementation
 // of computeLocalRowOneNorms_CrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class ComputeLocalRowOneNorms {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   using val_type = typename Kokkos::ArithTraits<SC>::val_type;
   using equib_info_type = EquilibrationInfo<val_type, typename NT::device_type>;
   using local_matrix_type =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typename ::Tpetra::CrsMatrix<SC, LO, GO, NT>::local_matrix_type;
   using local_map_type = typename ::Tpetra::Map<LO, GO, NT>::local_map_type;
+#else
+    typename ::Tpetra::CrsMatrix<SC, NT>::local_matrix_type;
+  using local_map_type = typename ::Tpetra::Map<NT>::local_map_type;
+#endif
 
   ComputeLocalRowOneNorms (const equib_info_type& equib,   // in/out
                            const local_matrix_type& A_lcl, // in
@@ -481,13 +596,26 @@ private:
 
 // Kokkos::parallel_reduce functor that is part of the implementation
 // of computeLocalRowAndColumnOneNorms_CrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class ComputeLocalRowAndColumnOneNorms {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   using val_type = typename Kokkos::ArithTraits<SC>::val_type;
   using equib_info_type = EquilibrationInfo<val_type, typename NT::device_type>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using local_matrix_type = typename ::Tpetra::CrsMatrix<SC, LO, GO, NT>::local_matrix_type;
   using local_map_type = typename ::Tpetra::Map<LO, GO, NT>::local_map_type;
+#else
+  using local_matrix_type = typename ::Tpetra::CrsMatrix<SC, NT>::local_matrix_type;
+  using local_map_type = typename ::Tpetra::Map<NT>::local_map_type;
+#endif
 
 public:
   ComputeLocalRowAndColumnOneNorms (const equib_info_type& equib,   // in/out
@@ -587,13 +715,25 @@ private:
 
 /// \brief Implementation of computeLocalRowOneNorms for a
 ///   Tpetra::CrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type, typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeLocalRowOneNorms_CrsMatrix (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A)
+#else
+computeLocalRowOneNorms_CrsMatrix (const Tpetra::CrsMatrix<SC, NT>& A)
+#endif
 {
   using execution_space = typename NT::device_type::execution_space;
   using range_type = Kokkos::RangePolicy<execution_space, LO>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using functor_type = ComputeLocalRowOneNorms<SC, LO, GO, NT>;
+#else
+  using functor_type = ComputeLocalRowOneNorms<SC, NT>;
+#endif
   using val_type = typename Kokkos::ArithTraits<SC>::val_type;
   using device_type = typename NT::device_type;
   using equib_info_type = EquilibrationInfo<val_type, device_type>;
@@ -619,14 +759,26 @@ computeLocalRowOneNorms_CrsMatrix (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A)
 
 /// \brief Implementation of computeLocalRowAndColumnOneNorms for a
 ///   Tpetra::CrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type, typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeLocalRowAndColumnOneNorms_CrsMatrix (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
+#else
+computeLocalRowAndColumnOneNorms_CrsMatrix (const Tpetra::CrsMatrix<SC, NT>& A,
+#endif
                                             const bool assumeSymmetric)
 {
   using execution_space = typename NT::device_type::execution_space;
   using range_type = Kokkos::RangePolicy<execution_space, LO>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using functor_type = ComputeLocalRowAndColumnOneNorms<SC, LO, GO, NT>;
+#else
+  using functor_type = ComputeLocalRowAndColumnOneNorms<SC, NT>;
+#endif
   using val_type = typename Kokkos::ArithTraits<SC>::val_type;
   using device_type = typename NT::device_type;
   using equib_info_type = EquilibrationInfo<val_type, device_type>;
@@ -653,12 +805,24 @@ computeLocalRowAndColumnOneNorms_CrsMatrix (const Tpetra::CrsMatrix<SC, LO, GO, 
 ///   sparse matrix A.
 ///
 /// \param A [in] The input sparse matrix A.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                   typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeLocalRowOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
+#else
+computeLocalRowOneNorms (const Tpetra::RowMatrix<SC, NT>& A)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   const crs_matrix_type* A_crs = dynamic_cast<const crs_matrix_type*> (&A);
 
   if (A_crs == nullptr) {
@@ -690,12 +854,24 @@ computeLocalRowOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
 /// <li> When the matrix is nonsymmetric (otherwise the row norms
 ///      suffice) </li>
 /// </ol>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type, typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeLocalRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
+#else
+computeLocalRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, NT>& A,
+#endif
                                   const bool assumeSymmetric)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   const crs_matrix_type* A_crs = dynamic_cast<const crs_matrix_type*> (&A);
 
   if (A_crs == nullptr) {
@@ -706,15 +882,26 @@ computeLocalRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 typename Tpetra::MultiVector<SC, LO, GO, NT>::dual_view_type::t_dev
 getLocalView_2d (const Tpetra::MultiVector<SC, LO, GO, NT>& X)
+#else
+template<class SC, class NT>
+typename Tpetra::MultiVector<SC, NT>::dual_view_type::t_dev
+getLocalView_2d (const Tpetra::MultiVector<SC, NT>& X)
+#endif
 {
   return X.template getLocalView<typename NT::device_type::memory_space> ();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 auto getLocalView_1d (const Tpetra::MultiVector<SC, LO, GO, NT>& X,
+#else
+template<class SC, class NT>
+auto getLocalView_1d (const Tpetra::MultiVector<SC, NT>& X,
+#endif
                       const LO whichColumn)
   -> decltype (Kokkos::subview (getLocalView_2d (X), Kokkos::ALL (), whichColumn))
 {
@@ -729,7 +916,11 @@ auto getLocalView_1d (const Tpetra::MultiVector<SC, LO, GO, NT>& X,
 
 template<class SC, class LO, class GO, class NT, class ViewValueType>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 copy1DViewIntoMultiVectorColumn (Tpetra::MultiVector<SC, LO, GO, NT>& X,
+#else
+copy1DViewIntoMultiVectorColumn (Tpetra::MultiVector<SC, NT>& X,
+#endif
                                  const LO whichColumn,
                                  const Kokkos::View<ViewValueType*, typename NT::device_type>& view)
 {
@@ -743,7 +934,11 @@ copy1DViewIntoMultiVectorColumn (Tpetra::MultiVector<SC, LO, GO, NT>& X,
 template<class SC, class LO, class GO, class NT, class ViewValueType>
 void
 copyMultiVectorColumnInto1DView (const Kokkos::View<ViewValueType*, typename NT::device_type>& view,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                  Tpetra::MultiVector<SC, LO, GO, NT>& X,
+#else
+                                 Tpetra::MultiVector<SC, NT>& X,
+#endif
                                  const LO whichColumn)
 {
   using dev_memory_space = typename NT::device_type::memory_space;
@@ -787,13 +982,25 @@ bool findZero (const OneDViewType& x)
   return foundZero == 1;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 globalizeRowOneNorms (EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                                         typename NT::device_type>& equib,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
+#else
+                      const Tpetra::RowMatrix<SC, NT>& A)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using mv_type = Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+  using mv_type = Tpetra::MultiVector<SC, NT>;
+#endif
 
   auto G = A.getGraph ();
   TEUCHOS_TEST_FOR_EXCEPTION
@@ -855,16 +1062,28 @@ globalizeRowOneNorms (EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_ty
   equib.foundZeroRowNorm = gblNaughtyMatrix[3] == 1;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 globalizeColumnOneNorms (EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                                            typename NT::device_type>& equib,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
+#else
+                         const Tpetra::RowMatrix<SC, NT>& A,
+#endif
                          const bool assumeSymmetric) // if so, use row norms
 {
   using val_type = typename Kokkos::ArithTraits<SC>::val_type;
   using mag_type = typename Kokkos::ArithTraits<val_type>::mag_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using mv_type = Tpetra::MultiVector<mag_type, LO, GO, NT>;
+#else
+  using mv_type = Tpetra::MultiVector<mag_type,NT>;
+#endif
   using device_type = typename NT::device_type;
 
   auto G = A.getGraph ();
@@ -891,7 +1110,11 @@ globalizeColumnOneNorms (EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val
     else {
       // This is not a common case; it would normally arise when the
       // matrix has an overlapping row Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::Export<LO, GO, NT> rowToDom (G->getRowMap (), G->getDomainMap ());
+#else
+      Tpetra::Export<NT> rowToDom (G->getRowMap (), G->getDomainMap ());
+#endif
       mv_type rowNorms_rowMap (G->getRowMap (), numCols, true);
       copy1DViewIntoMultiVectorColumn (rowNorms_rowMap, 0, equib.rowNorms);
       copy1DViewIntoMultiVectorColumn (rowNorms_rowMap, 1, equib.rowDiagonalEntries);
@@ -959,10 +1182,18 @@ globalizeColumnOneNorms (EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val
 
 } // namespace Details
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 Details::EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                            typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeRowOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
+#else
+computeRowOneNorms (const Tpetra::RowMatrix<SC, NT>& A)
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION
     (! A.isFillComplete (), std::invalid_argument,
@@ -973,10 +1204,18 @@ computeRowOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A)
   return result;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 Details::EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                            typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
+#else
+computeRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, NT>& A,
+#endif
                              const bool assumeSymmetric)
 {
   TEUCHOS_TEST_FOR_EXCEPTION
@@ -1003,12 +1242,24 @@ computeRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
 // Must be expanded from within the Tpetra namespace!
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_COMPUTEROWANDCOLUMNONENORMS_INSTANT(SC,LO,GO,NT) \
+#else
+#define TPETRA_COMPUTEROWANDCOLUMNONENORMS_INSTANT(SC,NT) \
+#endif
   template Details::EquilibrationInfo<Kokkos::ArithTraits<SC>::val_type, NT::device_type> \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   computeRowOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A); \
+#else
+  computeRowOneNorms (const Tpetra::RowMatrix<SC, NT>& A); \
+#endif
   \
   template Details::EquilibrationInfo<Kokkos::ArithTraits<SC>::val_type, NT::device_type> \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   computeRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A, \
+#else
+  computeRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, NT>& A, \
+#endif
                                const bool assumeSymmetric);
 
 #endif // TPETRA_COMPUTEROWANDCOLUMNONENORMS_DEF_HPP

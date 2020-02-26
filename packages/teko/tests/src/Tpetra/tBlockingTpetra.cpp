@@ -93,7 +93,11 @@ void tBlockingTpetra::initializeTest()
    tolerance_ = 1e-14;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void buildGIDs(std::vector<std::vector<GO> > & gids,const Tpetra::Map<LO,GO,NT> & map)
+#else
+void buildGIDs(std::vector<std::vector<GO> > & gids,const Tpetra::Map<NT> & map)
+#endif
 {
    LO numLocal = map.getNodeNumElements();
    LO numHalf = numLocal/2;
@@ -176,7 +180,11 @@ bool tBlockingTpetra::test_buildMaps(int verbosity,std::ostream & os)
    int size = 30;
 
    TEST_MSG("\n   Builing Tpetra::Map");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(size,0,GetComm_tpetra()));
+#else
+   RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(size,0,GetComm_tpetra()));
+#endif
 
    // build gids
    std::vector<std::vector<GO> > gids;
@@ -207,8 +215,13 @@ bool tBlockingTpetra::test_buildMaps(int verbosity,std::ostream & os)
       << ", second="<< map2.second->getNodeNumElements()
       << ", gid="<< gid2.size());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > globalMaps(3);
    std::vector<Teuchos::RCP<Tpetra::Map<LO,GO,NT> > > contigMaps(3);
+#else
+   std::vector<Teuchos::RCP<Tpetra::Map<NT> > > globalMaps(3);
+   std::vector<Teuchos::RCP<Tpetra::Map<NT> > > contigMaps(3);
+#endif
 
    // get sub maps for convenient use and access
    globalMaps[0] = map0.first;
@@ -276,8 +289,13 @@ bool tBlockingTpetra::test_one2many(int verbosity,std::ostream & os)
 
    GO size = 3*1000;
    TEST_MSG("\n   tBlockingTpetra::test_one2many: Builing Epetra_Map and source vector");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(size,0,GetComm_tpetra()));
    RCP<Tpetra::MultiVector<ST,LO,GO,NT> > v = rcp(new Tpetra::MultiVector<ST,LO,GO,NT>(map,1));
+#else
+   RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(size,0,GetComm_tpetra()));
+   RCP<Tpetra::MultiVector<ST,NT> > v = rcp(new Tpetra::MultiVector<ST,NT>(map,1));
+#endif
    v->randomize();
 
    TEST_MSG("\n   Building sub maps");
@@ -295,8 +313,13 @@ bool tBlockingTpetra::test_one2many(int verbosity,std::ostream & os)
    maps[2] = Blocking::buildSubMap(gid2,*GetComm_tpetra());
 
    TEST_MSG("\n   tBlockingTpetra::test_one2many: Building Export/Import");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::Import<LO,GO,NT> > > subImport(3);
    std::vector<RCP<Tpetra::Export<LO,GO,NT> > > subExport(3);
+#else
+   std::vector<RCP<Tpetra::Import<NT> > > subImport(3);
+   std::vector<RCP<Tpetra::Export<NT> > > subExport(3);
+#endif
    for(int i=0;i<3;i++) {
       Blocking::ImExPair imex = Blocking::buildExportImport(*map,maps[i]);
       subImport[i] = imex.first; 
@@ -304,7 +327,11 @@ bool tBlockingTpetra::test_one2many(int verbosity,std::ostream & os)
    }
 
    TEST_MSG("\n   tBlockingTpetra::test_one2many: Building sub vectors");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > subVectors;
+#else
+   std::vector<RCP<Tpetra::MultiVector<ST,NT> > > subVectors;
+#endif
    Blocking::buildSubVectors(maps,subVectors,1);
 
    TEST_MSG("\n   tBlockingTpetra::test_one2many: Performing data copy");
@@ -322,8 +349,13 @@ bool tBlockingTpetra::test_many2one(int verbosity,std::ostream & os)
 
    GO size = 3*1000;
    TEST_MSG("\n   tBlockingTpetra::test_many2one: Building Tpetra::Map and source vector");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(size,0,GetComm_tpetra()));
    RCP<Tpetra::MultiVector<ST,LO,GO,NT> > v = rcp(new Tpetra::MultiVector<ST,LO,GO,NT>(map,4));
+#else
+   RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(size,0,GetComm_tpetra()));
+   RCP<Tpetra::MultiVector<ST,NT> > v = rcp(new Tpetra::MultiVector<ST,NT>(map,4));
+#endif
    v->randomize();
 
    TEST_MSG("\n   Building sub maps");
@@ -341,8 +373,13 @@ bool tBlockingTpetra::test_many2one(int verbosity,std::ostream & os)
    maps[2] = Blocking::buildSubMap(gid2,*GetComm_tpetra());
 
    TEST_MSG("\n   tBlockingTpetra::test_many2one: Building Export/Import");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::Import<LO,GO,NT> > > subImport(3);
    std::vector<RCP<Tpetra::Export<LO,GO,NT> > > subExport(3);
+#else
+   std::vector<RCP<Tpetra::Import<NT> > > subImport(3);
+   std::vector<RCP<Tpetra::Export<NT> > > subExport(3);
+#endif
    for(int i=0;i<3;i++) {
       Blocking::ImExPair imex = Blocking::buildExportImport(*map,maps[i]);
       subImport[i] = imex.first; 
@@ -350,19 +387,32 @@ bool tBlockingTpetra::test_many2one(int verbosity,std::ostream & os)
    }
 
    TEST_MSG("\n   tBlockingTpetra::test_many2one: Building sub vectors");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > subVectors;
+#else
+   std::vector<RCP<Tpetra::MultiVector<ST,NT> > > subVectors;
+#endif
    Blocking::buildSubVectors(maps,subVectors,4);
 
    TEST_MSG("\n   tBlockingTpetra::test_many2one: Performing one2many");
    Blocking::one2many(subVectors,*v,subImport);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > > cSubVectors;
    std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > >::const_iterator itr;
+#else
+   std::vector<RCP<const Tpetra::MultiVector<ST,NT> > > cSubVectors;
+   std::vector<RCP<Tpetra::MultiVector<ST,NT> > >::const_iterator itr;
+#endif
    for(itr=subVectors.begin();itr!=subVectors.end();++itr)
       cSubVectors.push_back(*itr);
 
    TEST_MSG("\n   tBlockingTpetra::test_many2one: Performing many2one");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::MultiVector<ST,LO,GO,NT> > one = rcp(new Tpetra::MultiVector<ST,LO,GO,NT> (map,4));
+#else
+   RCP<Tpetra::MultiVector<ST,NT> > one = rcp(new Tpetra::MultiVector<ST,NT> (map,4));
+#endif
    one->putScalar(0.0);
    Blocking::many2one(*one,cSubVectors,subExport);
    ST norm2[4] = {0,0,0,0};
@@ -400,10 +450,18 @@ bool tBlockingTpetra::test_buildSubBlock(int verbosity,std::ostream & os)
 
    // build epetra operator
    /////////////////////////////////////////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Map<LO,GO,NT> map(-1,Teuchos::ArrayView<GO>(myElmts,2),0,GetComm_tpetra());
+#else
+   Tpetra::Map<NT> map(-1,Teuchos::ArrayView<GO>(myElmts,2),0,GetComm_tpetra());
+#endif
    std::vector<GO> indices(numProc*2);
    std::vector<ST> values(numProc*2);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > A = Tpetra::createCrsMatrix<ST,LO,GO,NT> (rcpFromRef(map),numProc*2);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > A = Tpetra::createCrsMatrix<ST,NT> (rcpFromRef(map),numProc*2);
+#endif
    for(std::size_t i=0;i<indices.size();i++) 
       indices[i] = i;
  

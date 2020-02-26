@@ -334,9 +334,17 @@ main (int argc, char *argv[])
 	    if (inputList.isSublist("MueLu")) {
 	      ParameterList mueluParams = inputList.sublist("MueLu");
               mueluParams.sublist("user data").set("Coordinates",coords);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               M = MueLu::CreateTpetraPreconditioner<ST,LO,GO,Node>(opA,mueluParams);
+#else
+              M = MueLu::CreateTpetraPreconditioner<ST,Node>(opA,mueluParams);
+#endif
             } else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               M = MueLu::CreateTpetraPreconditioner<ST,LO,GO,Node>(opA);
+#else
+              M = MueLu::CreateTpetraPreconditioner<ST,Node>(opA);
+#endif
             }
           }
 #else // NOT HAVE_TRILINOSCOUPLINGS_MUELU

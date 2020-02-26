@@ -62,8 +62,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void PreserveDirichletAggregationAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void PreserveDirichletAggregationAlgorithm_kokkos<Node>::
+#endif
   BuildAggregates(Teuchos::ParameterList const & params,
                   LWGraph_kokkos const & graph,
                   Aggregates_kokkos & aggregates,

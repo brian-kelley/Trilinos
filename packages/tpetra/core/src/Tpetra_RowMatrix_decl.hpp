@@ -79,14 +79,24 @@ namespace Tpetra {
   /// wrapping an existing matrix to view only certain desired
   /// entries.
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   class RowMatrix :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual public Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node>,
+#else
+    virtual public Operator<Scalar, Node>,
+#endif
     virtual public SrcDistObject,
     public Packable<char, LocalOrdinal> {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Typedefs
     //@{
 
@@ -122,13 +132,25 @@ namespace Tpetra {
 
 
     //! The Map that describes the distribution of rows over processes.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > getRowMap() const = 0;
+#else
+    virtual Teuchos::RCP<const Map<Node> > getRowMap() const = 0;
+#endif
 
     //! The Map that describes the distribution of columns over processes.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > getColMap() const = 0;
+#else
+    virtual Teuchos::RCP<const Map<Node> > getColMap() const = 0;
+#endif
 
     //! The RowGraph associated with this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const RowGraph<LocalOrdinal,GlobalOrdinal,Node> > getGraph() const = 0;
+#else
+    virtual Teuchos::RCP<const RowGraph<Node> > getGraph() const = 0;
+#endif
 
     //! The global number of rows of this matrix.
     virtual global_size_t getGlobalNumRows() const = 0;
@@ -386,7 +408,11 @@ namespace Tpetra {
     /// same diagonal element.  You may combine these overlapping
     /// diagonal elements by doing an Export from the row Map Vector
     /// to a range Map Vector.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void getLocalDiagCopy (Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &diag) const = 0;
+#else
+    virtual void getLocalDiagCopy (Vector<Scalar, Node> &diag) const = 0;
+#endif
 
     //@}
     //! \name Mathematical methods
@@ -396,13 +422,21 @@ namespace Tpetra {
     ///
     /// On return, for all entries i,j in the matrix,
     /// \f$A(i,j) = x(i)*A(i,j)\f$.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void leftScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) = 0;
+#else
+    virtual void leftScale (const Vector<Scalar, Node>& x) = 0;
+#endif
 
     /// \brief Scale the matrix on the right with the given Vector.
     ///
     /// On return, for all entries i,j in the matrix,
     /// \f$A(i,j) = x(j)*A(i,j)\f$.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void rightScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) = 0;
+#else
+    virtual void rightScale (const Vector<Scalar, Node>& x) = 0;
+#endif
 
     /// \brief The Frobenius norm of the matrix.
     ///
@@ -465,12 +499,25 @@ namespace Tpetra {
     /// to improve its performance, given additional knowledge about
     /// the subclass.  Subclass implementations may need to do a
     /// dynamic cast on A in order to know its type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    virtual Teuchos::RCP<RowMatrix<Scalar, Node> >
+#endif
     add (const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+         const RowMatrix<Scalar, Node>& A,
+#endif
          const Scalar& beta,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& domainMap = Teuchos::null,
          const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& rangeMap = Teuchos::null,
+#else
+         const Teuchos::RCP<const Map<Node> >& domainMap = Teuchos::null,
+         const Teuchos::RCP<const Map<Node> >& rangeMap = Teuchos::null,
+#endif
          const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null) const;
     //@}
     //! \name Implementation of Packable interface

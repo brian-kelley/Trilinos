@@ -175,7 +175,11 @@ private:
   using HostViewInverse = typename inverse_mv_type::dual_view_type::t_host;
 
   static_assert(std::is_same<MatrixType,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   Tpetra::RowMatrix<SC, LO, GO, NO>>::value, "Ifpack2::SparseContainer: Please use MatrixType = Tpetra::RowMatrix.");
+#else
+                  Tpetra::RowMatrix<SC, NO>>::value, "Ifpack2::SparseContainer: Please use MatrixType = Tpetra::RowMatrix.");
+#endif
 
   /// \brief The (base class) type of the input matrix.
   ///

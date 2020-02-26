@@ -53,7 +53,11 @@
 namespace Ifpack2 {
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 SingletonFilter<MatrixType>::SingletonFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& Matrix):
+#else
+SingletonFilter<MatrixType>::SingletonFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> >& Matrix):
+#endif
   A_(Matrix),
   NumSingletons_(0),
   NumRows_(0),
@@ -125,12 +129,24 @@ SingletonFilter<MatrixType>::SingletonFilter(const Teuchos::RCP<const Tpetra::Ro
   }
 
   // Build the reduced map.  This map should be serial
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   ReducedMap_ = Teuchos::rcp( new Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>(NumRows_,0,A_->getComm()) );
+#else
+  ReducedMap_ = Teuchos::rcp( new Tpetra::Map<Node>(NumRows_,0,A_->getComm()) );
+#endif
 
   // and finish up with the diagonal entry
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Diagonal_ = Teuchos::rcp( new Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(ReducedMap_) );
+#else
+  Diagonal_ = Teuchos::rcp( new Tpetra::Vector<Scalar,Node>(ReducedMap_) );
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> DiagonalA(A_->getRowMap());
+#else
+  Tpetra::Vector<Scalar,Node> DiagonalA(A_->getRowMap());
+#endif
   A_->getLocalDiagCopy(DiagonalA);
   const Teuchos::ArrayRCP<const Scalar> & DiagonalAview = DiagonalA.get1dView();
   for (size_t i = 0 ; i < NumRows_ ; ++i) {
@@ -151,45 +167,65 @@ SingletonFilter<MatrixType>::getComm() const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SingletonFilter<MatrixType>::getRowMap() const
 {
   return ReducedMap_;
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SingletonFilter<MatrixType>::getColMap() const
 {
   return ReducedMap_;
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SingletonFilter<MatrixType>::getDomainMap() const
 {
   return ReducedMap_;
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SingletonFilter<MatrixType>::getRangeMap() const
 {
   return ReducedMap_;
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::local_ordinal_type,
                                      typename MatrixType::global_ordinal_type,
                                      typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::node_type> >
+#endif
 SingletonFilter<MatrixType>::getGraph() const
 {
   throw std::runtime_error("Ifpack2::SingletonFilter: does not support getGraph.");
@@ -336,27 +372,44 @@ void SingletonFilter<MatrixType>::getLocalRowView(LocalOrdinal /* LocalRow */,
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &diag) const
+#else
+void SingletonFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,Node> &diag) const
+#endif
 {
   // This is somewhat dubious as to how the maps match.
   return A_->getLocalDiagCopy(diag);
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::leftScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* x */)
+#else
+void SingletonFilter<MatrixType>::leftScale(const Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
 {
   throw std::runtime_error("Ifpack2::SingletonFilter does not support leftScale.");
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::rightScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* x */)
+#else
+void SingletonFilter<MatrixType>::rightScale(const Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
 {
   throw std::runtime_error("Ifpack2::SingletonFilter does not support rightScale.");
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::apply(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
                                        Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+void SingletonFilter<MatrixType>::apply(const Tpetra::MultiVector<Scalar,Node> &X,
+                                       Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
                                        Teuchos::ETransp mode,
                                        Scalar /* alpha */,
                                        Scalar /* beta */) const
@@ -412,16 +465,26 @@ bool SingletonFilter<MatrixType>::supportsRowViews() const
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::SolveSingletons(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& RHS,
                                                   Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& LHS)
+#else
+void SingletonFilter<MatrixType>::SolveSingletons(const Tpetra::MultiVector<Scalar,Node>& RHS,
+                                                  Tpetra::MultiVector<Scalar,Node>& LHS)
+#endif
 {
   this->template SolveSingletonsTempl<Scalar,Scalar>(RHS, LHS);
 }
 
 template<class MatrixType>
 template<class DomainScalar, class RangeScalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::SolveSingletonsTempl(const Tpetra::MultiVector<DomainScalar,LocalOrdinal,GlobalOrdinal,Node>& RHS,
                                                        Tpetra::MultiVector<RangeScalar,LocalOrdinal,GlobalOrdinal,Node>& LHS)
+#else
+void SingletonFilter<MatrixType>::SolveSingletonsTempl(const Tpetra::MultiVector<DomainScalar,Node>& RHS,
+                                                       Tpetra::MultiVector<RangeScalar,Node>& LHS)
+#endif
 {
   Teuchos::ArrayRCP<Teuchos::ArrayRCP<const DomainScalar> > RHS_ptr = RHS.get2dView();
   Teuchos::ArrayRCP<Teuchos::ArrayRCP<RangeScalar> >        LHS_ptr = LHS.get2dViewNonConst();
@@ -441,18 +504,30 @@ void SingletonFilter<MatrixType>::SolveSingletonsTempl(const Tpetra::MultiVector
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::CreateReducedRHS(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& LHS,
                                                    const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& RHS,
                                                    Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& ReducedRHS)
+#else
+void SingletonFilter<MatrixType>::CreateReducedRHS(const Tpetra::MultiVector<Scalar,Node>& LHS,
+                                                   const Tpetra::MultiVector<Scalar,Node>& RHS,
+                                                   Tpetra::MultiVector<Scalar,Node>& ReducedRHS)
+#endif
 {
   this->template CreateReducedRHSTempl<Scalar,Scalar>(LHS, RHS, ReducedRHS);
 }
 
 template<class MatrixType>
 template<class DomainScalar, class RangeScalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::CreateReducedRHSTempl(const Tpetra::MultiVector<DomainScalar,LocalOrdinal,GlobalOrdinal,Node>& LHS,
                                                         const Tpetra::MultiVector<RangeScalar,LocalOrdinal,GlobalOrdinal,Node>& RHS,
                                                         Tpetra::MultiVector<RangeScalar,LocalOrdinal,GlobalOrdinal,Node>& ReducedRHS)
+#else
+void SingletonFilter<MatrixType>::CreateReducedRHSTempl(const Tpetra::MultiVector<DomainScalar,Node>& LHS,
+                                                        const Tpetra::MultiVector<RangeScalar,Node>& RHS,
+                                                        Tpetra::MultiVector<RangeScalar,Node>& ReducedRHS)
+#endif
 {
   Teuchos::ArrayRCP<Teuchos::ArrayRCP<const RangeScalar > > RHS_ptr = RHS.get2dView();
   Teuchos::ArrayRCP<Teuchos::ArrayRCP<const DomainScalar> > LHS_ptr = LHS.get2dView();
@@ -479,16 +554,26 @@ void SingletonFilter<MatrixType>::CreateReducedRHSTempl(const Tpetra::MultiVecto
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::UpdateLHS(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& ReducedLHS,
                                             Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& LHS)
+#else
+void SingletonFilter<MatrixType>::UpdateLHS(const Tpetra::MultiVector<Scalar,Node>& ReducedLHS,
+                                            Tpetra::MultiVector<Scalar,Node>& LHS)
+#endif
 {
   this->template UpdateLHSTempl<Scalar,Scalar>(ReducedLHS, LHS);
 }
 
 template<class MatrixType>
 template<class DomainScalar, class RangeScalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void SingletonFilter<MatrixType>::UpdateLHSTempl(const Tpetra::MultiVector<DomainScalar,LocalOrdinal,GlobalOrdinal,Node>& ReducedLHS,
                                                  Tpetra::MultiVector<RangeScalar,LocalOrdinal,GlobalOrdinal,Node>& LHS)
+#else
+void SingletonFilter<MatrixType>::UpdateLHSTempl(const Tpetra::MultiVector<DomainScalar,Node>& ReducedLHS,
+                                                 Tpetra::MultiVector<RangeScalar,Node>& LHS)
+#endif
 {
 
   Teuchos::ArrayRCP<Teuchos::ArrayRCP<RangeScalar> >        LHS_ptr = LHS.get2dViewNonConst();
@@ -507,7 +592,12 @@ typename SingletonFilter<MatrixType>::mag_type SingletonFilter<MatrixType>::getF
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_SINGLETONFILTER_INSTANT(S,LO,GO,N)                            \
   template class Ifpack2::SingletonFilter< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_SINGLETONFILTER_INSTANT(S,N)                            \
+  template class Ifpack2::SingletonFilter< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif

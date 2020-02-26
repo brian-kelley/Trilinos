@@ -53,24 +53,54 @@ namespace FROSch {
     enum AddingLayersStrategy {LayersFromMatrix=0,LayersFromGraph=1,LayersOld=2};
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class AlgebraicOverlappingOperator : public OverlappingOperator<SC,LO,GO,NO> {
+#else
+    class AlgebraicOverlappingOperator : public OverlappingOperator<SC,NO> {
+#endif
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using CommPtr               = typename SchwarzOperator<SC,LO,GO,NO>::CommPtr;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using CommPtr               = typename SchwarzOperator<SC,NO>::CommPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMapPtr               = typename SchwarzOperator<SC,LO,GO,NO>::XMapPtr;
         using ConstXMapPtr          = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMapPtr;
+#else
+        using XMapPtr               = typename SchwarzOperator<SC,NO>::XMapPtr;
+        using ConstXMapPtr          = typename SchwarzOperator<SC,NO>::ConstXMapPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrixPtr            = typename SchwarzOperator<SC,LO,GO,NO>::XMatrixPtr;
         using ConstXMatrixPtr       = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMatrixPtr;
+#else
+        using XMatrixPtr            = typename SchwarzOperator<SC,NO>::XMatrixPtr;
+        using ConstXMatrixPtr       = typename SchwarzOperator<SC,NO>::ConstXMatrixPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using ConstXCrsGraphPtr     = typename SchwarzOperator<SC,LO,GO,NO>::ConstXCrsGraphPtr;
+#else
+        using ConstXCrsGraphPtr     = typename SchwarzOperator<SC,NO>::ConstXCrsGraphPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using ParameterListPtr      = typename SchwarzOperator<SC,LO,GO,NO>::ParameterListPtr;
+#else
+        using ParameterListPtr      = typename SchwarzOperator<SC,NO>::ParameterListPtr;
+#endif
 
     public:
 

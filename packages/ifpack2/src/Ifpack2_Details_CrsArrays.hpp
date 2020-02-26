@@ -62,13 +62,26 @@ namespace Details
 
 //Utility for getting the local values, rowptrs and colinds (in Kokkos::Views) for any RowMatrix
 //Used by Fic, Filu and Fildl but may also be useful in other classes
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template<typename Scalar, typename Node>
+#endif
 struct CrsArrayReader
 {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   typedef typename Node::device_type device_type;
   typedef typename device_type::execution_space execution_space;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> TRowMatrix;
   typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> TCrsMatrix;
+#else
+  typedef Tpetra::RowMatrix<Scalar, Node> TRowMatrix;
+  typedef Tpetra::CrsMatrix<Scalar, Node> TCrsMatrix;
+#endif
   typedef Ifpack2::LocalFilter<TRowMatrix> Filter;
   typedef Ifpack2::ReorderFilter<TRowMatrix> ReordFilter;
   typedef KokkosSparse::CrsMatrix<Scalar, LocalOrdinal, execution_space> KCrsMatrix;

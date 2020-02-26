@@ -1386,15 +1386,26 @@ const T& getLevelVariable(std::string& name, Level& lvl)
 }
 
 //Functions used to put data through matlab factories - first arg is "this" pointer of matlab factory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template<typename Scalar, typename Node>
+#endif
 std::vector<Teuchos::RCP<MuemexArg>> processNeeds(const Factory* factory, std::string& needsParam, Level& lvl)
 {
   using namespace std;
   using namespace Teuchos;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>> Matrix_t;
   typedef RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> MultiVector_t;
   typedef RCP<Aggregates<LocalOrdinal, GlobalOrdinal, Node>> Aggregates_t;
   typedef RCP<AmalgamationInfo<LocalOrdinal, GlobalOrdinal, Node>> AmalgamationInfo_t;
+#else
+  typedef RCP<Xpetra::Matrix<Scalar, Node>> Matrix_t;
+  typedef RCP<Xpetra::MultiVector<Scalar, Node>> MultiVector_t;
+  typedef RCP<Aggregates<Node>> Aggregates_t;
+  typedef RCP<AmalgamationInfo<Node>> AmalgamationInfo_t;
+#endif
   typedef RCP<MGraph> Graph_t;
   vector<string> needsList = tokenizeList(needsParam);
   vector<RCP<MuemexArg>> args;
@@ -1518,15 +1529,26 @@ std::vector<Teuchos::RCP<MuemexArg>> processNeeds(const Factory* factory, std::s
   return args;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template<typename Scalar, typename Node>
+#endif
 void processProvides(std::vector<Teuchos::RCP<MuemexArg>>& mexOutput, const Factory* factory, std::string& providesParam, Level& lvl)
 {
   using namespace std;
   using namespace Teuchos;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>> Matrix_t;
   typedef RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> MultiVector_t;
   typedef RCP<Aggregates<LocalOrdinal, GlobalOrdinal, Node>> Aggregates_t;
   typedef RCP<AmalgamationInfo<LocalOrdinal, GlobalOrdinal, Node>> AmalgamationInfo_t;
+#else
+  typedef RCP<Xpetra::Matrix<Scalar, Node>> Matrix_t;
+  typedef RCP<Xpetra::MultiVector<Scalar, Node>> MultiVector_t;
+  typedef RCP<Aggregates<Node>> Aggregates_t;
+  typedef RCP<AmalgamationInfo<Node>> AmalgamationInfo_t;
+#endif
   typedef RCP<MGraph> Graph_t;
   vector<string> provides = tokenizeList(providesParam);
   for(size_t i = 0; i < size_t(provides.size()); i++)

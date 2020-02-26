@@ -90,7 +90,11 @@ generate_test_matrix (const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
   using LO = typename crs_matrix_type::local_ordinal_type;
   using GO = typename crs_matrix_type::global_ordinal_type;
   using NT = typename crs_matrix_type::node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using MapType = Tpetra::Map<LO, GO, NT>;
+#else
+  using MapType = Tpetra::Map<NT>;
+#endif
 
   const int world_rank = comm->getRank();
 
@@ -142,9 +146,17 @@ generate_test_matrix (const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
   return A;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, PackThenUnpackAndCombine, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, PackThenUnpackAndCombine, SC, NT)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using device_type = typename NT::device_type;
   using execution_space = typename device_type::execution_space;
 
@@ -396,9 +408,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, PackThenUnpackAndCombine, SC, LO, G
 // PackWithError sends intentionally bad inputs to pack/unpack to make sure
 // that CrsMatrix will detect the bad inputs and return the correct
 // error diagnostics.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, PackWithError, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, PackWithError, SC, NT)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
 
   RCP<const Comm<int> > comm = getDefaultComm();
   const int world_rank = comm->getRank();
@@ -508,9 +528,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, PackWithError, SC, LO, GO, NT)
 // checked that the number of rows to pack was equal to the number of rows in
 // the matrix.  However, this is not a requirement, and that particular check
 // caused existing code to fail.  See Issues #1374 and #1408
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, PackPartial, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, PackPartial, SC, NT)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using device_type = typename NT::device_type;
   using execution_space = typename device_type::execution_space;
 
@@ -679,10 +707,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, PackPartial, SC, LO, GO, NT)
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, PackThenUnpackAndCombine, SC, LO, GO, NT) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, PackWithError, SC, LO, GO, NT) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, PackPartial, SC, LO, GO, NT)
+#else
+#define UNIT_TEST_GROUP( SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, PackThenUnpackAndCombine, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, PackWithError, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, PackPartial, SC, NT)
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

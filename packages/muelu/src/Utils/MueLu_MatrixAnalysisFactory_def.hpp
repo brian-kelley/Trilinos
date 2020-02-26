@@ -60,15 +60,30 @@
 #include "MueLu_Monitor.hpp"
 
 namespace MueLu {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 MatrixAnalysisFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MatrixAnalysisFactory()
+#else
+template <class Scalar, class Node>
+MatrixAnalysisFactory<Scalar, Node>::MatrixAnalysisFactory()
+#endif
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 MatrixAnalysisFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~MatrixAnalysisFactory() {}
+#else
+template <class Scalar, class Node>
+MatrixAnalysisFactory<Scalar, Node>::~MatrixAnalysisFactory() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const ParameterList> MatrixAnalysisFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+template <class Scalar, class Node>
+RCP<const ParameterList> MatrixAnalysisFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
   RCP<ParameterList> validParamList = rcp(new ParameterList());
 
   validParamList->set< RCP<const FactoryBase> >("A", Teuchos::null, "Generating factory of the matrix A to be permuted.");
@@ -76,13 +91,23 @@ RCP<const ParameterList> MatrixAnalysisFactory<Scalar, LocalOrdinal, GlobalOrdin
   return validParamList;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MatrixAnalysisFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &/* coarseLevel */) const {
+#else
+template <class Scalar, class Node>
+void MatrixAnalysisFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &/* coarseLevel */) const {
+#endif
   Input(fineLevel, "A");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MatrixAnalysisFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &/* coarseLevel */) const {
+#else
+template <class Scalar, class Node>
+void MatrixAnalysisFactory<Scalar, Node>::Build(Level &fineLevel, Level &/* coarseLevel */) const {
+#endif
   FactoryMonitor m(*this, "MatrixAnalysis Factory ", fineLevel);
 
   Teuchos::RCP<Matrix> A = Get< Teuchos::RCP<Matrix> > (fineLevel, "A");
@@ -288,8 +313,13 @@ void MatrixAnalysisFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Lev
   GetOStream(Runtime0) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (Level " << fineLevel.GetLevelID() << ")" << std::endl;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void MatrixAnalysisFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::checkVectorEntries(const Teuchos::RCP<Vector>& vec, std::string info) const {
+#else
+template <class Scalar, class Node>
+void MatrixAnalysisFactory<Scalar, Node>::checkVectorEntries(const Teuchos::RCP<Vector>& vec, std::string info) const {
+#endif
   SC zero = Teuchos::ScalarTraits<Scalar>::zero();
   Teuchos::RCP<const Teuchos::Comm<int> > comm = vec->getMap()->getComm();
   Teuchos::ArrayRCP< const Scalar > vecData = vec->getData(0);

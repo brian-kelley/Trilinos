@@ -72,8 +72,13 @@ int main(int argc, char *argv[]) {
     typedef Tpetra::Map<LO>::global_ordinal_type    GO;
 #endif // HAVE_TPETRA_INT_INT
     typedef Tpetra::Map<LO, GO>::node_type          Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, Node>               Map;
     typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> CrsMatrix;
+#else
+    typedef Tpetra::Map<Node>               Map;
+    typedef Tpetra::CrsMatrix<Scalar, Node> CrsMatrix;
+#endif
     using Teuchos::RCP;
     using Teuchos::rcp;
     using Teuchos::tuple;

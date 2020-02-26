@@ -91,7 +91,11 @@ OverlappingRowGraph<GraphType>::getComm () const
   
 
 template<class GraphType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename GraphType::local_ordinal_type, typename GraphType::global_ordinal_type, typename GraphType::node_type> > 
+#else
+Teuchos::RCP<const Tpetra::Map<typename GraphType::node_type> > 
+#endif
 OverlappingRowGraph<GraphType>::getRowMap () const
 {
   return rowMap_;
@@ -99,7 +103,11 @@ OverlappingRowGraph<GraphType>::getRowMap () const
   
 
 template<class GraphType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename GraphType::local_ordinal_type, typename GraphType::global_ordinal_type, typename GraphType::node_type> > 
+#else
+Teuchos::RCP<const Tpetra::Map<typename GraphType::node_type> > 
+#endif
 OverlappingRowGraph<GraphType>::getColMap () const
 {
   return colMap_;
@@ -107,7 +115,11 @@ OverlappingRowGraph<GraphType>::getColMap () const
 
 
 template<class GraphType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename GraphType::local_ordinal_type, typename GraphType::global_ordinal_type, typename GraphType::node_type> > 
+#else
+Teuchos::RCP<const Tpetra::Map<typename GraphType::node_type> > 
+#endif
 OverlappingRowGraph<GraphType>::getDomainMap () const
 {
   return nonoverlappingGraph_->getDomainMap ();
@@ -115,7 +127,11 @@ OverlappingRowGraph<GraphType>::getDomainMap () const
 
 
 template<class GraphType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename GraphType::local_ordinal_type, typename GraphType::global_ordinal_type, typename GraphType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename GraphType::node_type> >
+#endif
 OverlappingRowGraph<GraphType>::getRangeMap () const
 {
   return nonoverlappingGraph_->getRangeMap ();
@@ -123,7 +139,11 @@ OverlappingRowGraph<GraphType>::getRangeMap () const
 
 
 template<class GraphType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Import<typename GraphType::local_ordinal_type, typename GraphType::global_ordinal_type, typename GraphType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Import<typename GraphType::node_type> >
+#endif
 OverlappingRowGraph<GraphType>::getImporter () const
 {
   TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, "Not implemented");
@@ -131,7 +151,11 @@ OverlappingRowGraph<GraphType>::getImporter () const
 
 
 template<class GraphType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Export<typename GraphType::local_ordinal_type, typename GraphType::global_ordinal_type, typename GraphType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Export<typename GraphType::node_type> >
+#endif
 OverlappingRowGraph<GraphType>::getExporter () const
 {
   TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, "Not implemented");
@@ -302,8 +326,14 @@ getLocalRowCopy (local_ordinal_type localRow,
 } // namespace Details
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_OVERLAPPINGROWGRAPH_INSTANT(LO,GO,N) \
   template class Ifpack2::Details::OverlappingRowGraph<Tpetra::CrsGraph< LO, GO, N > >; \
   template class Ifpack2::Details::OverlappingRowGraph<Tpetra::RowGraph< LO, GO, N > >;
+#else
+#define IFPACK2_DETAILS_OVERLAPPINGROWGRAPH_INSTANT(N) \
+  template class Ifpack2::Details::OverlappingRowGraph<Tpetra::CrsGraph<N > >; \
+  template class Ifpack2::Details::OverlappingRowGraph<Tpetra::RowGraph<N > >;
+#endif
 
 #endif // IFPACK2_OVERLAPPINGROWGRAPH_DEF_HPP

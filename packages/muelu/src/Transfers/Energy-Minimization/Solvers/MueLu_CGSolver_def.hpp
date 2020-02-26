@@ -60,13 +60,23 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   CGSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CGSolver(size_t Its)
+#else
+  template <class Scalar, class Node>
+  CGSolver<Scalar, Node>::CGSolver(size_t Its)
+#endif
   : nIts_(Its)
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void CGSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Iterate(const Matrix& Aref, const Constraint& C, const Matrix& P0, RCP<Matrix>& finalP) const {
+#else
+  template <class Scalar, class Node>
+  void CGSolver<Scalar, Node>::Iterate(const Matrix& Aref, const Constraint& C, const Matrix& P0, RCP<Matrix>& finalP) const {
+#endif
     // Note: this function matrix notations follow Saad's "Iterative methods", ed. 2, pg. 246
     // So, X is the unknown prolongator, P's are conjugate directions, Z's are preconditioned P's
     PrintMonitor m(*this, "CG iterations");
@@ -104,18 +114,30 @@ namespace MueLu {
     C.Apply(*tmpAP, *T);
 
     // R_0 = -A*X_0
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     R = Xpetra::MatrixFactory2<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildCopy(T);
+#else
+    R = Xpetra::MatrixFactory2<Scalar, Node>::BuildCopy(T);
+#endif
 
     R->resumeFill();
     R->scale(-one);
     R->fillComplete(R->getDomainMap(), R->getRangeMap());
 
     // Z_0 = M^{-1}R_0
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Z = Xpetra::MatrixFactory2<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildCopy(R);
+#else
+    Z = Xpetra::MatrixFactory2<Scalar, Node>::BuildCopy(R);
+#endif
     Utilities::MyOldScaleMatrix(*Z, D, true, true, false);
 
     // P_0 = Z_0
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     P = Xpetra::MatrixFactory2<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildCopy(Z);
+#else
+    P = Xpetra::MatrixFactory2<Scalar, Node>::BuildCopy(Z);
+#endif
 
     oldRZ = Utilities::Frobenius(*R, *Z);
 

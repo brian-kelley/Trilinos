@@ -50,21 +50,36 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO>
     bool Node<SC,LO,GO>::operator< (const Node &n) const
+#else
+    template <class SC,>
+    bool Node<SC>::operator< (const Node &n) const
+#endif
     {
         return NodeIDGlobal_<n.NodeIDGlobal_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO>
     bool Node<SC,LO,GO>::operator== (const Node &n) const
+#else
+    template <class SC,>
+    bool Node<SC>::operator== (const Node &n) const
+#endif
     {
         return NodeIDGlobal_==n.NodeIDGlobal_;
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     InterfaceEntity<SC,LO,GO,NO>::InterfaceEntity(EntityType type,
+#else
+    template <class SC,class NO>
+    InterfaceEntity<SC,NO>::InterfaceEntity(EntityType type,
+#endif
                                                   UN dofsPerNode,
                                                   UN multiplicity,
                                                   const int *subdomains,
@@ -80,19 +95,35 @@ namespace FROSch {
         }
         sortunique(SubdomainsVector_);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Ancestors_.reset(new EntitySet<SC,LO,GO,NO>(DefaultType));
         Offspring_.reset(new EntitySet<SC,LO,GO,NO>(DefaultType));
         Roots_.reset(new EntitySet<SC,LO,GO,NO>(DefaultType));
+#else
+        Ancestors_.reset(new EntitySet<SC,NO>(DefaultType));
+        Offspring_.reset(new EntitySet<SC,NO>(DefaultType));
+        Roots_.reset(new EntitySet<SC,NO>(DefaultType));
+#endif
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     InterfaceEntity<SC,LO,GO,NO>::~InterfaceEntity()
+#else
+    template <class SC,class NO>
+    InterfaceEntity<SC,NO>::~InterfaceEntity()
+#endif
     {
 
     } // Do we need sth here?
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::addNode(LO nodeIDGamma,
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::addNode(LO nodeIDGamma,
+#endif
                                               LO nodeIDLocal,
                                               GO nodeIDGlobal,
                                               UN nDofs,
@@ -106,7 +137,11 @@ namespace FROSch {
         FROSCH_ASSERT(dofsLocal.size()==nDofs,"dofIDs.size()!=nDofs");
         FROSCH_ASSERT(dofsGlobal.size()==nDofs,"dofIDs.size()!=nDofs");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Node<SC,LO,GO> node;
+#else
+        Node<SC> node;
+#endif
 
         node.NodeIDGamma_ = nodeIDGamma;
         node.NodeIDLocal_ = nodeIDLocal;
@@ -120,14 +155,24 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::addNode(const NodePtr &node)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::addNode(const NodePtr &node)
+#endif
     {
         return addNode(*node);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::addNode(const Node<SC,LO,GO> &node)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::addNode(const Node<SC> &node)
+#endif
     {
         FROSCH_ASSERT(node.DofsGamma_.size()<=DofsPerNode_,"node.DofsGamma_ is too large.");
         FROSCH_ASSERT(node.DofsLocal_.size()<=DofsPerNode_,"node.DofsLocal_ is too large.");
@@ -138,8 +183,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::resetGlobalDofs(UN iD,
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::resetGlobalDofs(UN iD,
+#endif
                                                       UN nDofs,
                                                       UN *dofIDs,
                                                       GO *dofsGlobal)
@@ -158,74 +208,128 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::removeNode(UN iD)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::removeNode(UN iD)
+#endif
     {
         FROSCH_ASSERT(iD<getNumNodes(),"iD=>getNumNodes()");
         NodeVector_.erase(NodeVector_.begin()+iD);
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::sortByGlobalID()
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::sortByGlobalID()
+#endif
     {
         sortunique(NodeVector_);
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::setUniqueID(GO uniqueID)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::setUniqueID(GO uniqueID)
+#endif
     {
         UniqueID_ = uniqueID;
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::setLocalID(LO localID)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::setLocalID(LO localID)
+#endif
     {
         LocalID_ = localID;
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::setRootID(LO rootID)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::setRootID(LO rootID)
+#endif
     {
         RootID_ = rootID;
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::setLeafID(LO leafID)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::setLeafID(LO leafID)
+#endif
     {
         LeafID_ = leafID;
         return 0;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::setUniqueIDToFirstGlobalID()
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::setUniqueIDToFirstGlobalID()
+#endif
     {
         UniqueID_ = NodeVector_[0].NodeIDGlobal_;
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::resetEntityType(EntityType type)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::resetEntityType(EntityType type)
+#endif
     {
         Type_ = type;
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::resetEntityFlag(EntityFlag flag)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::resetEntityFlag(EntityFlag flag)
+#endif
     {
         Flag_ = flag;
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::findAncestorsInSet(EntitySetPtr entitySet)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::findAncestorsInSet(EntitySetPtr entitySet)
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         EntitySetPtr ancestors(new EntitySet<SC,LO,GO,NO>(*entitySet));
+#else
+        EntitySetPtr ancestors(new EntitySet<SC,NO>(*entitySet));
+#endif
         IntVec tmpVector;
         for (UN i=0; i<Multiplicity_; i++) {
             UN length = ancestors->getNumEntities();
@@ -251,30 +355,58 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::clearAncestors()
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::clearAncestors()
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Ancestors_.reset(new EntitySet<SC,LO,GO,NO>(DefaultType));
+#else
+        Ancestors_.reset(new EntitySet<SC,NO>(DefaultType));
+#endif
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::addOffspring(InterfaceEntityPtr interfaceEntity)
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::addOffspring(InterfaceEntityPtr interfaceEntity)
+#endif
     {
         Offspring_->addEntity(interfaceEntity);
         Offspring_->sortUnique();
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::clearOffspring()
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::clearOffspring()
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Offspring_.reset(new EntitySet<SC,LO,GO,NO>(DefaultType));
+#else
+        Offspring_.reset(new EntitySet<SC,NO>(DefaultType));
+#endif
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename InterfaceEntity<SC,LO,GO,NO>::EntitySetPtr InterfaceEntity<SC,LO,GO,NO>::findRoots()
+#else
+    template <class SC,class NO>
+    typename InterfaceEntity<SC,NO>::EntitySetPtr InterfaceEntity<SC,NO>::findRoots()
+#endif
     {
         if (Roots_->getNumEntities()) {
             FROSCH_ASSERT(Ancestors_->getNumEntities()!=0,"Ancestors_->getNumEntities()==0");
@@ -300,15 +432,29 @@ namespace FROSch {
         }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::clearRoots()
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::clearRoots()
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Roots_.reset(new EntitySet<SC,LO,GO,NO>(DefaultType));
+#else
+        Roots_.reset(new EntitySet<SC,NO>(DefaultType));
+#endif
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int InterfaceEntity<SC,LO,GO,NO>::computeDistancesToRoots(UN dimension,
+#else
+    template <class SC,class NO>
+    int InterfaceEntity<SC,NO>::computeDistancesToRoots(UN dimension,
+#endif
                                                               ConstXMultiVectorPtr &nodeList,
                                                               DistanceFunction distanceFunction)
     {
@@ -372,11 +518,20 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename InterfaceEntity<SC,LO,GO,NO>::InterfaceEntityPtr InterfaceEntity<SC,LO,GO,NO>::divideEntity(ConstXMatrixPtr matrix,
+#else
+    template <class SC,class NO>
+    typename InterfaceEntity<SC,NO>::InterfaceEntityPtr InterfaceEntity<SC,NO>::divideEntity(ConstXMatrixPtr matrix,
+#endif
                                                                                                          int pID)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         InterfaceEntityPtr entity(new InterfaceEntity<SC,LO,GO,NO>(Type_,DofsPerNode_,Multiplicity_,&(SubdomainsVector_[0])));
+#else
+        InterfaceEntityPtr entity(new InterfaceEntity<SC,NO>(Type_,DofsPerNode_,Multiplicity_,&(SubdomainsVector_[0])));
+#endif
 
         if (getNumNodes()>=2) {
             sortByGlobalID();
@@ -388,7 +543,11 @@ namespace FROSch {
             XMatrixPtr localMatrix,mat1,mat2,mat3;
             BuildSubmatrices(matrix,mapVector(),localMatrix,mat1,mat2,mat3);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XVectorPtr iterationVector = VectorFactory<SC,LO,GO,NO>::Build(localMatrix->getRowMap());
+#else
+            XVectorPtr iterationVector = VectorFactory<SC,NO>::Build(localMatrix->getRowMap());
+#endif
             iterationVector->getDataNonConst(0)[0] = ScalarTraits<SC>::one();
             for (UN i=0; i<getNumNodes()-1; i++) {
                 localMatrix->apply(*iterationVector,*iterationVector);
@@ -408,128 +567,233 @@ namespace FROSch {
     // Get Methods //
     /////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     EntityType InterfaceEntity<SC,LO,GO,NO>::getEntityType() const
+#else
+    template <class SC,class NO>
+    EntityType InterfaceEntity<SC,NO>::getEntityType() const
+#endif
     {
         return Type_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     EntityFlag InterfaceEntity<SC,LO,GO,NO>::getEntityFlag() const
+#else
+    template <class SC,class NO>
+    EntityFlag InterfaceEntity<SC,NO>::getEntityFlag() const
+#endif
     {
         return Flag_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename InterfaceEntity<SC,LO,GO,NO>::UN InterfaceEntity<SC,LO,GO,NO>::getDofsPerNode() const
+#else
+    template <class SC,class NO>
+    typename InterfaceEntity<SC,NO>::UN InterfaceEntity<SC,NO>::getDofsPerNode() const
+#endif
     {
         return DofsPerNode_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename InterfaceEntity<SC,LO,GO,NO>::UN InterfaceEntity<SC,LO,GO,NO>::getMultiplicity() const
+#else
+    template <class SC,class NO>
+    typename InterfaceEntity<SC,NO>::UN InterfaceEntity<SC,NO>::getMultiplicity() const
+#endif
     {
         return Multiplicity_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     GO InterfaceEntity<SC,LO,GO,NO>::getUniqueID() const
+#else
+    template <class SC,class NO>
+    GO InterfaceEntity<SC,NO>::getUniqueID() const
+#endif
     {
         return UniqueID_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     LO InterfaceEntity<SC,LO,GO,NO>::getLocalID() const
+#else
+    template <class SC,class NO>
+    LO InterfaceEntity<SC,NO>::getLocalID() const
+#endif
     {
         return LocalID_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     LO InterfaceEntity<SC,LO,GO,NO>::getRootID() const
+#else
+    template <class SC,class NO>
+    LO InterfaceEntity<SC,NO>::getRootID() const
+#endif
     {
         return RootID_;
     }
     
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     LO InterfaceEntity<SC,LO,GO,NO>::getLeafID() const
+#else
+    template <class SC,class NO>
+    LO InterfaceEntity<SC,NO>::getLeafID() const
+#endif
     {
         return LeafID_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     const Node<SC,LO,GO>& InterfaceEntity<SC,LO,GO,NO>::getNode(UN iDNode) const
+#else
+    template <class SC,class NO>
+    const Node<SC>& InterfaceEntity<SC,NO>::getNode(UN iDNode) const
+#endif
     {
         return NodeVector_[iDNode];
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     LO InterfaceEntity<SC,LO,GO,NO>::getGammaNodeID(UN iDNode) const
+#else
+    template <class SC,class NO>
+    LO InterfaceEntity<SC,NO>::getGammaNodeID(UN iDNode) const
+#endif
     {
         return NodeVector_[iDNode].NodeIDGamma_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     LO InterfaceEntity<SC,LO,GO,NO>::getLocalNodeID(UN iDNode) const
+#else
+    template <class SC,class NO>
+    LO InterfaceEntity<SC,NO>::getLocalNodeID(UN iDNode) const
+#endif
     {
         return NodeVector_[iDNode].NodeIDLocal_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     GO InterfaceEntity<SC,LO,GO,NO>::getGlobalNodeID(UN iDNode) const
+#else
+    template <class SC,class NO>
+    GO InterfaceEntity<SC,NO>::getGlobalNodeID(UN iDNode) const
+#endif
     {
         return NodeVector_[iDNode].NodeIDGlobal_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     LO InterfaceEntity<SC,LO,GO,NO>::getGammaDofID(UN iDNode, UN iDDof) const
+#else
+    template <class SC,class NO>
+    LO InterfaceEntity<SC,NO>::getGammaDofID(UN iDNode, UN iDDof) const
+#endif
     {
         return NodeVector_[iDNode].DofsGamma_[iDDof];
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     LO InterfaceEntity<SC,LO,GO,NO>::getLocalDofID(UN iDNode, UN iDDof) const
+#else
+    template <class SC,class NO>
+    LO InterfaceEntity<SC,NO>::getLocalDofID(UN iDNode, UN iDDof) const
+#endif
     {
         return NodeVector_[iDNode].DofsLocal_[iDDof];
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     GO InterfaceEntity<SC,LO,GO,NO>::getGlobalDofID(UN iDNode, UN iDDof) const
+#else
+    template <class SC,class NO>
+    GO InterfaceEntity<SC,NO>::getGlobalDofID(UN iDNode, UN iDDof) const
+#endif
     {
         return NodeVector_[iDNode].DofsGlobal_[iDDof];
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     const typename InterfaceEntity<SC,LO,GO,NO>::IntVec & InterfaceEntity<SC,LO,GO,NO>::getSubdomainsVector() const
+#else
+    template <class SC,class NO>
+    const typename InterfaceEntity<SC,NO>::IntVec & InterfaceEntity<SC,NO>::getSubdomainsVector() const
+#endif
     {
         return SubdomainsVector_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename InterfaceEntity<SC,LO,GO,NO>::UN InterfaceEntity<SC,LO,GO,NO>::getNumNodes() const
+#else
+    template <class SC,class NO>
+    typename InterfaceEntity<SC,NO>::UN InterfaceEntity<SC,NO>::getNumNodes() const
+#endif
     {
         return NodeVector_.size();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     const typename InterfaceEntity<SC,LO,GO,NO>::EntitySetPtr InterfaceEntity<SC,LO,GO,NO>::getAncestors() const
+#else
+    template <class SC,class NO>
+    const typename InterfaceEntity<SC,NO>::EntitySetPtr InterfaceEntity<SC,NO>::getAncestors() const
+#endif
     {
         return Ancestors_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     const typename InterfaceEntity<SC,LO,GO,NO>::EntitySetPtr InterfaceEntity<SC,LO,GO,NO>::getOffspring() const
+#else
+    template <class SC,class NO>
+    const typename InterfaceEntity<SC,NO>::EntitySetPtr InterfaceEntity<SC,NO>::getOffspring() const
+#endif
     {
         return Offspring_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     const typename InterfaceEntity<SC,LO,GO,NO>::EntitySetPtr InterfaceEntity<SC,LO,GO,NO>::getRoots() const
+#else
+    template <class SC,class NO>
+    const typename InterfaceEntity<SC,NO>::EntitySetPtr InterfaceEntity<SC,NO>::getRoots() const
+#endif
     {
         return Roots_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     SC InterfaceEntity<SC,LO,GO,NO>::getDistanceToRoot(UN iDNode,
+#else
+    template <class SC,class NO>
+    SC InterfaceEntity<SC,NO>::getDistanceToRoot(UN iDNode,
+#endif
                                                        UN iDRoot) const
     {
         FROSCH_ASSERT(iDNode<getNumNodes(),"iDNode>=getNumNodes()");
@@ -537,16 +801,28 @@ namespace FROSch {
         return DistancesVector_[iDNode][iDRoot];
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool compareInterfaceEntities(RCP<InterfaceEntity<SC,LO,GO,NO> > iEa,
                                   RCP<InterfaceEntity<SC,LO,GO,NO> > iEb)
+#else
+    template <class SC,class NO>
+    bool compareInterfaceEntities(RCP<InterfaceEntity<SC,NO> > iEa,
+                                  RCP<InterfaceEntity<SC,NO> > iEb)
+#endif
     {
         return iEa->getUniqueID()<iEb->getUniqueID();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     bool equalInterfaceEntities(RCP<InterfaceEntity<SC,LO,GO,NO> > iEa,
                                 RCP<InterfaceEntity<SC,LO,GO,NO> > iEb)
+#else
+    template <class SC,class NO>
+    bool equalInterfaceEntities(RCP<InterfaceEntity<SC,NO> > iEa,
+                                RCP<InterfaceEntity<SC,NO> > iEb)
+#endif
     {
         return iEa->getUniqueID()==iEb->getUniqueID();
     }

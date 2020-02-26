@@ -58,8 +58,13 @@ namespace { // (anonymous)
 // matrix here.  The point of this test is NOT to exercise the solver;
 // it's just to check that Belos' LinearSolverFactory can create
 // working solvers.  Belos has more rigorous tests for its solvers.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 Teuchos::RCP<Tpetra::CrsMatrix<SC, LO, GO, NT> >
+#else
+template<class SC, class NT>
+Teuchos::RCP<Tpetra::CrsMatrix<SC, NT> >
+#endif
 createTestMatrix (Teuchos::FancyOStream& out,
                   const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                   const Tpetra::global_size_t gblNumRows)
@@ -68,8 +73,13 @@ createTestMatrix (Teuchos::FancyOStream& out,
   using Teuchos::RCP;
   using Teuchos::rcp;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SC,LO,GO,NT> MAT;
   typedef Tpetra::Map<LO,GO,NT> map_type;
+#else
+  typedef Tpetra::CrsMatrix<SC,NT> MAT;
+  typedef Tpetra::Map<NT> map_type;
+#endif
   typedef Teuchos::ScalarTraits<SC> STS;
 
   Teuchos::OSTab tab0 (out);
@@ -111,12 +121,22 @@ createTestMatrix (Teuchos::FancyOStream& out,
 // just to check that its LinearSolverFactory can create working
 // preconditioners.  Belos has more rigorous tests for each of its
 // preconditioners.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 createTestProblem (Teuchos::FancyOStream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    Teuchos::RCP<Tpetra::MultiVector<SC, LO, GO, NT> >& X,
                    Teuchos::RCP<Tpetra::CrsMatrix<SC, LO, GO, NT> >& A,
                    Teuchos::RCP<Tpetra::MultiVector<SC, LO, GO, NT> >& B,
+#else
+                   Teuchos::RCP<Tpetra::MultiVector<SC, NT> >& X,
+                   Teuchos::RCP<Tpetra::CrsMatrix<SC, NT> >& A,
+                   Teuchos::RCP<Tpetra::MultiVector<SC, NT> >& B,
+#endif
                    const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                    const Tpetra::global_size_t gblNumRows,
                    const size_t numVecs)
@@ -125,10 +145,18 @@ createTestProblem (Teuchos::FancyOStream& out,
   using Teuchos::RCP;
   using Teuchos::rcp;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<SC,LO,GO,NT> MV;
+#else
+  typedef Tpetra::MultiVector<SC,NT> MV;
+#endif
   typedef Teuchos::ScalarTraits<SC> STS;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   A = createTestMatrix<SC, LO, GO, NT> (out, comm, gblNumRows);
+#else
+  A = createTestMatrix<SC, NT> (out, comm, gblNumRows);
+#endif
   X = rcp (new MV (A->getDomainMap (), numVecs));
   B = rcp (new MV (A->getRangeMap (), numVecs));
 
@@ -136,22 +164,38 @@ createTestProblem (Teuchos::FancyOStream& out,
   A->apply (*X, *B);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 testSolver (Teuchos::FancyOStream& out,
             bool& success,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const Teuchos::RCP<Tpetra::MultiVector<SC, LO, GO, NT> >& X,
             const Teuchos::RCP<const Tpetra::CrsMatrix<SC, LO, GO, NT> >& A,
             const Teuchos::RCP<const Tpetra::MultiVector<SC, LO, GO, NT> >& B,
             Tpetra::MultiVector<SC, LO, GO, NT>& /* X_exact */,
+#else
+            const Teuchos::RCP<Tpetra::MultiVector<SC, NT> >& X,
+            const Teuchos::RCP<const Tpetra::CrsMatrix<SC, NT> >& A,
+            const Teuchos::RCP<const Tpetra::MultiVector<SC, NT> >& B,
+            Tpetra::MultiVector<SC, NT>& /* X_exact */,
+#endif
             const std::string& solverName)
 {
   using Teuchos::Comm;
   using Teuchos::RCP;
   using Teuchos::rcp;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Operator<SC,LO,GO,NT> OP;
   typedef Tpetra::MultiVector<SC,LO,GO,NT> MV;
+#else
+  typedef Tpetra::Operator<SC,NT> OP;
+  typedef Tpetra::MultiVector<SC,NT> MV;
+#endif
   typedef Teuchos::ScalarTraits<SC> STS;
 
   Teuchos::OSTab tab0 (out);
@@ -190,7 +234,11 @@ testSolver (Teuchos::FancyOStream& out,
   solver->solve ();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 testCreatingSolver (Teuchos::FancyOStream& out,
                     bool& success,
@@ -200,8 +248,13 @@ testCreatingSolver (Teuchos::FancyOStream& out,
   using Teuchos::rcp;
   using Teuchos::TypeNameTraits;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using MV = Tpetra::MultiVector<SC, LO, GO, NT>;
   using OP = Tpetra::Operator<SC, LO, GO, NT>;
+#else
+  using MV = Tpetra::MultiVector<SC, NT>;
+  using OP = Tpetra::Operator<SC, NT>;
+#endif
 
   Teuchos::OSTab tab0 (out);
   out << "Test Belos solver \"" << solverName
@@ -222,7 +275,11 @@ testCreatingSolver (Teuchos::FancyOStream& out,
 // The actual unit tests start here.
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( SolverFactory, CreateSolvers, SC, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( SolverFactory, CreateSolvers, SC, NT )
+#endif
 {
   using std::endl;
 
@@ -253,23 +310,37 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( SolverFactory, CreateSolvers, SC, LO, GO, NT 
     if (isComplex && (solverName == "LSQR" || solverName == "PCPG")) {
       continue; // solver not implemented for complex Scalar types
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     testCreatingSolver<SC, LO, GO, NT> (out, success, solverName);
+#else
+    testCreatingSolver<SC, NT> (out, success, solverName);
+#endif
     if (! success) {
       return;
     }
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( SolverFactory, CreateAndSolve, SC, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( SolverFactory, CreateAndSolve, SC, NT )
+#endif
 {
   using Teuchos::Comm;
   using Teuchos::RCP;
   using Teuchos::rcp;
   using Teuchos::TypeNameTraits;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SC,LO,GO,NT> MAT;
   typedef Tpetra::MultiVector<SC,LO,GO,NT> MV;
   typedef Tpetra::Operator<SC,LO,GO,NT> OP;
+#else
+  typedef Tpetra::CrsMatrix<SC,NT> MAT;
+  typedef Tpetra::MultiVector<SC,NT> MV;
+  typedef Tpetra::Operator<SC,NT> OP;
+#endif
 
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm ();
   const Tpetra::global_size_t gblNumRows = comm->getSize () * 10;
@@ -308,7 +379,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( SolverFactory, CreateAndSolve, SC, LO, GO, NT
       skip = true;
     }
     if (! skip) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       testSolver<SC, LO, GO, NT> (out, success, X, A, B, *X_exact, solverName);
+#else
+      testSolver<SC, NT> (out, success, X, A, B, *X_exact, solverName);
+#endif
       ++numSolversTested;
     }
   }
@@ -329,9 +404,15 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( SolverFactory, CreateAndSolve, SC, LO, GO, NT
 TPETRA_ETI_MANGLING_TYPEDEFS()
 
 // Macro that instantiates the unit test
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define LCLINST( SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( SolverFactory, CreateSolvers, SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( SolverFactory, CreateAndSolve, SC, LO, GO, NT )
+#else
+#define LCLINST( SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( SolverFactory, CreateSolvers, SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( SolverFactory, CreateAndSolve, SC, NT )
+#endif
 
 // Tpetra's ETI will instantiate the unit test for all enabled type
 // combinations.

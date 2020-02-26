@@ -63,7 +63,11 @@ TpetraReorderedMappingStrategy::TpetraReorderedMappingStrategy(const BlockReorde
    domainMap_ = mapStrategy_->domainMap();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraReorderedMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,GO,NT> & X,
+#else
+void TpetraReorderedMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector<ST,NT> & X,
+#endif
                                                  const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyra_X) const
 {
    using Teuchos::ptr_const_cast;
@@ -78,7 +82,11 @@ void TpetraReorderedMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVect
 }
 
 void TpetraReorderedMappingStrategy::copyThyraIntoTpetra(const RCP<const Thyra::MultiVectorBase<ST> > & thyra_Y,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                  Tpetra::MultiVector<ST,LO,GO,NT> & Y) const 
+#else
+                                                 Tpetra::MultiVector<ST,NT> & Y) const 
+#endif
 {
    // first flatten the vector: notice this just works on the block structure
    RCP<const Thyra::ProductMultiVectorBase<ST> > prod_Y = rcp_dynamic_cast<const Thyra::ProductMultiVectorBase<ST> >(rcpFromRef(*thyra_Y));

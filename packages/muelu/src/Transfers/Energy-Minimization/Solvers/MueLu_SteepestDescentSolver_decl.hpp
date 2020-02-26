@@ -66,14 +66,24 @@ namespace MueLu {
     */
 
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class SteepestDescentSolver : public SolverBase<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+  class SteepestDescentSolver : public SolverBase<Scalar, Node> {
+#endif
 #undef MUELU_STEEPESTDESCENTSOLVER_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors / destructors
     //@{
 

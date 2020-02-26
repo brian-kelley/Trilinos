@@ -100,39 +100,80 @@ namespace Galeri {
 
 #ifdef HAVE_GALERI_TPETRA
     /* Specialized traits for Map = Tpetra::Map<...> */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LocalOrdinal, class GlobalOrdinal, class Node>
     class MapTraits < GlobalOrdinal, Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+    template <class Node>
+    class MapTraits < GlobalOrdinal, Tpetra::Map<Node> >
+#endif
     {
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP<Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > Build(global_size_t numGlobalElements, const Teuchos::ArrayView<const GlobalOrdinal> &elementList, GlobalOrdinal indexBase, const Teuchos::RCP<const Teuchos::Comm<int> > &comm)
       { return rcp( new Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>(numGlobalElements, elementList, indexBase, comm) ); }
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      static Teuchos::RCP<Tpetra::Map<Node> > Build(global_size_t numGlobalElements, const Teuchos::ArrayView<const GlobalOrdinal> &elementList, GlobalOrdinal indexBase, const Teuchos::RCP<const Teuchos::Comm<int> > &comm)
+      { return rcp( new Tpetra::Map<Node>(numGlobalElements, elementList, indexBase, comm) ); }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP<Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > Build(global_size_t numGlobalElements, global_size_t numLocalElements, GlobalOrdinal indexBase, const Teuchos::RCP<const Teuchos::Comm<int> > &comm)
       { return rcp( new Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>(numGlobalElements, numLocalElements, indexBase, comm) ); }
+#else
+      static Teuchos::RCP<Tpetra::Map<Node> > Build(global_size_t numGlobalElements, global_size_t numLocalElements, GlobalOrdinal indexBase, const Teuchos::RCP<const Teuchos::Comm<int> > &comm)
+      { return rcp( new Tpetra::Map<Node>(numGlobalElements, numLocalElements, indexBase, comm) ); }
+#endif
     };
 #endif // HAVE_GALERI_TPETRA
 
 #ifdef HAVE_GALERI_XPETRA
 #ifdef HAVE_XPETRA_TPETRA
     /* Specialized traits for Map = Xpetra::TpetraMap<...> */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LocalOrdinal, class GlobalOrdinal, class Node>
     class MapTraits <GlobalOrdinal, ::Xpetra::TpetraMap<LocalOrdinal,GlobalOrdinal, Node> >
+#else
+    template <class Node>
+    class MapTraits <GlobalOrdinal, ::Xpetra::TpetraMap<Node> >
+#endif
     {
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP< ::Xpetra::TpetraMap<LocalOrdinal,GlobalOrdinal, Node> > Build(global_size_t numGlobalElements, const Teuchos::ArrayView<const GlobalOrdinal> &elementList, GlobalOrdinal indexBase, const Teuchos::RCP<const Teuchos::Comm<int> > &comm)
       { return Teuchos::rcp( new ::Xpetra::TpetraMap<LocalOrdinal,GlobalOrdinal, Node>(numGlobalElements, elementList, indexBase, comm) ); }
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      static Teuchos::RCP< ::Xpetra::TpetraMap<Node> > Build(global_size_t numGlobalElements, const Teuchos::ArrayView<const GlobalOrdinal> &elementList, GlobalOrdinal indexBase, const Teuchos::RCP<const Teuchos::Comm<int> > &comm)
+      { return Teuchos::rcp( new ::Xpetra::TpetraMap<Node>(numGlobalElements, elementList, indexBase, comm) ); }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP< ::Xpetra::TpetraMap<LocalOrdinal,GlobalOrdinal, Node> > Build(global_size_t numGlobalElements, global_size_t numLocalElements, GlobalOrdinal indexBase, const Teuchos::RCP<const Teuchos::Comm<int> > &comm)
       { return Teuchos::rcp( new ::Xpetra::TpetraMap<LocalOrdinal,GlobalOrdinal, Node>(numGlobalElements, numLocalElements, indexBase, comm) ); }
+#else
+      static Teuchos::RCP< ::Xpetra::TpetraMap<Node> > Build(global_size_t numGlobalElements, global_size_t numLocalElements, GlobalOrdinal indexBase, const Teuchos::RCP<const Teuchos::Comm<int> > &comm)
+      { return Teuchos::rcp( new ::Xpetra::TpetraMap<Node>(numGlobalElements, numLocalElements, indexBase, comm) ); }
+#endif
     };
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
     /* Specialized traits for Map = Xpetra::EpetraMap<int,GlobalOrdinal,Node> */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class GlobalOrdinal, class Node>
+#else
+    template <class Node>
+#endif
     class MapTraits <GlobalOrdinal, ::Xpetra::EpetraMapT<GlobalOrdinal,Node> >
     {
     public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       static Teuchos::RCP< ::Xpetra::EpetraMapT<GlobalOrdinal,Node> > Build(global_size_t numGlobalElements, const Teuchos::ArrayView<const GlobalOrdinal> &elementList, GlobalOrdinal indexBase, const Teuchos::RCP<const Teuchos::Comm<int> > &comm)
       { return Teuchos::rcp( new ::Xpetra::EpetraMapT<GlobalOrdinal,Node>(numGlobalElements, elementList, indexBase, comm) ); }
 

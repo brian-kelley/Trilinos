@@ -50,9 +50,13 @@
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 namespace Tpetra {
 namespace Details {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal = ::Tpetra::Details::DefaultTypes::local_ordinal_type,
          class GlobalOrdinal = ::Tpetra::Details::DefaultTypes::global_ordinal_type,
          class DeviceType = ::Tpetra::Details::DefaultTypes::node_type::device_type>
+#else
+template<class DeviceType = ::Tpetra::Details::DefaultTypes::node_type::device_type>
+#endif
 class LocalMap;
 } // namespace Details
 } // namespace Tpetra

@@ -85,7 +85,11 @@ class ScatterDirichletResidual_Tpetra;
 // Residual 
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterDirichletResidual_Tpetra<panzer::Traits::Residual,TRAITS,LO,GO,NodeT>
+#else
+class ScatterDirichletResidual_Tpetra<panzer::Traits::Residual,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Residual, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -105,11 +109,19 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterDirichletResidual_Tpetra<panzer::Traits::Residual,TRAITS,LO,GO>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterDirichletResidual_Tpetra<panzer::Traits::Residual,TRAITS>(globalIndexer_,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Residual::ScalarT ScalarT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
   // dummy field so that the evaluator will have something to do
   Teuchos::RCP<PHX::FieldTag> scatterHolder_;
@@ -154,7 +166,11 @@ private:
 // Tangent 
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent,TRAITS,LO,GO,NodeT>
+#else
+class ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Tangent, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -174,11 +190,19 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent,TRAITS,LO,GO>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent,TRAITS>(globalIndexer_,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Tangent::ScalarT ScalarT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
   // dummy field so that the evaluator will have something to do
   Teuchos::RCP<PHX::FieldTag> scatterHolder_;
@@ -224,7 +248,11 @@ private:
 // Jacobian
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian,TRAITS,LO,GO,NodeT>
+#else
+class ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Jacobian, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -244,12 +272,20 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
 
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian,TRAITS,LO,GO>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian,TRAITS>(globalIndexer_,pl)); }
+#endif
   
 private:
 
   typedef typename panzer::Traits::Jacobian::ScalarT ScalarT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraLinearObjContainer<double,LO,GO,NodeT> LOC;
+#else
+  typedef TpetraLinearObjContainer<double,NodeT> LOC;
+#endif
 
   // dummy field so that the evaluator will have something to do
   Teuchos::RCP<PHX::FieldTag> scatterHolder_;
@@ -279,7 +315,11 @@ private:
   ScatterDirichletResidual_Tpetra();
 
   std::string globalDataKey_; // what global data does this fill?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const TpetraLinearObjContainer<double,LO,GO,NodeT> > tpetraContainer_;
+#else
+  Teuchos::RCP<const TpetraLinearObjContainer<double,NodeT> > tpetraContainer_;
+#endif
 
   //! If set to true, allows runtime disabling of dirichlet BCs on node-by-node basis
   bool checkApplyBC_;

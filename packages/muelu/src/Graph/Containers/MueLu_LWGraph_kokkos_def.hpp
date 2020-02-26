@@ -84,8 +84,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   LWGraph_kokkos<LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::
+#else
+  template<class DeviceType>
+  LWGraph_kokkos<Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::
+#endif
   LWGraph_kokkos(const local_graph_type&    graph,
                  const RCP<const map_type>& domainMap,
                  const RCP<const map_type>& importMap,

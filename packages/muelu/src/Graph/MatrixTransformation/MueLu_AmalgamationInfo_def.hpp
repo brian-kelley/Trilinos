@@ -62,8 +62,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AmalgamationInfo<LocalOrdinal, GlobalOrdinal, Node>::UnamalgamateAggregates(const Aggregates& aggregates,
+#else
+  template <class Node>
+  void AmalgamationInfo<Node>::UnamalgamateAggregates(const Aggregates& aggregates,
+#endif
         Teuchos::ArrayRCP<LocalOrdinal>& aggStart, Teuchos::ArrayRCP<GlobalOrdinal>& aggToRowMap) const {
     int myPid = aggregates.GetMap()->getComm()->getRank();
     Teuchos::ArrayView<const GO> nodeGlobalElts = aggregates.GetMap()->getNodeElementList();
@@ -130,8 +135,13 @@ namespace MueLu {
 
   } //UnamalgamateAggregates
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AmalgamationInfo<LocalOrdinal, GlobalOrdinal, Node>::UnamalgamateAggregatesLO(const Aggregates& aggregates,
+#else
+  template <class Node>
+  void AmalgamationInfo<Node>::UnamalgamateAggregatesLO(const Aggregates& aggregates,
+#endif
         Teuchos::ArrayRCP<LO>& aggStart, Teuchos::ArrayRCP<LO>& aggToRowMap) const {
 
     int myPid = aggregates.GetMap()->getComm()->getRank();
@@ -200,8 +210,13 @@ namespace MueLu {
 
   /////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > AmalgamationInfo<LocalOrdinal, GlobalOrdinal, Node>::ComputeUnamalgamatedImportDofMap(const Aggregates& aggregates) const {
+#else
+  template <class Node>
+  RCP<Xpetra::Map<Node> > AmalgamationInfo<Node>::ComputeUnamalgamatedImportDofMap(const Aggregates& aggregates) const {
+#endif
     Teuchos::RCP<const Map> nodeMap = aggregates.GetMap();
 
     Teuchos::RCP<std::vector<GO> > myDofGids = Teuchos::rcp(new std::vector<GO>);
@@ -229,8 +244,13 @@ namespace MueLu {
 
   /////////////////////////////////////////////////////////////////////////////
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   GlobalOrdinal AmalgamationInfo<LocalOrdinal, GlobalOrdinal, Node>::ComputeGlobalDOF(GlobalOrdinal const &gNodeID, LocalOrdinal const &k) const {
+#else
+  template <class Node>
+  GlobalOrdinal AmalgamationInfo<Node>::ComputeGlobalDOF(GlobalOrdinal const &gNodeID, LocalOrdinal const &k) const {
+#endif
     // here, the assumption is, that the node map has the same indexBase as the dof map
     //                            this is the node map index base                    this is the dof map index base
     GlobalOrdinal gDofIndex = offset_ + (gNodeID-indexBase_)*fullblocksize_ + nStridedOffset_ + k + indexBase_;

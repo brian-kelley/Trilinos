@@ -51,14 +51,24 @@ namespace Xpetra {
 
 
   // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GlobalOrdinal, class Node>
   Epetra_IntVector & toEpetra(Vector<int, int, GlobalOrdinal,Node> &x) {
+#else
+  template<class Node>
+  Epetra_IntVector & toEpetra(Vector<int,Node> &x) {
+#endif
     XPETRA_DYNAMIC_CAST(      EpetraIntVectorT<GlobalOrdinal XPETRA_COMMA Node>, x, tX, "toEpetra");
     return *tX.getEpetra_IntVector();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GlobalOrdinal, class Node>
   const Epetra_IntVector & toEpetra(const Vector<int, int, GlobalOrdinal, Node> &x) {
+#else
+  template<class Node>
+  const Epetra_IntVector & toEpetra(const Vector<int, Node> &x) {
+#endif
     XPETRA_DYNAMIC_CAST(const EpetraIntVectorT<GlobalOrdinal XPETRA_COMMA Node>, x, tX, "toEpetra");
     return *tX.getEpetra_IntVector();
   }
@@ -70,36 +80,66 @@ namespace Xpetra {
 #if ((defined(EPETRA_HAVE_OMP) && !defined(HAVE_TPETRA_INST_OPENMP)) || \
     (!defined(EPETRA_HAVE_OMP) && !defined(HAVE_TPETRA_INST_SERIAL)))
 template class EpetraIntVectorT<int, Xpetra::EpetraNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<int,Xpetra::EpetraNode >(Vector<int, int, int, Xpetra::EpetraNode> &);
 template const Epetra_IntVector & toEpetra<int, Xpetra::EpetraNode >(const Vector<int, int, int, Xpetra::EpetraNode> &);
+#else
+template Epetra_IntVector & toEpetra<int,Xpetra::EpetraNode >(Vector<int, Xpetra::EpetraNode> &);
+template const Epetra_IntVector & toEpetra<int, Xpetra::EpetraNode >(const Vector<int, Xpetra::EpetraNode> &);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_SERIAL
 template class EpetraIntVectorT<int, Kokkos::Compat::KokkosSerialWrapperNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<int,Kokkos::Compat::KokkosSerialWrapperNode >(Vector<int, int, int, Kokkos::Compat::KokkosSerialWrapperNode> &);
 template const Epetra_IntVector & toEpetra<int, Kokkos::Compat::KokkosSerialWrapperNode >(const Vector<int, int, int, Kokkos::Compat::KokkosSerialWrapperNode> &);
+#else
+template Epetra_IntVector & toEpetra<int,Kokkos::Compat::KokkosSerialWrapperNode >(Vector<int, Kokkos::Compat::KokkosSerialWrapperNode> &);
+template const Epetra_IntVector & toEpetra<int, Kokkos::Compat::KokkosSerialWrapperNode >(const Vector<int, Kokkos::Compat::KokkosSerialWrapperNode> &);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_PTHREAD
 template class EpetraIntVectorT<int, Kokkos::Compat::KokkosThreadsWrapperNode>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<int,Kokkos::Compat::KokkosThreadsWrapperNode >(Vector<int, int, int, Kokkos::Compat::KokkosThreadsWrapperNode> &);
 template const Epetra_IntVector & toEpetra<int, Kokkos::Compat::KokkosThreadsWrapperNode >(const Vector<int, int, int, Kokkos::Compat::KokkosThreadsWrapperNode> &);
+#else
+template Epetra_IntVector & toEpetra<int,Kokkos::Compat::KokkosThreadsWrapperNode >(Vector<int, Kokkos::Compat::KokkosThreadsWrapperNode> &);
+template const Epetra_IntVector & toEpetra<int, Kokkos::Compat::KokkosThreadsWrapperNode >(const Vector<int, Kokkos::Compat::KokkosThreadsWrapperNode> &);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_OPENMP
 template class EpetraIntVectorT<int, Kokkos::Compat::KokkosOpenMPWrapperNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<int,Kokkos::Compat::KokkosOpenMPWrapperNode >(Vector<int, int, int, Kokkos::Compat::KokkosOpenMPWrapperNode> &);
 template const Epetra_IntVector & toEpetra<int, Kokkos::Compat::KokkosOpenMPWrapperNode >(const Vector<int, int, int, Kokkos::Compat::KokkosOpenMPWrapperNode> &);
+#else
+template Epetra_IntVector & toEpetra<int,Kokkos::Compat::KokkosOpenMPWrapperNode >(Vector<int, Kokkos::Compat::KokkosOpenMPWrapperNode> &);
+template const Epetra_IntVector & toEpetra<int, Kokkos::Compat::KokkosOpenMPWrapperNode >(const Vector<int, Kokkos::Compat::KokkosOpenMPWrapperNode> &);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_CUDA
 typedef Kokkos::Compat::KokkosCudaWrapperNode default_node_type;
 template class EpetraIntVectorT<int, default_node_type >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<int,default_node_type >(Vector<int, int, int, default_node_type> &);
 template const Epetra_IntVector & toEpetra<int,default_node_type >(const Vector<int, int, int, default_node_type> &);
+#else
+template Epetra_IntVector & toEpetra<int,default_node_type >(Vector<int, default_node_type> &);
+template const Epetra_IntVector & toEpetra<int,default_node_type >(const Vector<int, default_node_type> &);
+#endif
 #endif
 #else
 // Tpetra is disabled and Kokkos not available: use dummy node type
 typedef Xpetra::EpetraNode default_node_type;
 template class EpetraIntVectorT<int, default_node_type >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<int,default_node_type >(Vector<int, int, int, default_node_type> &);
 template const Epetra_IntVector & toEpetra<int,default_node_type >(const Vector<int, int, int, default_node_type> &);
+#else
+template Epetra_IntVector & toEpetra<int,default_node_type >(Vector<int, default_node_type> &);
+template const Epetra_IntVector & toEpetra<int,default_node_type >(const Vector<int, default_node_type> &);
+#endif
 #endif // HAVE_XPETRA_TPETRA
 #endif
 
@@ -109,36 +149,66 @@ template const Epetra_IntVector & toEpetra<int,default_node_type >(const Vector<
 #if ((defined(EPETRA_HAVE_OMP) && !defined(HAVE_TPETRA_INST_OPENMP)) || \
     (!defined(EPETRA_HAVE_OMP) && !defined(HAVE_TPETRA_INST_SERIAL)))
 template class EpetraIntVectorT<long long, Xpetra::EpetraNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<long long,Xpetra::EpetraNode >(Vector<int, int, long long, Xpetra::EpetraNode> &);
 template const Epetra_IntVector & toEpetra<long long, Xpetra::EpetraNode >(const Vector<int, int, long long, Xpetra::EpetraNode> &);
+#else
+template Epetra_IntVector & toEpetra<long long,Xpetra::EpetraNode >(Vector<int, Xpetra::EpetraNode> &);
+template const Epetra_IntVector & toEpetra<long long, Xpetra::EpetraNode >(const Vector<int, Xpetra::EpetraNode> &);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_SERIAL
 template class EpetraIntVectorT<long long, Kokkos::Compat::KokkosSerialWrapperNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<long long,Kokkos::Compat::KokkosSerialWrapperNode >(Vector<int, int, long long, Kokkos::Compat::KokkosSerialWrapperNode> &);
 template const Epetra_IntVector & toEpetra<long long, Kokkos::Compat::KokkosSerialWrapperNode >(const Vector<int, int, long long, Kokkos::Compat::KokkosSerialWrapperNode> &);
+#else
+template Epetra_IntVector & toEpetra<long long,Kokkos::Compat::KokkosSerialWrapperNode >(Vector<int, Kokkos::Compat::KokkosSerialWrapperNode> &);
+template const Epetra_IntVector & toEpetra<long long, Kokkos::Compat::KokkosSerialWrapperNode >(const Vector<int, Kokkos::Compat::KokkosSerialWrapperNode> &);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_PTHREAD
 template class EpetraIntVectorT<long long, Kokkos::Compat::KokkosThreadsWrapperNode>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<long long,Kokkos::Compat::KokkosThreadsWrapperNode >(Vector<int, int, long long, Kokkos::Compat::KokkosThreadsWrapperNode> &);
 template const Epetra_IntVector & toEpetra<long long, Kokkos::Compat::KokkosThreadsWrapperNode >(const Vector<int, int, long long, Kokkos::Compat::KokkosThreadsWrapperNode> &);
+#else
+template Epetra_IntVector & toEpetra<long long,Kokkos::Compat::KokkosThreadsWrapperNode >(Vector<int, Kokkos::Compat::KokkosThreadsWrapperNode> &);
+template const Epetra_IntVector & toEpetra<long long, Kokkos::Compat::KokkosThreadsWrapperNode >(const Vector<int, Kokkos::Compat::KokkosThreadsWrapperNode> &);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_OPENMP
 template class EpetraIntVectorT<long long, Kokkos::Compat::KokkosOpenMPWrapperNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<long long,Kokkos::Compat::KokkosOpenMPWrapperNode >(Vector<int, int, long long, Kokkos::Compat::KokkosOpenMPWrapperNode> &);
 template const Epetra_IntVector & toEpetra<long long, Kokkos::Compat::KokkosOpenMPWrapperNode >(const Vector<int, int, long long, Kokkos::Compat::KokkosOpenMPWrapperNode> &);
+#else
+template Epetra_IntVector & toEpetra<long long,Kokkos::Compat::KokkosOpenMPWrapperNode >(Vector<int, Kokkos::Compat::KokkosOpenMPWrapperNode> &);
+template const Epetra_IntVector & toEpetra<long long, Kokkos::Compat::KokkosOpenMPWrapperNode >(const Vector<int, Kokkos::Compat::KokkosOpenMPWrapperNode> &);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_CUDA
 typedef Kokkos::Compat::KokkosCudaWrapperNode default_node_type;
 template class EpetraIntVectorT<long long, default_node_type >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<long long,default_node_type >(Vector<int, int, long long, default_node_type> &);
 template const Epetra_IntVector & toEpetra<long long,default_node_type >(const Vector<int, int, long long, default_node_type> &);
+#else
+template Epetra_IntVector & toEpetra<long long,default_node_type >(Vector<int, default_node_type> &);
+template const Epetra_IntVector & toEpetra<long long,default_node_type >(const Vector<int, default_node_type> &);
+#endif
 #endif
 #else
 // Tpetra is disabled and Kokkos not available: use dummy node type
 typedef Xpetra::EpetraNode default_node_type;
 template class EpetraIntVectorT<long long, default_node_type >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template Epetra_IntVector & toEpetra<long long,default_node_type >(Vector<int, int, long long, default_node_type> &);
 template const Epetra_IntVector & toEpetra<long long,default_node_type >(const Vector<int, int, long long, default_node_type> &);
+#else
+template Epetra_IntVector & toEpetra<long long,default_node_type >(Vector<int, default_node_type> &);
+template const Epetra_IntVector & toEpetra<long long,default_node_type >(const Vector<int, default_node_type> &);
+#endif
 #endif // HAVE_XPETRA_TPETRA
 #endif
 

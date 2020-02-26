@@ -83,8 +83,13 @@
 #include <iostream>
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TempusSolver() :
+#else
+template <typename Scalar, typename Node>
+Piro::TempusSolver<Scalar, Node>::TempusSolver() :
+#endif
 #else
 template <typename Scalar>
 Piro::TempusSolver<Scalar>::TempusSolver() :
@@ -99,8 +104,13 @@ Piro::TempusSolver<Scalar>::TempusSolver() :
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TempusSolver(
+#else
+template <typename Scalar, typename Node>
+Piro::TempusSolver<Scalar, Node>::TempusSolver(
+#endif
 #else
 template <typename Scalar>
 Piro::TempusSolver<Scalar>::TempusSolver(
@@ -133,8 +143,13 @@ Piro::TempusSolver<Scalar>::TempusSolver(
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::initialize(
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::initialize(
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::initialize(
@@ -241,7 +256,11 @@ void Piro::TempusSolver<Scalar>::initialize(
 #ifdef HAVE_PIRO_IFPACK2
     typedef Thyra::PreconditionerFactoryBase<double> Base;
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<double, LocalOrdinal, GlobalOrdinal, Node> > Impl;
+#else
+    typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<double, Node> > Impl;
+#endif
 #else
     typedef Thyra::Ifpack2PreconditionerFactory<Tpetra::CrsMatrix<double> > Impl;
 #endif
@@ -249,7 +268,11 @@ void Piro::TempusSolver<Scalar>::initialize(
 #endif
 #ifdef HAVE_PIRO_MUELU
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Stratimikos::enableMueLu<LocalOrdinal, GlobalOrdinal, Node>(linearSolverBuilder);
+#else
+    Stratimikos::enableMueLu<Node>(linearSolverBuilder);
+#endif
 #else
     Stratimikos::enableMueLu(linearSolverBuilder);
 #endif
@@ -290,7 +313,11 @@ void Piro::TempusSolver<Scalar>::initialize(
       else {
         Teuchos::RCP<Thyra::ModelEvaluator<Scalar> > origModel = model;
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar, LocalOrdinal, GlobalOrdinal, Node>(
+#else
+        model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar, Node>(
+#endif
 #else
         model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar>(
 #endif
@@ -310,7 +337,11 @@ void Piro::TempusSolver<Scalar>::initialize(
       else {
         Teuchos::RCP<Thyra::ModelEvaluator<Scalar> > origModel = model;
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar, LocalOrdinal, GlobalOrdinal, Node>(
+#else
+        model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar, Node>(
+#endif
 #else
         model = Teuchos::rcp(new Piro::InvertMassMatrixDecorator<Scalar>(
 #endif
@@ -349,8 +380,13 @@ void Piro::TempusSolver<Scalar>::initialize(
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TempusSolver(
+#else
+template <typename Scalar, typename Node>
+Piro::TempusSolver<Scalar, Node>::TempusSolver(
+#endif
 #else
 template <typename Scalar>
 Piro::TempusSolver<Scalar>::TempusSolver(
@@ -385,8 +421,13 @@ Piro::TempusSolver<Scalar>::TempusSolver(
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TempusSolver(
+#else
+template <typename Scalar, typename Node>
+Piro::TempusSolver<Scalar, Node>::TempusSolver(
+#endif
 #else
 template <typename Scalar>
 Piro::TempusSolver<Scalar>::TempusSolver(
@@ -430,9 +471,17 @@ Piro::TempusSolver<Scalar>::TempusSolver(
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_p_space(int l) const
+#else
+Piro::TempusSolver<Scalar, Node>::get_p_space(int l) const
+#endif
 #else
 template<typename Scalar>
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
@@ -453,9 +502,17 @@ Piro::TempusSolver<Scalar>::get_p_space(int l) const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::get_g_space(int j) const
+#else
+Piro::TempusSolver<Scalar, Node>::get_g_space(int j) const
+#endif
 #else
 template<typename Scalar>
 Teuchos::RCP<const Thyra::VectorSpaceBase<Scalar> >
@@ -481,9 +538,17 @@ Piro::TempusSolver<Scalar>::get_g_space(int j) const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNominalValues() const
+#else
+Piro::TempusSolver<Scalar, Node>::getNominalValues() const
+#endif
 #else
 template<typename Scalar>
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
@@ -502,9 +567,17 @@ Piro::TempusSolver<Scalar>::getNominalValues() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::createInArgs() const
+#else
+Piro::TempusSolver<Scalar, Node>::createInArgs() const
+#endif
 #else
 template <typename Scalar>
 Thyra::ModelEvaluatorBase::InArgs<Scalar>
@@ -521,9 +594,17 @@ Piro::TempusSolver<Scalar>::createInArgs() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Thyra::ModelEvaluatorBase::OutArgs<Scalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::createOutArgsImpl() const
+#else
+Piro::TempusSolver<Scalar, Node>::createOutArgsImpl() const
+#endif
 #else
 template <typename Scalar>
 Thyra::ModelEvaluatorBase::OutArgs<Scalar>
@@ -602,8 +683,13 @@ Piro::TempusSolver<Scalar>::createOutArgsImpl() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::evalModelImpl(
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::evalModelImpl(
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::evalModelImpl(
@@ -807,9 +893,17 @@ void Piro::TempusSolver<Scalar>::evalModelImpl(
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<Thyra::LinearOpBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::create_DgDp_op_impl(int j, int l) const
+#else
+Piro::TempusSolver<Scalar, Node>::create_DgDp_op_impl(int j, int l) const
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<Thyra::LinearOpBase<Scalar> >
@@ -823,9 +917,17 @@ Piro::TempusSolver<Scalar>::create_DgDp_op_impl(int j, int l) const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<const Teuchos::ParameterList>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getValidTempusParameters() const
+#else
+Piro::TempusSolver<Scalar, Node>::getValidTempusParameters() const
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<const Teuchos::ParameterList>
@@ -857,8 +959,13 @@ Piro::TempusSolver<Scalar>::getValidTempusParameters() const
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::
@@ -869,8 +976,13 @@ addStepperFactory(const std::string & stepperName,const Teuchos::RCP<Piro::Tempu
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::
@@ -882,8 +994,13 @@ addStepControlFactory(const std::string & stepControlName,
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::
@@ -896,8 +1013,13 @@ setStartTime(const Scalar start_time)
 } 
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Scalar Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+Scalar Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 Scalar Piro::TempusSolver<Scalar>::
@@ -910,8 +1032,13 @@ getStartTime() const
 } 
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::
@@ -925,8 +1052,13 @@ setFinalTime(const Scalar final_time)
 } 
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Scalar Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+Scalar Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 Scalar Piro::TempusSolver<Scalar>::
@@ -939,8 +1071,13 @@ getFinalTime() const
 } 
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::
@@ -954,8 +1091,13 @@ setInitTimeStep(const Scalar init_time_step)
 
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Scalar Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+Scalar Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 Scalar Piro::TempusSolver<Scalar>::
@@ -967,8 +1109,13 @@ getInitTimeStep() const
   return init_time_step; 
 } 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::
@@ -995,8 +1142,13 @@ setObserver()
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::
@@ -1014,8 +1166,13 @@ setInitialState(Scalar t0,
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+void Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 void Piro::TempusSolver<Scalar>::
@@ -1027,8 +1184,13 @@ setInitialGuess(Teuchos::RCP< const Thyra::VectorBase<Scalar> > initial_guess)
 }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Teuchos::RCP<Tempus::SolutionHistory<Scalar> > Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+Teuchos::RCP<Tempus::SolutionHistory<Scalar> > Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<Tempus::SolutionHistory<Scalar> > Piro::TempusSolver<Scalar>::
@@ -1042,8 +1204,13 @@ getSolutionHistory() const
   
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Teuchos::RCP<Thyra::NonlinearSolverBase<Scalar> > Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+Teuchos::RCP<Thyra::NonlinearSolverBase<Scalar> > Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<Thyra::NonlinearSolverBase<Scalar> > Piro::TempusSolver<Scalar>::
@@ -1055,8 +1222,13 @@ getSolver() const
 
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Tempus::Status Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template <typename Scalar, typename Node>
+Tempus::Status Piro::TempusSolver<Scalar, Node>::
+#endif
 #else
 template <typename Scalar>
 Tempus::Status Piro::TempusSolver<Scalar>::
@@ -1068,8 +1240,13 @@ getTempusIntegratorStatus() const
 
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Teuchos::RCP<Piro::TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+template <typename Scalar, typename Node>
+Teuchos::RCP<Piro::TempusSolver<Scalar, Node> >
+#endif
 #else
 template <typename Scalar>
 Teuchos::RCP<Piro::TempusSolver<Scalar> >
@@ -1091,7 +1268,11 @@ Piro::tempusSolver(
    }
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Teuchos::rcp(new TempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(appParams, in_model, computeSensitivities, piroObserver));
+#else
+  return Teuchos::rcp(new TempusSolver<Scalar, Node>(appParams, in_model, computeSensitivities, piroObserver));
+#endif
 #else
   return Teuchos::rcp(new TempusSolver<Scalar>(appParams, in_model, computeSensitivities, piroObserver));
 #endif

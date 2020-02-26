@@ -185,12 +185,20 @@ int main(int argc, char *argv[])
         Epetra_Map *repeatedMapEpetraVelo;
         hDF5IO->Read(groupNameRepeatedMapVelo,repeatedMapEpetraVelo);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > repeatedMapVelo = ConvertToXpetra<SC,LO,GO,NO>::ConvertMap(xpetraLib,*repeatedMapEpetraVelo,Comm);
+#else
+        RCP<Map<NO> > repeatedMapVelo = ConvertToXpetra<SC,NO>::ConvertMap(xpetraLib,*repeatedMapEpetraVelo,Comm);
+#endif
 
         string groupNameRepeatedMapPress =  "RepeatedMapPressure";
         Epetra_Map *repeatedMapEpetraPress;
         hDF5IO->Read(groupNameRepeatedMapPress,repeatedMapEpetraPress);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > repeatedMapPress = ConvertToXpetra<SC,LO,GO,NO>::ConvertMap(xpetraLib,*repeatedMapEpetraPress,Comm);
+#else
+        RCP<Map<NO> > repeatedMapPress = ConvertToXpetra<SC,NO>::ConvertMap(xpetraLib,*repeatedMapEpetraPress,Comm);
+#endif
 
 //        GO offsetVelocityMap = repeatedMapVelo->getMaxAllGlobalIndex()+1;
 //        Array<GO> elementList(repeatedMapEpetraPress->NumMyElements());
@@ -199,13 +207,22 @@ int main(int argc, char *argv[])
 //        }
 //        RCP<Map<LO,GO,NO> > repeatedMapPress = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,elementList,0,Comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         ArrayRCP<RCP<const Map<LO,GO,NO> > > repeatedMapsVectorConst(2);
         ArrayRCP<RCP<Map<LO,GO,NO> > > repeatedMapsVector(2);
+#else
+        ArrayRCP<RCP<const Map<NO> > > repeatedMapsVectorConst(2);
+        ArrayRCP<RCP<Map<NO> > > repeatedMapsVector(2);
+#endif
 
         repeatedMapsVectorConst[0] = repeatedMapVelo.getConst();
         repeatedMapsVectorConst[1] = repeatedMapPress.getConst();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > repeatedMap = MergeMapsNonConst(repeatedMapsVectorConst);
+#else
+        RCP<Map<NO> > repeatedMap = MergeMapsNonConst(repeatedMapsVectorConst);
+#endif
 
         repeatedMapsVector[0] = repeatedMapVelo;
         repeatedMapsVector[1] = repeatedMapPress;
@@ -214,7 +231,11 @@ int main(int argc, char *argv[])
         ////////////////
         // Unique Map //
         ////////////////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > uniqueMap = rcp_const_cast<Map<LO,GO,NO> >(BuildUniqueMap<LO,GO,NO>(repeatedMap));
+#else
+        RCP<Map<NO> > uniqueMap = rcp_const_cast<Map<NO> >(BuildUniqueMap<NO>(repeatedMap));
+#endif
 
 
         /////////
@@ -224,9 +245,15 @@ int main(int argc, char *argv[])
         Epetra_MultiVector *rhsEpetra;
         hDF5IO->Read(groupNameRHS,rhsEpetra);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MultiVector<SC,LO,GO,NO> > rhsTmp = ConvertToXpetra<SC,LO,GO,NO>::ConvertMultiVector(xpetraLib,*rhsEpetra,Comm);
         RCP<MultiVector<SC,LO,GO,NO> > rhs = MultiVectorFactory<SC,LO,GO,NO>::Build(uniqueMap,1);
         RCP<Import<LO,GO,NO> > scatter = ImportFactory<LO,GO,NO>::Build(rhsTmp->getMap(),uniqueMap);
+#else
+        RCP<MultiVector<SC,NO> > rhsTmp = ConvertToXpetra<SC,NO>::ConvertMultiVector(xpetraLib,*rhsEpetra,Comm);
+        RCP<MultiVector<SC,NO> > rhs = MultiVectorFactory<SC,NO>::Build(uniqueMap,1);
+        RCP<Import<NO> > scatter = ImportFactory<NO>::Build(rhsTmp->getMap(),uniqueMap);
+#endif
         rhs->doImport(*rhsTmp,*scatter,ADD);
 
 
@@ -236,8 +263,13 @@ int main(int argc, char *argv[])
         string groupNameMatrix = "Matrix";
         Epetra_CrsMatrix *matrixEpetra;
         hDF5IO->Read(groupNameMatrix,matrixEpetra);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Matrix<SC,LO,GO,NO> > matrixTmp = ConvertToXpetra<SC,LO,GO,NO>::ConvertMatrix(xpetraLib,*matrixEpetra,Comm);
         RCP<Matrix<SC,LO,GO,NO> > matrix = MatrixFactory<SC,LO,GO,NO>::Build(uniqueMap,matrixTmp->getGlobalMaxNumRowEntries());
+#else
+        RCP<Matrix<SC,NO> > matrixTmp = ConvertToXpetra<SC,NO>::ConvertMatrix(xpetraLib,*matrixEpetra,Comm);
+        RCP<Matrix<SC,NO> > matrix = MatrixFactory<SC,NO>::Build(uniqueMap,matrixTmp->getGlobalMaxNumRowEntries());
+#endif
 
         matrix->doImport(*matrixTmp,*scatter,ADD);
         matrix->fillComplete();
@@ -246,19 +278,37 @@ int main(int argc, char *argv[])
         //////////////////////
         // Convert to Thyra //
         //////////////////////
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MultiVector<SC,LO,GO,NO> > xSolution = MultiVectorFactory<SC,LO,GO,NO>::Build(uniqueMap,1);
         RCP<MultiVector<SC,LO,GO,NO> > xRightHandSide = MultiVectorFactory<SC,LO,GO,NO>::Build(uniqueMap,1);
+#else
+        RCP<MultiVector<SC,NO> > xSolution = MultiVectorFactory<SC,NO>::Build(uniqueMap,1);
+        RCP<MultiVector<SC,NO> > xRightHandSide = MultiVectorFactory<SC,NO>::Build(uniqueMap,1);
+#endif
 
         xSolution->putScalar(ScalarTraits<SC>::zero());
         xRightHandSide->putScalar(ScalarTraits<SC>::one());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<CrsMatrixWrap<SC,LO,GO,NO> > tmpCrsWrap = rcp_dynamic_cast<CrsMatrixWrap<SC,LO,GO,NO> >(matrix);
+#else
+        RCP<CrsMatrixWrap<SC,NO> > tmpCrsWrap = rcp_dynamic_cast<CrsMatrixWrap<SC,NO> >(matrix);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Thyra::LinearOpBase<SC> > K_thyra = ThyraUtils<SC,LO,GO,NO>::toThyra(tmpCrsWrap->getCrsMatrix());
+#else
+        RCP<const Thyra::LinearOpBase<SC> > K_thyra = ThyraUtils<SC,NO>::toThyra(tmpCrsWrap->getCrsMatrix());
+#endif
 
         RCP<Thyra::MultiVectorBase<SC> >thyraX =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         rcp_const_cast<Thyra::MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xSolution));
         RCP<const Thyra::MultiVectorBase<SC> >thyraB = ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSide);
+#else
+        rcp_const_cast<Thyra::MultiVectorBase<SC> >(ThyraUtils<SC,NO>::toThyraMultiVector(xSolution));
+        RCP<const Thyra::MultiVectorBase<SC> >thyraB = ThyraUtils<SC,NO>::toThyraMultiVector(xRightHandSide);
+#endif
 
 
         ///////////////////
@@ -288,7 +338,11 @@ int main(int argc, char *argv[])
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "###################################\n# Stratimikos LinearSolverBuilder #\n###################################\n" << endl;
         Stratimikos::DefaultLinearSolverBuilder linearSolverBuilder;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Stratimikos::enableFROSch<LO,GO,NO>(linearSolverBuilder);
+#else
+        Stratimikos::enableFROSch<NO>(linearSolverBuilder);
+#endif
         linearSolverBuilder.setParameterList(parameterList);
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "######################\n# Thyra PrepForSolve #\n######################\n" << endl;

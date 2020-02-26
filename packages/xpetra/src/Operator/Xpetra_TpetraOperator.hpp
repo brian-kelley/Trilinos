@@ -62,21 +62,39 @@
 namespace Xpetra {
  
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class TpetraOperator : public Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node > {
+#else
+  class TpetraOperator : public Operator< Scalar, Node > {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //@{
 
     //! The Map associated with the domain of this operator, which must be compatible with X.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const {
+#else
+    virtual Teuchos::RCP<const Map<Node> > getDomainMap() const {
+#endif
       XPETRA_MONITOR("TpetraOperator::getDomainMap()");
       return toXpetra(op_->getDomainMap());
     }
 
     //! The Map associated with the range of this operator, which must be compatible with Y.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const {
+#else
+    virtual Teuchos::RCP<const Map<Node> > getRangeMap() const {
+#endif
       XPETRA_MONITOR("TpetraOperator::getRangeMap()");
       return toXpetra(op_->getRangeMap());
     }
@@ -88,8 +106,13 @@ namespace Xpetra {
         - if <tt>alpha == 0</tt>, apply() <b>may</b> short-circuit the operator, so that any values in \c X (including NaNs) are ignored.
      */
     virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     apply (const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
            MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+    apply (const MultiVector<Scalar,Node> &X,
+           MultiVector<Scalar,Node> &Y,
+#endif
            Teuchos::ETransp mode = Teuchos::NO_TRANS,
            Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
            Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const {
@@ -120,15 +143,29 @@ namespace Xpetra {
     //@{
 
     //! TpetraOperator constructor to wrap a Tpetra::Operator object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraOperator(const Teuchos::RCP<Tpetra::Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node> > &op) : op_(op) { } //TODO removed const
+#else
+    TpetraOperator(const Teuchos::RCP<Tpetra::Operator< Scalar, Node> > &op) : op_(op) { } //TODO removed const
+#endif
 
     //! Gets the operator out
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node> > getOperator(){return op_;}
+#else
+    RCP<Tpetra::Operator< Scalar, Node> > getOperator(){return op_;}
+#endif
 
     //! Compute a residual R = B - (*this) * X
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void residual(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & X,
                   const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & B,
                   MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & R) const {
+#else
+    void residual(const MultiVector< Scalar, Node > & X,
+                  const MultiVector< Scalar, Node > & B,
+                  MultiVector< Scalar, Node > & R) const {
+#endif
       Tpetra::Details::residual(*op_,toTpetra(X),toTpetra(B),toTpetra(R));
     }
 
@@ -137,7 +174,11 @@ namespace Xpetra {
 
   private:
     //! The Tpetra::Operator which this class wraps.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< Tpetra::Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node> > op_;
+#else
+    RCP< Tpetra::Operator< Scalar, Node> > op_;
+#endif
 
   }; // TpetraOperator class
 
@@ -157,12 +198,20 @@ namespace Xpetra {
     //@{
 
     //! The Map associated with the domain of this operator, which must be compatible with X.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const {
+#else
+    virtual Teuchos::RCP<const Xpetra::Map<Node> > getDomainMap() const {
+#endif
       return Teuchos::null;
     }
 
     //! The Map associated with the range of this operator, which must be compatible with Y.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const {
+#else
+    virtual Teuchos::RCP<const Xpetra::Map<Node> > getRangeMap() const {
+#endif
       return Teuchos::null;
     }
 
@@ -173,8 +222,13 @@ namespace Xpetra {
         - if <tt>alpha == 0</tt>, apply() <b>may</b> short-circuit the operator, so that any values in \c X (including NaNs) are ignored.
      */
     virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     apply (const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
            Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+    apply (const Xpetra::MultiVector<Scalar,Node> &X,
+           Xpetra::MultiVector<Scalar,Node> &Y,
+#endif
            Teuchos::ETransp mode = Teuchos::NO_TRANS,
            Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
            Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const {  }
@@ -199,14 +253,28 @@ namespace Xpetra {
     //@{
 
     //! TpetraOperator constructor to wrap a Tpetra::Operator object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraOperator(const Teuchos::RCP<Tpetra::Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node> > &op) { }
+#else
+    TpetraOperator(const Teuchos::RCP<Tpetra::Operator< Scalar, Node> > &op) { }
+#endif
 
     //! Gets the operator out
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node> > getOperator(){return Teuchos::null;}
+#else
+    RCP<Tpetra::Operator< Scalar, Node> > getOperator(){return Teuchos::null;}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void residual(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & X,
                   const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & B,
                   MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & R) const {
+#else
+    void residual(const MultiVector< Scalar, Node > & X,
+                  const MultiVector< Scalar, Node > & B,
+                  MultiVector< Scalar, Node > & R) const {
+#endif
     }
 
   //@}
@@ -229,12 +297,20 @@ namespace Xpetra {
     //@{
 
     //! The Map associated with the domain of this operator, which must be compatible with X.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const {
+#else
+    virtual Teuchos::RCP<const Xpetra::Map<Node> > getDomainMap() const {
+#endif
       return Teuchos::null;
     }
 
     //! The Map associated with the range of this operator, which must be compatible with Y.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const {
+#else
+    virtual Teuchos::RCP<const Xpetra::Map<Node> > getRangeMap() const {
+#endif
       return Teuchos::null;
     }
 
@@ -245,8 +321,13 @@ namespace Xpetra {
         - if <tt>alpha == 0</tt>, apply() <b>may</b> short-circuit the operator, so that any values in \c X (including NaNs) are ignored.
      */
     virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     apply (const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
            Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+    apply (const Xpetra::MultiVector<Scalar,Node> &X,
+           Xpetra::MultiVector<Scalar,Node> &Y,
+#endif
            Teuchos::ETransp mode = Teuchos::NO_TRANS,
            Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
            Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const {  }
@@ -271,14 +352,28 @@ namespace Xpetra {
     //@{
 
     //! TpetraOperator constructor to wrap a Tpetra::Operator object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraOperator(const Teuchos::RCP<Tpetra::Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node> > &op) { }
+#else
+    TpetraOperator(const Teuchos::RCP<Tpetra::Operator< Scalar, Node> > &op) { }
+#endif
 
     //! Gets the operator out
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node> > getOperator(){return Teuchos::null;}
+#else
+    RCP<Tpetra::Operator< Scalar, Node> > getOperator(){return Teuchos::null;}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void residual(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & X,
                   const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & B,
                   MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & R) const {
+#else
+    void residual(const MultiVector< Scalar, Node > & X,
+                  const MultiVector< Scalar, Node > & B,
+                  MultiVector< Scalar, Node > & R) const {
+#endif
     }
     //@}
 

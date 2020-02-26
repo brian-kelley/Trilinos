@@ -60,44 +60,79 @@ namespace Thyra {
 // Constructors/initializers
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::XpetraLinearOp()
+#else
+template <class Scalar, class Node>
+XpetraLinearOp<Scalar,Node>::XpetraLinearOp()
+#endif
 {}
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initialize(
+#else
+template <class Scalar, class Node>
+void XpetraLinearOp<Scalar,Node>::initialize(
+#endif
   const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
   const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<Xpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &xpetraOperator
+#else
+  const RCP<Xpetra::Operator<Scalar,Node> > &xpetraOperator
+#endif
   )
 {
   initializeImpl(rangeSpace, domainSpace, xpetraOperator);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::constInitialize(
+#else
+template <class Scalar, class Node>
+void XpetraLinearOp<Scalar,Node>::constInitialize(
+#endif
   const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
   const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Xpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &xpetraOperator
+#else
+  const RCP<const Xpetra::Operator<Scalar,Node> > &xpetraOperator
+#endif
   )
 {
   initializeImpl(rangeSpace, domainSpace, xpetraOperator);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Xpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getXpetraOperator()
+#else
+template <class Scalar, class Node>
+RCP<Xpetra::Operator<Scalar,Node> >
+XpetraLinearOp<Scalar,Node>::getXpetraOperator()
+#endif
 {
   return xpetraOperator_.getNonconstObj();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Xpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getConstXpetraOperator() const
+#else
+template <class Scalar, class Node>
+RCP<const Xpetra::Operator<Scalar,Node> >
+XpetraLinearOp<Scalar,Node>::getConstXpetraOperator() const
+#endif
 {
   return xpetraOperator_;
 }
@@ -106,25 +141,46 @@ XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getConstXpetraOperator()
 // Public Overridden functions from LinearOpBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::range() const
+#else
+XpetraLinearOp<Scalar,Node>::range() const
+#endif
 {
   return rangeSpace_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::domain() const
+#else
+XpetraLinearOp<Scalar,Node>::domain() const
+#endif
 {
   return domainSpace_;
 }
 
 // Protected Overridden functions from LinearOpBase
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 bool XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::opSupportedImpl(
+#else
+template <class Scalar, class Node>
+bool XpetraLinearOp<Scalar,Node>::opSupportedImpl(
+#endif
   Thyra::EOpTransp M_trans) const
 {
   if (is_null(xpetraOperator_))
@@ -143,8 +199,13 @@ bool XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::opSupportedImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
+#else
+template <class Scalar, class Node>
+void XpetraLinearOp<Scalar,Node>::applyImpl(
+#endif
   const Thyra::EOpTransp M_trans,
   const Thyra::MultiVectorBase<Scalar> &X_in,
   const Teuchos::Ptr<Thyra::MultiVectorBase<Scalar> > &Y_inout,
@@ -158,10 +219,17 @@ void XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
   TEUCHOS_TEST_FOR_EXCEPTION(getConstXpetraOperator() == Teuchos::null, MueLu::Exceptions::RuntimeError, "XpetraLinearOp::applyImpl: internal Xpetra::Operator is null.");
   RCP< const Teuchos::Comm< int > > comm = getConstXpetraOperator()->getRangeMap()->getComm();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tX_in =
       Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toXpetra(rcpFromRef(X_in), comm);
   RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tY_inout =
       Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toXpetra(rcpFromPtr(Y_inout), comm);
+#else
+  const RCP<const Xpetra::MultiVector<Scalar,Node> > tX_in =
+      Xpetra::ThyraUtils<Scalar,Node>::toXpetra(rcpFromRef(X_in), comm);
+  RCP<Xpetra::MultiVector<Scalar,Node> > tY_inout =
+      Xpetra::ThyraUtils<Scalar,Node>::toXpetra(rcpFromPtr(Y_inout), comm);
+#endif
   Teuchos::ETransp transp;
   switch (M_trans) {
     case NOTRANS:   transp = Teuchos::NO_TRANS;   break;
@@ -173,7 +241,11 @@ void XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
   xpetraOperator_->apply(*tX_in, *tY_inout, transp, alpha, beta);
 
   // check whether Y is a product vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal,Node> > rgMapExtractor = Teuchos::null;
+#else
+  RCP<const Xpetra::MapExtractor<Scalar,Node> > rgMapExtractor = Teuchos::null;
+#endif
   Teuchos::Ptr<Thyra::ProductMultiVectorBase<Scalar> > prodY_inout =
       Teuchos::ptr_dynamic_cast<Thyra::ProductMultiVectorBase<Scalar> >(Y_inout);
   if(prodY_inout != Teuchos::null) {
@@ -183,15 +255,30 @@ void XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
 
     // get underlying fine level operator (BlockedCrsMatrix)
     // to extract the range MapExtractor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::XpetraOperator<Scalar, LocalOrdinal, GlobalOrdinal,Node> > mueXop =
         Teuchos::rcp_dynamic_cast<MueLu::XpetraOperator<Scalar, LocalOrdinal, GlobalOrdinal,Node> >(xpetraOperator_.getNonconstObj());
+#else
+    RCP<MueLu::XpetraOperator<Scalar,Node> > mueXop =
+        Teuchos::rcp_dynamic_cast<MueLu::XpetraOperator<Scalar,Node> >(xpetraOperator_.getNonconstObj());
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal,Node> > A =
         mueXop->GetHierarchy()->GetLevel(0)->template Get<RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal,Node> > >("A");
+#else
+    RCP<Xpetra::Matrix<Scalar,Node> > A =
+        mueXop->GetHierarchy()->GetLevel(0)->template Get<RCP<Xpetra::Matrix<Scalar,Node> > >("A");
+#endif
     TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(A));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal,Node> > bA =
         Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal,Node> >(A);
+#else
+    RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bA =
+        Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar,Node> >(A);
+#endif
     TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(bA));
 
     rgMapExtractor = bA->getRangeMapExtractor();
@@ -203,9 +290,17 @@ void XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
 // private
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 template<class XpetraOperator_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void XpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initializeImpl(
+#else
+void XpetraLinearOp<Scalar,Node>::initializeImpl(
+#endif
   const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
   const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
   const RCP<XpetraOperator_t> &xpetraOperator

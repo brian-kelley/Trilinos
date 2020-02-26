@@ -75,11 +75,23 @@ namespace Amesos2 {
 
   // Specialize our specialization for create_solver_with_supported_type
   // to pass the scalar type directly to Basker
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template < class ST, class LO, class GO, class NO >
   struct create_mp_vector_solver_impl < Basker, ST, LO, GO, NO > {
+#else
+  template < class ST, class NO >
+  struct create_mp_vector_solver_impl < Basker, ST,NO > {
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Sacado::MP::Vector<ST> SC;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<SC,LO,GO,NO> Matrix;
     typedef Tpetra::MultiVector<SC,LO,GO,NO> Vector;
+#else
+    typedef Tpetra::CrsMatrix<SC,NO> Matrix;
+    typedef Tpetra::MultiVector<SC,NO> Vector;
+#endif
     static Teuchos::RCP<Solver<Matrix,Vector> >
     apply(Teuchos::RCP<const Matrix> A,
           Teuchos::RCP<Vector>       X,
@@ -94,8 +106,13 @@ namespace Amesos2 {
       (void)same_scalar_assertion; // This stops the compiler from warning about unused declared variables
 
       // If our assertion did not fail, then create and return a new solver
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::CrsMatrix<Sacado::MP::Vector<ST>,LO,GO,NO> Matrix;
       typedef Tpetra::MultiVector<Sacado::MP::Vector<ST>,LO,GO,NO> Vector;
+#else
+      typedef Tpetra::CrsMatrix<Sacado::MP::Vector<ST>,NO> Matrix;
+      typedef Tpetra::MultiVector<Sacado::MP::Vector<ST>,NO> Vector;
+#endif
       return Teuchos::rcp( new Basker<Matrix,Vector>(A, X, B) );
     }
   };

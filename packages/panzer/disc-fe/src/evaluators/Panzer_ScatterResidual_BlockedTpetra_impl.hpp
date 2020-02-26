@@ -68,7 +68,11 @@
 #include "Teuchos_FancyOStream.hpp"
 
 template <typename EvalT,typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_BlockedTpetra<EvalT,TRAITS,LO,GO,NodeT>::
+#else
+panzer::ScatterResidual_BlockedTpetra<EvalT,TRAITS,NodeT>::
+#endif
 ScatterResidual_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & /* indexer */,
                               const Teuchos::ParameterList& p)
 { 
@@ -102,7 +106,11 @@ ScatterResidual_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & /* i
 // **********************************************************************
 
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 ScatterResidual_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & indexer,
                               const Teuchos::ParameterList& p)
   : globalIndexer_(indexer) 
@@ -142,7 +150,11 @@ ScatterResidual_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & inde
 
 // **********************************************************************
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Residual,TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Residual,TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData d, 
 		      PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -182,7 +194,11 @@ postRegistrationSetup(typename TRAITS::SetupData d,
 
 // **********************************************************************
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
    // extract linear object container
@@ -191,7 +207,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Residual,TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Residual,TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 { 
   using Teuchos::RCP;
@@ -211,7 +231,11 @@ evaluateFields(typename TRAITS::EvalData workset)
       currentWorksetLIDSubBlock = productVectorBlockIndex_[fieldIndex];
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const auto& tpetraResidual = *((rcp_dynamic_cast<Thyra::TpetraVector<RealType,LO,GO,NodeT>>(thyraBlockResidual->getNonconstVectorBlock(productVectorBlockIndex_[fieldIndex]),true))->getTpetraVector());
+#else
+    const auto& tpetraResidual = *((rcp_dynamic_cast<Thyra::TpetraVector<RealType,NodeT>>(thyraBlockResidual->getNonconstVectorBlock(productVectorBlockIndex_[fieldIndex]),true))->getTpetraVector());
+#endif
     const auto& kokkosResidual = tpetraResidual.template getLocalView<PHX::mem_space>();
 
     // Class data fields for lambda capture
@@ -233,7 +257,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 // **********************************************************************
 
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 ScatterResidual_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & indexer,
                               const Teuchos::ParameterList& p)
    : globalIndexer_(indexer)
@@ -273,7 +301,11 @@ ScatterResidual_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & inde
 
 // **********************************************************************
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData d,
 		      PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -341,7 +373,11 @@ postRegistrationSetup(typename TRAITS::SetupData d,
 
 // **********************************************************************
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
    using Teuchos::RCP;
@@ -358,7 +394,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterResidual_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 { 
   using Teuchos::RCP;
@@ -388,7 +428,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 
   for (int row=0; row < numFieldBlocks; ++row) {
     for (int col=0; col < numFieldBlocks; ++col) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const auto thyraTpetraOperator = rcp_dynamic_cast<Thyra::TpetraLinearOp<double,LO,GO,NodeT>>(Jac->getNonconstBlock(row,col),false);
+#else
+      const auto thyraTpetraOperator = rcp_dynamic_cast<Thyra::TpetraLinearOp<double,NodeT>>(Jac->getNonconstBlock(row,col),false);
+#endif
       if (nonnull(thyraTpetraOperator)) {
 
         // HACK to enforce views in the CrsGraph to be
@@ -405,7 +449,11 @@ evaluateFields(typename TRAITS::EvalData workset)
         // Instead do this
         {
           // Grab the local managed matrix and graph
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           const auto tpetraCrsMatrix = rcp_dynamic_cast<Tpetra::CrsMatrix<double,LO,GO,NodeT>>(thyraTpetraOperator->getTpetraOperator(),true);
+#else
+          const auto tpetraCrsMatrix = rcp_dynamic_cast<Tpetra::CrsMatrix<double,NodeT>>(thyraTpetraOperator->getTpetraOperator(),true);
+#endif
           const auto managedMatrix = tpetraCrsMatrix->getLocalMatrix();
           const auto managedGraph = managedMatrix.graph;
           
@@ -451,7 +499,11 @@ evaluateFields(typename TRAITS::EvalData workset)
     const int blockRowIndex = productVectorBlockIndex_[fieldIndex];
     typename Tpetra::Vector<double,LO,GO,PHX::Device>::dual_view_type::t_dev kokkosResidual;
     if (haveResidual) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const auto& tpetraResidual = *((rcp_dynamic_cast<Thyra::TpetraVector<RealType,LO,GO,NodeT>>(thyraBlockResidual->getNonconstVectorBlock(blockRowIndex),true))->getTpetraVector());
+#else
+      const auto& tpetraResidual = *((rcp_dynamic_cast<Thyra::TpetraVector<RealType,NodeT>>(thyraBlockResidual->getNonconstVectorBlock(blockRowIndex),true))->getTpetraVector());
+#endif
       kokkosResidual = tpetraResidual.template getLocalView<PHX::mem_space>();
     }
 

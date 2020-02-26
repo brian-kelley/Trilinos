@@ -55,7 +55,11 @@ namespace panzer {
 // **************************************************************
 
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>::
+#else
+ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,NodeT>::
+#endif
 ScatterResidual_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & /* indexer */,
                               const Teuchos::ParameterList& p) 
 {
@@ -70,7 +74,11 @@ ScatterResidual_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & /* i
   
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>::
+#else
+ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* vm */) 
 {
@@ -78,14 +86,22 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>::
+#else
+ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData /* d */) 
 {
 }
 
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>::
+#else
+ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData /* workset */)
 {
   TEUCHOS_TEST_FOR_EXCEPTION(true,std::logic_error,

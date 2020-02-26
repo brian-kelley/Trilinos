@@ -68,11 +68,19 @@ namespace Tpetra {
   /// This specialization works be extracting the underlying array within the
   /// multivector and converting to a standard scalar type.
   template <class Storage, class LO, class GO, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class TsqrAdaptor< Tpetra::MultiVector< Sacado::MP::Vector<Storage>,
                                           LO, GO, Node > > :
+#else
+  class TsqrAdaptor< Tpetra::MultiVector< Sacado::MP::Vector<Storage>,Node > > :
+#endif
     public Teuchos::ParameterListAcceptorDefaultBase {
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector< Sacado::MP::Vector<Storage>, LO, GO, Node > MV;
+#else
+    typedef Tpetra::MultiVector< Sacado::MP::Vector<Storage>,Node > MV;
+#endif
     typedef typename MV::scalar_type mp_scalar_type;
 
     // For Sacado::MP::Vector< Storage<Ordinal,Scalar,Device> > this is Scalar

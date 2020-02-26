@@ -106,8 +106,13 @@
 // FIXME
 #include "MueLu_UseDefaultTypes.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node> >
+#endif
 ReadBinary(const std::string& fileName, const Teuchos::RCP<const Teuchos::Comm<int> >& comm) {
   typedef Scalar        SC;
   typedef LocalOrdinal  LO;
@@ -123,8 +128,13 @@ ReadBinary(const std::string& fileName, const Teuchos::RCP<const Teuchos::Comm<i
   ifs.read(reinterpret_cast<char*>(&n),   sizeof(n));
   ifs.read(reinterpret_cast<char*>(&nnz), sizeof(nnz));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map      <LO,GO,NO>       tMap;
   typedef Tpetra::CrsMatrix<SC,LO,GO,NO>    tCrsMatrix;
+#else
+  typedef Tpetra::Map      <NO>       tMap;
+  typedef Tpetra::CrsMatrix<SC,NO>    tCrsMatrix;
+#endif
 
   GO indexBase = 0;
   Teuchos::RCP<tMap>       rowMap = rcp(new tMap(m, indexBase, comm)), rangeMap  = rowMap;
@@ -220,11 +230,19 @@ int main(int argc, char *argv[]) {
       case Teuchos::CommandLineProcessor::PARSE_SUCCESSFUL:          break;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<SC,LO,GO,NO>        tCrsMatrix;
     typedef Tpetra::Operator<SC,LO,GO,NO>         tOperator;
     typedef Tpetra::MultiVector<SC,LO,GO,NO>      tMultiVector;
     typedef Tpetra::Map<LO,GO,NO>                 tMap;
     typedef Thyra::TpetraVectorSpace<SC,LO,GO,NO> THTP_Vs;
+#else
+    typedef Tpetra::CrsMatrix<SC,NO>        tCrsMatrix;
+    typedef Tpetra::Operator<SC,NO>         tOperator;
+    typedef Tpetra::MultiVector<SC,NO>      tMultiVector;
+    typedef Tpetra::Map<NO>                 tMap;
+    typedef Thyra::TpetraVectorSpace<SC,NO> THTP_Vs;
+#endif
 
     // Read data from files
     RCP<tOperator> A11, A119Pt, A21, A12;
@@ -243,11 +261,19 @@ int main(int argc, char *argv[]) {
         }
       } else {
         filename = prefix + "A.dat";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         A11     = ReadBinary<SC,LO,GO,NO>(filename.c_str(), comm);
+#else
+        A11     = ReadBinary<SC,NO>(filename.c_str(), comm);
+#endif
         A119Pt  = A11;
         if (use9ptPatA) {
           filename = prefix + "AForPat.dat";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           A119Pt = ReadBinary<SC,LO,GO,NO>(filename.c_str(), comm);
+#else
+          A119Pt = ReadBinary<SC,NO>(filename.c_str(), comm);
+#endif
         }
       }
       filename = prefix + "B.mm";
@@ -263,7 +289,11 @@ int main(int argc, char *argv[]) {
 
       // For now, we assume that p2v maps local pressure DOF to a local x-velocity DOF
       filename = prefix + "p2vMap.mm";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ArrayRCP<const SC> slop = Xpetra::IO<SC,LO,GO,NO>::ReadMultiVector(filename.c_str(),
+#else
+      ArrayRCP<const SC> slop = Xpetra::IO<SC,NO>::ReadMultiVector(filename.c_str(),
+#endif
                                                         Xpetra::toXpetra(A21->getRangeMap()))->getData(0);
       p2vMap.resize(slop.size());
       for (int i = 0; i < slop.size(); i++)
@@ -334,7 +364,11 @@ int main(int argc, char *argv[]) {
     //Thyra::addMueLuToStratimikosBuilder(linearSolverBuilder);
 
     Stratimikos::enableMueLu(linearSolverBuilder);                                          // Epetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Stratimikos::enableMueLuTpetraQ2Q1<LO,GO,NO>(linearSolverBuilder, "MueLu-TpetraQ2Q1");  // Tpetra
+#else
+    Stratimikos::enableMueLuTpetraQ2Q1<NO>(linearSolverBuilder, "MueLu-TpetraQ2Q1");  // Tpetra
+#endif
 
     linearSolverBuilder.setParameterList(stratimikosList);
     RCP<const LOWSFB> lowsFactory = Thyra::createLinearSolveStrategy(linearSolverBuilder);
@@ -351,7 +385,11 @@ int main(int argc, char *argv[]) {
     if (!binary)
       A = Reader<tCrsMatrix>::readSparseFile((prefix + "BigA.mm").c_str(), fullMap, fullMap, fullMap, fullMap, true, true, false);
     else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       A = ReadBinary<SC,LO,GO,NO>((prefix + "BigA.dat").c_str(), comm);
+#else
+      A = ReadBinary<SC,NO>((prefix + "BigA.dat").c_str(), comm);
+#endif
 
     const RCP<Thyra::LinearOpBase<SC> > thA = Thyra::createLinearOp(A);
     Thyra::initializeOp<SC>(*lowsFactory, thA, nsA.ptr());

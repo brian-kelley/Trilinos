@@ -99,7 +99,11 @@ benchmarkTpetraImport (ArrayView<const GO> srcGlobalElts,
 {
   using import_type = Tpetra::Import<LO, GO>;
   using map_type = Tpetra::Map<LO, GO>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using vector_type = Tpetra::Vector<ST, LO, GO>;
+#else
+  using vector_type = Tpetra::Vector<ST>;
+#endif
   const global_size_t INVALID =
     Teuchos::OrdinalTraits<global_size_t>::invalid ();
 

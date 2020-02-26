@@ -364,7 +364,11 @@ int main(int argc, char *argv[]) {
 #endif
 
     // Create application
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef twoD_diffusion_problem<Scalar,MeshScalar,BasisScalar,LocalOrdinal,GlobalOrdinal,Node> problem_type;
+#else
+    typedef twoD_diffusion_problem<Scalar,MeshScalar,BasisScalar,Node> problem_type;
+#endif
     RCP<problem_type> model = 
       rcp(new problem_type(teuchos_app_comm, n, num_KL, s, mu, 
                nonlinear_expansion, symmetric));
@@ -401,7 +405,11 @@ int main(int argc, char *argv[]) {
     }
 
     // Create preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tprec;
+#else
+    typedef Ifpack2::Preconditioner<Scalar,Node> Tprec;
+#endif
     Teuchos::RCP<Tprec> M;
     if (prec_method != NONE) {
       ParameterList precParams;
@@ -457,8 +465,13 @@ int main(int argc, char *argv[]) {
     belosParams->set("Output Style", 1);
     belosParams->set("Output Frequency", 1);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
     typedef Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> OP;
+#else
+    typedef Tpetra::MultiVector<Scalar,Node> MV;
+    typedef Tpetra::Operator<Scalar,Node> OP;
+#endif
     typedef Belos::OperatorTraits<Scalar,MV,OP> BOPT;
     typedef Belos::MultiVecTraits<double,MV> BMVT;
     typedef Belos::LinearProblem<double,MV,OP> BLinProb;

@@ -56,27 +56,52 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   ThresholdAFilterFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ThresholdAFilterFactory(const std::string& ename, const Scalar threshold, const bool keepDiagonal, const GlobalOrdinal expectedNNZperRow)
+#else
+  template <class Scalar, class Node>
+  ThresholdAFilterFactory<Scalar, Node>::ThresholdAFilterFactory(const std::string& ename, const Scalar threshold, const bool keepDiagonal, const GlobalOrdinal expectedNNZperRow)
+#endif
     : varName_(ename), threshold_(threshold), keepDiagonal_(keepDiagonal), expectedNNZperRow_(expectedNNZperRow)
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   ThresholdAFilterFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~ThresholdAFilterFactory() {}
+#else
+  template <class Scalar, class Node>
+  ThresholdAFilterFactory<Scalar, Node>::~ThresholdAFilterFactory() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ThresholdAFilterFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ThresholdAFilterFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     Input(currentLevel, varName_);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ThresholdAFilterFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ThresholdAFilterFactory<Scalar, Node>::
+#endif
   Build (Level & currentLevel) const
   {
     FactoryMonitor m (*this, "A filter (thresholding)", currentLevel);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> OMatrix; //TODO
     typedef Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> CrsOMatrix; //TODO
+#else
+    typedef Xpetra::Matrix<Scalar, Node> OMatrix; //TODO
+    typedef Xpetra::CrsMatrixWrap<Scalar, Node> CrsOMatrix; //TODO
+#endif
 
     RCP<OMatrix> Ain = Get< RCP<OMatrix> >(currentLevel, varName_);
 

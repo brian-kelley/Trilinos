@@ -64,10 +64,18 @@ namespace Tpetra {
 /// \return Input to leftAndOrRightScaleCrsMatrix (which see).  The
 ///   result is only safe to use for left scaling, not for right
 ///   scaling.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 Details::EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                            typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeRowOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A);
+#else
+computeRowOneNorms (const Tpetra::RowMatrix<SC, NT>& A);
+#endif
 
 /// \brief Compute global row and column one-norms ("row sums" and
 ///   "column sums") of the input sparse matrix A, in a way suitable
@@ -95,10 +103,18 @@ computeRowOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A);
 ///   norms separately from row norms.
 ///
 /// \return Input to leftAndOrRightScaleCrsMatrix (which see).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 Details::EquilibrationInfo<typename Kokkos::ArithTraits<SC>::val_type,
                            typename NT::device_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 computeRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, LO, GO, NT>& A,
+#else
+computeRowAndColumnOneNorms (const Tpetra::RowMatrix<SC, NT>& A,
+#endif
                              const bool assumeSymmetric);
 
 } // namespace Tpetra

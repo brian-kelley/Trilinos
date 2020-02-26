@@ -63,13 +63,21 @@ namespace { // (anonymous)
 
   // Issue 510 involves creating a Node instance indirectly through
   // Map with a default 'node' argument.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
+#else
+  template<class NT>
+#endif
   void
   testCreatingNodeWithMap (bool& success,
                            Teuchos::FancyOStream& out,
                            const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+    typedef Tpetra::Map<NT> map_type;
+#endif
 
     const size_t lclNumInds = 5;
     const Tpetra::global_size_t gblNumInds = comm->getSize () * lclNumInds;
@@ -116,7 +124,11 @@ namespace { // (anonymous)
       // This function does an all-reduce on every call to check
       // success on all processes.  Thus, we don't need an all-reduce
       // at the end of the unit test.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       testCreatingNodeWithMap<LO, GO, NT> (success, out, comm);
+#else
+      testCreatingNodeWithMap<NT> (success, out, comm);
+#endif
     }
     out << "All done!" << endl;
   }

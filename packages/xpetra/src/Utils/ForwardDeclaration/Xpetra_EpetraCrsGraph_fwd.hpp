@@ -47,7 +47,11 @@
 #define XPETRA_EPETRACRSGRAPH_FWD_HPP
 
 namespace Xpetra {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GO, class NO> class EpetraCrsGraphT;
+#else
+  template<class NO> class EpetraCrsGraphT;
+#endif
   typedef EpetraCrsGraphT<int, EpetraNode> EpetraCrsGraph;
 }
 

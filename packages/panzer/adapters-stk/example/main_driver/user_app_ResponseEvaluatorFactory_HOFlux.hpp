@@ -11,12 +11,20 @@ namespace user_app {
 /** This class defines a response based on a functional. */
   
 template <typename EvalT,typename LO,typename GO> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ResponseEvaluatorFactory_HOFlux : public panzer::ResponseEvaluatorFactory_Functional<EvalT,LO,GO> 
+#else
+class ResponseEvaluatorFactory_HOFlux : public panzer::ResponseEvaluatorFactory_Functional<EvalT> 
+#endif
 {
 public:
 
    ResponseEvaluatorFactory_HOFlux(MPI_Comm comm, int cubatureDegree)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      : panzer::ResponseEvaluatorFactory_Functional<EvalT,LO,GO>(comm,cubatureDegree,false)
+#else
+     : panzer::ResponseEvaluatorFactory_Functional<EvalT>(comm,cubatureDegree,false)
+#endif
    {}
 
    virtual ~ResponseEvaluatorFactory_HOFlux() {}

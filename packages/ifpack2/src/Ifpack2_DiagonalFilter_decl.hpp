@@ -81,15 +81,27 @@ public:
   typedef typename MatrixType::node_type Node;
   typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType magnitudeType;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::mag_type mag_type;
+#else
+  typedef typename Tpetra::RowMatrix<Scalar, Node>::mag_type mag_type;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static_assert(std::is_same<MatrixType, Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >::value, "Ifpack2::DiagonalFilter: The template parameter MatrixType must be a Tpetra::RowMatrix specialization.  Please don't use Tpetra::CrsMatrix (a subclass of Tpetra::RowMatrix) here anymore.  The constructor can take either a RowMatrix or a CrsMatrix just fine.");
+#else
+  static_assert(std::is_same<MatrixType, Tpetra::RowMatrix<Scalar, Node> >::value, "Ifpack2::DiagonalFilter: The template parameter MatrixType must be a Tpetra::RowMatrix specialization.  Please don't use Tpetra::CrsMatrix (a subclass of Tpetra::RowMatrix) here anymore.  The constructor can take either a RowMatrix or a CrsMatrix just fine.");
+#endif
 
   //! \name Constructor & destructor methods
   //@{
 
   //! Constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   explicit DiagonalFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& Matrix,
+#else
+  explicit DiagonalFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> >& Matrix,
+#endif
                           magnitudeType AbsoluteThreshold,
                           magnitudeType RelativeThreshold);
 
@@ -106,19 +118,39 @@ public:
 
 
   //! Returns the Map that describes the row distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRowMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getRowMap() const;
+#endif
 
   //! \brief Returns the Map that describes the column distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getColMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getColMap() const;
+#endif
 
   //! Returns the Map that describes the domain distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getDomainMap() const;
+#endif
 
   //! \brief Returns the Map that describes the range distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getRangeMap() const;
+#endif
 
   //! Returns the RowGraph associated with this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::RowGraph<LocalOrdinal,GlobalOrdinal,Node> > getGraph() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::RowGraph<Node> > getGraph() const;
+#endif
 
   //! Returns the number of global rows in this matrix.
   virtual global_size_t getGlobalNumRows() const;
@@ -238,7 +270,11 @@ public:
   //! \brief Get a copy of the diagonal entries owned by this node, with local row indices.
   /*! Returns a distributed Vector object partitioned according to this matrix's row map, containing the
     the zero and non-zero diagonals owned by this node. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void getLocalDiagCopy(Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &diag) const;
+#else
+  virtual void getLocalDiagCopy(Tpetra::Vector<Scalar,Node> &diag) const;
+#endif
 
   //@}
 
@@ -254,7 +290,11 @@ public:
    *
    * \param x A vector to left scale this matrix.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void leftScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x);
+#else
+  virtual void leftScale(const Tpetra::Vector<Scalar, Node>& x);
+#endif
 
   /**
    * \brief Scales the RowMatrix on the right with the Vector x.
@@ -265,7 +305,11 @@ public:
    *
    * \param x A vector to right scale this matrix.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void rightScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x);
+#else
+  virtual void rightScale(const Tpetra::Vector<Scalar, Node>& x);
+#endif
 
   //! Returns the Frobenius norm of the matrix.
   /** Computes and returns the Frobenius norm of the matrix, defined as:
@@ -281,8 +325,13 @@ public:
 
     This is analagous to the *Multiply* function in Ifpack, not the *Apply*
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void apply(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
                      Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+  virtual void apply(const Tpetra::MultiVector<Scalar,Node> &X,
+                     Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
                      Teuchos::ETransp mode = Teuchos::NO_TRANS,
                      Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
                      Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const;
@@ -294,7 +343,11 @@ public:
 private:
 
   //! Pointer to the matrix to be filtered
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > A_;
+#else
+  Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> > A_;
+#endif
   //! This value (times the sgn(A(i,i)) is added to the diagonal elements
   magnitudeType  AbsoluteThreshold_;
   //! Multiplies A(i,i) by this value.
@@ -302,7 +355,11 @@ private:
   //! Stores the position of the diagonal element, or -1 if not present.
   std::vector<LocalOrdinal> pos_;
   //! Stores as additional diagonal contribution due to the filter.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > val_;
+#else
+  Teuchos::RCP<Tpetra::Vector<Scalar,Node> > val_;
+#endif
 
 };// class DiagonalFilter
 

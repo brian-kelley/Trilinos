@@ -51,8 +51,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  LocalLexicographicIndexManager<Node>::
+#endif
   LocalLexicographicIndexManager(const RCP<const Teuchos::Comm<int> > comm, const bool coupled,
                                  const int NumDimensions, const int interpolationOrder,
                                  const int MyRank, const int NumRanks,
@@ -104,15 +109,25 @@ namespace MueLu {
     computeCoarseLocalLexicographicData();
   } // Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   computeGlobalCoarseParameters() {
     this->gNumCoarseNodes10 = this->gCoarseNodesPerDir[0]*this->gCoarseNodesPerDir[1];
     this->gNumCoarseNodes   = this->gNumCoarseNodes10*this->gCoarseNodesPerDir[2];
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getGhostedNodesData(const RCP<const Map>/* fineMap */,
                       Array<LO>& ghostedNodeCoarseLIDs,
                       Array<int>& ghostedNodeCoarsePIDs,
@@ -186,8 +201,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template<class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getCoarseNodesData(const RCP<const Map> fineCoordinatesMap,
                      Array<GO>& coarseNodeCoarseGIDs,
                      Array<GO>& coarseNodeFineGIDs) const {
@@ -229,8 +249,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template<class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getGIDLocalLexicographic(const LO iGhosted, const LO jGhosted, const LO kGhosted,
                            const Array<LO> coarseNodeFineIndices,
                            GO& myGID, LO& myPID, LO& myLID) const {
@@ -295,8 +320,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   sortLocalLexicographicData() {
 
     std::sort(meshData.begin(), meshData.end(),
@@ -358,8 +388,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   computeCoarseLocalLexicographicData() {
     Array<LO> rankOffset(3);
     for(int rank = 0; rank < numRanks; ++rank) {
@@ -388,17 +423,32 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   std::vector<std::vector<GlobalOrdinal> > LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  std::vector<std::vector<GlobalOrdinal> > LocalLexicographicIndexManager<Node>::
+#endif
   getCoarseMeshData() const {return coarseMeshData;}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getFineNodeGlobalTuple(const GO /* myGID */, GO& /* i */, GO& /* j */, GO& /* k */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getFineNodeLocalTuple(const LO myLID, LO& i, LO& j, LO& k) const {
     LO tmp;
     k   = myLID / this->lNumFineNodes10;
@@ -407,8 +457,13 @@ namespace MueLu {
     i   = tmp   % this->lFineNodesPerDir[0];
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getFineNodeGhostedTuple(const LO myLID, LO& i, LO& j, LO& k) const {
     LO tmp;
     k   = myLID / this->lNumFineNodes10;
@@ -421,23 +476,43 @@ namespace MueLu {
     i += this->offsets[0];
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getFineNodeGID(const GO /* i */, const GO /* j */, const GO /* k */, GO& /* myGID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getFineNodeLID(const LO /* i */, const LO /* j */, const LO /* k */, LO& /* myLID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getCoarseNodeGlobalTuple(const GO /* myGID */, GO& /* i */, GO& /* j */, GO& /* k */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getCoarseNodeLocalTuple(const LO myLID, LO& i, LO& j, LO& k) const {
     LO tmp;
     k   = myLID / this->lNumCoarseNodes10;
@@ -446,24 +521,44 @@ namespace MueLu {
     i   = tmp % this->lCoarseNodesPerDir[0];
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getCoarseNodeGID(const GO /* i */, const GO /* j */, const GO /* k */, GO& /* myGID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getCoarseNodeLID(const LO /* i */, const LO /* j */, const LO /* k */, LO& /* myLID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getCoarseNodeGhostedLID(const LO i, const LO j, const LO k, LO& myLID) const {
     myLID = k*this->numGhostedNodes10 + j*this->ghostedNodesPerDir[0] + i;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getCoarseNodeFineLID(const LO i, const LO j, const LO k, LO& myLID) const {
     // Assumptions: (i,j,k) is a tuple on the coarse mesh
     //              myLID is the corresponding local ID on the fine mesh
@@ -483,13 +578,23 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getGhostedNodeFineLID(const LO /* i */, const LO /* j */, const LO /* k */, LO& /* myLID */) const {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalLexicographicIndexManager<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void LocalLexicographicIndexManager<Node>::
+#endif
   getGhostedNodeCoarseLID(const LO /* i */, const LO /* j */, const LO /* k */, LO& /* myLID */) const {
   }
 

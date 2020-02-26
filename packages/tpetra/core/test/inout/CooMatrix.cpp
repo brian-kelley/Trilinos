@@ -82,7 +82,11 @@ testCooMatrix (bool& success,
   }
 
   out << "CooMatrix default constructor" << endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CooMatrix<SC, LO, GO> A_in;
+#else
+  CooMatrix<SC> A_in;
+#endif
   TEST_ASSERT( A_in.getMap ().is_null () );
   TEST_EQUALITY( A_in.getLclNumEntries (), static_cast<std::size_t> (0) );
 
@@ -132,7 +136,11 @@ testCooMatrix (bool& success,
   }
 
   out << "Create output CooMatrix" << endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   CooMatrix<SC, LO, GO> A_out (outMap);
+#else
+  CooMatrix<SC> A_out (outMap);
+#endif
   TEST_EQUALITY( A_out.getLclNumEntries (), static_cast<std::size_t> (0) );
   TEST_ASSERT( ! A_out.getMap ().is_null () );
   const bool outMapsSame = outMap->isSameAs (* (A_out.getMap ()));

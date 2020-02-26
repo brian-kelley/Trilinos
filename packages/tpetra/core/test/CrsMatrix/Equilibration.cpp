@@ -96,12 +96,22 @@ struct NaughtyValues<SC, true> {
   }
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 Tpetra::Vector<SC, LO, GO, NT>
 createVectorFromCopyOf1DView (const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& map,
+#else
+template<class SC, class NT>
+Tpetra::Vector<SC, NT>
+createVectorFromCopyOf1DView (const Teuchos::RCP<const Tpetra::Map<NT> >& map,
+#endif
                               const Kokkos::View<SC*, typename NT::device_type>& inputView)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using dual_view_type = typename Tpetra::Vector<SC, LO, GO, NT>::dual_view_type;
+#else
+  using dual_view_type = typename Tpetra::Vector<SC, NT>::dual_view_type;
+#endif
   using dev_memory_space = typename NT::device_type::memory_space;
 
   dual_view_type dv ("MV::DualView", inputView.extent (0), 1);
@@ -111,7 +121,11 @@ createVectorFromCopyOf1DView (const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >
   auto outputView_1d = Kokkos::subview (outputView_2d, Kokkos::ALL (), 0);
 
   Kokkos::deep_copy (outputView_1d, inputView);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Tpetra::Vector<SC, LO, GO, NT> (map, dv);
+#else
+  return Tpetra::Vector<SC, NT> (map, dv);
+#endif
 }
 
 template<class ValueType>
@@ -137,12 +151,22 @@ near (const ValueType& x,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 Teuchos::RCP<Tpetra::CrsMatrix<SC, LO, GO, NT> >
 deepCopyFillCompleteCrsMatrix (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A)
+#else
+template<class SC, class NT>
+Teuchos::RCP<Tpetra::CrsMatrix<SC, NT> >
+deepCopyFillCompleteCrsMatrix (const Tpetra::CrsMatrix<SC, NT>& A)
+#endif
 {
   using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
 
   TEUCHOS_TEST_FOR_EXCEPTION
     (! A.isFillComplete (), std::invalid_argument,
@@ -155,12 +179,21 @@ deepCopyFillCompleteCrsMatrix (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A)
   return A_copy;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 testCrsMatrixEquality (bool& success,
                        Teuchos::FancyOStream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        const Tpetra::CrsMatrix<SC, LO, GO, NT>& A_expected,
                        const Tpetra::CrsMatrix<SC, LO, GO, NT>& A_actual)
+#else
+                       const Tpetra::CrsMatrix<SC, NT>& A_expected,
+                       const Tpetra::CrsMatrix<SC, NT>& A_actual)
+#endif
 {
   using std::endl;
   using mag_type = typename Kokkos::ArithTraits<SC>::mag_type;
@@ -221,11 +254,23 @@ testCrsMatrixEquality (bool& success,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 struct EquilibrationTest {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using crs_graph_type = Tpetra::CrsGraph<LO, GO, NT>;
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  using map_type = Tpetra::Map<NT>;
+  using crs_graph_type = Tpetra::CrsGraph<NT>;
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using val_type = typename Kokkos::ArithTraits<SC>::val_type;
   using mag_type = typename Kokkos::ArithTraits<val_type>::mag_type;
 
@@ -250,11 +295,19 @@ struct EquilibrationTest {
   bool gblFoundZeroRowNorm;
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
 testEquilibration (Teuchos::FancyOStream& out,
                    bool& success,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    const EquilibrationTest<SC, LO, GO, NT>& test,
+#else
+                   const EquilibrationTest<SC, NT>& test,
+#endif
                    const bool assumeSymmetric)
 {
   using Teuchos::outArg;
@@ -262,8 +315,13 @@ testEquilibration (Teuchos::FancyOStream& out,
   using Teuchos::REDUCE_MIN;
   using Teuchos::reduceAll;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using row_matrix_type = Tpetra::RowMatrix<SC, LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+  using row_matrix_type = Tpetra::RowMatrix<SC, NT>;
+#endif
   using mag_type = typename Kokkos::ArithTraits<SC>::mag_type;
 
   const mag_type toleranceFactor = 10.0; // factor of eps
@@ -874,9 +932,17 @@ testEquilibration (Teuchos::FancyOStream& out,
       testCrsMatrixEquality (success, out, *(test.A), *A_copy);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Vector<mag_type, LO, GO, NT> rowNormsVec =
+#else
+    Tpetra::Vector<mag_type,NT> rowNormsVec =
+#endif
       createVectorFromCopyOf1DView (test.A->getRowMap (), result2.rowNorms);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Vector<mag_type, LO, GO, NT> colNormsVec =
+#else
+    Tpetra::Vector<mag_type,NT> colNormsVec =
+#endif
       createVectorFromCopyOf1DView (test.A->getColMap (),
                                     result2.assumeSymmetric ?
                                       result2.colNorms :
@@ -944,8 +1010,13 @@ testEquilibration (Teuchos::FancyOStream& out,
 }
 
 // NOTE (mfh 23 May 2018) This function is only for the test.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 EquilibrationTest<SC, LO, GO, NT>
+#else
+template<class SC, class NT>
+EquilibrationTest<SC, NT>
+#endif
 makeSymmetricPositiveDefiniteTridiagonalMatrixTest (Teuchos::FancyOStream& out,
                                                     const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                                                     const bool assumeSymmetric)
@@ -953,9 +1024,15 @@ makeSymmetricPositiveDefiniteTridiagonalMatrixTest (Teuchos::FancyOStream& out,
   using Teuchos::RCP;
   using std::endl;
   using GST = Tpetra::global_size_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using crs_graph_type = Tpetra::CrsGraph<LO, GO, NT>;
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+  using crs_graph_type = Tpetra::CrsGraph<NT>;
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using KAT = Kokkos::ArithTraits<SC>;
   using val_type = typename KAT::val_type;
   using mag_type = typename Kokkos::ArithTraits<val_type>::mag_type;
@@ -1274,7 +1351,11 @@ makeSymmetricPositiveDefiniteTridiagonalMatrixTest (Teuchos::FancyOStream& out,
   const bool gblFoundZeroDiag = false;
   const bool gblFoundZeroRowNorm = false;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return EquilibrationTest<SC, LO, GO, NT> {
+#else
+  return EquilibrationTest<SC, NT> {
+#endif
     A,
     lclRowNorms,
     lclRowDiagonalEntries,
@@ -1298,8 +1379,13 @@ makeSymmetricPositiveDefiniteTridiagonalMatrixTest (Teuchos::FancyOStream& out,
 }
 
 // NOTE (mfh 23 May 2018) This function is only for the test.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 EquilibrationTest<SC, LO, GO, NT>
+#else
+template<class SC, class NT>
+EquilibrationTest<SC, NT>
+#endif
 makeMatrixTestWithExplicitZeroDiag (Teuchos::FancyOStream& out,
                                     const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                                     const bool assumeSymmetric)
@@ -1307,9 +1393,15 @@ makeMatrixTestWithExplicitZeroDiag (Teuchos::FancyOStream& out,
   using Teuchos::RCP;
   using std::endl;
   using GST = Tpetra::global_size_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using crs_graph_type = Tpetra::CrsGraph<LO, GO, NT>;
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+  using crs_graph_type = Tpetra::CrsGraph<NT>;
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using KAT = Kokkos::ArithTraits<SC>;
   using val_type = typename KAT::val_type;
   using mag_type = typename Kokkos::ArithTraits<val_type>::mag_type;
@@ -1509,7 +1601,11 @@ makeMatrixTestWithExplicitZeroDiag (Teuchos::FancyOStream& out,
   const bool gblFoundZeroDiag = numProcs == 1 ? false : true;
   const bool gblFoundZeroRowNorm = numProcs == 1 ? false : true;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return EquilibrationTest<SC, LO, GO, NT> {
+#else
+  return EquilibrationTest<SC, NT> {
+#endif
     A,
     lclRowNorms,
     lclRowDiagonalEntries,
@@ -1533,8 +1629,13 @@ makeMatrixTestWithExplicitZeroDiag (Teuchos::FancyOStream& out,
 }
 
 // NOTE (mfh 14 Jun 2018) This function is only for the test.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 EquilibrationTest<SC, LO, GO, NT>
+#else
+template<class SC, class NT>
+EquilibrationTest<SC, NT>
+#endif
 makeMatrixTestWithImplicitZeroDiag (Teuchos::FancyOStream& out,
                                     const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                                     const bool assumeSymmetric)
@@ -1542,9 +1643,15 @@ makeMatrixTestWithImplicitZeroDiag (Teuchos::FancyOStream& out,
   using Teuchos::RCP;
   using std::endl;
   using GST = Tpetra::global_size_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using crs_graph_type = Tpetra::CrsGraph<LO, GO, NT>;
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+  using crs_graph_type = Tpetra::CrsGraph<NT>;
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using KAT = Kokkos::ArithTraits<SC>;
   using val_type = typename KAT::val_type;
   using mag_type = typename Kokkos::ArithTraits<val_type>::mag_type;
@@ -1747,7 +1854,11 @@ makeMatrixTestWithImplicitZeroDiag (Teuchos::FancyOStream& out,
   const bool gblFoundZeroDiag = numProcs == 1 ? false : true;
   const bool gblFoundZeroRowNorm = numProcs == 1 ? false : true;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return EquilibrationTest<SC, LO, GO, NT> {
+#else
+  return EquilibrationTest<SC, NT> {
+#endif
     A,
     lclRowNorms,
     lclRowDiagonalEntries,
@@ -1771,8 +1882,13 @@ makeMatrixTestWithImplicitZeroDiag (Teuchos::FancyOStream& out,
 }
 
 // NOTE (mfh 23 May 2018) This function is only for the test.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 EquilibrationTest<SC, LO, GO, NT>
+#else
+template<class SC, class NT>
+EquilibrationTest<SC, NT>
+#endif
 makeMatrixTestWithExplicitInfAndNan (Teuchos::FancyOStream& out,
                                      const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                                      const bool assumeSymmetric)
@@ -1780,9 +1896,15 @@ makeMatrixTestWithExplicitInfAndNan (Teuchos::FancyOStream& out,
   using Teuchos::RCP;
   using std::endl;
   using GST = Tpetra::global_size_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
   using crs_graph_type = Tpetra::CrsGraph<LO, GO, NT>;
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+  using crs_graph_type = Tpetra::CrsGraph<NT>;
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using KAT = Kokkos::ArithTraits<SC>;
   using val_type = typename KAT::val_type;
   using mag_type = typename Kokkos::ArithTraits<val_type>::mag_type;
@@ -2029,7 +2151,11 @@ makeMatrixTestWithExplicitInfAndNan (Teuchos::FancyOStream& out,
   const bool gblFoundZeroDiag = false;
   const bool gblFoundZeroRowNorm = false;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return EquilibrationTest<SC, LO, GO, NT> {
+#else
+  return EquilibrationTest<SC, NT> {
+#endif
     A,
     lclRowNorms,
     lclRowDiagonalEntries,
@@ -2052,7 +2178,11 @@ makeMatrixTestWithExplicitInfAndNan (Teuchos::FancyOStream& out,
   };
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Equilibration, Test0, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Equilibration, Test0, SC, NT)
+#endif
 {
   // We are now in a class method declared by the above macro.
   // The method has these input arguments:
@@ -2076,16 +2206,27 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Equilibration, Test0, SC, LO, GO, NT)
   Teuchos::OSTab tab0 (testOut);
   auto comm = Tpetra::getDefaultComm ();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using test_return_type = EquilibrationTest<SC, LO, GO, NT>;
+#else
+  using test_return_type = EquilibrationTest<SC, NT>;
+#endif
   using test_type =
     std::function<test_return_type (FancyOStream&,
                                     const RCP<const Comm<int> >&,
                                     const bool)>;
   std::array<test_type, 4> tests {{
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     makeSymmetricPositiveDefiniteTridiagonalMatrixTest<SC, LO, GO, NT>,
     makeMatrixTestWithExplicitZeroDiag<SC, LO, GO, NT>,
     makeMatrixTestWithExplicitInfAndNan<SC, LO, GO, NT>,
     makeMatrixTestWithImplicitZeroDiag<SC, LO, GO, NT>
+#else
+    makeSymmetricPositiveDefiniteTridiagonalMatrixTest<SC, NT>,
+    makeMatrixTestWithExplicitZeroDiag<SC, NT>,
+    makeMatrixTestWithExplicitInfAndNan<SC, NT>,
+    makeMatrixTestWithImplicitZeroDiag<SC, NT>
+#endif
   }};
 
   for (bool assumeSymmetric : {false, true}) {
@@ -2123,8 +2264,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Equilibration, Test0, SC, LO, GO, NT)
 }
 
 // Define the set of unit tests to instantiate in this file.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Equilibration, Test0, SC, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP( SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Equilibration, Test0, SC, NT )
+#endif
 
 #include "TpetraCore_ETIHelperMacros.h"
 

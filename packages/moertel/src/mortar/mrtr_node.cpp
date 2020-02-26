@@ -416,10 +416,16 @@ bool MOERTEL::Node::GetPtrstoSegments(MOERTEL::Interface& interface)
 
 #ifdef HAVE_MOERTEL_TPETRA
 template <class ScalarType,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LocalOrdinal,
           class GlobalOrdinal,
+#endif
           class NodeType >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool MOERTEL::Node::GetPtrstoSegments(MoertelT::InterfaceT<ScalarType, LocalOrdinal, GlobalOrdinal, NodeType>& iface)
+#else
+bool MOERTEL::Node::GetPtrstoSegments(MoertelT::InterfaceT<ScalarType, NodeType>& iface)
+#endif
 { 
 
   if (!iface.IsComplete()) return false;

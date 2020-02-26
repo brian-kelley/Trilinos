@@ -51,37 +51,62 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MergedSmoother(ArrayRCP<RCP<SmootherPrototype> > & smootherList, bool verbose)
+#else
+  template <class Scalar, class Node>
+  MergedSmoother<Scalar, Node>::MergedSmoother(ArrayRCP<RCP<SmootherPrototype> > & smootherList, bool verbose)
+#endif
     : smootherList_(smootherList), reverseOrder_(false), verbose_(verbose) {
     // TODO: check that on each method TEUCHOS_TEST_FOR_EXCEPTION(smootherList == Teuchos::null, MueLu::Exceptions::RuntimeError, "");
 
     SmootherPrototype::IsSetup(false);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MergedSmoother(const MergedSmoother& src)
+#else
+  template <class Scalar, class Node>
+  MergedSmoother<Scalar, Node>::MergedSmoother(const MergedSmoother& src)
+#endif
     : reverseOrder_(src.reverseOrder_), verbose_(src.verbose_) {
     // Deep copy of src.smootherList_
     smootherList_ = SmootherListDeepCopy(src.GetSmootherList());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetFactory(const std::string& varName, const RCP<const FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void MergedSmoother<Scalar, Node>::SetFactory(const std::string& varName, const RCP<const FactoryBase>& factory) {
+#endif
     // We need to propagate SetFactory to proper place
     for (typename ArrayView<RCP<SmootherPrototype> >::iterator it = smootherList_.begin(); it != smootherList_.end(); it++)
       (*it)->SetFactory(varName, factory);
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void MergedSmoother<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     for (typename ArrayView<RCP<SmootherPrototype> >::iterator it = smootherList_.begin(); it != smootherList_.end(); ++it)
       (*it)->DeclareInput(currentLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(Level& level) {
+#else
+  template <class Scalar, class Node>
+  void MergedSmoother<Scalar, Node>::Setup(Level& level) {
+#endif
     if (SmootherPrototype::IsSetup() == true)
       this->GetOStream(Warnings0) << "MueLu::MergedSmoother::Setup(): Setup() has already been called";
 
@@ -99,8 +124,13 @@ namespace MueLu {
     SmootherPrototype::IsSetup(true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Apply(MultiVector& X, const MultiVector& B, bool InitialGuessIsZero) const {
+#else
+  template <class Scalar, class Node>
+  void MergedSmoother<Scalar, Node>::Apply(MultiVector& X, const MultiVector& B, bool InitialGuessIsZero) const {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(SmootherPrototype::IsSetup() == false, MueLu::Exceptions::RuntimeError, "MueLu::MergedSmoother<>:Apply(): Setup() has not been called");
 
     typedef typename ArrayRCP<RCP<SmootherPrototype> >::size_type sz_t;
@@ -122,13 +152,23 @@ namespace MueLu {
       }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::print(Teuchos::FancyOStream& /* out */, const VerbLevel /* verbLevel */) const {
+#else
+  template <class Scalar, class Node>
+  void MergedSmoother<Scalar, Node>::print(Teuchos::FancyOStream& /* out */, const VerbLevel /* verbLevel */) const {
+#endif
     throw Exceptions::NotImplemented("MueLu::MergedSmoother<>::Print() is not implemented");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CopyParameters(RCP<SmootherPrototype> src) { // TODO: wrong prototype. We do not need an RCP here.
+#else
+  template <class Scalar, class Node>
+  void MergedSmoother<Scalar, Node>::CopyParameters(RCP<SmootherPrototype> src) { // TODO: wrong prototype. We do not need an RCP here.
+#endif
     RCP<MergedSmoother> srcMergedSmoother = rcp_dynamic_cast<MergedSmoother>(src); // TODO: check if dynamic cast fails
 
     reverseOrder_ = srcMergedSmoother->GetReverseOrder();
@@ -190,17 +230,29 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::SmootherPrototype<Scalar, Node> >
+  MergedSmoother<Scalar, Node>::
+#endif
   Copy () const
   {
     return rcp(new MergedSmoother(*this));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   ArrayRCP<RCP<MueLu::SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >
   MergedSmoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  ArrayRCP<RCP<MueLu::SmootherPrototype<Scalar, Node> > >
+  MergedSmoother<Scalar, Node>::
+#endif
   SmootherListDeepCopy (const ArrayRCP<const RCP<SmootherPrototype> >& srcSmootherList)
   {
     ArrayRCP<RCP<SmootherPrototype> > newSmootherList(srcSmootherList.size());
@@ -212,8 +264,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t MergedSmoother<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Scalar, class Node>
+  size_t MergedSmoother<Scalar,Node>::
+#endif
   getNodeSmootherComplexity() const 
   {
     // FIXME: This is a placeholder

@@ -76,7 +76,11 @@
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Residual, TRAITS,LO,GO>::
+#else
+panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Residual, TRAITS>::
+#endif
 ScatterResidual_BlockedEpetra(const std::vector<Teuchos::RCP<const GlobalIndexer> > & rIndexers,
                               const std::vector<Teuchos::RCP<const GlobalIndexer> > & cIndexers,
                               const Teuchos::ParameterList& p,
@@ -119,7 +123,11 @@ ScatterResidual_BlockedEpetra(const std::vector<Teuchos::RCP<const GlobalIndexer
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Residual, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Residual, TRAITS>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */, 
 		      PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -138,7 +146,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Residual, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Residual, TRAITS>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
    typedef BlockedEpetraLinearObjContainer BLOC;
@@ -159,7 +171,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Residual, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Residual, TRAITS>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 { 
    using Teuchos::RCP;
@@ -212,7 +228,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Tangent, TRAITS,LO,GO>::
+#else
+panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Tangent, TRAITS>::
+#endif
 ScatterResidual_BlockedEpetra(const std::vector<Teuchos::RCP<const GlobalIndexer> > & rIndexers,
                               const std::vector<Teuchos::RCP<const GlobalIndexer> > & cIndexers,
                               const Teuchos::ParameterList& p,
@@ -255,7 +275,11 @@ ScatterResidual_BlockedEpetra(const std::vector<Teuchos::RCP<const GlobalIndexer
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Tangent, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Tangent, TRAITS>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */, 
 		      PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -274,7 +298,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Tangent, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Tangent, TRAITS>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
    typedef BlockedEpetraLinearObjContainer BLOC;
@@ -295,7 +323,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Tangent, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Tangent, TRAITS>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 { 
    TEUCHOS_ASSERT(false);
@@ -350,7 +382,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Jacobian, TRAITS,LO,GO>::
+#else
+panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Jacobian, TRAITS>::
+#endif
 ScatterResidual_BlockedEpetra(const std::vector<Teuchos::RCP<const GlobalIndexer> > & rIndexers,
                               const std::vector<Teuchos::RCP<const GlobalIndexer> > & cIndexers,
                               const Teuchos::ParameterList& p,
@@ -403,7 +439,11 @@ ScatterResidual_BlockedEpetra(const std::vector<Teuchos::RCP<const GlobalIndexer
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Jacobian, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Jacobian, TRAITS>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
 		      PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -422,7 +462,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Jacobian, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Jacobian, TRAITS>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
    using Teuchos::RCP;
@@ -455,7 +499,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Jacobian, TRAITS,LO,GO>::
+#else
+void panzer::ScatterResidual_BlockedEpetra<panzer::Traits::Jacobian, TRAITS>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 { 
    using Teuchos::RCP;

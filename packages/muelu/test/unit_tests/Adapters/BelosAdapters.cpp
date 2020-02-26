@@ -139,7 +139,11 @@ namespace MueLuTests {
   // TEST:
   // - OP: Xpetra::Matrix
   // - MV: Xpetra::MultiVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BelosAdapters, XpetraOp_XpetraMV, Scalar, LocalOrdinal, GlobalOrdinal, Node) {
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BelosAdapters, XpetraOp_XpetraMV, Scalar, Node) {
+#endif
 #include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
@@ -155,14 +159,23 @@ namespace MueLuTests {
     MUELU_TESTING_DO_NOT_TEST(Xpetra::UseTpetra, "Amesos2, Ifpack2");
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<TestProblem<SC,LO,GO,NO> > p = rcp (new TestProblem<SC,LO,GO,NO> (lib));
+#else
+    RCP<TestProblem<SC,NO> > p = rcp (new TestProblem<SC,NO> (lib));
+#endif
 
     typedef MultiVector             MV;
     typedef Belos::OperatorT<MV>    OP;
 
     // Construct a Belos LinearProblem object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<OP> belosOp   = rcp(new Belos::XpetraOp<SC, LO, GO, NO>(p->GetA()));
     RCP<OP> belosPrec = rcp(new Belos::MueLuOp <SC, LO, GO, NO>(p->GetH()));
+#else
+    RCP<OP> belosOp   = rcp(new Belos::XpetraOp<SC, NO>(p->GetA()));
+    RCP<OP> belosPrec = rcp(new Belos::MueLuOp <SC, NO>(p->GetH()));
+#endif
 
     // Run Belos
     RCP<MultiVector> X = p->GetNewX0();
@@ -175,7 +188,11 @@ namespace MueLuTests {
   // TEST:
   // - OP: Xpetra::Matrix
   // - MV: Epetra::MultiVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BelosAdapters, XpetraOp_EpetraMV, Scalar, LocalOrdinal, GlobalOrdinal, Node) {
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BelosAdapters, XpetraOp_EpetraMV, Scalar, Node) {
+#endif
     MUELU_TEST_ONLY_FOR(Xpetra::UseEpetra);
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -184,18 +201,32 @@ namespace MueLuTests {
 
 #if defined(HAVE_MUELU_EPETRA) && defined(HAVE_MUELU_EPETRAEXT) && defined(HAVE_MUELU_IFPACK) && defined(HAVE_MUELU_AMESOS)
     Xpetra::UnderlyingLib lib = TestHelpers::Parameters::getLib();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<TestProblem<SC,LO,GO,NO> > p = rcp (new TestProblem<SC,LO,GO,NO> (lib));
+#else
+    RCP<TestProblem<SC,NO> > p = rcp (new TestProblem<SC,NO> (lib));
+#endif
 
     typedef Epetra_MultiVector   MV;
     typedef Belos::OperatorT<MV> OP;
 
     // Construct a Belos LinearProblem object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<OP> belosOp   = rcp(new Belos::XpetraOp<SC, LO, GO, NO>(p->GetA()));
     RCP<OP> belosPrec = rcp(new Belos::MueLuOp <SC, LO, GO, NO>(p->GetH()));
+#else
+    RCP<OP> belosOp   = rcp(new Belos::XpetraOp<SC, NO>(p->GetA()));
+    RCP<OP> belosPrec = rcp(new Belos::MueLuOp <SC, NO>(p->GetH()));
+#endif
 
     // X, B
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MV> X = MueLu::Utilities<SC,LO,GO,NO>::MV2NonConstEpetraMV(p->GetNewX0());
     RCP<MV> B = MueLu::Utilities<SC,LO,GO,NO>::MV2NonConstEpetraMV(p->GetRHS());
+#else
+    RCP<MV> X = MueLu::Utilities<SC,NO>::MV2NonConstEpetraMV(p->GetNewX0());
+    RCP<MV> B = MueLu::Utilities<SC,NO>::MV2NonConstEpetraMV(p->GetRHS());
+#endif
 
     // Run Belos
     int numIters = MueLuTests::BelosAdaptersTest<SC, MV, OP>(belosOp, belosPrec, X, B, out, success);
@@ -208,7 +239,11 @@ namespace MueLuTests {
   // TEST:
   // - OP: Belos::Operator<double>
   // - MV: Belos::MultiVec<double>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BelosAdapters, BelosMultiVec_BelosMatrix, Scalar, LocalOrdinal, GlobalOrdinal, Node) {
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BelosAdapters, BelosMultiVec_BelosMatrix, Scalar, Node) {
+#endif
     MUELU_TEST_ONLY_FOR(Xpetra::UseEpetra);
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -217,7 +252,11 @@ namespace MueLuTests {
 
 #if defined(HAVE_MUELU_EPETRA) && defined(HAVE_MUELU_EPETRAEXT) && defined(HAVE_MUELU_IFPACK) && defined(HAVE_MUELU_AMESOS)
     Xpetra::UnderlyingLib lib = TestHelpers::Parameters::getLib();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<TestProblem<SC,LO,GO,NO> > p = rcp (new TestProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> (lib));
+#else
+    RCP<TestProblem<SC,NO> > p = rcp (new TestProblem<Scalar, Node> (lib));
+#endif
 
     typedef Belos::MultiVec<SC> MV;
     typedef Belos::Operator<SC> OP;
@@ -225,7 +264,11 @@ namespace MueLuTests {
     // Construct a Belos LinearProblem object
     RCP<Epetra_CrsMatrix> A = Utilities::Op2NonConstEpetraCrs(p->GetA());
     RCP<OP> belosOp   = rcp(new Belos::EpetraOp(A));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<OP> belosPrec = rcp(new Belos::MueLuOp<SC, LO, GO, NO>(p->GetH()));
+#else
+    RCP<OP> belosPrec = rcp(new Belos::MueLuOp<SC, NO>(p->GetH()));
+#endif
 
     // X, B
     RCP<Epetra_MultiVector> eX = Utilities::MV2NonConstEpetraMV(p->GetNewX0());
@@ -248,7 +291,11 @@ namespace MueLuTests {
   // TEST:
   // - OP: Xpetra::Matrix
   // - MV: Tpetra::MultiVector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BelosAdapters, XpetraOp_TpetraMV, Scalar, LocalOrdinal, GlobalOrdinal, Node) {
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(BelosAdapters, XpetraOp_TpetraMV, Scalar, Node) {
+#endif
     MUELU_TEST_ONLY_FOR(Xpetra::UseTpetra);
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -257,14 +304,27 @@ namespace MueLuTests {
 
 #if defined(HAVE_MUELU_TPETRA) && defined(HAVE_MUELU_IFPACK2) && defined(HAVE_MUELU_AMESOS2)
     Xpetra::UnderlyingLib lib = TestHelpers::Parameters::getLib();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<TestProblem<Scalar,LocalOrdinal,GlobalOrdinal,Node> > p = rcp (new TestProblem<Scalar, LocalOrdinal, GlobalOrdinal, Node> (lib));
+#else
+    RCP<TestProblem<Scalar,Node> > p = rcp (new TestProblem<Scalar, Node> (lib));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+    typedef typename Tpetra::MultiVector<Scalar,Node> MV;
+#endif
     typedef typename Belos::OperatorT<MV>    OP;
 
     // Construct a Belos LinearProblem object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<OP> belosOp   = rcp(new Belos::XpetraOp<Scalar, LocalOrdinal, GlobalOrdinal, Node>(p->GetA()));
     RCP<OP> belosPrec = rcp(new Belos::MueLuOp<Scalar, LocalOrdinal, GlobalOrdinal, Node>(p->GetH()));
+#else
+    RCP<OP> belosOp   = rcp(new Belos::XpetraOp<Scalar, Node>(p->GetA()));
+    RCP<OP> belosPrec = rcp(new Belos::MueLuOp<Scalar, Node>(p->GetH()));
+#endif
 
     //X, B
     RCP<MV> X = Utilities::MV2NonConstTpetraMV(p->GetNewX0());
@@ -281,8 +341,13 @@ namespace MueLuTests {
 // Instantiate the Tpetra and Xpetra based tests
 #if defined(HAVE_MUELU_TPETRA)
   // run Xpetra based tests
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 # define MUELU_ETI_GROUP(Scalar, LO, GO, Node) \
     TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BelosAdapters, XpetraOp_XpetraMV, Scalar, LO, GO, Node)
+#else
+# define MUELU_ETI_GROUP(Scalar, Node) \
+    TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(BelosAdapters, XpetraOp_XpetraMV, Scalar, Node)
+#endif
 
 # include <MueLu_ETI_4arg.hpp>
 

@@ -81,10 +81,17 @@ private:
   using GO = typename TpetraOperatorType::global_ordinal_type;
   using NT = typename TpetraOperatorType::node_type;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
   using multivector_type = Tpetra::MultiVector<SC, LO, GO, NT>;
   using operator_type = Tpetra::Operator<SC, LO, GO, NT>;
   using vector_type = Tpetra::Vector<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+  using multivector_type = Tpetra::MultiVector<SC, NT>;
+  using operator_type = Tpetra::Operator<SC, NT>;
+  using vector_type = Tpetra::Vector<SC, NT>;
+#endif
 
 public:
   ChebyshevKernel (const Teuchos::RCP<const operator_type>& A);
@@ -101,8 +108,13 @@ public:
            const SC& beta);
 
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using import_type = Tpetra::Import<LO, GO, NT>;
   using export_type = Tpetra::Export<LO, GO, NT>;
+#else
+  using import_type = Tpetra::Import<NT>;
+  using export_type = Tpetra::Export<NT>;
+#endif
 
   Teuchos::RCP<const operator_type> A_op_;
   Teuchos::RCP<const crs_matrix_type> A_crs_;

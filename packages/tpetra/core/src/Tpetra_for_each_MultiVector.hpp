@@ -132,7 +132,11 @@ namespace Tpetra {
              class SC, class LO, class GO, class NT,
              class UserFunctionType>
     struct ForEach<ExecutionSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    ::Tpetra::MultiVector<SC, LO, GO, NT>,
+#else
+                   ::Tpetra::MultiVector<SC, NT>,
+#endif
                    UserFunctionType>
     {
     private:
@@ -153,12 +157,20 @@ namespace Tpetra {
       static void
       for_each (const char kernelLabel[],
                 ExecutionSpace execSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 ::Tpetra::MultiVector<SC, LO, GO, NT>& X,
+#else
+                ::Tpetra::MultiVector<SC, NT>& X,
+#endif
                 UserFunctionType f)
       {
         using Teuchos::TypeNameTraits;
         using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using MV = Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+        using MV = Tpetra::MultiVector<SC, NT>;
+#endif
         using preferred_memory_space =
           typename MV::device_type::memory_space;
         using memory_space = for_each_memory_space<preferred_memory_space>;
@@ -190,7 +202,11 @@ namespace Tpetra {
             // Help GCC 4.9.3 deduce the type of *X_j.
             // See discussion here:
             // https://github.com/trilinos/Trilinos/pull/5115
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             Tpetra::Vector<SC, LO, GO, NT>& X_j_ref = *X_j;
+#else
+            Tpetra::Vector<SC, NT>& X_j_ref = *X_j;
+#endif
             using read_write_view_type =
               with_local_access_function_argument_type<
                 decltype (readWrite (X_j_ref).on (memSpace). at(execSpace))>;
@@ -229,16 +245,28 @@ namespace Tpetra {
              class SC, class LO, class GO, class NT,
              class UserFunctionType>
     struct ForEach<ExecutionSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    ::Tpetra::Vector<SC, LO, GO, NT>,
+#else
+                   ::Tpetra::Vector<SC, NT>,
+#endif
                    UserFunctionType>
     {
       static void
       for_each (const char kernelLabel[],
                 ExecutionSpace execSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 ::Tpetra::Vector<SC, LO, GO, NT>& X,
+#else
+                ::Tpetra::Vector<SC, NT>& X,
+#endif
                 UserFunctionType f)
       {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+        using MV = ::Tpetra::MultiVector<SC, NT>;
+#endif
         using impl_type = ForEach<ExecutionSpace, MV, UserFunctionType>;
         impl_type::for_each (kernelLabel, execSpace, X, f);
       }

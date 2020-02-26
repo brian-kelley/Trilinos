@@ -133,8 +133,13 @@ void Temporary_Replacement_For_Kokkos_abs(const RV& R, const XV& X) {
   Kokkos::parallel_for (policy, op);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void equilibrateMatrix(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &Axpetra, std::string equilibrate) {
+#else
+template<class Scalar, class Node>
+void equilibrateMatrix(Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > &Axpetra, std::string equilibrate) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Tpetra::computeRowAndColumnOneNorms;
   using Tpetra::leftAndOrRightScaleCrsMatrix;
@@ -144,7 +149,11 @@ void equilibrateMatrix(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrd
   bool assumeSymmetric = false;
   typedef typename Tpetra::Details::EquilibrationInfo<typename Kokkos::ArithTraits<Scalar>::val_type,typename Node::device_type> equil_type;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > A = Utilities::Op2NonConstTpetraCrs(Axpetra);
+#else
+  Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node> > A = Utilities::Op2NonConstTpetraCrs(Axpetra);
+#endif
 
   if(Axpetra->getRowMap()->lib() == Xpetra::UseTpetra) {
      equil_type equibResult_ = computeRowAndColumnOneNorms (*A, assumeSymmetric);
@@ -186,7 +195,11 @@ void equilibrateMatrix(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrd
 #endif
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
@@ -205,7 +218,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   // =========================================================================
   typedef Teuchos::ScalarTraits<SC> STS;
   typedef typename STS::coordinateType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   // =========================================================================
   // Parameters initialization
@@ -346,11 +363,19 @@ MueLu::MueLu_AMGX_initialize_plugins();
   RCP<Matrix>      A;
   RCP<const Map>   map;
   RCP<RealValuedMultiVector> coordinates;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Xpetra::MultiVector<SC,LO,GO,NO> > nullspace, material;
+#else
+  RCP<Xpetra::MultiVector<SC,NO> > nullspace, material;
+#endif
   RCP<MultiVector> X, B;
 
   // Load the matrix off disk (or generate it via Galeri)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MatrixLoad<SC,LO,GO,NO>(comm,lib,binaryFormat,matrixFile,rhsFile,rowMapFile,colMapFile,domainMapFile,rangeMapFile,coordFile,nullFile,materialFile,map,A,coordinates,nullspace,material,X,B,numVectors,galeriParameters,xpetraParameters,galeriStream);
+#else
+  MatrixLoad<SC,NO>(comm,lib,binaryFormat,matrixFile,rhsFile,rowMapFile,colMapFile,domainMapFile,rangeMapFile,coordFile,nullFile,materialFile,map,A,coordinates,nullspace,material,X,B,numVectors,galeriParameters,xpetraParameters,galeriStream);
+#endif
   comm->barrier();
   tm = Teuchos::null;
 

@@ -115,10 +115,19 @@ int main(int argc, char** argv)
     /* CREATE INITAL MATRIX                                                           */
     /**********************************************************************************/
     RCP<const Tpetra::Map<LO,GO> > map = Teuchos::rcp( new Tpetra::Map<LO,GO>(matrixParameters.GetNumGlobalElements(), 0, comm) );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Galeri::Xpetra::Problem<Tpetra::Map<LO,GO>,Tpetra::CrsMatrix<SC,LO,GO>,Tpetra::MultiVector<SC,LO,GO> > > problem =
       Galeri::Xpetra::BuildProblem<SC, LO, GO, Tpetra::Map<LO,GO>, Tpetra::CrsMatrix<SC,LO,GO>, Tpetra::MultiVector<SC,LO,GO> >
+#else
+    RCP<Galeri::Xpetra::Problem<Tpetra::Map<LO,GO>,Tpetra::CrsMatrix<SC>,Tpetra::MultiVector<SC> > > problem =
+      Galeri::Xpetra::BuildProblem<SC, LO, GO, Tpetra::Map<LO,GO>, Tpetra::CrsMatrix<SC>, Tpetra::MultiVector<SC> >
+#endif
       (matrixParameters.GetMatrixType(), map, matrixParameters.GetParameterList());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::CrsMatrix<SC,LO,GO> > A = problem->BuildMatrix();
+#else
+    RCP<Tpetra::CrsMatrix<SC> > A = problem->BuildMatrix();
+#endif
 
     /**********************************************************************************/
     /*                                                                                */

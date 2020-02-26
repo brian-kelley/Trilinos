@@ -8,7 +8,11 @@
 #include "Xpetra_RegionUtils_impl.hpp"
 
 template<class SC, class LO, class GO, class NO, Xpetra::UnderlyingLib lib, Xpetra::ESplittingMethodHHG splitMethod>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::RegionMatrix(
+#else
+Xpetra::RegionMatrix<SC,NO,lib,splitMethod>::RegionMatrix(
+#endif
     const std::string& matrixFileName,
     Teuchos::RCP<const RegionManager> regionManager,
     Teuchos::RCP<const Teuchos::Comm<int> > comm)
@@ -35,14 +39,23 @@ Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::RegionMatrix(
 }
 
 template<class SC, class LO, class GO, class NO, Xpetra::UnderlyingLib lib, Xpetra::ESplittingMethodHHG splitMethod>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::setupCompositeMatrix(const std::string& matrixFileName)
+#else
+void Xpetra::RegionMatrix<SC,NO,lib,splitMethod>::setupCompositeMatrix(const std::string& matrixFileName)
+#endif
 {
   if (comm_->getRank() == 0)
     std::cout << "Starting construction of Composite Map" << std::endl;
 
   // Create Xpetra map for composite stiffness matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Map<LO,GO,NO> > xpetraMap;
   xpetraMap = Xpetra::MapFactory<LO,GO,NO>::Build(lib, regionManager_->getNumNodes(), regionManager_->getCompositeRowMap(), 0, comm_);
+#else
+  Teuchos::RCP<const Xpetra::Map<NO> > xpetraMap;
+  xpetraMap = Xpetra::MapFactory<NO>::Build(lib, regionManager_->getNumNodes(), regionManager_->getCompositeRowMap(), 0, comm_);
+#endif
 
   if (comm_->getRank() == 0)
     std::cout << "Finished construction of Composite Map" << std::endl;
@@ -51,7 +64,11 @@ void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::setupCompositeMatrix(con
     std::cout << "Started reading composite matrix" << std::endl;
 
   // Import matrix from an .mm file into an Xpetra wrapper for an Epetra matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   compositeMatrix_ = Xpetra::IO<SC,LO,GO,NO>::Read(matrixFileName, regionManager_->getCompositeMap());
+#else
+  compositeMatrix_ = Xpetra::IO<SC,NO>::Read(matrixFileName, regionManager_->getCompositeMap());
+#endif
 
   if (comm_->getRank() == 0)
     std::cout << "Finished reading composite matrix" << std::endl;
@@ -60,7 +77,11 @@ void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::setupCompositeMatrix(con
 }
 
 template<class SC, class LO, class GO, class NO, Xpetra::UnderlyingLib lib, Xpetra::ESplittingMethodHHG splitMethod>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::printCompositeMatrix(
+#else
+void Xpetra::RegionMatrix<SC,NO,lib,splitMethod>::printCompositeMatrix(
+#endif
     Teuchos::FancyOStream& out, Teuchos::EVerbosityLevel verbosity) const
 {
   compositeMatrix_->describe(out, verbosity);
@@ -69,10 +90,18 @@ void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::printCompositeMatrix(
 }
 
 template<class SC, class LO, class GO, class NO, Xpetra::UnderlyingLib lib, Xpetra::ESplittingMethodHHG splitMethod>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::setupRegionMatrices()
+#else
+void Xpetra::RegionMatrix<SC,NO,lib,splitMethod>::setupRegionMatrices()
+#endif
 {
   // Enlarge composite matrix to duplicate the interface
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<TpetraCrsMatrix> tpetraGlobalMatrix = MueLu::Utilities<SC,LO,GO,NO>::Op2NonConstTpetraCrs(compositeMatrix_);
+#else
+  Teuchos::RCP<TpetraCrsMatrix> tpetraGlobalMatrix = MueLu::Utilities<SC,NO>::Op2NonConstTpetraCrs(compositeMatrix_);
+#endif
   Teuchos::RCP<Ifpack2::OverlappingRowMatrix<TpetraRowMatrix> > enlargedMatrix =
       Teuchos::rcp(new Ifpack2::OverlappingRowMatrix<TpetraRowMatrix>(tpetraGlobalMatrix, 1));
 
@@ -92,7 +121,11 @@ void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::setupRegionMatrices()
     if (lib == Xpetra::UseEpetra)
       crsMatrix = Teuchos::rcp(new EpetraCrsMatrix(xpetraMap, numElements));
     else if (lib == Xpetra::UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       crsMatrix = Teuchos::rcp(new Xpetra::TpetraCrsMatrix<SC,LO,GO,NO>(xpetraMap, numElements));
+#else
+      crsMatrix = Teuchos::rcp(new Xpetra::TpetraCrsMatrix<SC,NO>(xpetraMap, numElements));
+#endif
     else
       std::cerr << "The library to build matrices must be either Epetra or Tpetra\n";
 
@@ -568,7 +601,11 @@ void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::setupRegionMatrices()
 //}
 
 template<class SC, class LO, class GO, class NO, Xpetra::UnderlyingLib lib, Xpetra::ESplittingMethodHHG splitMethod>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::extractRegionBySplitting(
+#else
+void Xpetra::RegionMatrix<SC,NO,lib,splitMethod>::extractRegionBySplitting(
+#endif
     GO regionID, Teuchos::RCP<Matrix>& regionMatrix,
     Teuchos::RCP<Ifpack2::OverlappingRowMatrix<TpetraRowMatrix> > enlargedMatrix)
 {
@@ -905,7 +942,11 @@ void Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::extractRegionBySplitting
 }
 
 template<class SC, class LO, class GO, class NO, Xpetra::UnderlyingLib lib, Xpetra::ESplittingMethodHHG splitMethod>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const bool Xpetra::RegionMatrix<SC,LO,GO,NO,lib,splitMethod>::hasRegionMatrix(
+#else
+const bool Xpetra::RegionMatrix<SC,NO,lib,splitMethod>::hasRegionMatrix(
+#endif
     const GO regID) const
 {
   return not regionMatrices_[regID].is_null();

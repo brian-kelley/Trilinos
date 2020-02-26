@@ -65,7 +65,11 @@
 
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 ScatterDirichletResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & indexer,
                                 const Teuchos::ParameterList& p)
    : globalIndexer_(indexer)
@@ -122,7 +126,11 @@ ScatterDirichletResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & indexe
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */, 
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -141,7 +149,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
   // extract linear object container
@@ -166,7 +178,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Residual, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Residual, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 { 
    std::vector<GO> GIDs;
@@ -256,7 +272,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 ScatterDirichletResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & indexer,
                                 const Teuchos::ParameterList& p)
    : globalIndexer_(indexer)
@@ -313,7 +333,11 @@ ScatterDirichletResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & indexe
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */, 
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -332,7 +356,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
   // extract linear object container
@@ -374,7 +402,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Tangent, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 {
    std::vector<GO> GIDs;
@@ -483,7 +515,11 @@ evaluateFields(typename TRAITS::EvalData workset)
 // **********************************************************************
 
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 ScatterDirichletResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & indexer,
                                 const Teuchos::ParameterList& p)
    : globalIndexer_(indexer)
@@ -535,7 +571,11 @@ ScatterDirichletResidual_Tpetra(const Teuchos::RCP<const GlobalIndexer> & indexe
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT> 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -554,7 +594,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d)
 {
   // extract linear object container
@@ -579,7 +623,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
 
 // **********************************************************************
 template<typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,LO,GO,NodeT>::
+#else
+void panzer::ScatterDirichletResidual_Tpetra<panzer::Traits::Jacobian, TRAITS,NodeT>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset)
 { 
    std::vector<GO> GIDs;

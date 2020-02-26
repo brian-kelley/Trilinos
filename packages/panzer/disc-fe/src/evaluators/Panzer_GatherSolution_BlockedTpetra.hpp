@@ -86,7 +86,11 @@ public:
                                 const Teuchos::ParameterList& p);
 
    virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    { return Teuchos::rcp(new GatherSolution_BlockedTpetra<EvalT,TRAITS,S,LO,GO>(Teuchos::null,pl)); }
+#else
+   { return Teuchos::rcp(new GatherSolution_BlockedTpetra<EvalT,TRAITS,S>(Teuchos::null,pl)); }
+#endif
 
    void postRegistrationSetup(typename TRAITS::SetupData d, PHX::FieldManager<TRAITS>& vm)
    { }
@@ -106,8 +110,13 @@ public:
 // **************************************************************
 // Residual
 // **************************************************************
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename TRAITS,typename S,typename LO,typename GO,typename NodeT>
 class GatherSolution_BlockedTpetra<panzer::Traits::Residual,TRAITS,S,LO,GO,NodeT>
+#else
+template <typename TRAITS,typename S,typename NodeT>
+class GatherSolution_BlockedTpetra<panzer::Traits::Residual,TRAITS,S,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Residual, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -115,6 +124,10 @@ class GatherSolution_BlockedTpetra<panzer::Traits::Residual,TRAITS,S,LO,GO,NodeT
 
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+   using LO = typename Tpetra::Map<>::local_ordinal_type;
+   using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
    GatherSolution_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & indexer)
      : globalIndexer_(indexer) {}
 
@@ -129,13 +142,18 @@ public:
   void evaluateFields(typename TRAITS::EvalData d);
 
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new GatherSolution_BlockedTpetra<panzer::Traits::Residual,TRAITS,S,LO,GO>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new GatherSolution_BlockedTpetra<panzer::Traits::Residual,TRAITS,S>(globalIndexer_,pl)); }
+#endif
 
 
 private:
   typedef typename panzer::Traits::Residual EvalT;
   typedef typename panzer::Traits::Residual::ScalarT ScalarT;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef BlockedTpetraLinearObjContainer<S,LO,GO,NodeT> ContainerType;
   typedef Tpetra::Vector<S,LO,GO,NodeT> VectorType;
   typedef Tpetra::CrsMatrix<S,LO,GO,NodeT> CrsMatrixType;
@@ -143,6 +161,15 @@ private:
   typedef Tpetra::Map<LO,GO,NodeT> MapType;
   typedef Tpetra::Import<LO,GO,NodeT> ImportType;
   typedef Tpetra::Export<LO,GO,NodeT> ExportType;
+#else
+  typedef BlockedTpetraLinearObjContainer<S,NodeT> ContainerType;
+  typedef Tpetra::Vector<S,NodeT> VectorType;
+  typedef Tpetra::CrsMatrix<S,NodeT> CrsMatrixType;
+  typedef Tpetra::CrsGraph<NodeT> CrsGraphType;
+  typedef Tpetra::Map<NodeT> MapType;
+  typedef Tpetra::Import<NodeT> ImportType;
+  typedef Tpetra::Export<NodeT> ExportType;
+#endif
 
   //! Maps the local (field,element,basis) triplet to a global ID for
   // scattering
@@ -164,7 +191,11 @@ private:
   bool useTimeDerivativeSolutionVector_;
   std::string globalDataKey_; // what global data does this fill?
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedTpetraLinearObjContainer<S,LO,GO,NodeT> > blockedContainer_;
+#else
+  Teuchos::RCP<const BlockedTpetraLinearObjContainer<S,NodeT> > blockedContainer_;
+#endif
 
   // Fields for storing tangent components dx/dp of solution vector x
   // These are not actually used by the residual specialization of this evaluator,
@@ -185,8 +216,13 @@ private:
 // **************************************************************
 // Tangent
 // **************************************************************
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename TRAITS,typename S,typename LO,typename GO,typename NodeT>
 class GatherSolution_BlockedTpetra<panzer::Traits::Tangent,TRAITS,S,LO,GO,NodeT>
+#else
+template <typename TRAITS,typename S,typename NodeT>
+class GatherSolution_BlockedTpetra<panzer::Traits::Tangent,TRAITS,S,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Tangent, TRAITS>,
     public panzer::CloneableEvaluator  {
@@ -194,6 +230,10 @@ class GatherSolution_BlockedTpetra<panzer::Traits::Tangent,TRAITS,S,LO,GO,NodeT>
 
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+   using LO = typename Tpetra::Map<>::local_ordinal_type;
+   using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
    GatherSolution_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & indexer)
      : gidIndexer_(indexer) {}
 
@@ -208,7 +248,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData d);
 
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new GatherSolution_BlockedTpetra<panzer::Traits::Tangent,TRAITS,S,LO,GO>(gidIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new GatherSolution_BlockedTpetra<panzer::Traits::Tangent,TRAITS,S>(gidIndexer_,pl)); }
+#endif
 
 
 private:
@@ -216,6 +260,7 @@ private:
   typedef typename panzer::Traits::Tangent::ScalarT ScalarT;
   //typedef typename panzer::Traits::RealType RealT;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef BlockedTpetraLinearObjContainer<S,LO,GO,NodeT> ContainerType;
   typedef Tpetra::Vector<S,LO,GO,NodeT> VectorType;
   typedef Tpetra::CrsMatrix<S,LO,GO,NodeT> CrsMatrixType;
@@ -223,6 +268,15 @@ private:
   typedef Tpetra::Map<LO,GO,NodeT> MapType;
   typedef Tpetra::Import<LO,GO,NodeT> ImportType;
   typedef Tpetra::Export<LO,GO,NodeT> ExportType;
+#else
+  typedef BlockedTpetraLinearObjContainer<S,NodeT> ContainerType;
+  typedef Tpetra::Vector<S,NodeT> VectorType;
+  typedef Tpetra::CrsMatrix<S,NodeT> CrsMatrixType;
+  typedef Tpetra::CrsGraph<NodeT> CrsGraphType;
+  typedef Tpetra::Map<NodeT> MapType;
+  typedef Tpetra::Import<NodeT> ImportType;
+  typedef Tpetra::Export<NodeT> ExportType;
+#endif
 
   // maps the local (field,element,basis) triplet to a global ID
   // for scattering
@@ -236,7 +290,11 @@ private:
   bool useTimeDerivativeSolutionVector_;
   std::string globalDataKey_; // what global data does this fill?
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedTpetraLinearObjContainer<S,LO,GO,NodeT> > blockedContainer_;
+#else
+  Teuchos::RCP<const BlockedTpetraLinearObjContainer<S,NodeT> > blockedContainer_;
+#endif
 
   // Fields for storing tangent components dx/dp of solution vector x
   bool has_tangent_fields_;
@@ -248,13 +306,22 @@ private:
 // **************************************************************
 // Jacobian
 // **************************************************************
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename TRAITS,typename S,typename LO,typename GO,typename NodeT>
 class GatherSolution_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,S,LO,GO,NodeT>
+#else
+template <typename TRAITS,typename S,typename NodeT>
+class GatherSolution_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,S,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Jacobian, TRAITS>,
     public panzer::CloneableEvaluator  {
 
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   GatherSolution_BlockedTpetra(const Teuchos::RCP<const BlockedDOFManager> & indexer)
      : globalIndexer_(indexer) {}
 
@@ -269,13 +336,18 @@ public:
   void evaluateFields(typename TRAITS::EvalData d);
 
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new GatherSolution_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,S,LO,GO>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new GatherSolution_BlockedTpetra<panzer::Traits::Jacobian,TRAITS,S>(globalIndexer_,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Jacobian EvalT;
   typedef typename panzer::Traits::Jacobian::ScalarT ScalarT;
   typedef typename TRAITS::RealType RealType;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef BlockedTpetraLinearObjContainer<S,LO,GO,NodeT> ContainerType;
   typedef Tpetra::Vector<S,LO,GO,NodeT> VectorType;
   typedef Tpetra::CrsMatrix<S,LO,GO,NodeT> CrsMatrixType;
@@ -283,6 +355,15 @@ private:
   typedef Tpetra::Map<LO,GO,NodeT> MapType;
   typedef Tpetra::Import<LO,GO,NodeT> ImportType;
   typedef Tpetra::Export<LO,GO,NodeT> ExportType;
+#else
+  typedef BlockedTpetraLinearObjContainer<S,NodeT> ContainerType;
+  typedef Tpetra::Vector<S,NodeT> VectorType;
+  typedef Tpetra::CrsMatrix<S,NodeT> CrsMatrixType;
+  typedef Tpetra::CrsGraph<NodeT> CrsGraphType;
+  typedef Tpetra::Map<NodeT> MapType;
+  typedef Tpetra::Import<NodeT> ImportType;
+  typedef Tpetra::Export<NodeT> ExportType;
+#endif
 
   // maps the local (field,element,basis) triplet to a global ID
   // for scattering
@@ -301,7 +382,11 @@ private:
   bool disableSensitivities_;
   std::string globalDataKey_; // what global data does this fill?
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedTpetraLinearObjContainer<S,LO,GO,NodeT> > blockedContainer_;
+#else
+  Teuchos::RCP<const BlockedTpetraLinearObjContainer<S,NodeT> > blockedContainer_;
+#endif
 
   //! Local indices for unknowns
   Kokkos::View<LO**,PHX::Device> worksetLIDs_;

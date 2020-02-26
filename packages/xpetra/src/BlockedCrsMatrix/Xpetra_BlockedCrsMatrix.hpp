@@ -90,12 +90,22 @@ namespace Xpetra {
   typedef std::string viewLabel_t;
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class BlockedCrsMatrix :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+    public Matrix<Scalar, Node> {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_type;
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
@@ -187,15 +197,24 @@ namespace Xpetra {
           if (thyraOp->blockExists(r,c)) {
             // we only need at least one block in each block row to extract the range map
             Teuchos::RCP<const Thyra::LinearOpBase<Scalar> > const_op = thyraOp->getBlock(r,c); // nonConst access is not allowed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             Teuchos::RCP<const Xpetra::CrsMatrix<Scalar,LO,GO,Node> > xop =
                             Xpetra::ThyraUtils<Scalar,LocalOrdinal,GlobalOrdinal,Node>::toXpetra(const_op);
+#else
+            Teuchos::RCP<const Xpetra::CrsMatrix<Scalar,Node> > xop =
+                            Xpetra::ThyraUtils<Scalar,Node>::toXpetra(const_op);
+#endif
             subRangeMaps[r] = xop->getRangeMap();
 	    if(r!=c) is_diagonal_ = false;
             break;
           }
         }
       }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > fullRangeMap = mergeMaps(subRangeMaps);
+#else
+      Teuchos::RCP<const Xpetra::Map<Node> > fullRangeMap = mergeMaps(subRangeMaps);
+#endif
 
       // check whether the underlying Thyra operator uses Thyra-style numbering (default for most applications) or
       // Xpetra style numbering
@@ -205,23 +224,40 @@ namespace Xpetra {
         numAllElements += subRangeMaps[v]->getGlobalNumElements();
       }
       if ( fullRangeMap->getGlobalNumElements() != numAllElements) bRangeUseThyraStyleNumbering = true;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       rangemaps_ = Teuchos::rcp(new Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node>(fullRangeMap, subRangeMaps, bRangeUseThyraStyleNumbering));
+#else
+      rangemaps_ = Teuchos::rcp(new Xpetra::MapExtractor<Scalar,Node>(fullRangeMap, subRangeMaps, bRangeUseThyraStyleNumbering));
+#endif
 
       // build domain map extractor from Thyra::BlockedLinearOpBase object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       std::vector<Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > > subDomainMaps(numDomainBlocks);
+#else
+      std::vector<Teuchos::RCP<const Xpetra::Map<Node> > > subDomainMaps(numDomainBlocks);
+#endif
       for (size_t c=0; c<Teuchos::as<size_t>(numDomainBlocks); ++c) {
         for (size_t r=0; r<Teuchos::as<size_t>(numRangeBlocks); ++r) {
           if (thyraOp->blockExists(r,c)) {
             // we only need at least one block in each block row to extract the range map
             Teuchos::RCP<const Thyra::LinearOpBase<Scalar> > const_op = thyraOp->getBlock(r,c); // nonConst access is not allowed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             Teuchos::RCP<const Xpetra::CrsMatrix<Scalar,LO,GO,Node> > xop =
                             Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toXpetra(const_op);
+#else
+            Teuchos::RCP<const Xpetra::CrsMatrix<Scalar,Node> > xop =
+                            Xpetra::ThyraUtils<Scalar,Node>::toXpetra(const_op);
+#endif
             subDomainMaps[c] = xop->getDomainMap();
             break;
           }
         }
       }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > fullDomainMap = mergeMaps(subDomainMaps);
+#else
+      Teuchos::RCP<const Xpetra::Map<Node> > fullDomainMap = mergeMaps(subDomainMaps);
+#endif
       // plausibility check for numbering style (Xpetra or Thyra)
       bool bDomainUseThyraStyleNumbering = false;
       numAllElements = 0;
@@ -229,7 +265,11 @@ namespace Xpetra {
         numAllElements += subDomainMaps[v]->getGlobalNumElements();
       }
       if (fullDomainMap->getGlobalNumElements() != numAllElements) bDomainUseThyraStyleNumbering = true;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       domainmaps_ = Teuchos::rcp(new Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node>(fullDomainMap, subDomainMaps, bDomainUseThyraStyleNumbering));
+#else
+      domainmaps_ = Teuchos::rcp(new Xpetra::MapExtractor<Scalar,Node>(fullDomainMap, subDomainMaps, bDomainUseThyraStyleNumbering));
+#endif
 
       // store numbering mode
       bRangeThyraMode_  = bRangeUseThyraStyleNumbering;
@@ -243,10 +283,17 @@ namespace Xpetra {
             // TODO we do not support nested Thyra operators here!
             Teuchos::RCP<const Thyra::LinearOpBase<Scalar> > const_op = thyraOp->getBlock(r,c); // nonConst access is not allowed.
             Teuchos::RCP<Thyra::LinearOpBase<Scalar> > op = Teuchos::rcp_const_cast<Thyra::LinearOpBase<Scalar> >(const_op); // cast away const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             Teuchos::RCP<Xpetra::CrsMatrix<Scalar,LO,GO,Node> > xop =
                 Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toXpetra(op);
             Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar,LO,GO,Node> > xwrap =
                 Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LO,GO,Node>(xop));
+#else
+            Teuchos::RCP<Xpetra::CrsMatrix<Scalar,Node> > xop =
+                Xpetra::ThyraUtils<Scalar,Node>::toXpetra(op);
+            Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar,Node> > xwrap =
+                Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xop));
+#endif
             blocks_.push_back(xwrap);
           } else {
             // add empty block
@@ -267,13 +314,21 @@ namespace Xpetra {
      * Helper function only used in constructor of Xpetra_BlockedCrsMatrix for transforming a Thyra::BlockedLinearOp object
      * All GID entries are sorted and duplicates are eliminated.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Map> mergeMaps(std::vector<Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > > & subMaps) {
+#else
+    Teuchos::RCP<const Map> mergeMaps(std::vector<Teuchos::RCP<const Xpetra::Map<Node> > > & subMaps) {
+#endif
       // TODO merging for Thyra mode is missing (similar to what we do in constructor of MapExtractor
 
       // merge submaps to global map
       std::vector<GlobalOrdinal> gids;
       for(size_t tt = 0; tt<subMaps.size(); ++tt) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > subMap = subMaps[tt];
+#else
+        Teuchos::RCP<const Xpetra::Map<Node> > subMap = subMaps[tt];
+#endif
 #if 1
         Teuchos::ArrayView< const GlobalOrdinal > subMapGids = subMap->getNodeElementList();
         gids.insert(gids.end(), subMapGids.begin(), subMapGids.end());
@@ -294,7 +349,11 @@ namespace Xpetra {
       std::sort(gids.begin(), gids.end());
       gids.erase(std::unique(gids.begin(), gids.end()), gids.end());
       Teuchos::ArrayView<GO> gidsView(&gids[0], gids.size());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > fullMap = Xpetra::MapFactory<LocalOrdinal,GlobalOrdinal,Node>::Build(subMaps[0]->lib(), INVALID, gidsView, subMaps[0]->getIndexBase(), subMaps[0]->getComm());
+#else
+      Teuchos::RCP<Xpetra::Map<Node> > fullMap = Xpetra::MapFactory<Node>::Build(subMaps[0]->lib(), INVALID, gidsView, subMaps[0]->getIndexBase(), subMaps[0]->getComm());
+#endif
       return fullMap;
     }
 
@@ -1485,7 +1544,11 @@ namespace Xpetra {
 #ifdef HAVE_XPETRA_THYRA
     Teuchos::RCP<Thyra::BlockedLinearOpBase<Scalar> > getThyraOperator() {
       Teuchos::RCP<Thyra::LinearOpBase<Scalar> > thOp =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Xpetra::ThyraUtils<Scalar,LO,GO,Node>::toThyra(Teuchos::rcpFromRef(*this));
+#else
+          Xpetra::ThyraUtils<Scalar,Node>::toThyra(Teuchos::rcpFromRef(*this));
+#endif
       TEUCHOS_TEST_FOR_EXCEPT(Teuchos::is_null(thOp));
 
       Teuchos::RCP<Thyra::BlockedLinearOpBase<Scalar> > thbOp =

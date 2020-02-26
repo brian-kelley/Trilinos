@@ -205,7 +205,11 @@ namespace Tpetra {
         if (numRows == numCols) {
           return pRangeMap;
         } else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           return createUniformContigMapWithNode<LO,GO,NT> (numCols,
+#else
+          return createUniformContigMapWithNode<NT> (numCols,
+#endif
                                                            pRangeMap->getComm ()
                                                           );
         }
@@ -731,7 +735,11 @@ namespace Tpetra {
          //typedef Teuchos::ScalarTraits<ST> STS; // unused
          //typedef typename STS::magnitudeType MT; // unused
          //typedef Teuchos::ScalarTraits<MT> STM; // unused
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          typedef Tpetra::Vector<ST, LO, GO, NT> MV;
+#else
+         typedef Tpetra::Vector<ST, NT> MV;
+#endif
 
          Tuple<GO, 3> dims;
          dims[0] = (nx+1)*(nx+1)*(nx+1);
@@ -740,13 +748,21 @@ namespace Tpetra {
          const global_size_t numRows = static_cast<global_size_t> (dims[0]);
          // const size_t numCols = static_cast<size_t> (dims[1]);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<const map_type> map = createUniformContigMapWithNode<LO, GO, NT> (numRows, pComm
+#else
+         RCP<const map_type> map = createUniformContigMapWithNode<NT> (numRows, pComm
+#endif
          );
          int start = map->getMinGlobalIndex();
          int end = map->getMaxGlobalIndex()+1;
 
          // Make a multivector X owned entirely by Proc 0.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<MV> X = createVector<ST, LO, GO, NT> (map);
+#else
+         RCP<MV> X = createVector<ST, NT> (map);
+#endif
          ArrayRCP<ST> X_view = X->get1dViewNonConst ();
          ST* vec = &X_view[0];
          int count = 0;

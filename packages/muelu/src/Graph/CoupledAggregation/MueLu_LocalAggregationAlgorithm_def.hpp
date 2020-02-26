@@ -62,13 +62,23 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   LocalAggregationAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::LocalAggregationAlgorithm()
+#else
+  template <class Node>
+  LocalAggregationAlgorithm<Node>::LocalAggregationAlgorithm()
+#endif
     : ordering_("natural"), minNodesPerAggregate_(1), maxNeighAlreadySelected_(0)
   { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalAggregationAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::CoarsenUncoupled(GraphBase const & graph, Aggregates & aggregates) const {
+#else
+  template <class Node>
+  void LocalAggregationAlgorithm<Node>::CoarsenUncoupled(GraphBase const & graph, Aggregates & aggregates) const {
+#endif
     Monitor m(*this, "Coarsen Uncoupled");
 
     GetOStream(Runtime1) << "Ordering:                  " << ordering_ << std::endl;
@@ -331,8 +341,13 @@ namespace MueLu {
 
   } // CoarsenUncoupled
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalAggregationAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::RandomReorder(Teuchos::ArrayRCP<LO> list) const {
+#else
+  template <class Node>
+  void LocalAggregationAlgorithm<Node>::RandomReorder(Teuchos::ArrayRCP<LO> list) const {
+#endif
     //TODO: replace int
     int n = list.size();
     for(int i=0; i<n-1; i++) {
@@ -340,8 +355,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   int LocalAggregationAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::RandomOrdinal(int min, int max) const {
+#else
+  template <class Node>
+  int LocalAggregationAlgorithm<Node>::RandomOrdinal(int min, int max) const {
+#endif
     return min + Teuchos::as<int>((max-min+1) * (static_cast<double>(std::rand()) / (RAND_MAX + 1.0)));
   }
 

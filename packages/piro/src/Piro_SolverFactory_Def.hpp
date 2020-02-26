@@ -74,7 +74,11 @@
 
 namespace Piro {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<Thyra::ResponseOnlyModelEvaluatorBase<Scalar> > SolverFactory::createSolver(
     const Teuchos::RCP<Teuchos::ParameterList> &piroParams,
     const Teuchos::RCP<Thyra::ModelEvaluator<Scalar> > &model,
@@ -90,11 +94,19 @@ Teuchos::RCP<Thyra::ResponseOnlyModelEvaluatorBase<Scalar> > SolverFactory::crea
     result = Teuchos::rcp(new NOXSolver<Scalar>(piroParams, model, observer));
   } else
   if (solverType == "Velocity Verlet") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     result = Teuchos::rcp(new VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(
+#else
+    result = Teuchos::rcp(new VelocityVerletSolver<Scalar, Node>(
+#endif
          piroParams, model, solMgr, observer));
   } else
   if (solverType == "Trapezoid Rule") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     result = Teuchos::rcp(new TrapezoidRuleSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(
+#else
+    result = Teuchos::rcp(new TrapezoidRuleSolver<Scalar, Node>(
+#endif
         piroParams, model, solMgr, observer));
   } else
   if (solverType == "LOCA") {
@@ -106,12 +118,20 @@ Teuchos::RCP<Thyra::ResponseOnlyModelEvaluatorBase<Scalar> > SolverFactory::crea
 #endif /* HAVE_PIRO_NOX */
 #ifdef HAVE_PIRO_RYTHMOS
   if (solverType == "Rythmos") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     result = rythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(piroParams, model, observer);
+#else
+    result = rythmosSolver<Scalar, Node>(piroParams, model, observer);
+#endif
   } else
 #endif /* HAVE_PIRO_RYTHMOS */
 #ifdef HAVE_PIRO_TEMPUS
   if (solverType == "Tempus") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     result = tempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(piroParams, model, observer);
+#else
+    result = tempusSolver<Scalar, Node>(piroParams, model, observer);
+#endif
   } else
 #endif /* HAVE_PIRO_TEMPUS */
   {
@@ -129,7 +149,11 @@ The below is DEPRECATED!
 Please do not use
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template <typename Scalar, typename Node>
+#endif
 Teuchos::RCP<Thyra::ResponseOnlyModelEvaluatorBase<Scalar> > SolverFactory::createSolver(
     const Teuchos::RCP<Teuchos::ParameterList> &piroParams,
     const Teuchos::RCP<Thyra::ModelEvaluator<Scalar> > &model,
@@ -144,11 +168,19 @@ Teuchos::RCP<Thyra::ResponseOnlyModelEvaluatorBase<Scalar> > SolverFactory::crea
     result = Teuchos::rcp(new NOXSolver<Scalar>(piroParams, model, observer));
   } else
   if (solverType == "Velocity Verlet") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     result = Teuchos::rcp(new VelocityVerletSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(
+#else
+    result = Teuchos::rcp(new VelocityVerletSolver<Scalar, Node>(
+#endif
          piroParams, model, Teuchos::null, observer));
   } else
   if (solverType == "Trapezoid Rule") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     result = Teuchos::rcp(new TrapezoidRuleSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(
+#else
+    result = Teuchos::rcp(new TrapezoidRuleSolver<Scalar, Node>(
+#endif
         piroParams, model, Teuchos::null, observer));
   } else
   if (solverType == "LOCA") {
@@ -157,12 +189,20 @@ Teuchos::RCP<Thyra::ResponseOnlyModelEvaluatorBase<Scalar> > SolverFactory::crea
 #endif /* HAVE_PIRO_NOX */
 #ifdef HAVE_PIRO_RYTHMOS
   if (solverType == "Rythmos") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     result = rythmosSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(piroParams, model, observer);
+#else
+    result = rythmosSolver<Scalar, Node>(piroParams, model, observer);
+#endif
   } else
 #endif /* HAVE_PIRO_RYTHMOS */
 #ifdef HAVE_PIRO_TEMPUS
   if (solverType == "Tempus") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     result = tempusSolver<Scalar, LocalOrdinal, GlobalOrdinal, Node>(piroParams, model, observer);
+#else
+    result = tempusSolver<Scalar, Node>(piroParams, model, observer);
+#endif
   } else
 #endif /* HAVE_PIRO_TEMPUS */
   {

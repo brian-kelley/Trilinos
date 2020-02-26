@@ -18,10 +18,19 @@ int main(int argc, char* argv[])
 
   typedef Tpetra::Map<>::node_type                Node;
   //typedef Kokkos::OpenMP                         Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO,GO,Node>                 Map;
+#else
+  typedef Tpetra::Map<Node>                 Map;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<VAL,LO,GO,Node>           MAT;
   typedef Tpetra::MultiVector<VAL,LO,GO,Node>         VEC;
+#else
+  typedef Tpetra::CrsMatrix<VAL,Node>           MAT;
+  typedef Tpetra::MultiVector<VAL,Node>         VEC;
+#endif
   typedef Teuchos::Comm<int>                         Comm;
 
   typedef Teuchos::RCP<Teuchos::ParameterList>       PList;

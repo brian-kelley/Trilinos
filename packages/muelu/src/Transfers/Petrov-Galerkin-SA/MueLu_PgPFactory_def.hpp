@@ -69,8 +69,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> PgPFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A",              Teuchos::null, "Generating factory of the matrix A used during the prolongator smoothing process");
@@ -81,19 +86,34 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetMinimizationMode(MinimizationNorm minnorm) {
+#else
+  template <class Scalar, class Node>
+  void PgPFactory<Scalar, Node>::SetMinimizationMode(MinimizationNorm minnorm) {
+#endif
     SetParameter("Minimization norm", ParameterEntry(minnorm)); // revalidate
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   MueLu::MinimizationNorm PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetMinimizationMode() {
+#else
+  template <class Scalar, class Node>
+  MueLu::MinimizationNorm PgPFactory<Scalar, Node>::GetMinimizationMode() {
+#endif
     const ParameterList& pL = GetParameterList();
     return pL.get<MueLu::MinimizationNorm>("Minimization norm");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void PgPFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     Input(fineLevel, "A");
 
     // Get default tentative prolongator factory
@@ -124,8 +144,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void PgPFactory<Scalar, Node>::Build(Level& fineLevel, Level &coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Prolongator smoothing (PG-AMG)", coarseLevel);
 
     // Level Get
@@ -147,7 +172,11 @@ namespace MueLu {
     /////////////////// calculate D^{-1} A Ptent (needed for smoothing)
     bool doFillComplete=true;
     bool optimizeStorage=true;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> DinvAP0 = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *Ptent, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#else
+    RCP<Matrix> DinvAP0 = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *Ptent, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#endif
 
     doFillComplete=true;
     optimizeStorage=false;
@@ -199,7 +228,11 @@ namespace MueLu {
     RCP<Matrix> P_smoothed = Teuchos::null;
     Utilities::MyOldScaleMatrix(*DinvAP0, RowBasedOmega_local, false, doFillComplete, optimizeStorage); //scale matrix with reciprocal of diag
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TwoMatrixAdd(*Ptent, false, Teuchos::ScalarTraits<Scalar>::one(),
+#else
+    Xpetra::MatrixMatrix<Scalar, Node>::TwoMatrixAdd(*Ptent, false, Teuchos::ScalarTraits<Scalar>::one(),
+#endif
                          *DinvAP0, false, -Teuchos::ScalarTraits<Scalar>::one(),
                          P_smoothed,GetOStream(Statistics2));
     P_smoothed->fillComplete(Ptent->getDomainMap(), Ptent->getRangeMap());
@@ -236,8 +269,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ComputeRowBasedOmega(Level& /* fineLevel */, Level &coarseLevel, const RCP<Matrix>& A, const RCP<Matrix>& P0, const RCP<Matrix>& DinvAP0, RCP<Vector > & RowBasedOmega) const {
+#else
+  template <class Scalar, class Node>
+  void PgPFactory<Scalar, Node>::ComputeRowBasedOmega(Level& /* fineLevel */, Level &coarseLevel, const RCP<Matrix>& A, const RCP<Matrix>& P0, const RCP<Matrix>& DinvAP0, RCP<Vector > & RowBasedOmega) const {
+#endif
     FactoryMonitor m(*this, "PgPFactory::ComputeRowBasedOmega", coarseLevel);
 
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType Magnitude;
@@ -266,10 +304,18 @@ namespace MueLu {
         // calculate A * P0
         bool doFillComplete=true;
         bool optimizeStorage=false;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Matrix> AP0 = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *P0, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#else
+        RCP<Matrix> AP0 = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *P0, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#endif
 
         // compute A * D^{-1} * A * P0
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Matrix> ADinvAP0 = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *DinvAP0, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#else
+        RCP<Matrix> ADinvAP0 = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *DinvAP0, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#endif
 
         Numerator =   VectorFactory::Build(ADinvAP0->getColMap(), true);
         Denominator = VectorFactory::Build(ADinvAP0->getColMap(), true);
@@ -305,7 +351,11 @@ namespace MueLu {
         bool doFillComplete=true;
         bool optimizeStorage=true;
         Teuchos::ArrayRCP<Scalar> diagA = Utilities::GetMatrixDiagonal(*A);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Matrix> DinvADinvAP0 = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *DinvAP0, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#else
+        RCP<Matrix> DinvADinvAP0 = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *DinvAP0, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#endif
         Utilities::MyOldScaleMatrix(*DinvADinvAP0, diagA, true, doFillComplete, optimizeStorage); //scale matrix with reciprocal of diag
 
         Numerator =   VectorFactory::Build(DinvADinvAP0->getColMap(), true);
@@ -421,8 +471,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MultiplySelfAll(const RCP<Matrix>& Op, Teuchos::RCP<Vector >& InnerProdVec) const {
+#else
+  template <class Scalar, class Node>
+  void PgPFactory<Scalar, Node>::MultiplySelfAll(const RCP<Matrix>& Op, Teuchos::RCP<Vector >& InnerProdVec) const {
+#endif
 
     // note: InnerProdVec is based on column map of Op
     TEUCHOS_TEST_FOR_EXCEPTION(!InnerProdVec->getMap()->isSameAs(*Op->getColMap()), Exceptions::RuntimeError, "MueLu::PgPFactory::MultiplySelfAll: map of InnerProdVec must be same as column map of operator. error");
@@ -459,8 +514,13 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::MultiplyAll(const RCP<Matrix>& left, const RCP<Matrix>& right, Teuchos::RCP<Vector >& InnerProdVec) const {
+#else
+  template <class Scalar, class Node>
+  void PgPFactory<Scalar, Node>::MultiplyAll(const RCP<Matrix>& left, const RCP<Matrix>& right, Teuchos::RCP<Vector >& InnerProdVec) const {
+#endif
 
     TEUCHOS_TEST_FOR_EXCEPTION(!left->getDomainMap()->isSameAs(*right->getDomainMap()), Exceptions::RuntimeError, "MueLu::PgPFactory::MultiplyAll: domain maps of left and right do not match. Error.");
     TEUCHOS_TEST_FOR_EXCEPTION(!left->getRowMap()->isSameAs(*right->getRowMap()), Exceptions::RuntimeError, "MueLu::PgPFactory::MultiplyAll: row maps of left and right do not match. Error.");
@@ -685,13 +745,23 @@ namespace MueLu {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level &/* fineLevel */, Level &/* coarseLevel */) const {
+#else
+  template <class Scalar, class Node>
+  void PgPFactory<Scalar, Node>::BuildP(Level &/* fineLevel */, Level &/* coarseLevel */) const {
+#endif
     std::cout << "TODO: remove me" << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PgPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ReUseDampingParameters(bool bReuse) {
+#else
+  template <class Scalar, class Node>
+  void PgPFactory<Scalar, Node>::ReUseDampingParameters(bool bReuse) {
+#endif
     SetParameter("ReUseRowBasedOmegas", ParameterEntry(bReuse));
   }
 

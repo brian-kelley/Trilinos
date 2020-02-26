@@ -244,10 +244,19 @@ getDiagCopyWithoutOffsets (const DiagType& D,
 /// implementation of Tpetra::CrsMatrix uses this function, and we
 /// want to avoid a circular header dependency.  On the other hand,
 /// the implementation does not actually depend on Tpetra::CrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 getLocalDiagCopyWithoutOffsetsNotFillComplete ( ::Tpetra::Vector<SC, LO, GO, NT>& diag,
                                                 const ::Tpetra::RowMatrix<SC, LO, GO, NT>& A,
+#else
+getLocalDiagCopyWithoutOffsetsNotFillComplete ( ::Tpetra::Vector<SC, NT>& diag,
+                                                const ::Tpetra::RowMatrix<SC, NT>& A,
+#endif
                                                 const bool debug =
 #ifdef HAVE_TPETRA_DEBUG
                                                 true);

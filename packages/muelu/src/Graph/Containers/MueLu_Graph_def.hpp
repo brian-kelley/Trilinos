@@ -52,8 +52,13 @@
 namespace MueLu {
 
 #ifdef MUELU_UNUSED
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   size_t Graph<LocalOrdinal, GlobalOrdinal, Node>::GetNodeNumGhost() const {
+#else
+  template <class Node>
+  size_t Graph<Node>::GetNodeNumGhost() const {
+#endif
     /*
       Ray's comments about nGhost:
       Graph->NGhost == graph_->RowMatrixColMap()->NumMyElements() - graph_->MatrixDomainMap()->NumMyElements()
@@ -70,8 +75,13 @@ namespace MueLu {
   //! Print the object with some verbosity level to an FancyOStream object.
   //using MueLu::Describable::describe; // overloading, not hiding
   //void describe(Teuchos::FancyOStream &out, const VerbLevel verbLevel = Default) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void Graph<LocalOrdinal, GlobalOrdinal, Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#else
+  template <class Node>
+  void Graph<Node>::print(Teuchos::FancyOStream &out, const VerbLevel verbLevel) const {
+#endif
     MUELU_DESCRIBE;
 
     if (verbLevel & Parameters0) {

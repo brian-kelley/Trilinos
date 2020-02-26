@@ -55,7 +55,11 @@ namespace Ifpack2 {
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 DropFilter<MatrixType>::DropFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& Matrix,
+#else
+DropFilter<MatrixType>::DropFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> >& Matrix,
+#endif
                                    magnitudeType DropTol):
   A_(Matrix),
   DropTol_(DropTol),
@@ -122,9 +126,13 @@ DropFilter<MatrixType>::getComm () const
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 DropFilter<MatrixType>::getRowMap() const
 {
   return A_->getRowMap();
@@ -132,9 +140,13 @@ DropFilter<MatrixType>::getRowMap() const
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 DropFilter<MatrixType>::getColMap() const
 {
   return A_->getColMap();
@@ -142,9 +154,13 @@ DropFilter<MatrixType>::getColMap() const
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 DropFilter<MatrixType>::getDomainMap() const
 {
   return A_->getDomainMap();
@@ -152,9 +168,13 @@ DropFilter<MatrixType>::getDomainMap() const
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 DropFilter<MatrixType>::getRangeMap() const
 {
   return A_->getRangeMap();
@@ -162,9 +182,13 @@ DropFilter<MatrixType>::getRangeMap() const
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::local_ordinal_type,
                                      typename MatrixType::global_ordinal_type,
                                      typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::node_type> >
+#endif
 DropFilter<MatrixType>::getGraph() const
 {
   throw std::runtime_error("Ifpack2::DropFilter: does not support getGraph.");
@@ -340,7 +364,11 @@ void DropFilter<MatrixType>::getLocalRowView(LocalOrdinal /* LocalRow */,
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void DropFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &diag) const
+#else
+void DropFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,Node> &diag) const
+#endif
 {
   // This is somewhat dubious as to how the maps match.
   return A_->getLocalDiagCopy(diag);
@@ -348,22 +376,35 @@ void DropFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,LocalOrdinal
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void DropFilter<MatrixType>::leftScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* x */)
+#else
+void DropFilter<MatrixType>::leftScale(const Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
 {
   throw std::runtime_error("Ifpack2::DropFilter does not support leftScale.");
 }
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void DropFilter<MatrixType>::rightScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* x */)
+#else
+void DropFilter<MatrixType>::rightScale(const Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
 {
   throw std::runtime_error("Ifpack2::DropFilter does not support rightScale.");
 }
 
 //==========================================================================
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void DropFilter<MatrixType>::apply(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
                                        Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+void DropFilter<MatrixType>::apply(const Tpetra::MultiVector<Scalar,Node> &X,
+                                       Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
                                        Teuchos::ETransp mode,
                                        Scalar /* alpha */,
                                        Scalar /* beta */) const
@@ -425,8 +466,13 @@ typename DropFilter<MatrixType>::mag_type DropFilter<MatrixType>::getFrobeniusNo
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DROPFILTER_INSTANT(S,LO,GO,N)                            \
   template class Ifpack2::DropFilter< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_DROPFILTER_INSTANT(S,N)                            \
+  template class Ifpack2::DropFilter< Tpetra::RowMatrix<S, N> >;
+#endif
 
 
 } // namespace Ifpack2

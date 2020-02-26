@@ -68,18 +68,32 @@ typedef Tpetra::global_size_t GST;
 typedef tif_utest::Node Node;
 
 //this macro declares the unit-test-class:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Amesos2Wrapper, Test0, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Amesos2Wrapper, Test0, Scalar)
+#endif
 {
 //we are now in a class method declared by the above macro, and
 //that method has these input arguments:
 //Teuchos::FancyOStream& out, bool& success
 
   using Kokkos::Details::ArithTraits;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO,GO,Node> map_type;
   typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LO,GO,Node> row_matrix_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+#endif
   #ifdef HAVE_AMESOS2_SUPERLU
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar,LO,GO,Node> mv_type;
+#else
+  typedef Tpetra::MultiVector<Scalar,Node> mv_type;
+#endif
   typedef typename mv_type::impl_scalar_type val_type;
   typedef typename Kokkos::Details::ArithTraits<val_type>::mag_type mag_type;
   typedef typename map_type::device_type device_type;
@@ -91,9 +105,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Amesos2Wrapper, Test0, Scalar, LO, GO)
 
   GST num_rows_per_proc = 5;
   RCP<const map_type> rowmap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LO,GO,Node> (num_rows_per_proc);
+#else
+    tif_utest::create_tpetra_map<Node> (num_rows_per_proc);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const crs_matrix_type> crsmatrix = tif_utest::create_test_matrix<Scalar,LO,GO,Node> (rowmap);
+#else
+  RCP<const crs_matrix_type> crsmatrix = tif_utest::create_test_matrix<Scalar,Node> (rowmap);
+#endif
 
   out << "Create Ifpack2 Amesos2 wrapper instance" << endl;
   Ifpack2::Details::Amesos2Wrapper<row_matrix_type> prec (crsmatrix);
@@ -168,24 +190,42 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Amesos2Wrapper, Test0, Scalar, LO, GO)
 # endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Amesos2Wrapper, Test1, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Amesos2Wrapper, Test1, Scalar)
+#endif
 {
 //we are now in a class method declared by the above macro, and
 //that method has these input arguments:
 //Teuchos::FancyOStream& out, bool& success
   using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+#endif
 
   out << "Ifpack2 Amesos2 wrapper: Test1" << endl;
   Teuchos::OSTab tab1 (out);
 
   GST num_rows_per_proc = 5;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const map_type> rowmap = tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node> (num_rows_per_proc);
+#else
+  RCP<const map_type> rowmap = tif_utest::create_tpetra_map<Node> (num_rows_per_proc);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const crs_matrix_type> crsmatrix = tif_utest::create_test_matrix3<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rowmap);
+#else
+  RCP<const crs_matrix_type> crsmatrix = tif_utest::create_test_matrix3<Scalar,Node>(rowmap);
+#endif
 
   Ifpack2::Details::Amesos2Wrapper<row_matrix_type> prec (crsmatrix);
 
@@ -202,7 +242,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Amesos2Wrapper, Test1, Scalar, LocalOrd
   TEST_NOTHROW(prec.initialize());
   prec.compute();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> mv_type;
+#else
+  typedef Tpetra::MultiVector<Scalar,Node> mv_type;
+#endif
   mv_type x(rowmap,2), y(rowmap,2);
   x.putScalar (Teuchos::ScalarTraits<Scalar>::one ());
 
@@ -220,8 +264,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Amesos2Wrapper, Test1, Scalar, LocalOrd
 }
 
 #define UNIT_TEST_GROUP_SCALAR_ORDINAL(Scalar,LocalOrdinal,GlobalOrdinal) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Amesos2Wrapper, Test0, Scalar, LocalOrdinal, GlobalOrdinal) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Amesos2Wrapper, Test1, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Amesos2Wrapper, Test0, Scalar) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Amesos2Wrapper, Test1, Scalar)
+#endif
 
 // FIXME (mfh 11 Apr 2018) We should test this at least for all
 // enabled real Scalar types, if not complex Scalar types as well.

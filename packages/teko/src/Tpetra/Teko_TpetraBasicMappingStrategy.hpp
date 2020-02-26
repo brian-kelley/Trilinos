@@ -81,8 +81,13 @@ public:
      * \param[in]      dMap   Domain map
      * \param[in]      comm   Epetra_Comm object related to the map
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    BasicMappingStrategy(const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > & rMap,
                         const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > & dMap, const Teuchos::Comm<Thyra::Ordinal> & comm);
+#else
+   BasicMappingStrategy(const Teuchos::RCP<const Tpetra::Map<NT> > & rMap,
+                        const Teuchos::RCP<const Tpetra::Map<NT> > & dMap, const Teuchos::Comm<Thyra::Ordinal> & comm);
+#endif
    //@}
 
    //!\name Member functions inherited from Teko::Epetra::MappingStrategy
@@ -96,7 +101,11 @@ public:
      * \param[in,out]     thyra_X   destination Thyra::MultiVectorBase
      * \param[in]     eow       Operator that defines the transition
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,GO,NT>& tpetra_X, 
+#else
+   virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,NT>& tpetra_X, 
+#endif
                                     const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyra_X) const;
                                     // const Teko::Epetra::EpetraOperatorWrapper & eow) const;
 
@@ -109,7 +118,11 @@ public:
      * \param[in]     eow      Operator that defines the transition
      */
    virtual void copyThyraIntoTpetra(const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > & thyra_Y, 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                     Tpetra::MultiVector<ST,LO,GO,NT>& tpetra_Y) const;
+#else
+                                    Tpetra::MultiVector<ST,NT>& tpetra_Y) const;
+#endif
                                     // const Teko::Epetra::EpetraOperatorWrapper & eow) const;
 
    /** Returns the domain and range maps used by this class.
@@ -119,7 +132,11 @@ public:
      *
      * \returns Range map corresponding to this class
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > domainMap() const
+#else
+   virtual const Teuchos::RCP<const Tpetra::Map<NT> > domainMap() const
+#endif
    { return domainMap_; }
 
    /** Returns the domain and range maps used by this class.
@@ -129,7 +146,11 @@ public:
      *
      * \returns Range map corresponding to this class
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > rangeMap() const
+#else
+   virtual const Teuchos::RCP<const Tpetra::Map<NT> > rangeMap() const
+#endif
    { return rangeMap_; }
 
    /** A function for my sanity
@@ -146,8 +167,13 @@ protected:
 
    //! \name storage for sanity
    //@{
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > domainMap_; 
    Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > rangeMap_;
+#else
+   Teuchos::RCP<const Tpetra::Map<NT> > domainMap_; 
+   Teuchos::RCP<const Tpetra::Map<NT> > rangeMap_;
+#endif
    //@}
 };
 

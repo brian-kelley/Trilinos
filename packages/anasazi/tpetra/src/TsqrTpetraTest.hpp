@@ -58,16 +58,28 @@ namespace TSQR {
       using Teuchos::RCP;
       using Teuchos::Tuple;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template< class S, class LO, class GO, class Node >
+#else
+      template< class S, class Node >
+#endif
       class TpetraTsqrTest {
       public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
         typedef S scalar_type;
         typedef LO local_ordinal_type;
         typedef GO global_ordinal_type;
         typedef Node node_type;
 
         typedef typename TSQR::ScalarTraits< S >::magnitude_type magnitude_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef TSQR::Trilinos::TsqrTpetraAdaptor< S, LO, GO, Node > adaptor_type;
+#else
+        typedef TSQR::Trilinos::TsqrTpetraAdaptor< S, Node > adaptor_type;
+#endif
 
         TpetraTsqrTest (const Tpetra::global_size_t nrowsGlobal,
                         const size_t ncols,
@@ -128,10 +140,18 @@ namespace TSQR {
         }
 
       private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Tpetra::MultiVector< S, LO, GO, Node >   MV;
+#else
+        typedef Tpetra::MultiVector< S, Node >   MV;
+#endif
         typedef Teuchos::Tuple< RCP< MV >, 3 >           triple_type;
         typedef Teuchos::RCP< const Teuchos::Comm<int> > comm_ptr;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Tpetra::Map< LO, GO, Node >              map_type;
+#else
+        typedef Tpetra::Map<Node >              map_type;
+#endif
         typedef Teuchos::RCP< const map_type >           map_ptr;
         typedef TSQR::Random::NormalGenerator< LO, S >   normalgen_type;
         typedef Teuchos::RCP< Node >                     node_ptr;
@@ -156,7 +176,11 @@ namespace TSQR {
                  const node_ptr& node)
         {
           using Tpetra::createUniformContigMapWithNode;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           return createUniformContigMapWithNode< LO, GO, Node > (nrowsGlobal, comm);
+#else
+          return createUniformContigMapWithNode<Node > (nrowsGlobal, comm);
+#endif
         }
 
         /// \brief Make a Tpetra test multivector for filling in.
@@ -177,7 +201,11 @@ namespace TSQR {
                          const RCP< normalgen_type >& pGen)
         {
           using TSQR::Trilinos::TpetraRandomizer;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typedef TpetraRandomizer< S, LO, GO, Node, normalgen_type > randomizer_type;
+#else
+          typedef TpetraRandomizer< S,Node, normalgen_type > randomizer_type;
+#endif
 
           const LO ncols = mv->getNumVectors();
           std::vector< S > singular_values (ncols);

@@ -58,8 +58,13 @@ IFPACK2_ETI_MANGLING_TYPEDEFS()
 // call it LCL_CALL and not LCL_INST.  We are just using the fix for
 // Bug 6380 to invoke this class method over the set of enabled
 // template parameters.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define LCL_CALL( SC, LO, GO, NT ) \
   ::Ifpack2::Details::LinearSolverFactory<SC, LO, GO, NT>::registerLinearSolverFactory ();
+#else
+#define LCL_CALL( SC, NT ) \
+  ::Ifpack2::Details::LinearSolverFactory<SC, NT>::registerLinearSolverFactory ();
+#endif
 
 namespace Ifpack2 {
 namespace Details {

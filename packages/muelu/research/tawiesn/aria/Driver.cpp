@@ -64,18 +64,36 @@
 #include <BelosMueLuAdapter.hpp>      // => This header defines Belos::MueLuOp
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   class ExportVTK : public MueLu::VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+  template <class Scalar, class Node>
+  class ExportVTK : public MueLu::VisualizationHelpers<Scalar, Node> {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     ExportVTK() {};
 
   public:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void writeFile(std::ofstream& fout, Teuchos::RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& coordinates, Teuchos::RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& sol)
+#else
+    void writeFile(std::ofstream& fout, Teuchos::RCP<Xpetra::MultiVector<Scalar, Node> >& coordinates, Teuchos::RCP<Xpetra::Vector<Scalar, Node> >& sol)
+#endif
     {
       using namespace std;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef MueLu::VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node> VH;
       Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > nodeMap = coordinates->getMap();
+#else
+      typedef MueLu::VisualizationHelpers<Scalar, Node> VH;
+      Teuchos::RCP<const Xpetra::Map<Node> > nodeMap = coordinates->getMap();
+#endif
       std::vector<LocalOrdinal> vertices;
       std::vector<LocalOrdinal> geomSize;
       LocalOrdinal numFineNodes = Teuchos::as<LocalOrdinal>(coordinates->getLocalLength());
@@ -136,7 +154,11 @@
 
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -332,12 +354,20 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
     Teuchos::RCP<Matrix>       DistributedMatrix = Teuchos::null;
 
     // read in matrix to determine number of rows
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Matrix> SerialMatrix = Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Read("theMatrix.m",lib,comm);
+#else
+    Teuchos::RCP<Matrix> SerialMatrix = Xpetra::IO<Scalar,Node>::Read("theMatrix.m",lib,comm);
+#endif
     GlobalOrdinal NumRows = SerialMatrix->getRowMap()->getGlobalNumElements();
 
     // re-read in matrix and distribute it using the user-given distribution over processors
     DistributedMap    = MapFactory::Build(lib,NumRows,dofGlobals(),0,comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistributedMatrix = Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Read("theMatrix.m",
+#else
+    DistributedMatrix = Xpetra::IO<Scalar,Node>::Read("theMatrix.m",
+#endif
               DistributedMap,
               Teuchos::null,
               DistributedMap,
@@ -400,8 +430,13 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
       H->IsPreconditioner(true);
 
       // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO>(DistributedMatrix)); // Turns a Xpetra::Matrix object into a Belos operator
       Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, LO, GO, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+      Teuchos::RCP<OP> belosOp   = Teuchos::rcp(new Belos::XpetraOp<SC, NO>(DistributedMatrix)); // Turns a Xpetra::Matrix object into a Belos operator
+      Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
       // Construct a Belos LinearProblem object
       RCP< Belos::LinearProblem<SC, MV, OP> > belosProblem = rcp(new Belos::LinearProblem<SC, MV, OP>(belosOp, LHS, RHS));
       belosProblem->setRightPrec(belosPrec);
@@ -475,7 +510,11 @@ int main(int argc, char* argv[]) {
 
     if (lib == Xpetra::UseEpetra) {
 #ifdef HAVE_MUELU_EPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return main_<double,int,int,Xpetra::EpetraNode>(clp, lib, argc, argv);
+#else
+      return main_<double,Xpetra::EpetraNode>(clp, lib, argc, argv);
+#endif
 #else
       throw MueLu::Exceptions::RuntimeError("Epetra is not available");
 #endif
@@ -487,14 +526,30 @@ int main(int argc, char* argv[]) {
         typedef KokkosClassic::DefaultNode::DefaultNodeType Node;
 
 #ifndef HAVE_MUELU_EXPLICIT_INSTANTIATION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
 #else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
+#else
 #    if   defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_INT_INT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,int,Node> (clp, lib, argc, argv);
+#else
+        return main_<double,Node> (clp, lib, argc, argv);
+#endif
 #  elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_INT_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #  elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_INT_LONG_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #  else
         throw MueLu::Exceptions::RuntimeError("Found no suitable instantiation");
 #  endif
@@ -504,14 +559,30 @@ int main(int argc, char* argv[]) {
         typedef Kokkos::Compat::KokkosSerialWrapperNode Node;
 
 #  ifndef HAVE_MUELU_EXPLICIT_INSTANTIATION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #  else
 #    if   defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_INT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,int,Node> (clp, lib, argc, argv);
+#else
+        return main_<double,Node> (clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_LONG_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    else
         throw MueLu::Exceptions::RuntimeError("Found no suitable instantiation");
 #    endif
@@ -524,14 +595,30 @@ int main(int argc, char* argv[]) {
         typedef Kokkos::Compat::KokkosOpenMPWrapperNode Node;
 
 #  ifndef HAVE_MUELU_EXPLICIT_INSTANTIATION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, argc, argv);
+#else
+        return main_<double,Node>(clp, argc, argv);
+#endif
 #  else
 #    if   defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_INT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,int,Node> (clp, lib, argc, argv);
+#else
+        return main_<double,Node> (clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_LONG_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    else
         throw MueLu::Exceptions::RuntimeError("Found no suitable instantiation");
 #    endif
@@ -544,14 +631,30 @@ int main(int argc, char* argv[]) {
         typedef Kokkos::Compat::KokkosCudaWrapperNode Node;
 
 #  ifndef HAVE_MUELU_EXPLICIT_INSTANTIATION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, argc, argv);
+#else
+        return main_<double,Node>(clp, argc, argv);
+#endif
 #  else
 #    if defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_CUDA) && defined(HAVE_TPETRA_INST_INT_INT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,int,Node> (clp, lib, argc, argv);
+#else
+        return main_<double,Node> (clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_CUDA) && defined(HAVE_TPETRA_INST_INT_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    elif defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_CUDA) && defined(HAVE_TPETRA_INST_INT_LONG_LONG)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return main_<double,int,long long,Node>(clp, lib, argc, argv);
+#else
+        return main_<double,Node>(clp, lib, argc, argv);
+#endif
 #    else
         throw MueLu::Exceptions::RuntimeError("Found no suitable instantiation");
 #    endif

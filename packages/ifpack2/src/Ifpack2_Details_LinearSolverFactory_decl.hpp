@@ -61,16 +61,34 @@ namespace Details {
 /// We use Tpetra's template parameters here, instead of MV, OP, and
 /// NormType, because this is not a public-facing class.  We also want
 /// to avoid mix-ups between MV and OP.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class LinearSolverFactory :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   public Trilinos::Details::LinearSolverFactory<Tpetra::MultiVector<SC, LO, GO, NT>,
                                                 Tpetra::Operator<SC, LO, GO, NT>,
                                                 typename Tpetra::MultiVector<SC, LO, GO, NT>::mag_type>
+#else
+  public Trilinos::Details::LinearSolverFactory<Tpetra::MultiVector<SC, NT>,
+                                                Tpetra::Operator<SC, NT>,
+                                                typename Tpetra::MultiVector<SC, NT>::mag_type>
+#endif
 {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Trilinos::Details::LinearSolver<Tpetra::MultiVector<SC, LO, GO, NT>,
                                           Tpetra::Operator<SC, LO, GO, NT>,
                                           typename Tpetra::MultiVector<SC, LO, GO, NT>::mag_type> solver_type;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Trilinos::Details::LinearSolver<Tpetra::MultiVector<SC, NT>,
+                                          Tpetra::Operator<SC, NT>,
+                                          typename Tpetra::MultiVector<SC, NT>::mag_type> solver_type;
+#endif
 
   /// \brief Get an instance of a Ifpack2 solver.
   ///

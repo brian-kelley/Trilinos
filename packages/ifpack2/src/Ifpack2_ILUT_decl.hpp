@@ -90,12 +90,16 @@ namespace Ifpack2 {
 template<class MatrixType>
 class ILUT :
     virtual public Ifpack2::Preconditioner<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                            typename MatrixType::local_ordinal_type,
                                            typename MatrixType::global_ordinal_type,
+#endif
                                            typename MatrixType::node_type>,
     virtual public Ifpack2::Details::CanChangeMatrix<Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                        typename MatrixType::local_ordinal_type,
                                                                        typename MatrixType::global_ordinal_type,
+#endif
                                                                        typename MatrixType::node_type> >
 {
 public:

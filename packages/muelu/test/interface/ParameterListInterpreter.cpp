@@ -72,7 +72,11 @@
 
 void run_sed(const std::string& pattern, const std::string& baseFile);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
@@ -80,7 +84,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   using Teuchos::TimeMonitor;
 
   using real_type             = typename Teuchos::ScalarTraits<SC>::coordinateType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using RealValuedMultiVector = Xpetra::MultiVector<real_type,LO,GO,NO>;
+#else
+  using RealValuedMultiVector = Xpetra::MultiVector<real_type,NO>;
+#endif
 
   // =========================================================================
   // MPI initialization using Teuchos
@@ -119,7 +127,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   Teuchos::ParameterList matrixParameters;
   matrixParameters.set("nx",         Teuchos::as<GO>(9999));
   matrixParameters.set("matrixType", "Laplace1D");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Matrix>      A           = MueLuTests::TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(matrixParameters.get<GO>("nx"), lib);
+#else
+  RCP<Matrix>      A           = MueLuTests::TestHelpers::TestFactory<SC, NO>::Build1DPoisson(matrixParameters.get<GO>("nx"), lib);
+#endif
   RCP<RealValuedMultiVector> coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<real_type,LO,GO,Map,RealValuedMultiVector>("1D", A->getRowMap(), matrixParameters);
 
   std::string prefix;

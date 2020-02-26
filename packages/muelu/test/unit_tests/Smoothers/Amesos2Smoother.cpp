@@ -57,7 +57,11 @@ namespace MueLuTests {
   // this namespace already has:  #include "MueLu_UseShortNames.hpp"
   using namespace TestHelpers::Smoothers;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Amesos2Smoother, NotSetup, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Amesos2Smoother, NotSetup, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -72,7 +76,11 @@ namespace MueLuTests {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Amesos2Smoother, Apply_Correctness, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Amesos2Smoother, Apply_Correctness, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -94,9 +102,15 @@ namespace MueLuTests {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Amesos2Smoother, NotSetup, SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Amesos2Smoother, Apply_Correctness, SC, LO, GO, Node)
+#else
+#  define MUELU_ETI_GROUP(SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Amesos2Smoother, NotSetup, SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Amesos2Smoother, Apply_Correctness, SC, Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

@@ -69,8 +69,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> RebalanceTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Scalar, class Node>
+ RCP<const ParameterList> RebalanceTransferFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -101,8 +106,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RebalanceTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& /* fineLevel */, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RebalanceTransferFactory<Scalar, Node>::DeclareInput(Level& /* fineLevel */, Level& coarseLevel) const {
+#endif
     const ParameterList& pL = GetParameterList();
 
     if (pL.get<std::string>("type") == "Interpolation") {
@@ -120,10 +130,19 @@ namespace MueLu {
     Input(coarseLevel, "Importer");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RebalanceTransferFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RebalanceTransferFactory<Scalar, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType, LO, GO, NO> xdMV;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> xdMV;
+#endif
 
     const ParameterList& pL = GetParameterList();
 
@@ -135,7 +154,11 @@ namespace MueLu {
       std::string fileName = "coordinates_level_0.m";
       RCP<xdMV> fineCoords = fineLevel.Get< RCP<xdMV> >("Coordinates");
       if (fineCoords != Teuchos::null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Write(fileName, *fineCoords);
+#else
+        Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Write(fileName, *fineCoords);
+#endif
     }
 
     RCP<const Import> importer = Get<RCP<const Import> >(coarseLevel, "Importer");
@@ -258,7 +281,11 @@ namespace MueLu {
           coordImporter = ImportFactory::Build(origMap, targetMap);
         }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<xdMV> permutedCoords  = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(coordImporter->getTargetMap(), coords->getNumVectors());
+#else
+        RCP<xdMV> permutedCoords  = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(coordImporter->getTargetMap(), coords->getNumVectors());
+#endif
         permutedCoords->doImport(*coords, *coordImporter, Xpetra::INSERT);
 
         if (pL.isParameter("repartition: use subcommunicators") == true && pL.get<bool>("repartition: use subcommunicators") == true)
@@ -271,7 +298,11 @@ namespace MueLu {
 
         std::string fileName = "rebalanced_coordinates_level_" + toString(coarseLevel.GetLevelID()) + ".m";
         if (writeStart <= coarseLevel.GetLevelID() && coarseLevel.GetLevelID() <= writeEnd && permutedCoords->getMap() != Teuchos::null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Write(fileName, *permutedCoords);
+#else
+          Xpetra::IO<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Write(fileName, *permutedCoords);
+#endif
       }
 
       if (IsAvailable(coarseLevel, "Nullspace")) {

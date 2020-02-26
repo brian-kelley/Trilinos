@@ -50,21 +50,40 @@
 namespace Kokkos {
 namespace Example {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class S, class LO, class GO, class N>
   Teuchos::RCP<Tpetra::Operator<S,LO,GO,N> >
   build_muelu_preconditioner(const Teuchos::RCP<Tpetra::CrsMatrix<S,LO,GO,N> >& A,
+#else
+  template<class S, class N>
+  Teuchos::RCP<Tpetra::Operator<S,N> >
+  build_muelu_preconditioner(const Teuchos::RCP<Tpetra::CrsMatrix<S,N> >& A,
+#endif
                              const Teuchos::RCP<Teuchos::ParameterList>& mueluParams,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                              const Teuchos::RCP<Tpetra::MultiVector<double,LO,GO,N> >& coords)
+#else
+                             const Teuchos::RCP<Tpetra::MultiVector<double,N> >& coords)
+#endif
   {
     using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using OperatorType       = Tpetra::Operator<S,LO,GO,N>;
     using PreconditionerType = MueLu::TpetraOperator<S,LO,GO,N>;
+#else
+    using OperatorType       = Tpetra::Operator<S,N>;
+    using PreconditionerType = MueLu::TpetraOperator<S,N>;
+#endif
 
     RCP<OperatorType> A_op = A;
 
     Teuchos::ParameterList& userList = mueluParams->sublist("user data");
     if (coords != Teuchos::null) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       userList.set<RCP<Tpetra::MultiVector<double,LO,GO,N> > >("Coordinates", coords);
+#else
+      userList.set<RCP<Tpetra::MultiVector<double,N> > >("Coordinates", coords);
+#endif
     }
     RCP<PreconditionerType> mueluPreconditioner
       = MueLu::CreateTpetraPreconditioner(A_op, *mueluParams);

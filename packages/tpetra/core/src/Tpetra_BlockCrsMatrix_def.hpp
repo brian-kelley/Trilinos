@@ -576,17 +576,33 @@ namespace { // (anonymous)
 
 // Implementation of BlockCrsMatrix::getLocalDiagCopy (non-deprecated
 // version that takes two Kokkos::View arguments).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 class GetLocalDiagCopy {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   typedef typename Node::device_type device_type;
   typedef size_t diag_offset_type;
   typedef Kokkos::View<const size_t*, device_type,
                        Kokkos::MemoryUnmanaged> diag_offsets_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename ::Tpetra::CrsGraph<LO, GO, Node> global_graph_type;
+#else
+  typedef typename ::Tpetra::CrsGraph<Node> global_graph_type;
+#endif
   typedef typename global_graph_type::local_graph_type local_graph_type;
   typedef typename local_graph_type::row_map_type row_offsets_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename ::Tpetra::BlockMultiVector<Scalar, LO, GO, Node>::impl_scalar_type IST;
+#else
+  typedef typename ::Tpetra::BlockMultiVector<Scalar, Node>::impl_scalar_type IST;
+#endif
   typedef Kokkos::View<IST***, device_type, Kokkos::MemoryUnmanaged> diag_type;
   typedef Kokkos::View<const IST*, device_type, Kokkos::MemoryUnmanaged> values_type;
 
@@ -639,9 +655,17 @@ public:
   };
 } // namespace (anonymous)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   std::ostream&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   markLocalErrorAndGetStream ()
   {
     * (this->localError_) = true;
@@ -651,8 +675,13 @@ public:
     return **errs_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   BlockCrsMatrix () :
     dist_object_type (Teuchos::rcp (new map_type ())), // nonnull, so DistObject doesn't throw
     graph_ (Teuchos::rcp (new map_type ()), 0), // FIXME (mfh 16 May 2014) no empty ctor yet
@@ -666,8 +695,13 @@ public:
   {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   BlockCrsMatrix (const crs_graph_type& graph,
                   const LO blockSize) :
     dist_object_type (graph.getMap ()),
@@ -732,8 +766,13 @@ public:
     val_ = decltype (val_) ("val", numValEnt);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   BlockCrsMatrix (const crs_graph_type& graph,
                   const map_type& domainPointMap,
                   const map_type& rangePointMap,
@@ -798,74 +837,134 @@ public:
     val_ = decltype (val_) ("val", numValEnt);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   Teuchos::RCP<const typename BlockCrsMatrix<Scalar, LO, GO, Node>::map_type>
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<const typename BlockCrsMatrix<Scalar, Node>::map_type>
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getDomainMap () const
   { // Copy constructor of map_type does a shallow copy.
     // We're only returning by RCP for backwards compatibility.
     return Teuchos::rcp (new map_type (domainPointMap_));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   Teuchos::RCP<const typename BlockCrsMatrix<Scalar, LO, GO, Node>::map_type>
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<const typename BlockCrsMatrix<Scalar, Node>::map_type>
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getRangeMap () const
   { // Copy constructor of map_type does a shallow copy.
     // We're only returning by RCP for backwards compatibility.
     return Teuchos::rcp (new map_type (rangePointMap_));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   Teuchos::RCP<const typename BlockCrsMatrix<Scalar, LO, GO, Node>::map_type>
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<const typename BlockCrsMatrix<Scalar, Node>::map_type>
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getRowMap () const
   {
     return graph_.getRowMap();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   Teuchos::RCP<const typename BlockCrsMatrix<Scalar, LO, GO, Node>::map_type>
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<const typename BlockCrsMatrix<Scalar, Node>::map_type>
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getColMap () const
   {
     return graph_.getColMap();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   global_size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getGlobalNumRows() const
   {
     return graph_.getGlobalNumRows();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getNodeNumRows() const
   {
     return graph_.getNodeNumRows();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getNodeMaxNumRowEntries() const
   {
     return graph_.getNodeMaxNumRowEntries();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   apply (const mv_type& X,
          mv_type& Y,
          Teuchos::ETransp mode,
          Scalar alpha,
          Scalar beta) const
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BlockCrsMatrix<Scalar, LO, GO, Node> this_type;
+#else
+    typedef BlockCrsMatrix<Scalar, Node> this_type;
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(
       mode != Teuchos::NO_TRANS && mode != Teuchos::TRANS && mode != Teuchos::CONJ_TRANS,
       std::invalid_argument, "Tpetra::BlockCrsMatrix::apply: "
@@ -921,11 +1020,21 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
   applyBlock (const BlockMultiVector<Scalar, LO, GO, Node>& X,
               BlockMultiVector<Scalar, LO, GO, Node>& Y,
+#else
+  BlockCrsMatrix<Scalar, Node>::
+  applyBlock (const BlockMultiVector<Scalar, Node>& X,
+              BlockMultiVector<Scalar, Node>& Y,
+#endif
               Teuchos::ETransp mode,
               const Scalar alpha,
               const Scalar beta)
@@ -949,9 +1058,17 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   setAllToScalar (const Scalar& alpha)
   {
 #ifdef HAVE_TPETRA_DEBUG
@@ -980,9 +1097,17 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   replaceLocalValues (const LO localRowInd,
                       const LO colInds[],
                       const Scalar vals[],
@@ -1052,9 +1177,17 @@ public:
     return validCount;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LO, class GO, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar,LO,GO,Node>::
+#else
+  BlockCrsMatrix<Scalar,Node>::
+#endif
   getLocalDiagOffsets (const Kokkos::View<size_t*, device_type,
                          Kokkos::MemoryUnmanaged>& offsets) const
   {
@@ -1062,11 +1195,21 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LO, class GO, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar,LO,GO,Node>::
   localGaussSeidel (const BlockMultiVector<Scalar, LO, GO, Node>& B,
                     BlockMultiVector<Scalar, LO, GO, Node>& X,
+#else
+  BlockCrsMatrix<Scalar,Node>::
+  localGaussSeidel (const BlockMultiVector<Scalar, Node>& B,
+                    BlockMultiVector<Scalar, Node>& X,
+#endif
                     const Kokkos::View<impl_scalar_type***, device_type,
                       Kokkos::MemoryUnmanaged>& D_inv,
                     const Scalar& omega,
@@ -1173,12 +1316,23 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LO, class GO, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar,LO,GO,Node>::
   gaussSeidelCopy (MultiVector<Scalar,LO,GO,Node> &/* X */,
                    const MultiVector<Scalar,LO,GO,Node> &/* B */,
                    const MultiVector<Scalar,LO,GO,Node> &/* D */,
+#else
+  BlockCrsMatrix<Scalar,Node>::
+  gaussSeidelCopy (MultiVector<Scalar,Node> &/* X */,
+                   const MultiVector<Scalar,Node> &/* B */,
+                   const MultiVector<Scalar,Node> &/* D */,
+#endif
                    const Scalar& /* dampingFactor */,
                    const ESweepDirection /* direction */,
                    const int /* numSweeps */,
@@ -1191,12 +1345,23 @@ public:
       "gaussSeidelCopy: Not implemented.");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LO, class GO, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar,LO,GO,Node>::
   reorderedGaussSeidelCopy (MultiVector<Scalar,LO,GO,Node>& /* X */,
                             const MultiVector<Scalar,LO,GO,Node>& /* B */,
                             const MultiVector<Scalar,LO,GO,Node>& /* D */,
+#else
+  BlockCrsMatrix<Scalar,Node>::
+  reorderedGaussSeidelCopy (MultiVector<Scalar,Node>& /* X */,
+                            const MultiVector<Scalar,Node>& /* B */,
+                            const MultiVector<Scalar,Node>& /* D */,
+#endif
                             const Teuchos::ArrayView<LO>& /* rowIndices */,
                             const Scalar& /* dampingFactor */,
                             const ESweepDirection /* direction */,
@@ -1211,9 +1376,17 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LO, class GO, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar,LO,GO,Node>::
+#else
+  BlockCrsMatrix<Scalar,Node>::
+#endif
   getLocalDiagCopy (const Kokkos::View<impl_scalar_type***, device_type,
                                        Kokkos::MemoryUnmanaged>& diag,
                     const Kokkos::View<const size_t*, device_type,
@@ -1245,13 +1418,21 @@ public:
 #endif // HAVE_TPETRA_DEBUG
 
     typedef Kokkos::RangePolicy<execution_space, LO> policy_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef GetLocalDiagCopy<Scalar, LO, GO, Node> functor_type;
+#else
+    typedef GetLocalDiagCopy<Scalar, Node> functor_type;
+#endif
 
     // FIXME (mfh 26 May 2016) Not really OK to const_cast here, since
     // we reserve the right to do lazy allocation of device data.  (We
     // don't plan to do lazy allocation for host data; the host
     // version of the data always exists.)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BlockCrsMatrix<Scalar, LO, GO, Node> this_type;
+#else
+    typedef BlockCrsMatrix<Scalar, Node> this_type;
+#endif
     auto vals_dev =
       const_cast<this_type*> (this)->template getValues<device_type> ();
 
@@ -1261,9 +1442,17 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LO, class GO, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar,LO,GO,Node>::
+#else
+  BlockCrsMatrix<Scalar,Node>::
+#endif
   getLocalDiagCopy (const Kokkos::View<impl_scalar_type***, device_type,
                                        Kokkos::MemoryUnmanaged>& diag,
                     const Teuchos::ArrayView<const size_t>& offsets) const
@@ -1298,9 +1487,17 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   absMaxLocalValues (const LO localRowInd,
                      const LO colInds[],
                      const Scalar vals[],
@@ -1341,9 +1538,17 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   sumIntoLocalValues (const LO localRowInd,
                       const LO colInds[],
                       const Scalar vals[],
@@ -1414,9 +1619,17 @@ public:
     return validCount;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getLocalRowView (const LO localRowInd,
                    const LO*& colInds,
                    Scalar*& vals,
@@ -1457,9 +1670,17 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getLocalRowCopy (LO LocalRow,
                    const Teuchos::ArrayView<LO>& Indices,
                    const Teuchos::ArrayView<Scalar>& Values,
@@ -1483,9 +1704,17 @@ public:
     NumEntries = numInds;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getLocalRowOffsets (const LO localRowInd,
                       ptrdiff_t offsets[],
                       const LO colInds[],
@@ -1516,9 +1745,17 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   replaceLocalValuesByOffsets (const LO localRowInd,
                                const ptrdiff_t offsets[],
                                const Scalar vals[],
@@ -1555,9 +1792,17 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   absMaxLocalValuesByOffsets (const LO localRowInd,
                               const ptrdiff_t offsets[],
                               const Scalar vals[],
@@ -1594,9 +1839,17 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   sumIntoLocalValuesByOffsets (const LO localRowInd,
                                const ptrdiff_t offsets[],
                                const Scalar vals[],
@@ -1635,9 +1888,17 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getNumEntriesInLocalRow (const LO localRowInd) const
   {
     const size_t numEntInGraph = graph_.getNumEntriesInLocalRow (localRowInd);
@@ -1648,11 +1909,21 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
   applyBlockTrans (const BlockMultiVector<Scalar, LO, GO, Node>& X,
                    BlockMultiVector<Scalar, LO, GO, Node>& Y,
+#else
+  BlockCrsMatrix<Scalar, Node>::
+  applyBlockTrans (const BlockMultiVector<Scalar, Node>& X,
+                   BlockMultiVector<Scalar, Node>& Y,
+#endif
                    const Teuchos::ETransp mode,
                    const Scalar alpha,
                    const Scalar beta)
@@ -1668,18 +1939,33 @@ public:
       "transpose and conjugate transpose modes are not yet implemented.");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
   applyBlockNoTrans (const BlockMultiVector<Scalar, LO, GO, Node>& X,
                      BlockMultiVector<Scalar, LO, GO, Node>& Y,
+#else
+  BlockCrsMatrix<Scalar, Node>::
+  applyBlockNoTrans (const BlockMultiVector<Scalar, Node>& X,
+                     BlockMultiVector<Scalar, Node>& Y,
+#endif
                      const Scalar alpha,
                      const Scalar beta)
   {
     using Teuchos::RCP;
     using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef ::Tpetra::Import<LO, GO, Node> import_type;
     typedef ::Tpetra::Export<LO, GO, Node> export_type;
+#else
+    typedef ::Tpetra::Import<Node> import_type;
+    typedef ::Tpetra::Export<Node> export_type;
+#endif
     const Scalar zero = STS::zero ();
     const Scalar one = STS::one ();
     RCP<const import_type> import = graph_.getImporter ();
@@ -1772,11 +2058,21 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
   localApplyBlockNoTrans (const BlockMultiVector<Scalar, LO, GO, Node>& X,
                           BlockMultiVector<Scalar, LO, GO, Node>& Y,
+#else
+  BlockCrsMatrix<Scalar, Node>::
+  localApplyBlockNoTrans (const BlockMultiVector<Scalar, Node>& X,
+                          BlockMultiVector<Scalar, Node>& Y,
+#endif
                           const Scalar alpha,
                           const Scalar beta)
   {
@@ -1799,9 +2095,17 @@ public:
                            beta_impl, Y_lcl);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   findRelOffsetOfColumnIndex (const LO localRowIndex,
                               const LO colIndexToFind,
                               const LO hint) const
@@ -1852,17 +2156,31 @@ public:
     return relOffset;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   offsetPerBlock () const
   {
     return offsetPerBlock_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   typename BlockCrsMatrix<Scalar, LO, GO, Node>::const_little_block_type
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  typename BlockCrsMatrix<Scalar, Node>::const_little_block_type
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getConstLocalBlockFromInput (const impl_scalar_type* val,
                                const size_t pointOffset) const
   {
@@ -1871,9 +2189,15 @@ public:
     return const_little_block_type (val + pointOffset, blockSize_, rowStride);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   typename BlockCrsMatrix<Scalar, LO, GO, Node>::little_block_type
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  typename BlockCrsMatrix<Scalar, Node>::little_block_type
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getNonConstLocalBlockFromInput (impl_scalar_type* val,
                                   const size_t pointOffset) const
   {
@@ -1882,9 +2206,15 @@ public:
     return little_block_type (val + pointOffset, blockSize_, rowStride);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   typename BlockCrsMatrix<Scalar, LO, GO, Node>::const_little_block_type
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  typename BlockCrsMatrix<Scalar, Node>::const_little_block_type
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getConstLocalBlockFromAbsOffset (const size_t absBlockOffset) const
   {
 #ifdef HAVE_TPETRA_DEBUG
@@ -1916,9 +2246,15 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   typename BlockCrsMatrix<Scalar, LO, GO, Node>::const_little_block_type
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  typename BlockCrsMatrix<Scalar, Node>::const_little_block_type
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getConstLocalBlockFromRelOffset (const LO lclMeshRow,
                                    const size_t relMeshOffset) const
   {
@@ -1943,9 +2279,15 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   typename BlockCrsMatrix<Scalar, LO, GO, Node>::little_block_type
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  typename BlockCrsMatrix<Scalar, Node>::little_block_type
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getNonConstLocalBlockFromAbsOffset (const size_t absBlockOffset) const
   {
 #ifdef HAVE_TPETRA_DEBUG
@@ -1975,9 +2317,15 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   typename BlockCrsMatrix<Scalar, LO, GO, Node>::little_block_type
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  typename BlockCrsMatrix<Scalar, Node>::little_block_type
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getLocalBlock (const LO localRowInd, const LO localColInd) const
   {
     const size_t absRowBlockOffset = ptrHost_[localRowInd];
@@ -2003,13 +2351,25 @@ public:
   //   *errs_ = Teuchos::null;
   // }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   checkSizes (const ::Tpetra::SrcDistObject& source)
   {
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BlockCrsMatrix<Scalar, LO, GO, Node> this_type;
+#else
+    typedef BlockCrsMatrix<Scalar, Node> this_type;
+#endif
     const this_type* src = dynamic_cast<const this_type* > (&source);
 
     if (src == NULL) {
@@ -2057,9 +2417,17 @@ public:
     return ! (* (this->localError_));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   copyAndPermute
   (const ::Tpetra::SrcDistObject& source,
    const size_t numSameIDs,
@@ -2072,7 +2440,11 @@ public:
     using ::Tpetra::Details::dualViewStatusToString;
     using ::Tpetra::Details::ProfilingRegion;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using this_type = BlockCrsMatrix<Scalar, LO, GO, Node>;
+#else
+    using this_type = BlockCrsMatrix<Scalar, Node>;
+#endif
 
     ProfilingRegion profile_region("Tpetra::BlockCrsMatrix::copyAndPermute");
     const bool debug = Behavior::debug();
@@ -2539,7 +2911,11 @@ public:
     ///   scalar (not block!) entry (value) of the row.
     ///
     /// \return Number of (block) entries in the packed row.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class ST, class LO, class GO>
+#else
+    template<class ST,>
+#endif
     size_t
     unpackRowCount (const typename ::Tpetra::Details::PackTraits<LO>::input_buffer_type& imports,
                     const size_t offset,
@@ -2573,7 +2949,11 @@ public:
     /// \brief Pack the block row (stored in the input arrays).
     ///
     /// \return The number of bytes packed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class ST, class LO, class GO>
+#else
+    template<class ST,>
+#endif
     size_t
     packRowForBlockCrs (const typename ::Tpetra::Details::PackTraits<LO>::output_buffer_type exports,
                         const size_t offset,
@@ -2635,7 +3015,11 @@ public:
     }
 
     // Return the number of bytes actually read / used.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class ST, class LO, class GO>
+#else
+    template<class ST,>
+#endif
     size_t
     unpackRowForBlockCrs (const typename ::Tpetra::Details::PackTraits<GO>::output_array_type& gidsOut,
                           const typename ::Tpetra::Details::PackTraits<ST>::output_array_type& valsOut,
@@ -2716,9 +3100,17 @@ public:
     }
   } // namespace (anonymous)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   packAndPrepare
   (const ::Tpetra::SrcDistObject& source,
    const Kokkos::DualView<const local_ordinal_type*,
@@ -2737,7 +3129,11 @@ public:
 
     typedef typename Kokkos::View<int*, device_type>::HostMirror::execution_space host_exec;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BlockCrsMatrix<Scalar, LO, GO, Node> this_type;
+#else
+    typedef BlockCrsMatrix<Scalar, Node> this_type;
+#endif
 
     ProfilingRegion profile_region("Tpetra::BlockCrsMatrix::packAndPrepare");
 
@@ -2937,7 +3333,11 @@ public:
             //   host scratch space somehow is not considered same as the host_exec
             // Copy the row's data into the current spot in the exports array.
             const size_t numBytes =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               packRowForBlockCrs<impl_scalar_type, LO, GO>
+#else
+              packRowForBlockCrs<impl_scalar_type>
+#endif
               (exports.view_host(),
                offset(i),
                numEnt,
@@ -2971,9 +3371,17 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   unpackAndCombine
   (const Kokkos::DualView<const local_ordinal_type*,
      buffer_device_type>& importLIDs,
@@ -3190,7 +3598,11 @@ public:
           const LO lclRow = importLIDsHost(i);
           const size_t numBytes = numPacketsPerLIDHost(i);
           const size_t numEnt =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             unpackRowCount<impl_scalar_type, LO, GO>
+#else
+            unpackRowCount<impl_scalar_type>
+#endif
             (imports.view_host (), offval, numBytes, numBytesPerValue);
 
           if (numBytes > 0) {
@@ -3218,7 +3630,11 @@ public:
           size_t numBytesOut = 0;
           try {
             numBytesOut =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               unpackRowForBlockCrs<impl_scalar_type, LO, GO>
+#else
+              unpackRowForBlockCrs<impl_scalar_type>
+#endif
               (Kokkos::View<GO*,host_exec>(gidsOut.data(), numEnt),
                Kokkos::View<impl_scalar_type*,host_exec>(valsOut.data(), numScalarEnt),
                imports.view_host(),
@@ -3312,9 +3728,17 @@ public:
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::description () const
+#else
+  BlockCrsMatrix<Scalar, Node>::description () const
+#endif
   {
     using Teuchos::TypeNameTraits;
     std::ostringstream os;
@@ -3335,9 +3759,17 @@ public:
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   describe (Teuchos::FancyOStream& out,
             const Teuchos::EVerbosityLevel verbLevel) const
   {
@@ -3457,7 +3889,11 @@ public:
       // to host, since it's supposed to be const.  However, that's
       // the easiest and least memory-intensive way to implement this
       // method.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef BlockCrsMatrix<Scalar, LO, GO, Node> this_type;
+#else
+      typedef BlockCrsMatrix<Scalar, Node> this_type;
+#endif
       const_cast<this_type&> (*this).sync_host ();
 
 #ifdef HAVE_TPETRA_DEBUG
@@ -3588,117 +4024,229 @@ public:
     } // extreme verbosity level (print the whole matrix)
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   Teuchos::RCP<const Teuchos::Comm<int> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getComm() const
   {
     return graph_.getComm();
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   global_size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getGlobalNumCols() const
   {
     return graph_.getGlobalNumCols();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getNodeNumCols() const
   {
     return graph_.getNodeNumCols();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   GO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getIndexBase() const
   {
     return graph_.getIndexBase();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   global_size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getGlobalNumEntries() const
   {
     return graph_.getGlobalNumEntries();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getNodeNumEntries() const
   {
     return graph_.getNodeNumEntries();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getNumEntriesInGlobalRow (GO globalRow) const
   {
     return graph_.getNumEntriesInGlobalRow(globalRow);
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getGlobalMaxNumRowEntries() const
   {
     return graph_.getGlobalMaxNumRowEntries();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   hasColMap() const
   {
     return graph_.hasColMap();
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   isLocallyIndexed() const
   {
     return graph_.isLocallyIndexed();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   isGloballyIndexed() const
   {
     return graph_.isGloballyIndexed();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   isFillComplete() const
   {
     return graph_.isFillComplete ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   supportsRowViews() const
   {
     return false;
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getGlobalRowCopy (GO /* GlobalRow */,
                     const Teuchos::ArrayView<GO> &/* Indices */,
                     const Teuchos::ArrayView<Scalar> &/* Values */,
@@ -3710,9 +4258,17 @@ public:
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getGlobalRowView (GO /* GlobalRow */,
                     Teuchos::ArrayView<const GO> &/* indices */,
                     Teuchos::ArrayView<const Scalar> &/* values */) const
@@ -3723,9 +4279,17 @@ public:
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getLocalRowView (LO /* LocalRow */,
                    Teuchos::ArrayView<const LO>& /* indices */,
                    Teuchos::ArrayView<const Scalar>& /* values */) const
@@ -3735,10 +4299,19 @@ public:
       "This class doesn't support local matrix indexing.");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
   getLocalDiagCopy (::Tpetra::Vector<Scalar,LO,GO,Node>& diag) const
+#else
+  BlockCrsMatrix<Scalar, Node>::
+  getLocalDiagCopy (::Tpetra::Vector<Scalar,Node>& diag) const
+#endif
   {
 #ifdef HAVE_TPETRA_DEBUG
     const char prefix[] =
@@ -3788,10 +4361,19 @@ public:
     diag.template sync<memory_space> (); // sync vec of diag entries back to dev
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
   leftScale (const ::Tpetra::Vector<Scalar, LO, GO, Node>& /* x */)
+#else
+  BlockCrsMatrix<Scalar, Node>::
+  leftScale (const ::Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
   {
     TEUCHOS_TEST_FOR_EXCEPTION(
       true, std::logic_error, "Tpetra::BlockCrsMatrix::leftScale: "
@@ -3799,10 +4381,19 @@ public:
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockCrsMatrix<Scalar, LO, GO, Node>::
   rightScale (const ::Tpetra::Vector<Scalar, LO, GO, Node>& /* x */)
+#else
+  BlockCrsMatrix<Scalar, Node>::
+  rightScale (const ::Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
   {
     TEUCHOS_TEST_FOR_EXCEPTION(
       true, std::logic_error, "Tpetra::BlockCrsMatrix::rightScale: "
@@ -3810,17 +4401,29 @@ public:
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   Teuchos::RCP<const ::Tpetra::RowGraph<LO, GO, Node> >
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<const ::Tpetra::RowGraph<Node> >
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getGraph() const
   {
     return graphRCP_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   typename ::Tpetra::RowMatrix<Scalar, LO, GO, Node>::mag_type
   BlockCrsMatrix<Scalar, LO, GO, Node>::
+#else
+  template<class Scalar, class Node>
+  typename ::Tpetra::RowMatrix<Scalar, Node>::mag_type
+  BlockCrsMatrix<Scalar, Node>::
+#endif
   getFrobeniusNorm () const
   {
     TEUCHOS_TEST_FOR_EXCEPTION(
@@ -3835,7 +4438,12 @@ public:
 //
 // Must be expanded from within the Tpetra namespace!
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_BLOCKCRSMATRIX_INSTANT(S,LO,GO,NODE) \
   template class BlockCrsMatrix< S, LO, GO, NODE >;
+#else
+#define TPETRA_BLOCKCRSMATRIX_INSTANT(S,NODE) \
+  template class BlockCrsMatrix< S, NODE >;
+#endif
 
 #endif // TPETRA_BLOCKCRSMATRIX_DEF_HPP

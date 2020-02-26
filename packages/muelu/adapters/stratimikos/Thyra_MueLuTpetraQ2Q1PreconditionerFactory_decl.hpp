@@ -63,9 +63,17 @@ namespace Thyra {
    *
    * ToDo: Finish documentation!
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Scalar, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class MueLuTpetraQ2Q1PreconditionerFactory : public PreconditionerFactoryBase<Scalar> {
   private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar          SC;
     typedef LocalOrdinal    LO;
     typedef GlobalOrdinal   GO;
@@ -120,18 +128,37 @@ namespace Thyra {
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<MueLu::TpetraOperator<SC,LO,GO,NO> >
+#else
+    Teuchos::RCP<MueLu::TpetraOperator<SC,NO> >
+#endif
     Q2Q1MkPrecond(const ParameterList& paramList,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   const Teuchos::RCP<Tpetra::MultiVector<SC,LO,GO,NO> >& velCoords,
                   const Teuchos::RCP<Tpetra::MultiVector<SC,LO,GO,NO> >& presCoords,
+#else
+                  const Teuchos::RCP<Tpetra::MultiVector<SC,NO> >& velCoords,
+                  const Teuchos::RCP<Tpetra::MultiVector<SC,NO> >& presCoords,
+#endif
                   const Teuchos::ArrayRCP<LO>& p2vMap,
                   const Teko::LinearOp& thA11, const Teko::LinearOp& thA12, const Teko::LinearOp& thA21, const Teko::LinearOp& thA11_9Pt) const;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Matrix<SC,LO,GO,NO> > Absolute    (const Xpetra::Matrix<SC,LO,GO,NO>& A) const;
     Teuchos::RCP<Xpetra::Matrix<SC,LO,GO,NO> > FilterMatrix(Xpetra::Matrix<SC,LO,GO,NO>& A, Xpetra::Matrix<SC,LO,GO,NO>& Pattern, SC dropTol) const;
+#else
+    Teuchos::RCP<Xpetra::Matrix<SC,NO> > Absolute    (const Xpetra::Matrix<SC,NO>& A) const;
+    Teuchos::RCP<Xpetra::Matrix<SC,NO> > FilterMatrix(Xpetra::Matrix<SC,NO>& A, Xpetra::Matrix<SC,NO>& Pattern, SC dropTol) const;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void SetDependencyTree     (MueLu::FactoryManager<SC,LO,GO,NO>& M, const ParameterList& paramList) const;
     void SetBlockDependencyTree(MueLu::FactoryManager<SC,LO,GO,NO>& M, LO row, LO col, const std::string& mode, const ParameterList& paramList)  const;
+#else
+    void SetDependencyTree     (MueLu::FactoryManager<SC,NO>& M, const ParameterList& paramList) const;
+    void SetBlockDependencyTree(MueLu::FactoryManager<SC,NO>& M, LO row, LO col, const std::string& mode, const ParameterList& paramList)  const;
+#endif
 
     RCP<MueLu::FactoryBase> GetSmoother(const std::string& type, const ParameterList& paramList, bool coarseSolver) const;
 

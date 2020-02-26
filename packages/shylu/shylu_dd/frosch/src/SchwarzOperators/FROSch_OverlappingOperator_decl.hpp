@@ -51,35 +51,84 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class OverlappingOperator : public SchwarzOperator<SC,LO,GO,NO> {
+#else
+    class OverlappingOperator : public SchwarzOperator<SC,NO> {
+#endif
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using CommPtr               = typename SchwarzOperator<SC,LO,GO,NO>::CommPtr;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using CommPtr               = typename SchwarzOperator<SC,NO>::CommPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMapPtr               = typename SchwarzOperator<SC,LO,GO,NO>::XMapPtr;
         using ConstXMapPtr          = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMapPtr;
+#else
+        using XMapPtr               = typename SchwarzOperator<SC,NO>::XMapPtr;
+        using ConstXMapPtr          = typename SchwarzOperator<SC,NO>::ConstXMapPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrixPtr            = typename SchwarzOperator<SC,LO,GO,NO>::XMatrixPtr;
         using ConstXMatrixPtr       = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMatrixPtr;
+#else
+        using XMatrixPtr            = typename SchwarzOperator<SC,NO>::XMatrixPtr;
+        using ConstXMatrixPtr       = typename SchwarzOperator<SC,NO>::ConstXMatrixPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector          = typename SchwarzOperator<SC,LO,GO,NO>::XMultiVector;
         using XMultiVectorPtr       = typename SchwarzOperator<SC,LO,GO,NO>::XMultiVectorPtr;
+#else
+        using XMultiVector          = typename SchwarzOperator<SC,NO>::XMultiVector;
+        using XMultiVectorPtr       = typename SchwarzOperator<SC,NO>::XMultiVectorPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XImportPtr            = typename SchwarzOperator<SC,LO,GO,NO>::XImportPtr;
         using XExportPtr            = typename SchwarzOperator<SC,LO,GO,NO>::XExportPtr;
+#else
+        using XImportPtr            = typename SchwarzOperator<SC,NO>::XImportPtr;
+        using XExportPtr            = typename SchwarzOperator<SC,NO>::XExportPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using ParameterListPtr      = typename SchwarzOperator<SC,LO,GO,NO>::ParameterListPtr;
+#else
+        using ParameterListPtr      = typename SchwarzOperator<SC,NO>::ParameterListPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using SubdomainSolverPtr    = typename SchwarzOperator<SC,LO,GO,NO>::SubdomainSolverPtr;
+#else
+        using SubdomainSolverPtr    = typename SchwarzOperator<SC,NO>::SubdomainSolverPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using SCVecPtr              = typename SchwarzOperator<SC,LO,GO,NO>::SCVecPtr;
         using ConstSCVecPtr         = typename SchwarzOperator<SC,LO,GO,NO>::ConstSCVecPtr;
+#else
+        using SCVecPtr              = typename SchwarzOperator<SC,NO>::SCVecPtr;
+        using ConstSCVecPtr         = typename SchwarzOperator<SC,NO>::ConstSCVecPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using UN                    = typename SchwarzOperator<SC,LO,GO,NO>::UN;
+#else
+        using UN                    = typename SchwarzOperator<SC,NO>::UN;
+#endif
 
     public:
 

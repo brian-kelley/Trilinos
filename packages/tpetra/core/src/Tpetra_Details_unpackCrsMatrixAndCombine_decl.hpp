@@ -126,9 +126,17 @@ namespace Details {
 /// copies back in to the Teuchos::ArrayView objects, if needed).  When
 /// CrsMatrix migrates fully to adopting Kokkos::DualView objects for its storage
 /// of data, this procedure could be bypassed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename ST, typename LO, typename GO, typename NT>
+#else
+template<typename ST, typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 unpackCrsMatrixAndCombine (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
+#else
+unpackCrsMatrixAndCombine (const CrsMatrix<ST, NT>& sourceMatrix,
+#endif
                            const Teuchos::ArrayView<const char>& imports,
                            const Teuchos::ArrayView<const size_t>& numPacketsPerLID,
                            const Teuchos::ArrayView<const LO>& importLIDs,
@@ -136,16 +144,36 @@ unpackCrsMatrixAndCombine (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
                            Distributor & distor,
                            CombineMode combineMode);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename ST, typename LO, typename GO, typename NT>
+#else
+template<typename ST, typename NT>
+#endif
 void
 unpackCrsMatrixAndCombineNew(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
+#else
+  const CrsMatrix<ST, NT>& sourceMatrix,
+#endif
   Kokkos::DualView<char*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typename DistObject<char, LO, GO, NT>::buffer_device_type> imports,
+#else
+    typename DistObject<char,NT>::buffer_device_type> imports,
+#endif
   Kokkos::DualView<size_t*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typename DistObject<char, LO, GO, NT>::buffer_device_type> numPacketsPerLID,
+#else
+    typename DistObject<char,NT>::buffer_device_type> numPacketsPerLID,
+#endif
   const Kokkos::DualView<const LO*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typename DistObject<char, LO, GO, NT>::buffer_device_type>& importLIDs,
+#else
+    typename DistObject<char,NT>::buffer_device_type>& importLIDs,
+#endif
   const size_t constantNumPackets,
   Distributor& distor,
   const CombineMode combineMode);
@@ -205,10 +233,18 @@ unpackCrsMatrixAndCombineNew(
 /// copies back in to the Teuchos::ArrayView objects, if needed).  When
 /// CrsMatrix migrates fully to adopting Kokkos::DualView objects for its storage
 /// of data, this procedure could be bypassed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template<typename Scalar, typename Node>
+#endif
 size_t
 unpackAndCombineWithOwningPIDsCount (
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & sourceMatrix,
+#else
+    const CrsMatrix<Scalar, Node> & sourceMatrix,
+#endif
     const Teuchos::ArrayView<const LocalOrdinal> &importLIDs,
     const Teuchos::ArrayView<const char> &imports,
     const Teuchos::ArrayView<const size_t>& numPacketsPerLID,
@@ -233,10 +269,18 @@ unpackAndCombineWithOwningPIDsCount (
 /// Note: The TargetPids vector (on output) will contain owning PIDs
 /// for each entry in the matrix, with the "-1 for local" for locally
 /// owned entries.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
+#else
+template<typename Scalar, typename Node>
+#endif
 void
 unpackAndCombineIntoCrsArrays (
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & sourceMatrix,
+#else
+    const CrsMatrix<Scalar, Node> & sourceMatrix,
+#endif
     const Teuchos::ArrayView<const LocalOrdinal>& importLIDs,
     const Teuchos::ArrayView<const char>& imports,
     const Teuchos::ArrayView<const size_t>& numPacketsPerLID,
@@ -251,7 +295,11 @@ unpackAndCombineIntoCrsArrays (
     const int MyTargetPID,
     const Teuchos::ArrayView<size_t>& CRS_rowptr,
     const Teuchos::ArrayView<GlobalOrdinal>& CRS_colind,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::ArrayView<typename CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::impl_scalar_type>& CRS_vals,
+#else
+    const Teuchos::ArrayView<typename CrsMatrix<Scalar, Node>::impl_scalar_type>& CRS_vals,
+#endif
     const Teuchos::ArrayView<const int>& SourcePids,
     Teuchos::Array<int>& TargetPids);
 

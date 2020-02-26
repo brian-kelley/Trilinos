@@ -100,12 +100,18 @@ namespace Thyra {
     using namespace Xpetra;
 
     template <class SC,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO,
               class GO,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
     class FROSchFactory : public Thyra::PreconditionerFactoryBase<SC> {
 
     protected:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
         
         using CommPtr                       = RCP<const Comm<int> >;
         
@@ -117,22 +123,38 @@ namespace Thyra {
         
         using PreconditionerBasePtr         = RCP<PreconditionerBase<SC> >;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMap                          = Map<LO,GO,NO>;
+#else
+        using XMap                          = Map<NO>;
+#endif
         using ConstXMap                     = const XMap;
         using XMapPtr                       = RCP<XMap>;
         using ConstXMapPtr                  = RCP<ConstXMap>;
         using XMapPtrVecPtr                 = ArrayRCP<XMapPtr>;
         using ConstXMapPtrVecPtr            = ArrayRCP<ConstXMapPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrix                       = Matrix<SC,LO,GO,NO>;
+#else
+        using XMatrix                       = Matrix<SC,NO>;
+#endif
         using XMatrixPtr                    = RCP<XMatrix>;
         using ConstXMatrixPtr               = RCP<const XMatrix>;
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XCrsMatrix                    = CrsMatrix<SC,LO,GO,NO>;
+#else
+        using XCrsMatrix                    = CrsMatrix<SC,NO>;
+#endif
         using XCrsMatrixPtr                 = RCP<XCrsMatrix>;
         using ConstXCrsMatrixPtr            = RCP<const XCrsMatrix>;
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector                  = MultiVector<SC,LO,GO,NO>;
+#else
+        using XMultiVector                  = MultiVector<SC,NO>;
+#endif
         using ConstXMultiVector             = const XMultiVector;
         using XMultiVectorPtr               = RCP<XMultiVector>;
         using ConstXMultiVectorPtr          = RCP<ConstXMultiVector>;

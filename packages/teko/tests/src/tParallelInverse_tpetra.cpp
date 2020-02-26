@@ -81,21 +81,34 @@ void tParallelInverse_tpetra::initializeTest()
 void tParallelInverse_tpetra::loadMatrix()
 {
    // Read in the matrix, store pointer as an RCP
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > ptrA = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,LO,GO,NT> >::readSparseFile("./data/lsc_F_2.mm",GetComm_tpetra());
    F_ = Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrA->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(ptrA->getDomainMap()),ptrA);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > ptrA = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,NT> >::readSparseFile("./data/lsc_F_2.mm",GetComm_tpetra());
+   F_ = Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(ptrA->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(ptrA->getDomainMap()),ptrA);
+#endif
 }
 
 void tParallelInverse_tpetra::loadStridedMatrix()
 {
    // Read in the matrix, store pointer as an RCP
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > ptrA = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,LO,GO,NT> >::readSparseFile("./data/nsjac.mm",GetComm_tpetra());
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > ptrA = Tpetra::MatrixMarket::Reader<Tpetra::CrsMatrix<ST,NT> >::readSparseFile("./data/nsjac.mm",GetComm_tpetra());
+#endif
    std::vector<int> vec(2); vec[0] = 1; vec[1] = 2;
 
    // Block the linear system using a strided epetra operator
    Teko::TpetraHelpers::StridedTpetraOperator sA(vec,ptrA);
 
    // get 0,0 block
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    F_ = Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sA.GetBlock(0,0)->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(sA.GetBlock(0,0)->getDomainMap()),sA.GetBlock(0,0));
+#else
+   F_ = Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(sA.GetBlock(0,0)->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(sA.GetBlock(0,0)->getDomainMap()),sA.GetBlock(0,0));
+#endif
 }
 
 int tParallelInverse_tpetra::runTest(int verbosity,std::ostream & stdstrm,std::ostream & failstrm,int & totalrun)

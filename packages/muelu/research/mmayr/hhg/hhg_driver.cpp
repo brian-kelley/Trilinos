@@ -99,9 +99,15 @@ int main(int argc, char* argv[])
   typedef GlobalOrdinal GO;
   typedef Node NO;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
   typedef Xpetra::RegionManager<SC,LO,GO,NO> RegionManager;
   typedef Xpetra::RegionMatrix<SC,LO,GO,NO,Xpetra::UseTpetra,Xpetra::region_split> RegionMatrix;
+#else
+  typedef Xpetra::MultiVector<Scalar,Node> MV;
+  typedef Xpetra::RegionManager<SC,NO> RegionManager;
+  typedef Xpetra::RegionMatrix<SC,NO,Xpetra::UseTpetra,Xpetra::region_split> RegionMatrix;
+#endif
 
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
@@ -121,7 +127,11 @@ int main(int argc, char* argv[])
 //  comm->barrier();
 
   if (comm->getSize() > 1)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MueLu::Utilities<SC,LO,GO,NO>::PauseForDebugger();
+#else
+    MueLu::Utilities<SC,NO>::PauseForDebugger();
+#endif
 
   // wrap the output stream
   Teuchos::RCP<Teuchos::FancyOStream> out = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));

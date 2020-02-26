@@ -59,7 +59,11 @@ namespace { // (anonymous)
   // 2014) with the Kokkos refactor version of Tpetra, and has for a
   // couple weeks at least.  Porting this test to Tpetra should help
   // us figure out if this is a Tpetra or an Xpetra issue.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, ReplaceLocalValues, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, ReplaceLocalValues, Scalar, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::outArg;
@@ -70,9 +74,15 @@ namespace { // (anonymous)
     using Teuchos::reduceAll;
     using std::cerr;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, Node> map_type;
     typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> crs_matrix_type;
     typedef Tpetra::Vector<Scalar, LO, GO, Node> vec_type;
+#else
+    typedef Tpetra::Map<Node> map_type;
+    typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+    typedef Tpetra::Vector<Scalar, Node> vec_type;
+#endif
     typedef Tpetra::MatrixMarket::Writer<crs_matrix_type> writer_type;
     typedef typename Teuchos::Array<LO>::size_type size_type;
     typedef Teuchos::ScalarTraits<Scalar> STS;
@@ -599,8 +609,13 @@ namespace { // (anonymous)
   // INSTANTIATIONS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, ReplaceLocalValues, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, ReplaceLocalValues, SCALAR,NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

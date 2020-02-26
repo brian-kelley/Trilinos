@@ -52,9 +52,17 @@
 namespace { // (anonymous)
 
 // Test interfaces that need a RowGraph which is not just a CrsGraph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
 class MyRowGraph : public Tpetra::RowGraph<LO, GO, NT> {
   using base_type = Tpetra::RowGraph<LO, GO, NT>;
+#else
+template <class NT>
+class MyRowGraph : public Tpetra::RowGraph<NT> {
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  using base_type = Tpetra::RowGraph<NT>;
+#endif
 
 public:
   using local_ordinal_type = typename base_type::local_ordinal_type;
@@ -72,32 +80,56 @@ public:
   getComm () const override { return G_->getComm (); }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Map<NT>>
+#endif
   getRowMap () const override {
     return G_->getRowMap ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Map<NT>>
+#endif
   getColMap () const override {
     return G_->getColMap ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Map<NT>>
+#endif
   getDomainMap () const override {
     return G_->getDomainMap ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Map<NT>>
+#endif
   getRangeMap () const override {
     return G_->getRangeMap ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Import<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Import<NT>>
+#endif
   getImporter () const override {
     return G_->getImporter ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Export<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Export<NT>>
+#endif
   getExporter () const override {
     return G_->getExporter ();
   }
@@ -214,9 +246,17 @@ private:
 };
 
 // Test interfaces that need a RowMatrix which is not just a CrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class SC, class LO, class GO, class NT>
 class MyRowMatrix : public Tpetra::RowMatrix<SC, LO, GO, NT> {
   using base_type = Tpetra::RowMatrix<SC, LO, GO, NT>;
+#else
+template <class SC, class NT>
+class MyRowMatrix : public Tpetra::RowMatrix<SC, NT> {
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  using base_type = Tpetra::RowMatrix<SC, NT>;
+#endif
 
 public:
   using scalar_type = typename base_type::scalar_type;
@@ -228,7 +268,11 @@ public:
   MyRowMatrix (Teuchos::RCP<base_type> A,
                const bool permitRowViews) :
     A_ (A),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     G_ (new MyRowGraph<LO, GO, NT> (A->getGraph (), permitRowViews)),
+#else
+    G_ (new MyRowGraph<NT> (A->getGraph (), permitRowViews)),
+#endif
     supportsRowViews_ (permitRowViews)
   {}
 
@@ -238,17 +282,29 @@ public:
   getComm () const override { return A_->getComm (); }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Map<NT>>
+#endif
   getRowMap () const override {
     return A_->getRowMap ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Map<NT>>
+#endif
   getColMap () const override {
     return A_->getColMap ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::RowGraph<LO, GO, NT> >
+#else
+  Teuchos::RCP<const Tpetra::RowGraph<NT> >
+#endif
   getGraph () const override {
     return G_;
   }
@@ -354,19 +410,31 @@ public:
   }
 
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   getLocalDiagCopy (Tpetra::Vector<SC, LO, GO, NT>& diag) const override
+#else
+  getLocalDiagCopy (Tpetra::Vector<SC, NT>& diag) const override
+#endif
   {
     A_->getLocalDiagCopy (diag);
   }
 
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   leftScale (const Tpetra::Vector<SC, LO, GO, NT>& x) override
+#else
+  leftScale (const Tpetra::Vector<SC, NT>& x) override
+#endif
   {
     A_->leftScale (x);
   }
 
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   rightScale (const Tpetra::Vector<SC, LO, GO, NT>& x) override
+#else
+  rightScale (const Tpetra::Vector<SC, NT>& x) override
+#endif
   {
     A_->rightScale (x);
   }
@@ -375,12 +443,20 @@ public:
     return A_->getFrobeniusNorm ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Map<NT>>
+#endif
   getDomainMap () const override {
     return A_->getDomainMap ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>
+#else
+  Teuchos::RCP<const Tpetra::Map<NT>>
+#endif
   getRangeMap () const override {
     return A_->getRangeMap ();
   }
@@ -407,8 +483,13 @@ public:
   }
 
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   apply (const Tpetra::MultiVector<SC, LO, GO, NT>& X,
          Tpetra::MultiVector<SC, LO, GO, NT>& Y,
+#else
+  apply (const Tpetra::MultiVector<SC, NT>& X,
+         Tpetra::MultiVector<SC, NT>& Y,
+#endif
          Teuchos::ETransp mode = Teuchos::NO_TRANS,
          SC alpha = Teuchos::ScalarTraits<SC>::one (),
          SC beta = Teuchos::ScalarTraits<SC>::zero ()) const override
@@ -418,14 +499,27 @@ public:
 
 private:
   Teuchos::RCP<base_type> A_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MyRowGraph<LO, GO, NT>> G_;
+#else
+  Teuchos::RCP<MyRowGraph<NT>> G_;
+#endif
   bool supportsRowViews_ = false;
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 crsMatrixInstancesEqual (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
                          const Tpetra::CrsMatrix<SC, LO, GO, NT>& B)
+#else
+crsMatrixInstancesEqual (const Tpetra::CrsMatrix<SC, NT>& A,
+                         const Tpetra::CrsMatrix<SC, NT>& B)
+#endif
 {
   using Teuchos::outArg;
   using Teuchos::REDUCE_MIN;
@@ -605,12 +699,21 @@ crsMatrixInstancesEqual (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
 // UNIT TESTS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, createDeepCopy, SC, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, createDeepCopy, SC, NT )
+#endif
 {
   using Teuchos::RCP;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+  using map_type = Tpetra::Map<NT>;
+#endif
   constexpr bool testCrsNotFillComplete = true;
   constexpr bool debug = true;
 
@@ -654,7 +757,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, createDeepCopy, SC, LO, GO, NT )
         "fillComplete, wrapped, with hasRowViews="
         << (hasRowViews ? "true" : "false") << endl;
       Teuchos::OSTab tab2 (myOut);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MyRowMatrix<SC, LO, GO, NT> A_my (A, hasRowViews);
+#else
+      MyRowMatrix<SC, NT> A_my (A, hasRowViews);
+#endif
       crs_matrix_type A_copy = Tpetra::createDeepCopy (A_my);
       TEST_ASSERT( crsMatrixInstancesEqual (*A, A_copy) );
     }
@@ -676,7 +783,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, createDeepCopy, SC, LO, GO, NT )
         << (hasRowViews ? "true" : "false") << endl;
       Teuchos::OSTab tab2 (myOut);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MyRowMatrix<SC, LO, GO, NT> A_my (A, hasRowViews);
+#else
+      MyRowMatrix<SC, NT> A_my (A, hasRowViews);
+#endif
       crs_matrix_type A_copy = Tpetra::createDeepCopy (A_my);
       TEST_ASSERT( crsMatrixInstancesEqual (*A, A_copy) );
     }
@@ -702,7 +813,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, createDeepCopy, SC, LO, GO, NT )
       TEST_ASSERT( crsMatrixInstancesEqual (*A, A_copy) );
     }
     for (bool hasRowViews : {false, true}) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MyRowMatrix<SC, LO, GO, NT> A_my (A, hasRowViews);
+#else
+      MyRowMatrix<SC, NT> A_my (A, hasRowViews);
+#endif
       crs_matrix_type A_copy = Tpetra::createDeepCopy (A_my);
       TEST_ASSERT( crsMatrixInstancesEqual (*A, A_copy) );
     }
@@ -716,7 +831,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, createDeepCopy, SC, LO, GO, NT )
       TEST_ASSERT( crsMatrixInstancesEqual (*A, A_copy) );
     }
     for (bool hasRowViews : {false, true}) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MyRowMatrix<SC, LO, GO, NT> A_my (A, hasRowViews);
+#else
+      MyRowMatrix<SC, NT> A_my (A, hasRowViews);
+#endif
       crs_matrix_type A_copy = Tpetra::createDeepCopy (A_my);
       TEST_ASSERT( crsMatrixInstancesEqual (*A, A_copy) );
     }
@@ -727,8 +846,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, createDeepCopy, SC, LO, GO, NT )
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, createDeepCopy, SC, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP( SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, createDeepCopy, SC, NT )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

@@ -56,27 +56,47 @@ namespace Xpetra {
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 Build(const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node>>& map,
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<MultiVector<Scalar, Node>>
+MultiVectorFactory<Scalar, Node>::
+Build(const Teuchos::RCP<const Map<Node>>& map,
+#endif
       size_t                                                            NumVectors,
       bool                                                              zeroOut)
 {
     XPETRA_MONITOR("MultiVectorFactory::Build");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const BlockedMap<LocalOrdinal, GlobalOrdinal, Node>> bmap =
         Teuchos::rcp_dynamic_cast<const BlockedMap<LocalOrdinal, GlobalOrdinal, Node>>(map);
+#else
+    RCP<const BlockedMap<Node>> bmap =
+        Teuchos::rcp_dynamic_cast<const BlockedMap<Node>>(map);
+#endif
 
     if(!bmap.is_null())
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp(new Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>(bmap, NumVectors, zeroOut));
+#else
+        return rcp(new Xpetra::BlockedMultiVector<Scalar, Node>(bmap, NumVectors, zeroOut));
+#endif
     }
 
 #ifdef HAVE_XPETRA_TPETRA
     if(map->lib() == UseTpetra)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp(new TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>(map, NumVectors, zeroOut));
+#else
+        return rcp(new TpetraMultiVector<Scalar, Node>(map, NumVectors, zeroOut));
+#endif
     }
 #endif
 
@@ -85,10 +105,17 @@ Build(const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node>>& map,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
 MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 Build(const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node>>& map,
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<MultiVector<Scalar, Node>>
+MultiVectorFactory<Scalar, Node>::
+Build(const Teuchos::RCP<const Map<Node>>& map,
+#endif
       const Teuchos::ArrayView<const Teuchos::ArrayView<const Scalar>>& ArrayOfPtrs,
       size_t                                                            NumVectors)
 {
@@ -97,7 +124,11 @@ Build(const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node>>& map,
 #ifdef HAVE_XPETRA_TPETRA
     if(map->lib() == UseTpetra)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return rcp(new TpetraMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>(map, ArrayOfPtrs, NumVectors));
+#else
+        return rcp(new TpetraMultiVector<Scalar, Node>(map, ArrayOfPtrs, NumVectors));
+#endif
     }
 #endif
 

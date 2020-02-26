@@ -133,8 +133,13 @@ namespace { // (anonymous)
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Map<Node>::
+#endif
   Map () :
     comm_ (new Teuchos::SerialComm<int> ()),
     indexBase_ (0),
@@ -149,21 +154,34 @@ namespace Tpetra {
     uniform_ (false), // trivially
     contiguous_ (false),
     distributed_ (false), // no communicator yet
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     directory_ (new Directory<LocalOrdinal, GlobalOrdinal, Node> ())
+#else
+    directory_ (new Directory<Node> ())
+#endif
   {
     Tpetra::Details::initializeKokkos ();
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Map<Node>::
+#endif
   Map (const global_size_t numGlobalElements,
        const global_ordinal_type indexBase,
        const Teuchos::RCP<const Teuchos::Comm<int> > &comm,
        const LocalGlobal lOrG) :
     comm_ (comm),
     uniform_ (true),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     directory_ (new Directory<LocalOrdinal, GlobalOrdinal, Node> ())
+#else
+    directory_ (new Directory<Node> ())
+#endif
   {
     using Teuchos::as;
     using Teuchos::broadcast;
@@ -308,15 +326,24 @@ namespace Tpetra {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Map<Node>::
+#endif
   Map (const global_size_t numGlobalElements,
        const size_t numLocalElements,
        const global_ordinal_type indexBase,
        const Teuchos::RCP<const Teuchos::Comm<int> > &comm) :
     comm_ (comm),
     uniform_ (false),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     directory_ (new Directory<LocalOrdinal, GlobalOrdinal, Node> ())
+#else
+    directory_ (new Directory<Node> ())
+#endif
   {
     using Teuchos::as;
     using Teuchos::broadcast;
@@ -401,9 +428,17 @@ namespace Tpetra {
     //setupDirectory ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   global_size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   initialNonuniformDebugCheck (const global_size_t numGlobalElements,
                                const size_t numLocalElements,
                                const GlobalOrdinal indexBase,
@@ -495,9 +530,17 @@ namespace Tpetra {
 #endif // HAVE_TPETRA_DEBUG
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   initWithNonownedHostIndexList (const global_size_t numGlobalElements,
                                  const Kokkos::View<const GlobalOrdinal*,
                                    Kokkos::LayoutLeft,
@@ -778,8 +821,13 @@ namespace Tpetra {
     //setupDirectory ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Map<Node>::
+#endif
   Map (const global_size_t numGlobalElements,
        const GlobalOrdinal indexList[],
        const LocalOrdinal indexListSize,
@@ -787,7 +835,11 @@ namespace Tpetra {
        const Teuchos::RCP<const Teuchos::Comm<int> >& comm) :
     comm_ (comm),
     uniform_ (false),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     directory_ (new Directory<LocalOrdinal, GlobalOrdinal, Node> ())
+#else
+    directory_ (new Directory<Node> ())
+#endif
   {
     Tpetra::Details::initializeKokkos ();
     checkMapInputArray ("(GST, const GO[], LO, GO, comm)",
@@ -806,15 +858,24 @@ namespace Tpetra {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Map<Node>::
+#endif
   Map (const global_size_t numGlobalElements,
        const Teuchos::ArrayView<const GlobalOrdinal>& entryList,
        const GlobalOrdinal indexBase,
        const Teuchos::RCP<const Teuchos::Comm<int> >& comm) :
     comm_ (comm),
     uniform_ (false),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     directory_ (new Directory<LocalOrdinal, GlobalOrdinal, Node> ())
+#else
+    directory_ (new Directory<Node> ())
+#endif
   {
     Tpetra::Details::initializeKokkos ();
     const size_t numLclInds = static_cast<size_t> (entryList.size ());
@@ -834,15 +895,24 @@ namespace Tpetra {
     initWithNonownedHostIndexList (numGlobalElements, inds, indexBase, comm);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Map<Node>::
+#endif
   Map (const global_size_t numGlobalElements,
        const Kokkos::View<const GlobalOrdinal*, device_type>& entryList,
        const GlobalOrdinal indexBase,
        const Teuchos::RCP<const Teuchos::Comm<int> >& comm) :
     comm_ (comm),
     uniform_ (false),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     directory_ (new Directory<LocalOrdinal, GlobalOrdinal, Node> ())
+#else
+    directory_ (new Directory<Node> ())
+#endif
   {
     using Kokkos::LayoutLeft;
     using Kokkos::subview;
@@ -1112,8 +1182,13 @@ namespace Tpetra {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Map<LocalOrdinal,GlobalOrdinal,Node>::~Map ()
+#else
+  template <class Node>
+  Map<Node>::~Map ()
+#endif
   {
     if (! Kokkos::is_initialized ()) {
       std::ostringstream os;
@@ -1163,9 +1238,17 @@ namespace Tpetra {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::isOneToOne () const
+#else
+  Map<Node>::isOneToOne () const
+#endif
   {
     TEUCHOS_TEST_FOR_EXCEPTION(
       getComm ().is_null (), std::logic_error, "Tpetra::Map::isOneToOne: "
@@ -1178,9 +1261,17 @@ namespace Tpetra {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   LocalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   getLocalElement (GlobalOrdinal globalIndex) const
   {
     if (isContiguous ()) {
@@ -1201,9 +1292,17 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   getGlobalElement (LocalOrdinal localIndex) const
   {
     if (localIndex < getMinLocalIndex () || localIndex > getMaxLocalIndex ()) {
@@ -1221,9 +1320,17 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   isNodeLocalElement (LocalOrdinal localIndex) const
   {
     if (localIndex < getMinLocalIndex () || localIndex > getMaxLocalIndex ()) {
@@ -1233,28 +1340,52 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   isNodeGlobalElement (GlobalOrdinal globalIndex) const {
     return this->getLocalElement (globalIndex) !=
       Tpetra::Details::OrdinalTraits<LocalOrdinal>::invalid ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   bool Map<LocalOrdinal,GlobalOrdinal,Node>::isUniform () const {
+#else
+  template <class Node>
+  bool Map<Node>::isUniform () const {
+#endif
     return uniform_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   bool Map<LocalOrdinal,GlobalOrdinal,Node>::isContiguous () const {
+#else
+  template <class Node>
+  bool Map<Node>::isContiguous () const {
+#endif
     return contiguous_;
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   typename Map<LocalOrdinal,GlobalOrdinal,Node>::local_map_type
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  typename Map<Node>::local_map_type
+  Map<Node>::
+#endif
   getLocalMap () const
   {
     return local_map_type (glMap_, lgMap_, getIndexBase (),
@@ -1263,10 +1394,19 @@ namespace Tpetra {
                            getNodeNumElements (), isContiguous ());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
   isCompatible (const Map<LocalOrdinal,GlobalOrdinal,Node> &map) const
+#else
+  Map<Node>::
+  isCompatible (const Map<Node> &map) const
+#endif
   {
     using Teuchos::outArg;
     using Teuchos::REDUCE_MIN;
@@ -1329,10 +1469,19 @@ namespace Tpetra {
     return (globallyCompat == 1);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
   locallySameAs (const Map<LocalOrdinal, GlobalOrdinal, Node>& map) const
+#else
+  Map<Node>::
+  locallySameAs (const Map<Node>& map) const
+#endif
   {
     using Teuchos::ArrayView;
     typedef GlobalOrdinal GO;
@@ -1416,10 +1565,19 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
   isLocallyFitted (const Map<LocalOrdinal, GlobalOrdinal, Node>& map) const
+#else
+  Map<Node>::
+  isLocallyFitted (const Map<Node>& map) const
+#endif
   {
     if (this == &map)
       return true;
@@ -1461,10 +1619,19 @@ namespace Tpetra {
     return (numDiff == 0);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
   isSameAs (const Map<LocalOrdinal,GlobalOrdinal,Node> &map) const
+#else
+  Map<Node>::
+  isSameAs (const Map<Node> &map) const
+#endif
   {
     using Teuchos::outArg;
     using Teuchos::REDUCE_MIN;
@@ -1555,9 +1722,15 @@ namespace Tpetra {
   } // namespace (anonymous)
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   typename Map<LocalOrdinal,GlobalOrdinal,Node>::global_indices_array_type
   Map<LocalOrdinal,GlobalOrdinal,Node>::getMyGlobalIndices () const
+#else
+  template <class Node>
+  typename Map<Node>::global_indices_array_type
+  Map<Node>::getMyGlobalIndices () const
+#endif
   {
     typedef LocalOrdinal LO;
     typedef GlobalOrdinal GO;
@@ -1606,9 +1779,17 @@ namespace Tpetra {
     return lgMap_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   Teuchos::ArrayView<const GlobalOrdinal>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::getNodeElementList () const
+#else
+  Map<Node>::getNodeElementList () const
+#endif
   {
     typedef GlobalOrdinal GO; // convenient abbreviation
 
@@ -1627,13 +1808,23 @@ namespace Tpetra {
                                          Teuchos::RCP_DISABLE_NODE_LOOKUP);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   bool Map<LocalOrdinal,GlobalOrdinal,Node>::isDistributed() const {
+#else
+  template <class Node>
+  bool Map<Node>::isDistributed() const {
+#endif
     return distributed_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string Map<LocalOrdinal,GlobalOrdinal,Node>::description() const {
+#else
+  template <class Node>
+  std::string Map<Node>::description() const {
+#endif
     using Teuchos::TypeNameTraits;
     std::ostringstream os;
 
@@ -1657,9 +1848,17 @@ namespace Tpetra {
   ///   to the given output string.
   ///
   /// This is an implementation detail of describe().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   localDescribeToString (const Teuchos::EVerbosityLevel vl) const
   {
     typedef LocalOrdinal LO;
@@ -1701,9 +1900,17 @@ namespace Tpetra {
     return outStringP->str ();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   describe (Teuchos::FancyOStream &out,
             const Teuchos::EVerbosityLevel verbLevel) const
   {
@@ -1776,9 +1983,15 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >
   Map<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  Teuchos::RCP<const Map<Node> >
+  Map<Node>::
+#endif
   replaceCommWithSubset (const Teuchos::RCP<const Teuchos::Comm<int> >& newComm) const
   {
     using Teuchos::RCP;
@@ -1786,7 +1999,11 @@ namespace Tpetra {
     typedef global_size_t GST;
     typedef LocalOrdinal LO;
     typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LO, GO, Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
 
     // mfh 26 Mar 2013: The lazy way to do this is simply to recreate
     // the Map by calling its ordinary public constructor, using the
@@ -1887,9 +2104,15 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >
   Map<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  Teuchos::RCP<const Map<Node> >
+  Map<Node>::
+#endif
   removeEmptyProcesses () const
   {
     using Teuchos::Comm;
@@ -1980,9 +2203,17 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::setupDirectory () const
+#else
+  Map<Node>::setupDirectory () const
+#endif
   {
     TEUCHOS_TEST_FOR_EXCEPTION(
       directory_.is_null (), std::logic_error, "Tpetra::Map::setupDirectory: "
@@ -1996,9 +2227,17 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   getRemoteIndexList (const Teuchos::ArrayView<const GlobalOrdinal>& GIDs,
                       const Teuchos::ArrayView<int>& PIDs,
                       const Teuchos::ArrayView<LocalOrdinal>& LIDs) const
@@ -2033,9 +2272,17 @@ namespace Tpetra {
     return directory_->getDirectoryEntries (*this, GIDs, PIDs, LIDs);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Map<Node>::
+#endif
   getRemoteIndexList (const Teuchos::ArrayView<const GlobalOrdinal> & GIDs,
                       const Teuchos::ArrayView<int> & PIDs) const
   {
@@ -2058,15 +2305,28 @@ namespace Tpetra {
     return directory_->getDirectoryEntries (*this, GIDs, PIDs);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   Teuchos::RCP<const Teuchos::Comm<int> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Map<LocalOrdinal,GlobalOrdinal,Node>::getComm () const {
+#else
+  Map<Node>::getComm () const {
+#endif
     return comm_;
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,class GlobalOrdinal, class Node>
   bool Map<LocalOrdinal,GlobalOrdinal,Node>::checkIsDist() const {
+#else
+  template <class Node>
+  bool Map<Node>::checkIsDist() const {
+#endif
     using Teuchos::as;
     using Teuchos::outArg;
     using Teuchos::REDUCE_MIN;
@@ -2112,7 +2372,11 @@ Tpetra::createLocalMap (const size_t numElements,
   typedef LocalOrdinal LO;
   typedef GlobalOrdinal GO;
   typedef typename ::Tpetra::Map<LO, GO>::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return createLocalMapWithNode<LO, GO, NT> (numElements, comm);
+#else
+  return createLocalMapWithNode<NT> (numElements, comm);
+#endif
 }
 
 template <class LocalOrdinal, class GlobalOrdinal>
@@ -2123,33 +2387,55 @@ Tpetra::createUniformContigMap (const global_size_t numElements,
   typedef LocalOrdinal LO;
   typedef GlobalOrdinal GO;
   typedef typename ::Tpetra::Map<LO, GO>::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return createUniformContigMapWithNode<LO, GO, NT> (numElements, comm);
+#else
+  return createUniformContigMapWithNode<NT> (numElements, comm);
+#endif
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+template <class Node>
+Teuchos::RCP< const Tpetra::Map<Node> >
+#endif
 Tpetra::createUniformContigMapWithNode (const global_size_t numElements,
                                         const Teuchos::RCP<const Teuchos::Comm<int> >& comm
 )
 {
   using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+#endif
   const GlobalOrdinal indexBase = static_cast<GlobalOrdinal> (0);
 
   return rcp (new map_type (numElements, indexBase, comm, GloballyDistributed));
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+template <class Node>
+Teuchos::RCP< const Tpetra::Map<Node> >
+#endif
 Tpetra::createLocalMapWithNode (const size_t numElements,
                                 const Teuchos::RCP<const Teuchos::Comm<int> >& comm
 )
 {
   using Tpetra::global_size_t;
   using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+#endif
   const GlobalOrdinal indexBase = static_cast<GlobalOrdinal> (0);
   const global_size_t globalNumElts = static_cast<global_size_t> (numElements);
 
@@ -2157,15 +2443,24 @@ Tpetra::createLocalMapWithNode (const size_t numElements,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+template <class Node>
+Teuchos::RCP< const Tpetra::Map<Node> >
+#endif
 Tpetra::createContigMapWithNode (const Tpetra::global_size_t numElements,
                                  const size_t localNumElements,
                                  const Teuchos::RCP<const Teuchos::Comm<int> >& comm
 )
 {
   using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>;
+#else
+  using map_type = Tpetra::Map<Node>;
+#endif
   const GlobalOrdinal indexBase = static_cast<GlobalOrdinal> (0);
 
   return rcp (new map_type (numElements, localNumElements, indexBase, comm));
@@ -2181,7 +2476,11 @@ Tpetra::createContigMap (const Tpetra::global_size_t numElements,
   typedef GlobalOrdinal GO;
   typedef typename Tpetra::Map<LocalOrdinal, GlobalOrdinal>::node_type NT;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Tpetra::createContigMapWithNode<LO, GO, NT> (numElements, localNumElements, comm);
+#else
+  return Tpetra::createContigMapWithNode<NT> (numElements, localNumElements, comm);
+#endif
 }
 
 
@@ -2194,19 +2493,32 @@ Tpetra::createNonContigMap(const Teuchos::ArrayView<const GlobalOrdinal>& elemen
   typedef GlobalOrdinal GO;
   typedef typename Tpetra::Map<LocalOrdinal, GlobalOrdinal>::node_type NT;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Tpetra::createNonContigMapWithNode<LO, GO, NT> (elementList, comm);
+#else
+  return Tpetra::createNonContigMapWithNode<NT> (elementList, comm);
+#endif
 }
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+template <class Node>
+Teuchos::RCP< const Tpetra::Map<Node> >
+#endif
 Tpetra::createNonContigMapWithNode (const Teuchos::ArrayView<const GlobalOrdinal>& elementList,
                                     const Teuchos::RCP<const Teuchos::Comm<int> >& comm
 )
 {
   using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>;
+#else
+  using map_type = Tpetra::Map<Node>;
+#endif
   using GST = Tpetra::global_size_t;
   const GST INV = Tpetra::Details::OrdinalTraits<GST>::invalid ();
   // FIXME (mfh 22 Jul 2016) This is what I found here, but maybe this
@@ -2219,15 +2531,25 @@ Tpetra::createNonContigMapWithNode (const Teuchos::ArrayView<const GlobalOrdinal
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
 Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >
 Tpetra::createOneToOne (const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& M)
+#else
+template<class NT>
+Teuchos::RCP<const Tpetra::Map<NT> >
+Tpetra::createOneToOne (const Teuchos::RCP<const Tpetra::Map<NT> >& M)
+#endif
 {
   using Teuchos::Array;
   using Teuchos::ArrayView;
   using Teuchos::as;
   using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
   typedef global_size_t GST;
   const GST GINV = Tpetra::Details::OrdinalTraits<GST>::invalid ();
   const int myRank = M->getComm ()->getRank ();
@@ -2263,7 +2585,11 @@ Tpetra::createOneToOne (const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& M)
     return M;
   }
   else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Directory<LO, GO, NT> directory;
+#else
+    Tpetra::Directory<NT> directory;
+#endif
     const size_t numMyElems = M->getNodeNumElements ();
     ArrayView<const GO> myElems = M->getNodeElementList ();
     Array<int> owner_procs_vec (numMyElems);
@@ -2287,9 +2613,15 @@ Tpetra::createOneToOne (const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& M)
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
 Tpetra::createOneToOne (const Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > &M,
+#else
+template<class Node>
+Teuchos::RCP<const Tpetra::Map<Node> >
+Tpetra::createOneToOne (const Teuchos::RCP<const Tpetra::Map<Node> > &M,
+#endif
                         const Tpetra::Details::TieBreak<LocalOrdinal,GlobalOrdinal> & tie_break)
 {
   using ::Tpetra::Details::Behavior;
@@ -2302,7 +2634,11 @@ Tpetra::createOneToOne (const Teuchos::RCP<const Tpetra::Map<LocalOrdinal,Global
   using std::endl;
   using LO = LocalOrdinal;
   using GO = GlobalOrdinal;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, Node>;
+#else
+  using map_type = Tpetra::Map<Node>;
+#endif
   const char funcPrefix[] = "Tpetra::createOneToOne(Map,TieBreak): ";
 
   const bool verbose = Behavior::verbose ("Map") ||
@@ -2328,7 +2664,11 @@ Tpetra::createOneToOne (const Teuchos::RCP<const Tpetra::Map<LocalOrdinal,Global
 
   //Based off Epetra's one to one.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::Directory<LO, GO, Node> directory;
+#else
+  Tpetra::Directory<Node> directory;
+#endif
   if (verbose) {
     std::ostringstream os;
     os << *procPrefix << "Initialize Directory" << endl;
@@ -2398,32 +2738,69 @@ Tpetra::createOneToOne (const Teuchos::RCP<const Tpetra::Map<LocalOrdinal,Global
 
 //! Explicit instantiation macro supporting the Map class. Instantiates the class and the non-member constructors.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_MAP_INSTANT(LO,GO,NODE) \
+#else
+#define TPETRA_MAP_INSTANT(NODE) \
+#endif
   \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template class Map< LO , GO , NODE >; \
+#else
+  template class Map<NODE >; \
+#endif
   \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template Teuchos::RCP< const Map<LO,GO,NODE> > \
   createLocalMapWithNode<LO,GO,NODE> (const size_t numElements, \
+#else
+  template Teuchos::RCP< const Map<NODE> > \
+  createLocalMapWithNode<NODE> (const size_t numElements, \
+#endif
                                       const Teuchos::RCP< const Teuchos::Comm< int > >& comm); \
   \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template Teuchos::RCP< const Map<LO,GO,NODE> > \
   createContigMapWithNode<LO,GO,NODE> (const global_size_t numElements, \
+#else
+  template Teuchos::RCP< const Map<NODE> > \
+  createContigMapWithNode<NODE> (const global_size_t numElements, \
+#endif
                                        const size_t localNumElements,   \
                                        const Teuchos::RCP< const Teuchos::Comm< int > >& comm); \
   \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template Teuchos::RCP< const Map<LO,GO,NODE> > \
+#else
+  template Teuchos::RCP< const Map<NODE> > \
+#endif
   createNonContigMapWithNode(const Teuchos::ArrayView<const GO> &elementList, \
                              const Teuchos::RCP<const Teuchos::Comm<int> > &comm); \
   \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template Teuchos::RCP< const Map<LO,GO,NODE> > \
   createUniformContigMapWithNode<LO,GO,NODE> (const global_size_t numElements, \
+#else
+  template Teuchos::RCP< const Map<NODE> > \
+  createUniformContigMapWithNode<NODE> (const global_size_t numElements, \
+#endif
                                               const Teuchos::RCP< const Teuchos::Comm< int > >& comm); \
   \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template Teuchos::RCP<const Map<LO,GO,NODE> > \
   createOneToOne (const Teuchos::RCP<const Map<LO,GO,NODE> >& M); \
+#else
+  template Teuchos::RCP<const Map<NODE> > \
+  createOneToOne (const Teuchos::RCP<const Map<NODE> >& M); \
+#endif
   \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template Teuchos::RCP<const Map<LO,GO,NODE> > \
   createOneToOne (const Teuchos::RCP<const Map<LO,GO,NODE> >& M, \
+#else
+  template Teuchos::RCP<const Map<NODE> > \
+  createOneToOne (const Teuchos::RCP<const Map<NODE> >& M, \
+#endif
                   const Tpetra::Details::TieBreak<LO,GO>& tie_break); \
 
 

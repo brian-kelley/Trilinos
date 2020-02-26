@@ -56,7 +56,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RegionVector, RegionCompositeVector, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RegionVector, RegionCompositeVector, Scalar, Node)
+#endif
 {
 #   include "MueLu_UseShortNames.hpp"
   MUELU_TESTING_SET_OSTREAM;
@@ -66,8 +70,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RegionVector, RegionCompositeVector, Scalar, L
   using magnitude_type        = typename TST::magnitudeType;
   using TMT                   = Teuchos::ScalarTraits<magnitude_type>;
   using real_type             = typename TST::coordinateType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using RealValuedMultiVector = Xpetra::MultiVector<real_type,LO,GO,NO>;
   using test_factory          = TestHelpers::TestFactory<SC, LO, GO, NO>;
+#else
+  using RealValuedMultiVector = Xpetra::MultiVector<real_type,NO>;
+  using test_factory          = TestHelpers::TestFactory<SC, NO>;
+#endif
 
   out << "version: " << MueLu::Version() << std::endl;
 
@@ -84,9 +93,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RegionVector, RegionCompositeVector, Scalar, L
 
   // Build maps for the problem
   const LO numDofsPerNode = 1;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Map> nodeMap = Galeri::Xpetra::CreateMap<LO, GO, Node>(TestHelpers::Parameters::getLib(),
+#else
+  RCP<Map> nodeMap = Galeri::Xpetra::CreateMap<Node>(TestHelpers::Parameters::getLib(),
+#endif
                                                              "Cartesian2D", comm, galeriList);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Map> dofMap  = Xpetra::MapFactory<LO,GO,Node>::Build(nodeMap, numDofsPerNode);
+#else
+  RCP<Map> dofMap  = Xpetra::MapFactory<Node>::Build(nodeMap, numDofsPerNode);
+#endif
 
   // Build the Xpetra problem
   RCP<Galeri::Xpetra::Problem<Map,CrsMatrixWrap,MultiVector> > Pr =
@@ -129,7 +146,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RegionVector, RegionCompositeVector, Scalar, L
 
   const int maxRegPerProc = 1;
   std::vector<RCP<Map> > rowMapPerGrp(maxRegPerProc),        colMapPerGrp(maxRegPerProc);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   rowMapPerGrp[0] = Xpetra::MapFactory<LO,GO,Node>::Build(A->getRowMap()->lib(),
+#else
+  rowMapPerGrp[0] = Xpetra::MapFactory<Node>::Build(A->getRowMap()->lib(),
+#endif
                                                           Teuchos::OrdinalTraits<GO>::invalid(),
                                                           quasiRegionGIDs(),
                                                           A->getRowMap()->getIndexBase(),
@@ -137,7 +158,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RegionVector, RegionCompositeVector, Scalar, L
   colMapPerGrp[0] = rowMapPerGrp[0];
 
   std::vector<RCP<Map> > revisedRowMapPerGrp(maxRegPerProc), revisedColMapPerGrp(maxRegPerProc);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   revisedRowMapPerGrp[0] = Xpetra::MapFactory<LO,GO,Node>::Build(A->getRowMap()->lib(),
+#else
+  revisedRowMapPerGrp[0] = Xpetra::MapFactory<Node>::Build(A->getRowMap()->lib(),
+#endif
                                                                  Teuchos::OrdinalTraits<GO>::invalid(),
                                                                  quasiRegionGIDs.size()*numDofsPerNode,
                                                                  A->getRowMap()->getIndexBase(),
@@ -365,8 +390,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(RegionVector, RegionCompositeVector, Scalar, L
 
 } // RegionCompositeVector
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(Scalar, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(RegionVector,RegionCompositeVector,Scalar,LO,GO,Node)
+#else
+#  define MUELU_ETI_GROUP(Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(RegionVector,RegionCompositeVector,Scalar,Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

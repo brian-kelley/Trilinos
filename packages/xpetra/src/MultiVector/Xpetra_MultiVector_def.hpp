@@ -52,26 +52,46 @@
 namespace Xpetra {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+MultiVector<Scalar, Node>::
+#endif
 ~MultiVector()
 {
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&
 MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 operator=(const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs)
+#else
+template<class Scalar, class Node>
+MultiVector<Scalar, Node>&
+MultiVector<Scalar, Node>::
+operator=(const MultiVector<Scalar, Node>& rhs)
+#endif
 {
     assign(rhs);      // dispatch to protected virtual method
     return *this;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+MultiVector<Scalar, Node>::
+#endif
 Xpetra_randomize()
 {
     typedef Teuchos::ScalarTraits<Scalar> SCT;

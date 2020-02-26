@@ -888,14 +888,24 @@ clearBlocks()
 namespace Details {
 
 //Implementation of Ifpack2::Details::StridedRowView
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 StridedRowView<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+StridedRowView<Scalar, Node>::
+#endif
 StridedRowView(const SC* vals_, const LO* inds_, int blockSize_, size_t nnz_)
   : vals(vals_), inds(inds_), blockSize(blockSize_), nnz(nnz_)
 {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 StridedRowView<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+StridedRowView<Scalar, Node>::
+#endif
 StridedRowView(Teuchos::Array<SC>& vals_, Teuchos::Array<LO>& inds_)
   : vals(nullptr), inds(nullptr), blockSize(1), nnz(vals_.size())
 {
@@ -903,8 +913,13 @@ StridedRowView(Teuchos::Array<SC>& vals_, Teuchos::Array<LO>& inds_)
   indsCopy.swap(inds_);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Scalar StridedRowView<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+Scalar StridedRowView<Scalar, Node>::
+#endif
 val(size_t i) const
 {
   #ifdef HAVE_IFPACK2_DEBUG
@@ -922,8 +937,13 @@ val(size_t i) const
     return valsCopy[i];
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 LocalOrdinal StridedRowView<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+LocalOrdinal StridedRowView<Scalar, Node>::
+#endif
 ind(size_t i) const
 {
   #ifdef HAVE_IFPACK2_DEBUG
@@ -942,8 +962,13 @@ ind(size_t i) const
     return indsCopy[i];
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 size_t StridedRowView<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+size_t StridedRowView<Scalar, Node>::
+#endif
 size() const
 {
   return nnz;
@@ -958,12 +983,21 @@ std::ostream& operator<<(std::ostream& os, const Ifpack2::Container<MatrixType>&
   return obj.print(os);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_CONTAINER_INSTANT(S,LO,GO,N) \
   template class Ifpack2::Container<Tpetra::RowMatrix<S, LO, GO, N>>; \
   template class Ifpack2::ContainerImpl<Tpetra::RowMatrix<S, LO, GO, N>, S>; \
   template class Ifpack2::Details::StridedRowView<S, LO, GO, N>; \
   template std::ostream& operator<< <Tpetra::RowMatrix<S, LO, GO, N>>( \
       std::ostream& os, const Ifpack2::Container<Tpetra::RowMatrix<S, LO, GO, N>>& obj);
+#else
+#define IFPACK2_CONTAINER_INSTANT(S,N) \
+  template class Ifpack2::Container<Tpetra::RowMatrix<S, N>>; \
+  template class Ifpack2::ContainerImpl<Tpetra::RowMatrix<S, N>, S>; \
+  template class Ifpack2::Details::StridedRowView<S, N>; \
+  template std::ostream& operator<< <Tpetra::RowMatrix<S, N>>( \
+      std::ostream& os, const Ifpack2::Container<Tpetra::RowMatrix<S, N>>& obj);
+#endif
 
 #endif
 

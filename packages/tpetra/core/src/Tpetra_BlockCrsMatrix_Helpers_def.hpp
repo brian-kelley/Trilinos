@@ -55,39 +55,67 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::string const &fileName) {
+#else
+  template<class Scalar, class Node>
+  void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,Node> const &A, std::string const &fileName) {
+#endif
     Teuchos::ParameterList pl;
     std::ofstream out;
     out.open(fileName.c_str());
     blockCrsMatrixWriter(A, out, pl);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::string const &fileName, Teuchos::ParameterList const &params) {
+#else
+  template<class Scalar, class Node>
+  void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,Node> const &A, std::string const &fileName, Teuchos::ParameterList const &params) {
+#endif
     std::ofstream out;
     out.open(fileName.c_str());
     blockCrsMatrixWriter(A, out, params);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::ostream &os) {
+#else
+  template<class Scalar, class Node>
+  void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,Node> const &A, std::ostream &os) {
+#endif
     Teuchos::ParameterList pl;
     blockCrsMatrixWriter(A, os, pl);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::ostream &os, Teuchos::ParameterList const &params) {
+#else
+  template<class Scalar, class Node>
+  void blockCrsMatrixWriter(BlockCrsMatrix<Scalar,Node> const &A, std::ostream &os, Teuchos::ParameterList const &params) {
+#endif
 
     using Teuchos::RCP;
     using Teuchos::rcp;
 
     typedef Teuchos::OrdinalTraits<GO>                     TOT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BlockCrsMatrix<Scalar, LO, GO, Node>           block_crs_matrix_type;
     typedef Tpetra::Import<LO, GO, Node>                   import_type;
     typedef Tpetra::Map<LO, GO, Node>                      map_type;
     typedef Tpetra::MultiVector<GO, LO, GO, Node>          mv_type;
     typedef Tpetra::CrsGraph<LO, GO, Node>                 crs_graph_type;
+#else
+    typedef BlockCrsMatrix<Scalar, Node>           block_crs_matrix_type;
+    typedef Tpetra::Import<Node>                   import_type;
+    typedef Tpetra::Map<Node>                      map_type;
+    typedef Tpetra::MultiVector<GO, Node>          mv_type;
+    typedef Tpetra::CrsGraph<Node>                 crs_graph_type;
+#endif
 
     RCP<const map_type> const rowMap = A.getRowMap(); //"mesh" map
     RCP<const Teuchos::Comm<int> > comm = rowMap->getComm();
@@ -194,10 +222,19 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   void writeMatrixStrip(BlockCrsMatrix<Scalar,LO,GO,Node> const &A, std::ostream &os, Teuchos::ParameterList const &params) {
+#else
+  template<class Scalar, class Node>
+  void writeMatrixStrip(BlockCrsMatrix<Scalar,Node> const &A, std::ostream &os, Teuchos::ParameterList const &params) {
+#endif
     using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Tpetra::Map<LO, GO, Node>;
+#else
+    using map_type = Tpetra::Map<Node>;
+#endif
 
     size_t numRows = A.getGlobalNumRows();
     RCP<const map_type> rowMap = A.getRowMap();
@@ -289,9 +326,15 @@ namespace Tpetra {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   Teuchos::RCP<BlockCrsMatrix<Scalar, LO, GO, Node> >
   convertToBlockCrsMatrix(const Tpetra::CrsMatrix<Scalar, LO, GO, Node>& pointMatrix, const LO &blockSize)
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<BlockCrsMatrix<Scalar, Node> >
+  convertToBlockCrsMatrix(const Tpetra::CrsMatrix<Scalar, Node>& pointMatrix, const LO &blockSize)
+#endif
   {
 
       /*
@@ -306,21 +349,43 @@ namespace Tpetra {
       using Teuchos::ArrayView;
       using Teuchos::RCP;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::BlockCrsMatrix<Scalar,LO,GO,Node> block_crs_matrix_type;
       typedef Tpetra::Map<LO,GO,Node>                                 map_type;
       typedef Tpetra::CrsGraph<LO,GO,Node>                            crs_graph_type;
+#else
+      typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+      typedef Tpetra::Map<Node>                                 map_type;
+      typedef Tpetra::CrsGraph<Node>                            crs_graph_type;
+#endif
 
       const map_type &pointRowMap = *(pointMatrix.getRowMap());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const map_type> meshRowMap = createMeshMap<LO,GO,Node>(blockSize, pointRowMap);
+#else
+      RCP<const map_type> meshRowMap = createMeshMap<Node>(blockSize, pointRowMap);
+#endif
 
       const map_type &pointColMap = *(pointMatrix.getColMap());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const map_type> meshColMap = createMeshMap<LO,GO,Node>(blockSize, pointColMap);
+#else
+      RCP<const map_type> meshColMap = createMeshMap<Node>(blockSize, pointColMap);
+#endif
 
       const map_type &pointDomainMap = *(pointMatrix.getDomainMap());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const map_type> meshDomainMap = createMeshMap<LO,GO,Node>(blockSize, pointDomainMap);
+#else
+      RCP<const map_type> meshDomainMap = createMeshMap<Node>(blockSize, pointDomainMap);
+#endif
 
       const map_type &pointRangeMap = *(pointMatrix.getRangeMap());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const map_type> meshRangeMap = createMeshMap<LO,GO,Node>(blockSize, pointRangeMap);
+#else
+      RCP<const map_type> meshRangeMap = createMeshMap<Node>(blockSize, pointRangeMap);
+#endif
 
       // Use graph ctor that provides column map and upper bound on nonzeros per row.
       // We can use static profile because the point graph should have at least as many entries per
@@ -413,12 +478,22 @@ namespace Tpetra {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class Node>
   Teuchos::RCP<const Tpetra::Map<LO,GO,Node> >
   createMeshMap (const LO& blockSize, const Tpetra::Map<LO,GO,Node>& pointMap)
+#else
+  template<class Node>
+  Teuchos::RCP<const Tpetra::Map<Node> >
+  createMeshMap (const LO& blockSize, const Tpetra::Map<Node>& pointMap)
+#endif
   {
     typedef Teuchos::OrdinalTraits<Tpetra::global_size_t> TOT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO,GO,Node> map_type;
+#else
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     //calculate mesh GIDs
     Teuchos::ArrayView<const GO> pointGids = pointMap.getNodeElementList();
@@ -451,6 +526,7 @@ namespace Tpetra {
 //
 // Must be expanded from within the Tpetra namespace!
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_BLOCKCRSMATRIX_HELPERS_INSTANT(S,LO,GO,NODE) \
   template void blockCrsMatrixWriter(BlockCrsMatrix<S,LO,GO,NODE> const &A, std::string const &fileName); \
   template void blockCrsMatrixWriter(BlockCrsMatrix<S,LO,GO,NODE> const &A, std::string const &fileName, Teuchos::ParameterList const &params); \
@@ -458,11 +534,25 @@ namespace Tpetra {
   template void blockCrsMatrixWriter(BlockCrsMatrix<S,LO,GO,NODE> const &A, std::ostream &os, Teuchos::ParameterList const &params); \
   template void writeMatrixStrip(BlockCrsMatrix<S,LO,GO,NODE> const &A, std::ostream &os, Teuchos::ParameterList const &params); \
   template Teuchos::RCP<BlockCrsMatrix<S, LO, GO, NODE> > convertToBlockCrsMatrix(const CrsMatrix<S, LO, GO, NODE>& pointMatrix, const LO &blockSize);
+#else
+#define TPETRA_BLOCKCRSMATRIX_HELPERS_INSTANT(S,NODE) \
+  template void blockCrsMatrixWriter(BlockCrsMatrix<S,NODE> const &A, std::string const &fileName); \
+  template void blockCrsMatrixWriter(BlockCrsMatrix<S,NODE> const &A, std::string const &fileName, Teuchos::ParameterList const &params); \
+  template void blockCrsMatrixWriter(BlockCrsMatrix<S,NODE> const &A, std::ostream &os); \
+  template void blockCrsMatrixWriter(BlockCrsMatrix<S,NODE> const &A, std::ostream &os, Teuchos::ParameterList const &params); \
+  template void writeMatrixStrip(BlockCrsMatrix<S,NODE> const &A, std::ostream &os, Teuchos::ParameterList const &params); \
+  template Teuchos::RCP<BlockCrsMatrix<S, NODE> > convertToBlockCrsMatrix(const CrsMatrix<S, NODE>& pointMatrix, const LO &blockSize);
+#endif
 
 //
 // Explicit instantiation macro for createMeshMap.
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_CREATEMESHMAP_INSTANT(LO,GO,NODE) \
   template Teuchos::RCP<const Map<LO,GO,NODE> > createMeshMap (const LO& blockSize, const Map<LO,GO,NODE>& pointMap);
+#else
+#define TPETRA_CREATEMESHMAP_INSTANT(NODE) \
+  template Teuchos::RCP<const Map<NODE> > createMeshMap (const LO& blockSize, const Map<NODE>& pointMap);
+#endif
 
 #endif // TPETRA_BLOCKCRSMATRIX_HELPERS_DEF_HPP

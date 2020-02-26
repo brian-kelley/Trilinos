@@ -57,80 +57,175 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::TpetraImport(const Teuchos::RCP< const map_type > &source, const Teuchos::RCP< const map_type > &target):import_(Teuchos::rcp(new Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node >(toTpetra(source), toTpetra(target))))
+#else
+template<class Node>
+TpetraImport<Node>::TpetraImport(const Teuchos::RCP< const map_type > &source, const Teuchos::RCP< const map_type > &target):import_(Teuchos::rcp(new Tpetra::Import<Node >(toTpetra(source), toTpetra(target))))
+#endif
 {   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::TpetraImport(const Teuchos::RCP< const map_type > &source, const Teuchos::RCP< const map_type > &target, const Teuchos::RCP< Teuchos::ParameterList > &plist):import_(Teuchos::rcp(new Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node >(toTpetra(source), toTpetra(target), plist)))
+#else
+template<class Node>
+TpetraImport<Node>::TpetraImport(const Teuchos::RCP< const map_type > &source, const Teuchos::RCP< const map_type > &target, const Teuchos::RCP< Teuchos::ParameterList > &plist):import_(Teuchos::rcp(new Tpetra::Import<Node >(toTpetra(source), toTpetra(target), plist)))
+#endif
 {   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::TpetraImport(const Import< LocalOrdinal, GlobalOrdinal, Node > &import):import_(Teuchos::rcp(new Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node >(toTpetra(import))))
+#else
+template<class Node>
+TpetraImport<Node>::TpetraImport(const Import<Node > &import):import_(Teuchos::rcp(new Tpetra::Import<Node >(toTpetra(import))))
+#endif
 {   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::~TpetraImport()
+#else
+template<class Node>
+TpetraImport<Node>::~TpetraImport()
+#endif
 {  }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 size_t TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getNumSameIDs() const
+#else
+template<class Node>
+size_t TpetraImport<Node>::getNumSameIDs() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getNumSameIDs"); return import_->getNumSameIDs(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 size_t TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getNumPermuteIDs() const
+#else
+template<class Node>
+size_t TpetraImport<Node>::getNumPermuteIDs() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getNumPermuteIDs"); return import_->getNumPermuteIDs(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 ArrayView< const LocalOrdinal > TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getPermuteFromLIDs() const
+#else
+template<class Node>
+ArrayView< const LocalOrdinal > TpetraImport<Node>::getPermuteFromLIDs() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getPermuteFromLIDs"); return import_->getPermuteFromLIDs(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 ArrayView< const LocalOrdinal > TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getPermuteToLIDs() const
+#else
+template<class Node>
+ArrayView< const LocalOrdinal > TpetraImport<Node>::getPermuteToLIDs() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getPermuteToLIDs"); return import_->getPermuteToLIDs(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 size_t TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getNumRemoteIDs() const
+#else
+template<class Node>
+size_t TpetraImport<Node>::getNumRemoteIDs() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getNumRemoteIDs"); return import_->getNumRemoteIDs(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::setDistributorParameters(const Teuchos::RCP<Teuchos::ParameterList> params) const
+#else
+template<class Node>
+void TpetraImport<Node>::setDistributorParameters(const Teuchos::RCP<Teuchos::ParameterList> params) const
+#endif
 { XPETRA_MONITOR("TpetraImport::setDistributorParameters"); import_->getDistributor().setParameterList(params); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 ArrayView< const LocalOrdinal > TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getRemoteLIDs() const
+#else
+template<class Node>
+ArrayView< const LocalOrdinal > TpetraImport<Node>::getRemoteLIDs() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getRemoteLIDs"); return import_->getRemoteLIDs(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 size_t TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getNumExportIDs() const
+#else
+template<class Node>
+size_t TpetraImport<Node>::getNumExportIDs() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getNumExportIDs"); return import_->getNumExportIDs(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 ArrayView< const LocalOrdinal > TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getExportLIDs() const
+#else
+template<class Node>
+ArrayView< const LocalOrdinal > TpetraImport<Node>::getExportLIDs() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getExportLIDs"); return import_->getExportLIDs(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 ArrayView< const int > TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getExportPIDs() const
+#else
+template<class Node>
+ArrayView< const int > TpetraImport<Node>::getExportPIDs() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getExportPIDs"); return import_->getExportPIDs(); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getSourceMap() const
+#else
+template<class Node>
+Teuchos::RCP< const Map<Node > > TpetraImport<Node>::getSourceMap() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getSourceMap"); return toXpetra(import_->getSourceMap()); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getTargetMap() const
+#else
+template<class Node>
+Teuchos::RCP< const Map<Node > > TpetraImport<Node>::getTargetMap() const
+#endif
 { XPETRA_MONITOR("TpetraImport::getTargetMap"); return toXpetra(import_->getTargetMap()); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::print(std::ostream &os) const
+#else
+template<class Node>
+void TpetraImport<Node>::print(std::ostream &os) const
+#endif
 { XPETRA_MONITOR("TpetraImport::print"); import_->print(os); }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::TpetraImport(const RCP<const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > &import) : import_(import)
+#else
+template<class Node>
+TpetraImport<Node>::TpetraImport(const RCP<const Tpetra::Import<Node > > &import) : import_(import)
+#endif
 {  }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<LocalOrdinal,GlobalOrdinal,Node>::getTpetra_Import() const
+#else
+template<class Node>
+RCP< const Tpetra::Import<Node > > TpetraImport<Node>::getTpetra_Import() const
+#endif
 { return import_; }
 
 
@@ -150,7 +245,11 @@ RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<Lo
     typedef EpetraNode Node;
 
     //! The specialization of Map used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
 
     //! @name Constructor/Destructor Methods
     //@{
@@ -166,7 +265,11 @@ RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<Lo
     }
 
     //! Copy constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraImport(const Import< LocalOrdinal, GlobalOrdinal, Node > &import) {
+#else
+    TpetraImport(const Import<Node > &import) {
+#endif
       XPETRA_TPETRA_ETI_EXCEPTION( typeid(TpetraImport<LocalOrdinal,GlobalOrdinal,EpetraNode>).name() , typeid(TpetraImport<LocalOrdinal,GlobalOrdinal,EpetraNode>).name(), "int", typeid(EpetraNode).name() );
     }
 
@@ -206,10 +309,18 @@ RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<Lo
     ArrayView< const int > getExportPIDs() const { return Teuchos::ArrayView<const int>();  }
 
     //! The Source Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getSourceMap() const { return Teuchos::null; }
+#else
+    Teuchos::RCP< const Map<Node > > getSourceMap() const { return Teuchos::null; }
+#endif
 
     //! The Target Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getTargetMap() const { return Teuchos::null; }
+#else
+    Teuchos::RCP< const Map<Node > > getTargetMap() const { return Teuchos::null; }
+#endif
 
     //! Set parameters on the underlying object
     void setDistributorParameters(const Teuchos::RCP<Teuchos::ParameterList> params) const { }
@@ -228,11 +339,19 @@ RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<Lo
     //@{
 
     //! TpetraImport constructor to wrap a Tpetra::Import object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraImport(const RCP<const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > &import) {
+#else
+    TpetraImport(const RCP<const Tpetra::Import<Node > > &import) {
+#endif
       XPETRA_TPETRA_ETI_EXCEPTION( typeid(TpetraImport<LocalOrdinal,GlobalOrdinal,EpetraNode>).name() , typeid(TpetraImport<LocalOrdinal,GlobalOrdinal,EpetraNode>).name(), "int", typeid(EpetraNode).name() );
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > getTpetra_Import() const { return Teuchos::null; }
+#else
+    RCP< const Tpetra::Import<Node > > getTpetra_Import() const { return Teuchos::null; }
+#endif
 
     //@}
 
@@ -253,7 +372,11 @@ RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<Lo
     typedef EpetraNode Node;
 
     //! The specialization of Map used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
 
     //! @name Constructor/Destructor Methods
     //@{
@@ -269,7 +392,11 @@ RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<Lo
     }
 
     //! Copy constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraImport(const Import< LocalOrdinal, GlobalOrdinal, Node > &import) {
+#else
+    TpetraImport(const Import<Node > &import) {
+#endif
       XPETRA_TPETRA_ETI_EXCEPTION( typeid(TpetraImport<LocalOrdinal,GlobalOrdinal,EpetraNode>).name() , typeid(TpetraImport<LocalOrdinal,GlobalOrdinal,EpetraNode>).name(), "long long", typeid(EpetraNode).name() );
     }
 
@@ -309,10 +436,18 @@ RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<Lo
     ArrayView< const int > getExportPIDs() const { return Teuchos::ArrayView<const int>();  }
 
     //! The Source Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getSourceMap() const { return Teuchos::null; }
+#else
+    Teuchos::RCP< const Map<Node > > getSourceMap() const { return Teuchos::null; }
+#endif
 
     //! The Target Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getTargetMap() const { return Teuchos::null; }
+#else
+    Teuchos::RCP< const Map<Node > > getTargetMap() const { return Teuchos::null; }
+#endif
 
     //! Set parameters on the underlying object
     void setDistributorParameters(const Teuchos::RCP<Teuchos::ParameterList> params) const { }
@@ -331,11 +466,19 @@ RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > TpetraImport<Lo
     //@{
 
     //! TpetraImport constructor to wrap a Tpetra::Import object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraImport(const RCP<const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > &import) {
+#else
+    TpetraImport(const RCP<const Tpetra::Import<Node > > &import) {
+#endif
       XPETRA_TPETRA_ETI_EXCEPTION( typeid(TpetraImport<LocalOrdinal,GlobalOrdinal,EpetraNode>).name() , typeid(TpetraImport<LocalOrdinal,GlobalOrdinal,EpetraNode>).name(), "long long", typeid(EpetraNode).name() );
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > getTpetra_Import() const { return Teuchos::null; }
+#else
+    RCP< const Tpetra::Import<Node > > getTpetra_Import() const { return Teuchos::null; }
+#endif
 
     //@}
 

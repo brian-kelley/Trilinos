@@ -60,8 +60,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   CoupledAggregationCommHelper<LocalOrdinal, GlobalOrdinal, Node>::CoupledAggregationCommHelper(const RCP<const Map> & uniqueMap, const RCP<const Map> & nonUniqueMap) {
+#else
+  template <class Node>
+  CoupledAggregationCommHelper<Node>::CoupledAggregationCommHelper(const RCP<const Map> & uniqueMap, const RCP<const Map> & nonUniqueMap) {
+#endif
     import_ = ImportFactory::Build(uniqueMap, nonUniqueMap);
     tempVec_ = VectorFactory::Build(uniqueMap,false); //zeroed out before use
     numMyWinners_ = 0;
@@ -69,8 +74,13 @@ namespace MueLu {
     myPID_ = uniqueMap->getComm()->getRank();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoupledAggregationCommHelper<LocalOrdinal, GlobalOrdinal, Node>::ArbitrateAndCommunicate(Vector &weight_, LOVector &procWinner_, LOMultiVector *companion, const bool perturb) const {
+#else
+  template <class Node>
+  void CoupledAggregationCommHelper<Node>::ArbitrateAndCommunicate(Vector &weight_, LOVector &procWinner_, LOMultiVector *companion, const bool perturb) const {
+#endif
     const RCP<const Map> weightMap = weight_.getMap();
     const size_t nodeNumElements = weightMap->getNodeNumElements();
     const RCP<const Teuchos::Comm<int> > & comm = weightMap->getComm();
@@ -471,8 +481,13 @@ namespace MueLu {
 #endif
   } //ArbitrateAndCommunicate(Vector&, LOVector &, LOVector *, const bool) const
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void CoupledAggregationCommHelper<LocalOrdinal, GlobalOrdinal, Node>::NonUnique2NonUnique(const Vector &source, Vector &dest, const Xpetra::CombineMode what) const {
+#else
+  template <class Node>
+  void CoupledAggregationCommHelper<Node>::NonUnique2NonUnique(const Vector &source, Vector &dest, const Xpetra::CombineMode what) const {
+#endif
     tempVec_->putScalar(0.);
 
     try

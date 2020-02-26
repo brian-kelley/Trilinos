@@ -657,38 +657,71 @@ do_pack(const LocalGraph& local_graph,
 /// \param constant_num_packets [out] Setting this to zero tells the caller
 ///   to expect a possibly /// different ("nonconstant") number of packets per local index
 ///   (i.e., a possibly different number of entries per row).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename LO, typename GO, typename NT>
+#else
+template<typename NT>
+#endif
 void
 packCrsGraph
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 (const CrsGraph<LO,GO,NT>& sourceGraph,
+#else
+(const CrsGraph<NT>& sourceGraph,
+#endif
  Kokkos::DualView<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typename CrsGraph<LO,GO,NT>::packet_type*,
    typename CrsGraph<LO,GO,NT>::buffer_device_type
+#else
+   typename CrsGraph<NT>::packet_type*,
+   typename CrsGraph<NT>::buffer_device_type
+#endif
  >& exports,
  const Kokkos::View<
    size_t*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typename CrsGraph<LO,GO,NT>::buffer_device_type
+#else
+   typename CrsGraph<NT>::buffer_device_type
+#endif
  >& num_packets_per_lid,
  const Kokkos::View<
    const LO*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typename CrsGraph<LO, GO, NT>::buffer_device_type
+#else
+   typename CrsGraph<NT>::buffer_device_type
+#endif
  >& export_lids,
  const Kokkos::View<
    const int*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typename CrsGraph<LO, GO, NT>::buffer_device_type
+#else
+   typename CrsGraph<NT>::buffer_device_type
+#endif
  >& export_pids,
  size_t& constant_num_packets,
  const bool pack_pids,
  Distributor& /* dist */)
 {
   using Kokkos::View;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_graph_type = CrsGraph<LO, GO, NT>;
+#else
+  using crs_graph_type = CrsGraph<NT>;
+#endif
   using packet_type = typename crs_graph_type::packet_type;
   using buffer_device_type = typename crs_graph_type::buffer_device_type;
   using execution_space = typename buffer_device_type::execution_space;
   using exports_view_type = Kokkos::DualView<packet_type*, buffer_device_type>;
   using local_graph_type = typename crs_graph_type::local_graph_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using local_map_type = typename Tpetra::Map<LO, GO, NT>::local_map_type;
+#else
+  using local_map_type = typename Tpetra::Map<NT>::local_map_type;
+#endif
   const char prefix[] = "Tpetra::Details::packCrsGraph: ";
   constexpr bool debug = false;
 
@@ -774,10 +807,19 @@ packCrsGraph
 
 } // namespace PackCrsGraphImpl
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename LO, typename GO, typename NT>
+#else
+template<typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsGraph (const CrsGraph<LO, GO, NT>& sourceGraph,
               Teuchos::Array<typename CrsGraph<LO,GO,NT>::packet_type>& exports,
+#else
+packCrsGraph (const CrsGraph<NT>& sourceGraph,
+              Teuchos::Array<typename CrsGraph<NT>::packet_type>& exports,
+#endif
               const Teuchos::ArrayView<size_t>& numPacketsPerLID,
               const Teuchos::ArrayView<const LO>& exportLIDs,
               size_t& constantNumPackets,
@@ -786,7 +828,11 @@ packCrsGraph (const CrsGraph<LO, GO, NT>& sourceGraph,
   using Kokkos::HostSpace;
   using Kokkos::MemoryUnmanaged;
   using Kokkos::View;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_graph_type = CrsGraph<LO, GO, NT>;
+#else
+  using crs_graph_type = CrsGraph<NT>;
+#endif
   using packet_type = typename crs_graph_type::packet_type;
   using BDT = typename crs_graph_type::buffer_device_type;
 
@@ -864,30 +910,59 @@ packCrsGraph (const CrsGraph<LO, GO, NT>& sourceGraph,
 
 /// \brief Pack specified entries of the given local sparse graph for
 ///   communication ("new" DistObject interface version).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename LO, typename GO, typename NT>
+#else
+template<typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsGraphNew (const CrsGraph<LO,GO,NT>& sourceGraph,
+#else
+packCrsGraphNew (const CrsGraph<NT>& sourceGraph,
+#endif
                  const Kokkos::DualView<
                    const LO*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    typename CrsGraph<LO,GO,NT>::buffer_device_type
+#else
+                   typename CrsGraph<NT>::buffer_device_type
+#endif
                  >& export_lids,
                  const Kokkos::DualView<
                    const int*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    typename CrsGraph<LO,GO,NT>::buffer_device_type
+#else
+                   typename CrsGraph<NT>::buffer_device_type
+#endif
                  >& export_pids,
                  Kokkos::DualView<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    typename CrsGraph<LO,GO,NT>::packet_type*,
                    typename CrsGraph<LO,GO,NT>::buffer_device_type>& exports,
+#else
+                   typename CrsGraph<NT>::packet_type*,
+                   typename CrsGraph<NT>::buffer_device_type>& exports,
+#endif
                  Kokkos::DualView<
                    size_t*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    typename CrsGraph<LO,GO,NT>::buffer_device_type
+#else
+                   typename CrsGraph<NT>::buffer_device_type
+#endif
                  > num_packets_per_lid,
                  size_t& constant_num_packets,
                  const bool pack_pids,
                  Distributor& /* dist */)
 {
   using Kokkos::View;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_graph_type = CrsGraph<LO,GO,NT>;
+#else
+  using crs_graph_type = CrsGraph<NT>;
+#endif
   using BDT = typename crs_graph_type::buffer_device_type;
   using PT = typename crs_graph_type::packet_type;
   using exports_dual_view_type = Kokkos::DualView<PT*, BDT>;
@@ -962,13 +1037,26 @@ packCrsGraphNew (const CrsGraph<LO,GO,NT>& sourceGraph,
                               offsets, pack_pids);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename LO, typename GO, typename NT>
+#else
+template<typename NT>
+#endif
 void
 packCrsGraphWithOwningPIDs
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 (const CrsGraph<LO, GO, NT>& sourceGraph,
+#else
+(const CrsGraph<NT>& sourceGraph,
+#endif
  Kokkos::DualView<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    typename CrsGraph<LO, GO, NT>::packet_type*,
    typename CrsGraph<LO, GO, NT>::buffer_device_type
+#else
+   typename CrsGraph<NT>::packet_type*,
+   typename CrsGraph<NT>::buffer_device_type
+#endif
  >& exports_dv,
  const Teuchos::ArrayView<size_t>& numPacketsPerLID,
  const Teuchos::ArrayView<const LO>& exportLIDs,
@@ -979,7 +1067,11 @@ packCrsGraphWithOwningPIDs
   using Kokkos::HostSpace;
   using Kokkos::MemoryUnmanaged;
   using Kokkos::View;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_graph_type = CrsGraph<LO, GO, NT>;
+#else
+  using crs_graph_type = CrsGraph<NT>;
+#endif
   using buffer_device_type = typename crs_graph_type::buffer_device_type;
 
   // Convert all Teuchos::Array to Kokkos::View
@@ -1021,37 +1113,75 @@ packCrsGraphWithOwningPIDs
 } // namespace Details
 } // namespace Tpetra
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DETAILS_PACKCRSGRAPH_INSTANT( LO, GO, NT ) \
+#else
+#define TPETRA_DETAILS_PACKCRSGRAPH_INSTANT(NT ) \
+#endif
   template void \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::packCrsGraph<LO, GO, NT> ( \
     const CrsGraph<LO, GO, NT>&, \
     Teuchos::Array<CrsGraph<LO,GO,NT>::packet_type>&, \
+#else
+  Details::packCrsGraph<NT> ( \
+    const CrsGraph<NT>&, \
+    Teuchos::Array<CrsGraph<NT>::packet_type>&, \
+#endif
     const Teuchos::ArrayView<size_t>&, \
     const Teuchos::ArrayView<const LO>&, \
     size_t&, \
     Distributor&); \
   template void \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::packCrsGraphNew<LO, GO, NT> ( \
     const CrsGraph<LO, GO, NT>&, \
+#else
+  Details::packCrsGraphNew<NT> ( \
+    const CrsGraph<NT>&, \
+#endif
     const Kokkos::DualView< \
       const LO*, \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       CrsGraph<LO,GO,NT>::buffer_device_type>&, \
+#else
+      CrsGraph<NT>::buffer_device_type>&, \
+#endif
     const Kokkos::DualView< \
       const int*, \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       CrsGraph<LO,GO,NT>::buffer_device_type>&, \
+#else
+      CrsGraph<NT>::buffer_device_type>&, \
+#endif
     Kokkos::DualView< \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       CrsGraph<LO,GO,NT>::packet_type*, \
       CrsGraph<LO,GO,NT>::buffer_device_type>&, \
+#else
+      CrsGraph<NT>::packet_type*, \
+      CrsGraph<NT>::buffer_device_type>&, \
+#endif
     Kokkos::DualView< \
       size_t*, \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       CrsGraph<LO,GO,NT>::buffer_device_type>, \
+#else
+      CrsGraph<NT>::buffer_device_type>, \
+#endif
     size_t&, \
     const bool, \
     Distributor&); \
   template void \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::packCrsGraphWithOwningPIDs<LO, GO, NT> ( \
     const CrsGraph<LO, GO, NT>&, \
     Kokkos::DualView<CrsGraph<LO,GO,NT>::packet_type*, CrsGraph<LO,GO,NT>::buffer_device_type>&, \
+#else
+  Details::packCrsGraphWithOwningPIDs<NT> ( \
+    const CrsGraph<NT>&, \
+    Kokkos::DualView<CrsGraph<NT>::packet_type*, CrsGraph<NT>::buffer_device_type>&, \
+#endif
     const Teuchos::ArrayView<size_t>&, \
     const Teuchos::ArrayView<const LO>&, \
     const Teuchos::ArrayView<const int>&, \

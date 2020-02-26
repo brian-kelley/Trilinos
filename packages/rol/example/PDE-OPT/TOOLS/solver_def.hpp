@@ -96,8 +96,13 @@ firstSolve_ = true;
     if (preconditioner_ == "Ifpack2") {
       Teuchos::ParameterList & parlistIfpack2 = parlist_.sublist("Ifpack2");
       // Create preconditioners.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ifpack2Preconditioner_trans_ = Ifpack2::Factory::create<Tpetra::RowMatrix<Real,LO,GO,NO>> ("SCHWARZ", A_trans_);
       ifpack2Preconditioner_ = Ifpack2::Factory::create<Tpetra::RowMatrix<Real,LO,GO,NO>> ("SCHWARZ", A);
+#else
+      ifpack2Preconditioner_trans_ = Ifpack2::Factory::create<Tpetra::RowMatrix<Real,NO>> ("SCHWARZ", A_trans_);
+      ifpack2Preconditioner_ = Ifpack2::Factory::create<Tpetra::RowMatrix<Real,NO>> ("SCHWARZ", A);
+#endif
       ifpack2Preconditioner_trans_->setParameters(parlistIfpack2);
       ifpack2Preconditioner_->setParameters(parlistIfpack2);
       ifpack2Preconditioner_trans_->initialize();
@@ -108,8 +113,13 @@ firstSolve_ = true;
     else if (preconditioner_ == "MueLu") {
       Teuchos::ParameterList & parlistMuelu = parlist_.sublist("MueLu");
       // Create preconditioners.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       mueLuPreconditioner_trans_ = MueLu::CreateTpetraPreconditioner<Real,LO,GO,NO>(ROL::Ptr<OP>(A_trans_), parlistMuelu);
       mueLuPreconditioner_ = MueLu::CreateTpetraPreconditioner<Real,LO,GO,NO>(ROL::Ptr<OP>(A), parlistMuelu);
+#else
+      mueLuPreconditioner_trans_ = MueLu::CreateTpetraPreconditioner<Real,NO>(ROL::Ptr<OP>(A_trans_), parlistMuelu);
+      mueLuPreconditioner_ = MueLu::CreateTpetraPreconditioner<Real,NO>(ROL::Ptr<OP>(A), parlistMuelu);
+#endif
     }
 
     // Create Belos solver object and linear problem.

@@ -137,11 +137,23 @@ const RCP<Epetra_Operator> buildSystem(const Epetra_Comm & comm,int size)
   return mat;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const RCP<Tpetra::Operator<ST,LO,GO,NT> > buildSystem(const Teuchos::RCP<const Teuchos::Comm<int> > comm,GO size)
+#else
+const RCP<Tpetra::Operator<ST,NT> > buildSystem(const Teuchos::RCP<const Teuchos::Comm<int> > comm,GO size)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(size,0,comm));
+#else
+   RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(size,0,comm));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > mat = Tpetra::createCrsMatrix<ST,LO,GO,NT>(map,3);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > mat = Tpetra::createCrsMatrix<ST,NT>(map,3);
+#endif
 
    ST values[] = { -1.0, 2.0, -1.0};
    GO iTemp[] = {-1,0,1}, indices[3];
@@ -225,11 +237,23 @@ const RCP<Epetra_Operator> buildStridedSystem(const Epetra_Comm & comm,int size)
   return mat;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const RCP<Tpetra::Operator<ST,LO,GO,NT> > buildStridedSystem(const Teuchos::RCP<Teuchos::Comm<int> > comm,GO size)
+#else
+const RCP<Tpetra::Operator<ST,NT> > buildStridedSystem(const Teuchos::RCP<Teuchos::Comm<int> > comm,GO size)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::Map<LO,GO,NT> >map = rcp(new Tpetra::Map<LO,GO,NT>(2*size,0,comm));
+#else
+  RCP<Tpetra::Map<NT> >map = rcp(new Tpetra::Map<NT>(2*size,0,comm));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > mat = Tpetra::createCrsMatrix<ST,LO,GO,NT>(map,4);
+#else
+  RCP<Tpetra::CrsMatrix<ST,NT> > mat = Tpetra::createCrsMatrix<ST,NT>(map,4);
+#endif
 
   int numUnks = 2;
   ST valuesA[] = { -1.0, 2.0, 7.0, -1.0 };
@@ -270,7 +294,11 @@ const RCP<Tpetra::Operator<ST,LO,GO,NT> > buildStridedSystem(const Teuchos::RCP<
 
   mat->fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::MatrixMarket::Writer<Tpetra::CrsMatrix<ST,LO,GO,NT> >::writeSparseFile("strided.mm",mat);
+#else
+  Tpetra::MatrixMarket::Writer<Tpetra::CrsMatrix<ST,NT> >::writeSparseFile("strided.mm",mat);
+#endif
 
   return mat;
 }

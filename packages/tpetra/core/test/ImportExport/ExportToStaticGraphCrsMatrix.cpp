@@ -110,7 +110,11 @@ namespace {
 
       Tpetra::global_size_t globalNumElts =
         Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return createContigMapWithNode<LO, GO, NT> (globalNumElts, localNumElts, comm);
+#else
+      return createContigMapWithNode<NT> (globalNumElts, localNumElts, comm);
+#endif
     }
 
     Teuchos::RCP<const map_type>
@@ -173,7 +177,11 @@ namespace {
         myGIDs[k] = myMinGID + as<GO>(k);
       }
       *out << "Proc " << myRank << ": myGIDs=" << myGIDs.toString() << endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return createNonContigMapWithNode<LO, GO, NT> (myGIDs(), comm);
+#else
+      return createNonContigMapWithNode<NT> (myGIDs(), comm);
+#endif
     }
 
     Teuchos::RCP<const graph_type>
@@ -524,7 +532,11 @@ namespace {
       using Teuchos::includesVerbLevel;
       using Teuchos::OSTab;
       using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::Export<LO, GO, NT> export_type;
+#else
+      typedef Tpetra::Export<NT> export_type;
+#endif
 
       RCP<FancyOStream> out = this->getOStream();
       const Teuchos::EVerbosityLevel verbLevel = this->getVerbLevel();
@@ -652,7 +664,11 @@ main (int argc, char *argv[])
 #  error "Tpetra: Must enable at least one GlobalOrdinal type in {long long, long, int, unsigned long, unsigned} in order to build this test."
 #endif
   typedef Tpetra::Map<LO, GO>::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<ST, LO, GO, NT> matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<ST, NT> matrix_type;
+#endif
 
   bool success = true; // May be changed by tests
 
@@ -691,7 +707,11 @@ main (int argc, char *argv[])
          << (numProcs != 1 ? "es" : "") << "." << endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<ST, LO, GO, NT> matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<ST, NT> matrix_type;
+#endif
   Tester<matrix_type> tester (verbLevel, out);
   tester.testExportToCrsMatrixWithStaticGraph (comm, 10);
 

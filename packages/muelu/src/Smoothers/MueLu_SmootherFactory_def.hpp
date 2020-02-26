@@ -56,33 +56,58 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SmootherFactory(RCP<SmootherPrototype> preAndPostSmootherPrototype) {
+#else
+  template <class Scalar, class Node>
+  SmootherFactory<Scalar, Node>::SmootherFactory(RCP<SmootherPrototype> preAndPostSmootherPrototype) {
+#endif
     SetSmootherPrototypes(preAndPostSmootherPrototype);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SmootherFactory(RCP<SmootherPrototype> preSmootherPrototype,
+#else
+  template <class Scalar, class Node>
+  SmootherFactory<Scalar, Node>::SmootherFactory(RCP<SmootherPrototype> preSmootherPrototype,
+#endif
                                                                               RCP<SmootherPrototype> postSmootherPrototype) {
     SetSmootherPrototypes(preSmootherPrototype, postSmootherPrototype);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetSmootherPrototypes(RCP<SmootherPrototype> preAndPostSmootherPrototype) {
+#else
+  template <class Scalar, class Node>
+  void SmootherFactory<Scalar, Node>::SetSmootherPrototypes(RCP<SmootherPrototype> preAndPostSmootherPrototype) {
+#endif
     preSmootherPrototype_  = postSmootherPrototype_ = preAndPostSmootherPrototype;
     CheckPrototypes();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetSmootherPrototypes(RCP<SmootherPrototype> preSmootherPrototype,
+#else
+  template <class Scalar, class Node>
+  void SmootherFactory<Scalar, Node>::SetSmootherPrototypes(RCP<SmootherPrototype> preSmootherPrototype,
+#endif
                                                                                          RCP<SmootherPrototype> postSmootherPrototype) {
     preSmootherPrototype_  = preSmootherPrototype;
     postSmootherPrototype_ = postSmootherPrototype;
     CheckPrototypes();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> SmootherFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set<bool>("keep smoother data", false, "Keep constructed smoothers for later reuse");
@@ -93,23 +118,38 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CheckPrototypes() const {
+#else
+  template <class Scalar, class Node>
+  void SmootherFactory<Scalar, Node>::CheckPrototypes() const {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(preSmootherPrototype_  != Teuchos::null && preSmootherPrototype_->IsSetup()  == true,
                                Exceptions::RuntimeError, "preSmoother prototype is not a smoother prototype (IsSetup() == true)");
     TEUCHOS_TEST_FOR_EXCEPTION(postSmootherPrototype_ != Teuchos::null && postSmootherPrototype_->IsSetup() == true,
                                Exceptions::RuntimeError, "postSmoother prototype is not a smoother prototype (IsSetup() == true)");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetSmootherPrototypes(RCP<SmootherPrototype>& preSmootherPrototype,
+#else
+  template <class Scalar, class Node>
+  void SmootherFactory<Scalar, Node>::GetSmootherPrototypes(RCP<SmootherPrototype>& preSmootherPrototype,
+#endif
                                                                                          RCP<SmootherPrototype>& postSmootherPrototype) const {
     preSmootherPrototype  = preSmootherPrototype_;
     postSmootherPrototype = postSmootherPrototype_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SmootherFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     if (preSmootherPrototype_ != Teuchos::null)
       preSmootherPrototype_->DeclareInput(currentLevel);
 
@@ -117,13 +157,23 @@ namespace MueLu {
       postSmootherPrototype_->DeclareInput(currentLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SmootherFactory<Scalar, Node>::Build(Level& currentLevel) const {
+#endif
     return BuildSmoother(currentLevel, BOTH);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildSmoother(Level& currentLevel, PreOrPost const preOrPost) const {
+#else
+  template <class Scalar, class Node>
+  void SmootherFactory<Scalar, Node>::BuildSmoother(Level& currentLevel, PreOrPost const preOrPost) const {
+#endif
     // SmootherFactory is quite tricky because of the fact that one of the smoother prototypes may be zero.
     // The challenge is that we have no way of knowing how user uses this factory. For instance, lets say
     // user wants to use s1 prototype as a presmoother, and s2 as a postsmoother. He could do:
@@ -244,8 +294,13 @@ namespace MueLu {
 
   } // Build()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string SmootherFactory<Scalar, Node>::description() const {
+#endif
     std::ostringstream out;
     out << SmootherFactoryBase::description();
     std::string preStr  = (preSmootherPrototype_ == Teuchos::null)          ? "null" : preSmootherPrototype_->description();
@@ -254,8 +309,13 @@ namespace MueLu {
     return out.str();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SmootherFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::describe(Teuchos::FancyOStream& out, const VerbLevel verbLevel) const {
+#else
+  template <class Scalar, class Node>
+  void SmootherFactory<Scalar, Node>::describe(Teuchos::FancyOStream& out, const VerbLevel verbLevel) const {
+#endif
     MUELU_DESCRIBE;
 
     if (verbLevel & Parameters0) {

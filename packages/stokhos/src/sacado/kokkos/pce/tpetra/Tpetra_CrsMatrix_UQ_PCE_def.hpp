@@ -50,11 +50,21 @@
 // say here what namespace the code is in.  We _do_ need to put the
 // code in the correct namespace when we use the macro.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_CRSMATRIX_UQ_PCE_SPEC(Scalar,LocalOrdinal,GlobalOrdinal,Node) \
+#else
+#define TPETRA_CRSMATRIX_UQ_PCE_SPEC(Scalar,Node) \
+#endif
   template<>                                                            \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > \
   CrsMatrix<Scalar , LocalOrdinal, GlobalOrdinal, Node>::        \
   getColumnMapMultiVector (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& X_domainMap, \
+#else
+  Teuchos::RCP<MultiVector<Scalar, Node> > \
+  CrsMatrix<Scalar , Node>::        \
+  getColumnMapMultiVector (const MultiVector<Scalar, Node>& X_domainMap, \
+#endif
                            const bool force) const                      \
   {                                                                     \
     using Teuchos::null;                                                \
@@ -94,9 +104,15 @@
   }                                                                     \
                                                                         \
   template <>                                                           \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > \
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::       \
   getRowMapMultiVector (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& Y_rangeMap, \
+#else
+  Teuchos::RCP<MultiVector<Scalar, Node> > \
+  CrsMatrix<Scalar, Node>::       \
+  getRowMapMultiVector (const MultiVector<Scalar, Node>& Y_rangeMap, \
+#endif
                         const bool force) const                         \
   {                                                                     \
     using Teuchos::null;                                                \

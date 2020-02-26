@@ -54,9 +54,15 @@
 namespace Thyra {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::create()
+#else
+template <class Scalar, class Node>
+RCP<TpetraVectorSpace<Scalar,Node> >
+TpetraVectorSpace<Scalar,Node>::create()
+#endif
 {
   const RCP<this_t> vs(new this_t);
   vs->weakSelfPtr_ = vs.create_weak();
@@ -64,48 +70,86 @@ TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::create()
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initialize(
   const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > &tpetraMap
+#else
+template <class Scalar, class Node>
+void TpetraVectorSpace<Scalar,Node>::initialize(
+  const RCP<const Tpetra::Map<Node> > &tpetraMap
+#endif
   )
 {
   comm_ = convertTpetraToThyraComm(tpetraMap->getComm());
   tpetraMap_ = tpetraMap;
   this->updateState(tpetraMap->getGlobalNumElements(),
     !tpetraMap->isDistributed());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   this->setScalarProd(tpetraEuclideanScalarProd<Scalar,LocalOrdinal,GlobalOrdinal,Node>());
+#else
+  this->setScalarProd(tpetraEuclideanScalarProd<Scalar,Node>());
+#endif
 }
 
 
 // Overridden from VectorSpace
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP<VectorBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createMember() const
+#else
+TpetraVectorSpace<Scalar,Node>::createMember() const
+#endif
 {
   return tpetraVector<Scalar>(
     weakSelfPtr_.create_strong().getConst(),
     Teuchos::rcp(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       new Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(tpetraMap_, false)
+#else
+      new Tpetra::Vector<Scalar,Node>(tpetraMap_, false)
+#endif
       )
     );
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP< MultiVectorBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createMembers(int numMembers) const
+#else
+TpetraVectorSpace<Scalar,Node>::createMembers(int numMembers) const
+#endif
 {
   return tpetraMultiVector<Scalar>(
     weakSelfPtr_.create_strong().getConst(),
     tpetraVectorSpace<Scalar>(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::createLocalMapWithNode<LocalOrdinal, GlobalOrdinal, Node>(
+#else
+      Tpetra::createLocalMapWithNode<Node>(
+#endif
         numMembers, tpetraMap_->getComm()
         )
       ),
     Teuchos::rcp(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       new Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(
+#else
+      new Tpetra::MultiVector<Scalar,Node>(
+#endif
         tpetraMap_, numMembers, false)
       )
     );
@@ -114,13 +158,25 @@ TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createMembers(int num
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 class CopyTpetraMultiVectorViewBack {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   CopyTpetraMultiVectorViewBack( RCP<MultiVectorBase<Scalar> > mv, const RTOpPack::SubMultiVectorView<Scalar>  &raw_mv )
     :mv_(mv), raw_mv_(raw_mv)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tmv = Teuchos::rcp_dynamic_cast<TpetraMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(mv_,true)->getTpetraMultiVector();
+#else
+      RCP<Tpetra::MultiVector<Scalar,Node> > tmv = Teuchos::rcp_dynamic_cast<TpetraMultiVector<Scalar,Node> >(mv_,true)->getTpetraMultiVector();
+#endif
       bool inUse = Teuchos::get_extra_data<bool>(tmv,"inUse");
       TEUCHOS_TEST_FOR_EXCEPTION(inUse,
                                  std::runtime_error,
@@ -135,7 +191,11 @@ public:
       RTOpPack::assign_entries<Scalar>( Teuchos::outArg(raw_mv_), smv );
       mv_->releaseDetachedView(&smv);
       bool inUse = false;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tmv = Teuchos::rcp_dynamic_cast<TpetraMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(mv_,true)->getTpetraMultiVector();
+#else
+      RCP<Tpetra::MultiVector<Scalar,Node> > tmv = Teuchos::rcp_dynamic_cast<TpetraMultiVector<Scalar,Node> >(mv_,true)->getTpetraMultiVector();
+#endif
       Teuchos::set_extra_data(inUse,"inUse",Teuchos::outArg(tmv), Teuchos::POST_DESTROY, false);
     }
 private:
@@ -144,9 +204,17 @@ private:
 };
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 RCP< MultiVectorBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createCachedMembersView(
+#else
+TpetraVectorSpace<Scalar,Node>::createCachedMembersView(
+#endif
   const RTOpPack::SubMultiVectorView<Scalar> &raw_mv ) const
 {
 #ifdef TEUCHOS_DEBUG
@@ -163,22 +231,39 @@ TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createCachedMembersVi
       TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::get_extra_data<bool>(tpetraMV_,"inUse"),
                                  std::runtime_error,
                                  "Cannot use the cached vector simultaneously more than once.");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using IST = typename Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::impl_scalar_type;
       using DT = typename Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::device_type;
+#else
+      using IST = typename Tpetra::MultiVector<Scalar,Node>::impl_scalar_type;
+      using DT = typename Tpetra::MultiVector<Scalar,Node>::device_type;
+#endif
       auto dv = ::Tpetra::Details::getStatic2dDualView<IST, DT> (tpetraMap_->getGlobalNumElements(), raw_mv.numSubCols());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       tpetraMV_ = Teuchos::rcp(new Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(tpetraMap_, dv));
+#else
+      tpetraMV_ = Teuchos::rcp(new Tpetra::MultiVector<Scalar,Node>(tpetraMap_, dv));
+#endif
       bool inUse = false;
       Teuchos::set_extra_data(inUse,"inUse",Teuchos::outArg(tpetraMV_));
     }
 
     if (tpetraDomainSpace_.is_null() || raw_mv.numSubCols() != tpetraDomainSpace_->localSubDim())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       tpetraDomainSpace_ = tpetraVectorSpace<Scalar>(Tpetra::createLocalMapWithNode<LocalOrdinal, GlobalOrdinal, Node>(raw_mv.numSubCols(), tpetraMap_->getComm()));
+#else
+      tpetraDomainSpace_ = tpetraVectorSpace<Scalar>(Tpetra::createLocalMapWithNode<Node>(raw_mv.numSubCols(), tpetraMap_->getComm()));
+#endif
 
     mv = tpetraMultiVector<Scalar>(weakSelfPtr_.create_strong().getConst(), tpetraDomainSpace_, tpetraMV_);
   } else {
     mv = this->createMembers(raw_mv.numSubCols());
     bool inUse = false;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tmv = Teuchos::rcp_dynamic_cast<TpetraMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(mv,true)->getTpetraMultiVector();
+#else
+    RCP<Tpetra::MultiVector<Scalar,Node> > tmv = Teuchos::rcp_dynamic_cast<TpetraMultiVector<Scalar,Node> >(mv,true)->getTpetraMultiVector();
+#endif
     Teuchos::set_extra_data(inUse,"inUse",Teuchos::outArg(tmv));
   }
   // Copy initial values in raw_mv into multi-vector
@@ -192,7 +277,11 @@ TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createCachedMembersVi
   // Setup smart pointer to multi-vector to copy view back out just before multi-vector is destroyed
   Teuchos::set_extra_data(
     // We create a duplicate of the RCP, otherwise the ref count does not go to zero.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::rcp(new CopyTpetraMultiVectorViewBack<Scalar,LocalOrdinal,GlobalOrdinal,Node>(Teuchos::rcpFromRef(*mv),raw_mv)),
+#else
+    Teuchos::rcp(new CopyTpetraMultiVectorViewBack<Scalar,Node>(Teuchos::rcpFromRef(*mv),raw_mv)),
+#endif
     "CopyTpetraMultiVectorViewBack",
     Teuchos::outArg(mv),
     Teuchos::PRE_DESTROY
@@ -201,9 +290,17 @@ TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createCachedMembersVi
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 RCP<const MultiVectorBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createCachedMembersView(
+#else
+TpetraVectorSpace<Scalar,Node>::createCachedMembersView(
+#endif
   const RTOpPack::ConstSubMultiVectorView<Scalar> &raw_mv ) const
 {
 #ifdef TEUCHOS_DEBUG
@@ -218,22 +315,39 @@ TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createCachedMembersVi
         TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::get_extra_data<bool>(tpetraMV_,"inUse"),
                                    std::runtime_error,
                                    "Cannot use the cached vector simultaneously more than once.");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using IST = typename Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::impl_scalar_type;
       using DT = typename Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>::device_type;
+#else
+      using IST = typename Tpetra::MultiVector<Scalar,Node>::impl_scalar_type;
+      using DT = typename Tpetra::MultiVector<Scalar,Node>::device_type;
+#endif
       auto dv = ::Tpetra::Details::getStatic2dDualView<IST, DT> (tpetraMap_->getGlobalNumElements(), raw_mv.numSubCols());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       tpetraMV_ = Teuchos::rcp(new Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(tpetraMap_, dv));
+#else
+      tpetraMV_ = Teuchos::rcp(new Tpetra::MultiVector<Scalar,Node>(tpetraMap_, dv));
+#endif
       bool inUse = false;
       Teuchos::set_extra_data(inUse,"inUse",Teuchos::outArg(tpetraMV_));
     }
 
     if (tpetraDomainSpace_.is_null() || raw_mv.numSubCols() != tpetraDomainSpace_->localSubDim())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       tpetraDomainSpace_ = tpetraVectorSpace<Scalar>(Tpetra::createLocalMapWithNode<LocalOrdinal, GlobalOrdinal, Node>(raw_mv.numSubCols(), tpetraMap_->getComm()));
+#else
+      tpetraDomainSpace_ = tpetraVectorSpace<Scalar>(Tpetra::createLocalMapWithNode<Node>(raw_mv.numSubCols(), tpetraMap_->getComm()));
+#endif
 
     mv = tpetraMultiVector<Scalar>(weakSelfPtr_.create_strong().getConst(), tpetraDomainSpace_, tpetraMV_);
   } else {
     mv = this->createMembers(raw_mv.numSubCols());
     bool inUse = false;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tmv = Teuchos::rcp_dynamic_cast<TpetraMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(mv,true)->getTpetraMultiVector();
+#else
+    RCP<Tpetra::MultiVector<Scalar,Node> > tmv = Teuchos::rcp_dynamic_cast<TpetraMultiVector<Scalar,Node> >(mv,true)->getTpetraMultiVector();
+#endif
     Teuchos::set_extra_data(inUse,"inUse",Teuchos::outArg(tmv));
   }
   // Copy values in raw_mv into multi-vector
@@ -247,8 +361,13 @@ TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::createCachedMembersVi
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 bool TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::hasInCoreView(
+#else
+template <class Scalar, class Node>
+bool TpetraVectorSpace<Scalar,Node>::hasInCoreView(
+#endif
   const Range1D& rng_in, const EViewType viewType, const EStrideType strideType
   ) const
 {
@@ -262,16 +381,30 @@ bool TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::hasInCoreView(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP< const VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::clone() const
+#else
+TpetraVectorSpace<Scalar,Node>::clone() const
+#endif
 {
   return tpetraVectorSpace<Scalar>(tpetraMap_);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
 TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getTpetraMap() const
+#else
+template <class Scalar, class Node>
+RCP<const Tpetra::Map<Node> >
+TpetraVectorSpace<Scalar,Node>::getTpetraMap() const
+#endif
 {
   return tpetraMap_;
 }
@@ -279,16 +412,29 @@ TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getTpetraMap() const
 // Overridden from SpmdVectorSpaceDefaultBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP<const Teuchos::Comm<Ordinal> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getComm() const
+#else
+TpetraVectorSpace<Scalar,Node>::getComm() const
+#endif
 {
   return comm_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Ordinal TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::localSubDim() const
+#else
+template <class Scalar, class Node>
+Ordinal TpetraVectorSpace<Scalar,Node>::localSubDim() const
+#endif
 {
   return tpetraMap_.is_null () ? static_cast<Ordinal> (0) :
     static_cast<Ordinal> (tpetraMap_->getNodeNumElements ());
@@ -297,8 +443,13 @@ Ordinal TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::localSubDim()
 // private
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 TpetraVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal,Node>::TpetraVectorSpace()
+#else
+template <class Scalar, class Node>
+TpetraVectorSpace<Scalar,Node>::TpetraVectorSpace()
+#endif
 {
   // The base classes should automatically default initialize to a safe
   // uninitialized state.

@@ -78,14 +78,23 @@ namespace MueLu {
     @brief Factory for building coarse matrices.
   */
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class RebalanceBlockAcFactory : public TwoLevelFactoryBase {
 #undef MUELU_REBALANCEBLOCKACFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node> MapExtractorClass;
     typedef Xpetra::MapExtractorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> MapExtractorFactoryClass;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::MapExtractor<Scalar, Node> MapExtractorClass;
+    typedef Xpetra::MapExtractorFactory<Scalar, Node> MapExtractorFactoryClass;
+#endif
 
   public:
     //! @name Constructors/Destructors.

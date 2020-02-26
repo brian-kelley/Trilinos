@@ -347,7 +347,12 @@ describe (Teuchos::FancyOStream &out,
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DIAGONAL_INSTANT(S,LO,GO,N)                            \
   template class Ifpack2::Diagonal< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_DIAGONAL_INSTANT(S,N)                            \
+  template class Ifpack2::Diagonal< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif

@@ -56,17 +56,28 @@ using Teuchos::RCP;
 typedef tif_utest::Node Node;
 using std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(SGS_MT, JacobiComparison, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(SGS_MT, JacobiComparison, Scalar)
+#endif
 {
   using Teuchos::ArrayView;
   using Teuchos::Array;
   using Teuchos::Comm;
   using Teuchos::ParameterList;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> crs_matrix_type;
   typedef Tpetra::Map<LO, GO, Node> map_type;
   typedef Tpetra::Vector<Scalar, LO, GO, Node> vec_type;
   typedef Tpetra::RowMatrix<Scalar, LO, GO, Node> row_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::Vector<Scalar, Node> vec_type;
+  typedef Tpetra::RowMatrix<Scalar, Node> row_matrix_type;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   Teuchos::OSTab tab0 (out);
@@ -150,7 +161,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(SGS_MT, JacobiComparison, Scalar, LO, GO)
 
 
 #define UNIT_TEST_GROUP_SC_LO_GO( Scalar, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( SGS_MT, JacobiComparison, Scalar, LO, GO )
+#else
+    TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( SGS_MT, JacobiComparison, Scalar )
+#endif
 #include "Ifpack2_ETIHelperMacros.h"
 
 IFPACK2_ETI_MANGLING_TYPEDEFS()

@@ -55,7 +55,11 @@ namespace panzer {
 // Hessian Specialization
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterResidual_Epetra<panzer::Traits::Hessian,TRAITS,LO,GO>
+#else
+class ScatterResidual_Epetra<panzer::Traits::Hessian,TRAITS>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Hessian, TRAITS>,
     public panzer::CloneableEvaluator {
@@ -78,7 +82,11 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterResidual_Epetra<panzer::Traits::Hessian,TRAITS,LO,GO>(globalIndexer_,colGlobalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterResidual_Epetra<panzer::Traits::Hessian,TRAITS>(globalIndexer_,colGlobalIndexer_,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Hessian::ScalarT ScalarT;

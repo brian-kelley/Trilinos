@@ -50,8 +50,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     RGDSWInterfacePartitionOfUnity<SC,LO,GO,NO>::RGDSWInterfacePartitionOfUnity(CommPtr mpiComm,
+#else
+    template <class SC,class NO>
+    RGDSWInterfacePartitionOfUnity<SC,NO>::RGDSWInterfacePartitionOfUnity(CommPtr mpiComm,
+#endif
                                                                                 CommPtr serialComm,
                                                                                 UN dimension,
                                                                                 UN dofsPerNode,
@@ -60,7 +65,11 @@ namespace FROSch {
                                                                                 ParameterListPtr parameterList,
                                                                                 Verbosity verbosity,
                                                                                 UN levelID) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     GDSWInterfacePartitionOfUnity<SC,LO,GO,NO> (mpiComm,serialComm,dimension,dofsPerNode,nodesMap,dofsMaps,parameterList,verbosity,levelID)
+#else
+    GDSWInterfacePartitionOfUnity<SC,NO> (mpiComm,serialComm,dimension,dofsPerNode,nodesMap,dofsMaps,parameterList,verbosity,levelID)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(rGDSWInterfacePartitionOfUnityTime,"RGDSWInterfacePartitionOfUnity::RGDSWInterfacePartitionOfUnity");
         this->UseVertices_ = false;
@@ -90,8 +99,13 @@ namespace FROSch {
         this->PartitionOfUnityMaps_ = XMapPtrVecPtr(1);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int RGDSWInterfacePartitionOfUnity<SC,LO,GO,NO>::computePartitionOfUnity(ConstXMultiVectorPtr nodeList)
+#else
+    template <class SC,class NO>
+    int RGDSWInterfacePartitionOfUnity<SC,NO>::computePartitionOfUnity(ConstXMultiVectorPtr nodeList)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(computePartitionOfUnityTime,"RGDSWInterfacePartitionOfUnity::computePartitionOfUnity");
         // Interface
@@ -128,10 +142,18 @@ namespace FROSch {
         }
 
         // Build Partition Of Unity Vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         XMapPtr serialInterfaceMap = MapFactory<LO,GO,NO>::Build(this->DDInterface_->getNodesMap()->lib(),numInterfaceDofs,0,this->SerialComm_);
+#else
+        XMapPtr serialInterfaceMap = MapFactory<NO>::Build(this->DDInterface_->getNodesMap()->lib(),numInterfaceDofs,0,this->SerialComm_);
+#endif
 
         if (UseRoots_ && Roots_->getNumEntities()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XMultiVectorPtr tmpVector = MultiVectorFactory<SC,LO,GO,NO>::Build(serialInterfaceMap,Roots_->getNumEntities());
+#else
+            XMultiVectorPtr tmpVector = MultiVectorFactory<SC,NO>::Build(serialInterfaceMap,Roots_->getNumEntities());
+#endif
 
             // Loop over EntitySetVector_
             for (UN i=0; i<EntitySetVector_.size(); i++) {

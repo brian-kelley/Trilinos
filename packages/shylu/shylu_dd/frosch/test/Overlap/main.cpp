@@ -172,9 +172,15 @@ int main(int argc, char *argv[])
 
         RCP<ParameterList> parameterList = getParametersFromXmlFile(xmlFile);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         ArrayRCP<RCP<Matrix<SC,LO,GO,NO> > > K(NumberOfBlocks);
         ArrayRCP<RCP<Map<LO,GO,NO> > > RepeatedMaps(NumberOfBlocks);
         ArrayRCP<RCP<MultiVector<SC,LO,GO,NO> > > Coordinates(NumberOfBlocks);
+#else
+        ArrayRCP<RCP<Matrix<SC,NO> > > K(NumberOfBlocks);
+        ArrayRCP<RCP<Map<NO> > > RepeatedMaps(NumberOfBlocks);
+        ArrayRCP<RCP<MultiVector<SC,NO> > > Coordinates(NumberOfBlocks);
+#endif
         ArrayRCP<UN> dofsPerNodeVector(NumberOfBlocks);
 
         for (UN block=0; block<(UN) NumberOfBlocks; block++) {
@@ -190,22 +196,44 @@ int main(int argc, char *argv[])
             GaleriList.set("my", GO(N));
             GaleriList.set("mz", GO(N));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             RCP<const Map<LO,GO,NO> > UniqueMapTmp;
             RCP<MultiVector<SC,LO,GO,NO> > CoordinatesTmp;
             RCP<Matrix<SC,LO,GO,NO> > KTmp;
+#else
+            RCP<const Map<NO> > UniqueMapTmp;
+            RCP<MultiVector<SC,NO> > CoordinatesTmp;
+            RCP<Matrix<SC,NO> > KTmp;
+#endif
             if (Dimension==2) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 UniqueMapTmp = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian2D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
                 CoordinatesTmp = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("2D",UniqueMapTmp,GaleriList);
                 RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Laplace2D",UniqueMapTmp,GaleriList);
+#else
+                UniqueMapTmp = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian2D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+                CoordinatesTmp = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("2D",UniqueMapTmp,GaleriList);
+                RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Laplace2D",UniqueMapTmp,GaleriList);
+#endif
                 KTmp = Problem->BuildMatrix();
             } else if (Dimension==3) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 UniqueMapTmp = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian3D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
                 CoordinatesTmp = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("3D",UniqueMapTmp,GaleriList);
                 RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Laplace3D",UniqueMapTmp,GaleriList);
+#else
+                UniqueMapTmp = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian3D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+                CoordinatesTmp = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("3D",UniqueMapTmp,GaleriList);
+                RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Laplace3D",UniqueMapTmp,GaleriList);
+#endif
                 KTmp = Problem->BuildMatrix();
             }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             RCP<Map<LO,GO,NO> > UniqueMap;
+#else
+            RCP<Map<NO> > UniqueMap;
+#endif
 
             if (DOFOrdering == 0) {
                 Array<GO> uniqueMapArray(dofsPerNodeVector[block]*UniqueMapTmp->getNodeNumElements());
@@ -215,8 +243,13 @@ int main(int argc, char *argv[])
                     }
                 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 UniqueMap = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,uniqueMapArray(),0,Comm);
                 K[block] = MatrixFactory<SC,LO,GO,NO>::Build(UniqueMap,KTmp->getGlobalMaxNumRowEntries());
+#else
+                UniqueMap = MapFactory<NO>::Build(xpetraLib,-1,uniqueMapArray(),0,Comm);
+                K[block] = MatrixFactory<SC,NO>::Build(UniqueMap,KTmp->getGlobalMaxNumRowEntries());
+#endif
                 for (LO i=0; i<(LO) UniqueMapTmp->getNodeNumElements(); i++) {
                     ArrayView<const LO> indices;
                     ArrayView<const SC> values;
@@ -239,8 +272,13 @@ int main(int argc, char *argv[])
                     }
                 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 UniqueMap = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,uniqueMapArray(),0,Comm);
                 K[block] = MatrixFactory<SC,LO,GO,NO>::Build(UniqueMap,KTmp->getGlobalMaxNumRowEntries());
+#else
+                UniqueMap = MapFactory<NO>::Build(xpetraLib,-1,uniqueMapArray(),0,Comm);
+                K[block] = MatrixFactory<SC,NO>::Build(UniqueMap,KTmp->getGlobalMaxNumRowEntries());
+#endif
                 for (LO i=0; i<(LO) UniqueMapTmp->getNodeNumElements(); i++) {
                     ArrayView<const LO> indices;
                     ArrayView<const SC> values;
@@ -261,12 +299,20 @@ int main(int argc, char *argv[])
                 assert(false);
             }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             RepeatedMaps[block] = BuildRepeatedMapNonConst<LO,GO,NO>(K[block]->getCrsGraph()); //RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); RepeatedMaps[block]->describe(*fancy,VERB_EXTREME);
+#else
+            RepeatedMaps[block] = BuildRepeatedMapNonConst<NO>(K[block]->getCrsGraph()); //RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); RepeatedMaps[block]->describe(*fancy,VERB_EXTREME);
+#endif
         }
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "##############################\n# Assembly Monolythic System #\n##############################\n" << endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Matrix<SC,LO,GO,NO> > KMonolithic;
+#else
+        RCP<Matrix<SC,NO> > KMonolithic;
+#endif
         if (NumberOfBlocks>1) {
 
             Array<GO> uniqueMapArray(0);
@@ -278,10 +324,18 @@ int main(int argc, char *argv[])
                 }
                 tmpOffset += K[block]->getMap()->getMaxAllGlobalIndex()+1;
             }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             RCP<Map<LO,GO,NO> > UniqueMapMonolithic = MapFactory<LO,GO,NO>::Build(xpetraLib,-1,uniqueMapArray(),0,Comm);
+#else
+            RCP<Map<NO> > UniqueMapMonolithic = MapFactory<NO>::Build(xpetraLib,-1,uniqueMapArray(),0,Comm);
+#endif
 
             tmpOffset = 0;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             KMonolithic = MatrixFactory<SC,LO,GO,NO>::Build(UniqueMapMonolithic,K[0]->getGlobalMaxNumRowEntries());
+#else
+            KMonolithic = MatrixFactory<SC,NO>::Build(UniqueMapMonolithic,K[0]->getGlobalMaxNumRowEntries());
+#endif
             for (UN block=0; block<(UN) NumberOfBlocks; block++) {
                 for (LO i=0; i<(LO) K[block]->getNodeNumRows(); i++) {
                     ArrayView<const LO> indices;
@@ -302,16 +356,28 @@ int main(int argc, char *argv[])
             assert(false);
         }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MultiVector<SC,LO,GO,NO> > xSolution = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
         RCP<MultiVector<SC,LO,GO,NO> > xRightHandSide = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
+#else
+        RCP<MultiVector<SC,NO> > xSolution = MultiVectorFactory<SC,NO>::Build(KMonolithic->getMap(),1);
+        RCP<MultiVector<SC,NO> > xRightHandSide = MultiVectorFactory<SC,NO>::Build(KMonolithic->getMap(),1);
+#endif
 
         xSolution->putScalar(ScalarTraits<SC>::zero());
         xRightHandSide->putScalar(ScalarTraits<SC>::one());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         CrsMatrixWrap<SC,LO,GO,NO>& crsWrapK = dynamic_cast<CrsMatrixWrap<SC,LO,GO,NO>&>(*KMonolithic);
         RCP<const LinearOpBase<SC> > K_thyra = ThyraUtils<SC,LO,GO,NO>::toThyra(crsWrapK.getCrsMatrix());
         RCP<MultiVectorBase<SC> >thyraX = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xSolution));
         RCP<const MultiVectorBase<SC> >thyraB = ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSide);
+#else
+        CrsMatrixWrap<SC,NO>& crsWrapK = dynamic_cast<CrsMatrixWrap<SC,NO>&>(*KMonolithic);
+        RCP<const LinearOpBase<SC> > K_thyra = ThyraUtils<SC,NO>::toThyra(crsWrapK.getCrsMatrix());
+        RCP<MultiVectorBase<SC> >thyraX = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,NO>::toThyraMultiVector(xSolution));
+        RCP<const MultiVectorBase<SC> >thyraB = ThyraUtils<SC,NO>::toThyraMultiVector(xRightHandSide);
+#endif
 
         //-----------Set Coordinates and RepMap in ParameterList--------------------------
         RCP<ParameterList> plList =  sublist(parameterList,"Preconditioner Types");
@@ -362,7 +428,11 @@ int main(int argc, char *argv[])
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "###################################\n# Stratimikos LinearSolverBuilder #\n###################################\n" << endl;
         Stratimikos::DefaultLinearSolverBuilder linearSolverBuilder;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Stratimikos::enableFROSch<LO,GO,NO>(linearSolverBuilder);
+#else
+        Stratimikos::enableFROSch<NO>(linearSolverBuilder);
+#endif
         linearSolverBuilder.setParameterList(parameterList);
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "######################\n# Thyra PrepForSolve #\n######################\n" << endl;

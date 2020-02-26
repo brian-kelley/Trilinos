@@ -50,8 +50,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     LocalPartitionOfUnityBasis<SC,LO,GO,NO>::LocalPartitionOfUnityBasis(CommPtr mpiComm,
+#else
+    template<class SC,class NO>
+    LocalPartitionOfUnityBasis<SC,NO>::LocalPartitionOfUnityBasis(CommPtr mpiComm,
+#endif
                                                                         CommPtr serialComm,
                                                                         UN dofsPerNode,
                                                                         ParameterListPtr parameterList,
@@ -69,8 +74,13 @@ namespace FROSch {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int LocalPartitionOfUnityBasis<SC,LO,GO,NO>::addPartitionOfUnity(XMultiVectorPtrVecPtr partitionOfUnity,
+#else
+    template<class SC,class NO>
+    int LocalPartitionOfUnityBasis<SC,NO>::addPartitionOfUnity(XMultiVectorPtrVecPtr partitionOfUnity,
+#endif
                                                                      XMapPtrVecPtr partitionOfUnityMaps)
     {
         PartitionOfUnity_ = partitionOfUnity;
@@ -78,21 +88,35 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int LocalPartitionOfUnityBasis<SC,LO,GO,NO>::addGlobalBasis(ConstXMultiVectorPtr nullSpaceBasis)
+#else
+    template<class SC,class NO>
+    int LocalPartitionOfUnityBasis<SC,NO>::addGlobalBasis(ConstXMultiVectorPtr nullSpaceBasis)
+#endif
     {
         NullspaceBasis_ = nullSpaceBasis;
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int LocalPartitionOfUnityBasis<SC,LO,GO,NO>::buildLocalPartitionOfUnityBasis()
+#else
+    template<class SC,class NO>
+    int LocalPartitionOfUnityBasis<SC,NO>::buildLocalPartitionOfUnityBasis()
+#endif
     {
         FROSCH_ASSERT(!NullspaceBasis_.is_null(),"Nullspace Basis is not set.");
         FROSCH_ASSERT(!PartitionOfUnity_.is_null(),"Partition Of Unity is not set.");
         FROSCH_ASSERT(!PartitionOfUnityMaps_.is_null(),"Partition Of Unity Map is not set.");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         LocalPartitionOfUnitySpace_ = CoarseSpacePtr(new CoarseSpace<SC,LO,GO,NO>(this->MpiComm_,this->SerialComm_));
+#else
+        LocalPartitionOfUnitySpace_ = CoarseSpacePtr(new CoarseSpace<SC,NO>(this->MpiComm_,this->SerialComm_));
+#endif
 
         XMultiVectorPtrVecPtr2D tmpBasis(PartitionOfUnity_.size());
         ConstXMapPtr nullspaceBasisMap = NullspaceBasis_->getMap();
@@ -101,7 +125,11 @@ namespace FROSch {
                 FROSCH_ASSERT(PartitionOfUnityMaps_[i]->getNodeNumElements()>0,"PartitionOfUnityMaps_[i]->getNodeNumElements()==0");
                 tmpBasis[i] = XMultiVectorPtrVecPtr(PartitionOfUnity_[i]->getNumVectors());
                 for (UN j=0; j<PartitionOfUnity_[i]->getNumVectors(); j++) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     XMultiVectorPtr tmpBasisJ = MultiVectorFactory<SC,LO,GO,NO>::Build(nullspaceBasisMap,NullspaceBasis_->getNumVectors());
+#else
+                    XMultiVectorPtr tmpBasisJ = MultiVectorFactory<SC,NO>::Build(nullspaceBasisMap,NullspaceBasis_->getNumVectors());
+#endif
                     tmpBasisJ->elementWiseMultiply(ScalarTraits<SC>::one(),*PartitionOfUnity_[i]->getVector(j),*NullspaceBasis_,ScalarTraits<SC>::one());
                     if (ParameterList_->get("Orthogonalize",true)) {
                         tmpBasis[i][j] = ModifiedGramSchmidt(tmpBasisJ.getConst());
@@ -145,7 +173,11 @@ namespace FROSch {
                 if (!PartitionOfUnity_[i].is_null()) {
                     ConstXMapPtr partitionOfUnityMap_i = PartitionOfUnity_[i]->getMap();
                     for (UN j=0; j<maxNV[i]; j++) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         XMultiVectorPtr entityBasis = MultiVectorFactory<SC,LO,GO,NO >::Build(partitionOfUnityMap_i,PartitionOfUnity_[i]->getNumVectors());
+#else
+                        XMultiVectorPtr entityBasis = MultiVectorFactory<SC,NO >::Build(partitionOfUnityMap_i,PartitionOfUnity_[i]->getNumVectors());
+#endif
                         entityBasis->scale(ScalarTraits<SC>::zero());
                         for (UN k=0; k<PartitionOfUnity_[i]->getNumVectors(); k++) {
                             if (j<tmpBasis[i][k]->getNumVectors()) {
@@ -169,22 +201,37 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename LocalPartitionOfUnityBasis<SC,LO,GO,NO>::XMultiVectorPtrVecPtr LocalPartitionOfUnityBasis<SC,LO,GO,NO>::getPartitionOfUnity() const
+#else
+    template<class SC,class NO>
+    typename LocalPartitionOfUnityBasis<SC,NO>::XMultiVectorPtrVecPtr LocalPartitionOfUnityBasis<SC,NO>::getPartitionOfUnity() const
+#endif
     {
         FROSCH_ASSERT(!PartitionOfUnity_.is_null(),"Partition Of Unity is not set.");
         return PartitionOfUnity_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename LocalPartitionOfUnityBasis<SC,LO,GO,NO>::XMultiVectorPtr LocalPartitionOfUnityBasis<SC,LO,GO,NO>::getNullspaceBasis() const
+#else
+    template<class SC,class NO>
+    typename LocalPartitionOfUnityBasis<SC,NO>::XMultiVectorPtr LocalPartitionOfUnityBasis<SC,NO>::getNullspaceBasis() const
+#endif
     {
         FROSCH_ASSERT(!NullspaceBasis_.is_null(),"Nullspace Basis is not set.");
         return NullspaceBasis_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename LocalPartitionOfUnityBasis<SC,LO,GO,NO>::CoarseSpacePtr LocalPartitionOfUnityBasis<SC,LO,GO,NO>::getLocalPartitionOfUnitySpace() const
+#else
+    template<class SC,class NO>
+    typename LocalPartitionOfUnityBasis<SC,NO>::CoarseSpacePtr LocalPartitionOfUnityBasis<SC,NO>::getLocalPartitionOfUnitySpace() const
+#endif
     {
         FROSCH_ASSERT(!LocalPartitionOfUnitySpace_.is_null(),"Local Partition Of Unity Space is not built yet.");
         return LocalPartitionOfUnitySpace_;

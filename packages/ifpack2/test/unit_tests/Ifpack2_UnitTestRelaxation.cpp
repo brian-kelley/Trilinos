@@ -65,12 +65,23 @@ using Teuchos::rcp_const_cast;
 typedef Tpetra::global_size_t GST;
 typedef tif_utest::Node Node;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test0, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test0, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+  typedef Tpetra::Map<Node> map_type;
+#endif
 
   //we are now in a class method declared by the above macro, and
   //that method has these input arguments:
@@ -81,9 +92,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test0, Scalar, LocalOrdinal
   GST num_rows_per_proc = 5;
 
   RCP<const map_type > rowmap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node> (num_rows_per_proc);
+#else
+    tif_utest::create_tpetra_map<Node> (num_rows_per_proc);
+#endif
   RCP<const crs_matrix_type> crsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> (rowmap);
+#else
+    tif_utest::create_test_matrix<Scalar,Node> (rowmap);
+#endif
   Ifpack2::Relaxation<row_matrix_type> prec (crsmatrix);
 
   Teuchos::ParameterList params;
@@ -122,21 +141,40 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test0, Scalar, LocalOrdinal
 
 // Test apply() with x == y.
 // When x == y, apply() need to create internally an auxiliary vector, Xcopy.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test1, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test1, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+  typedef Tpetra::Map<Node> map_type;
+#endif
 
   out << "Ifpack2::Version(): " << Ifpack2::Version () << std::endl;
 
   GST num_rows_per_proc = 5;
 
   RCP<const map_type> rowmap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node> (num_rows_per_proc);
+#else
+    tif_utest::create_tpetra_map<Node> (num_rows_per_proc);
+#endif
   RCP<const crs_matrix_type> crsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> (rowmap);
+#else
+    tif_utest::create_test_matrix<Scalar,Node> (rowmap);
+#endif
   Ifpack2::Relaxation<row_matrix_type> prec (crsmatrix);
 
   Teuchos::ParameterList params;
@@ -162,20 +200,36 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test1, Scalar, LocalOrdinal
 // Tpetra Multivector public constructors are always copying input data so it is harder to reach such case than with Ifpack/Epetra.
 // Nevertheless, it is still possible to create two different Tpetra vectors pointing to the same memory location by using MultiVector::subView().
 // I can't imagine anyone trying to do this but... in this case, apply() need also to create internally an auxiliary vector, Xcopy.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test2, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test2, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+  typedef Tpetra::Map<Node> map_type;
+#endif
 
   std::string version = Ifpack2::Version();
   out << "Ifpack2::Version(): " << version << std::endl;
 
   GST num_rows_per_proc = 5;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const map_type> rowmap = tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
   RCP<const crs_matrix_type> crsmatrix = tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rowmap);
+#else
+  RCP<const map_type> rowmap = tif_utest::create_tpetra_map<Node>(num_rows_per_proc);
+  RCP<const crs_matrix_type> crsmatrix = tif_utest::create_test_matrix<Scalar,Node>(rowmap);
+#endif
   Ifpack2::Relaxation<row_matrix_type> prec (crsmatrix);
 
   Teuchos::ParameterList params;
@@ -206,11 +260,21 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test2, Scalar, LocalOrdinal
 }
 
   // Test apply() with a partially "null" x and y. In parallel, it is possible that some nodes do not have any local elements.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test3, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test3, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::Map<Node> map_type;
+#endif
 
   out << "Ifpack2::Version(): " << Ifpack2::Version() << std::endl;
 
@@ -218,8 +282,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test3, Scalar, LocalOrdinal
   auto comm = Tpetra::getDefaultComm();
   if(!comm->getRank()) num_rows_per_proc=5;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const map_type> rowmap = tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
   RCP<const crs_matrix_type> crsmatrix = tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rowmap);
+#else
+  RCP<const map_type> rowmap = tif_utest::create_tpetra_map<Node>(num_rows_per_proc);
+  RCP<const crs_matrix_type> crsmatrix = tif_utest::create_test_matrix<Scalar,Node>(rowmap);
+#endif
   Ifpack2::Relaxation<row_matrix_type> prec (crsmatrix);
 
   Teuchos::ParameterList params;
@@ -229,7 +298,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test3, Scalar, LocalOrdinal
   prec.initialize();
   prec.compute();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> x(rowmap,2), y(rowmap,2);
+#else
+  Tpetra::MultiVector<Scalar,Node> x(rowmap,2), y(rowmap,2);
+#endif
   x.putScalar (Teuchos::ScalarTraits<Scalar>::one ());
 
   TEST_EQUALITY(x.getMap()->getNodeNumElements(), num_rows_per_proc);
@@ -239,20 +312,38 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test3, Scalar, LocalOrdinal
 }
 
   // Test apply() to make sure the L1 methods work
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test4, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test4, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::Map<Node> map_type;
+#endif
 
   out << "Ifpack2::Version(): " << Ifpack2::Version () << std::endl;
 
   GST num_rows_per_proc = 5;
 
   RCP<const map_type > rowmap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node> (num_rows_per_proc);
+#else
+    tif_utest::create_tpetra_map<Node> (num_rows_per_proc);
+#endif
   RCP<const crs_matrix_type> crsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> (rowmap);
+#else
+    tif_utest::create_test_matrix<Scalar,Node> (rowmap);
+#endif
   Ifpack2::Relaxation<row_matrix_type> prec (crsmatrix);
 
   Teuchos::ParameterList params;
@@ -263,7 +354,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test4, Scalar, LocalOrdinal
   prec.initialize();
   prec.compute();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> x(rowmap,2), y(rowmap,2);
+#else
+  Tpetra::MultiVector<Scalar,Node> x(rowmap,2), y(rowmap,2);
+#endif
   x.putScalar (Teuchos::ScalarTraits<Scalar>::one ());
 
   TEST_EQUALITY(x.getMap()->getNodeNumElements(), 5);
@@ -272,20 +367,38 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Test4, Scalar, LocalOrdinal
 }
 
   // Test apply() to make sure the Richardson methods work
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Richardson, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Richardson, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
   typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::Map<Node> map_type;
+#endif
 
   out << "Ifpack2::Version(): " << Ifpack2::Version () << std::endl;
 
   GST num_rows_per_proc = 5;
 
   RCP<const map_type > rowmap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node> (num_rows_per_proc);
+#else
+    tif_utest::create_tpetra_map<Node> (num_rows_per_proc);
+#endif
   RCP<const crs_matrix_type> crsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> (rowmap);
+#else
+    tif_utest::create_test_matrix<Scalar,Node> (rowmap);
+#endif
   Ifpack2::Relaxation<row_matrix_type> prec (crsmatrix);
 
   Teuchos::ParameterList params;
@@ -295,7 +408,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Richardson, Scalar, LocalOr
   prec.initialize();
   prec.compute();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> x(rowmap,2), y(rowmap,2);
+#else
+  Tpetra::MultiVector<Scalar,Node> x(rowmap,2), y(rowmap,2);
+#endif
   x.putScalar (Teuchos::ScalarTraits<Scalar>::one ());
 
   TEST_EQUALITY(x.getMap()->getNodeNumElements(), 5);
@@ -305,7 +422,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, Richardson, Scalar, LocalOr
 
 // Check that (symmetric) Gauss-Seidel works if there are some MPI processes with zero rows of the matrix.
 // Test contributed by Jonathan Hu on 04 Jan 2013.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, SymGaussSeidelZeroRows, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, SymGaussSeidelZeroRows, Scalar)
+#endif
 {
   using Teuchos::Comm;
   using Teuchos::ParameterList;
@@ -313,10 +434,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, SymGaussSeidelZeroRows, Sca
   using std::endl;
   typedef LocalOrdinal LO;
   typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, Node> map_type;
   typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar, LO, GO, Node> row_matrix_type;
   typedef Tpetra::MultiVector<Scalar, LO, GO, Node> mv_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar, Node> row_matrix_type;
+  typedef Tpetra::MultiVector<Scalar, Node> mv_type;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   out << "Ifpack2::Version(): " << Ifpack2::Version () << endl;
@@ -345,7 +473,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, SymGaussSeidelZeroRows, Sca
 
   const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
   RCP<const map_type> rowMap (new map_type (INVALID, nelPerProc, 0, comm));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const crs_matrix_type> crsMatrix = tif_utest::create_test_matrix<Scalar,LO,GO,Node> (rowMap);
+#else
+  RCP<const crs_matrix_type> crsMatrix = tif_utest::create_test_matrix<Scalar,Node> (rowMap);
+#endif
 
   // We don't really need prec to be a pointer here, but it's
   // convenient for putting the constructor call in a TEST_NOTHROW
@@ -374,7 +506,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, SymGaussSeidelZeroRows, Sca
 
 // Check that local (symmetric) Gauss-Seidel works if there are some MPI processes with zero rows of the matrix.
 // Test contributed by Jonathan Hu on 04 Jan 2013.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, LocalSymGaussSeidelZeroRows, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, LocalSymGaussSeidelZeroRows, Scalar)
+#endif
 {
   using Teuchos::Comm;
   using Teuchos::ParameterList;
@@ -382,10 +518,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, LocalSymGaussSeidelZeroRows
   using std::endl;
   typedef LocalOrdinal LO;
   typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, Node> map_type;
   typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar, LO, GO, Node> row_matrix_type;
   typedef Tpetra::MultiVector<Scalar, LO, GO, Node> mv_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar, Node> row_matrix_type;
+  typedef Tpetra::MultiVector<Scalar, Node> mv_type;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   std::string version = Ifpack2::Version();
@@ -414,7 +557,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, LocalSymGaussSeidelZeroRows
 
   const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
   RCP<const map_type> rowMap (new map_type (INVALID, nelPerProc, 0, comm));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const crs_matrix_type> crsMatrix = tif_utest::create_test_matrix<Scalar,LO,GO,Node> (rowMap);
+#else
+  RCP<const crs_matrix_type> crsMatrix = tif_utest::create_test_matrix<Scalar,Node> (rowMap);
+#endif
 
   // We don't really need prec to be a pointer here, but it's
   // convenient for putting the constructor call in a TEST_NOTHROW
@@ -458,7 +605,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, LocalSymGaussSeidelZeroRows
 //The test fails after the bug fix, which is logical, as we don't expect the
 //exact same solution for distributed SGS and sequential SGS. I disabled the
 //test with Siva's suggestion. (Mehmet)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, SGS_mult_sweeps, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, SGS_mult_sweeps, Scalar)
+#endif
 {
   using Teuchos::ArrayView;
   using Teuchos::Array;
@@ -467,11 +618,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, SGS_mult_sweeps, Scalar, Lo
   using std::endl;
   typedef LocalOrdinal LO;
   typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> crs_matrix_type;
   typedef Tpetra::Import<LO, GO, Node> import_type;
   typedef Tpetra::Map<LO, GO, Node> map_type;
   typedef Tpetra::Vector<Scalar, LO, GO, Node> vec_type;
   typedef Tpetra::RowMatrix<Scalar, LO, GO, Node> row_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+  typedef Tpetra::Import<Node> import_type;
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::Vector<Scalar, Node> vec_type;
+  typedef Tpetra::RowMatrix<Scalar, Node> row_matrix_type;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
   typedef Teuchos::ScalarTraits<typename STS::magnitudeType> STM;
 
@@ -702,7 +861,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, SGS_mult_sweeps, Scalar, Lo
 
 // Test apply() on a NotCrsMatrix, where some processes own zero rows
 // of the domain and range Map vectors.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, NotCrsMatrix, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, NotCrsMatrix, Scalar)
+#endif
 {
   using Teuchos::outArg;
   using Teuchos::RCP;
@@ -710,12 +873,23 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, NotCrsMatrix, Scalar, LO, G
   using Teuchos::REDUCE_MIN;
   using Teuchos::reduceAll;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LO,GO,Node> row_matrix_type;
   typedef tif_utest::NotCrsMatrix<Scalar,LO,GO,Node> not_crs_matrix_type;
   typedef Tpetra::Map<LO,GO,Node> map_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef tif_utest::NotCrsMatrix<Scalar,Node> not_crs_matrix_type;
+  typedef Tpetra::Map<Node> map_type;
+#endif
   typedef Ifpack2::Relaxation<row_matrix_type> prec_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar,LO,GO,Node> MV;
+#else
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
   int lclSuccess = 1;
   int gblSuccess = 1;
   std::ostringstream errStrm; // for error collection
@@ -729,7 +903,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, NotCrsMatrix, Scalar, LO, G
   const GST num_rows_per_proc = (myRank == 0) ? 5 : 0;
   RCP<const map_type> rowmap;
   try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     rowmap = tif_utest::create_tpetra_map<LO, GO, Node> (num_rows_per_proc);
+#else
+    rowmap = tif_utest::create_tpetra_map<Node> (num_rows_per_proc);
+#endif
   } catch (std::exception& e) {
     lclSuccess = 0;
     errStrm << "Process " << myRank << ": create_tpetra_map threw exception: "
@@ -739,7 +917,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, NotCrsMatrix, Scalar, LO, G
 
   RCP<crs_matrix_type> crsmatrix;
   try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     crsmatrix = rcp_const_cast<crs_matrix_type> (tif_utest::create_test_matrix<Scalar, LO, GO, Node> (rowmap));
+#else
+    crsmatrix = rcp_const_cast<crs_matrix_type> (tif_utest::create_test_matrix<Scalar, Node> (rowmap));
+#endif
   } catch (std::exception& e) {
     lclSuccess = 0;
     errStrm << "Process " << myRank << ": create_test_matrix threw exception: "
@@ -813,7 +995,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, NotCrsMatrix, Scalar, LO, G
   IFPACK2RELAXATION_REPORT_GLOBAL_ERR( "prec->apply(x, y)" );
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestDiagonalBlockCrsMatrix, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestDiagonalBlockCrsMatrix, Scalar)
+#endif
 {
   using Teuchos::outArg;
   using Teuchos::RCP;
@@ -821,11 +1007,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestDiagonalBlockCrsMatrix,
   using Teuchos::REDUCE_MIN;
   using Teuchos::reduceAll;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockCrsMatrix<Scalar,LO,GO,Node> block_crs_matrix_type;
   typedef Tpetra::BlockMultiVector<Scalar,LO,GO,Node> BMV;
   typedef Tpetra::RowMatrix<Scalar,LO,GO,Node> row_matrix_type;
   typedef Tpetra::CrsGraph<LO,GO,Node> crs_graph_type;
   typedef Tpetra::MultiVector<Scalar,LO,GO,Node> MV;
+#else
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+  typedef Tpetra::BlockMultiVector<Scalar,Node> BMV;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::CrsGraph<Node> crs_graph_type;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
   typedef Ifpack2::Relaxation<row_matrix_type> prec_type;
   int lclSuccess = 1;
   int gblSuccess = 1;
@@ -840,10 +1034,18 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestDiagonalBlockCrsMatrix,
   const int num_rows_per_proc = 5;
   const int blockSize = 3;
   RCP<crs_graph_type> crsgraph =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_diagonal_graph<LO,GO,Node> (num_rows_per_proc);
+#else
+    tif_utest::create_diagonal_graph<Node> (num_rows_per_proc);
+#endif
 
   RCP<block_crs_matrix_type> bcrsmatrix;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bcrsmatrix = rcp_const_cast<block_crs_matrix_type> (tif_utest::create_block_diagonal_matrix<Scalar,LO,GO,Node> (crsgraph, blockSize));
+#else
+  bcrsmatrix = rcp_const_cast<block_crs_matrix_type> (tif_utest::create_block_diagonal_matrix<Scalar,Node> (crsgraph, blockSize));
+#endif
 
   RCP<prec_type> prec;
   try {
@@ -916,18 +1118,30 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestDiagonalBlockCrsMatrix,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestLowerTriangularBlockCrsMatrix, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestLowerTriangularBlockCrsMatrix, Scalar)
+#endif
 {
   using Teuchos::outArg;
   using Teuchos::RCP;
   using Teuchos::REDUCE_MIN;
   using Teuchos::reduceAll;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockCrsMatrix<Scalar,LO,GO,Node> block_crs_matrix_type;
   typedef Tpetra::CrsGraph<LO,GO,Node> crs_graph_type;
   typedef Tpetra::RowMatrix<Scalar,LO,GO,Node> row_matrix_type;
   typedef Tpetra::BlockMultiVector<Scalar,LO,GO,Node> BMV;
   typedef Tpetra::MultiVector<Scalar,LO,GO,Node> MV;
+#else
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+  typedef Tpetra::CrsGraph<Node> crs_graph_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::BlockMultiVector<Scalar,Node> BMV;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
   typedef Ifpack2::Relaxation<row_matrix_type> prec_type;
   int lclSuccess = 1;
   int gblSuccess = 1;
@@ -942,7 +1156,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestLowerTriangularBlockCrs
   const size_t num_rows_per_proc = 3;
   RCP<crs_graph_type> crsgraph;
   try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     crsgraph = tif_utest::create_dense_local_graph<LO, GO, Node> (num_rows_per_proc);
+#else
+    crsgraph = tif_utest::create_dense_local_graph<Node> (num_rows_per_proc);
+#endif
   } catch (std::exception& e) {
     lclSuccess = 0;
     errStrm << "Process " << myRank << ": create_dense_local_graph threw exception: "
@@ -953,7 +1171,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestLowerTriangularBlockCrs
   const int blockSize = 5;
   RCP<block_crs_matrix_type> bcrsmatrix;
   try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bcrsmatrix = rcp_const_cast<block_crs_matrix_type> (tif_utest::create_triangular_matrix<Scalar, LO, GO, Node, true> (crsgraph, blockSize));
+#else
+    bcrsmatrix = rcp_const_cast<block_crs_matrix_type> (tif_utest::create_triangular_matrix<Scalar, Node, true> (crsgraph, blockSize));
+#endif
   } catch (std::exception& e) {
     lclSuccess = 0;
     errStrm << "Process " << myRank << ": create_triangular_matrix threw exception: "
@@ -1033,12 +1255,23 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestLowerTriangularBlockCrs
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestUpperTriangularBlockCrsMatrix, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestUpperTriangularBlockCrsMatrix, Scalar)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> block_crs_matrix_type;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> row_matrix_type;
   typedef Tpetra::BlockMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> BMV;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+  typedef Tpetra::BlockCrsMatrix<Scalar,Node> block_crs_matrix_type;
+  typedef Tpetra::RowMatrix<Scalar,Node> row_matrix_type;
+  typedef Tpetra::BlockMultiVector<Scalar,Node> BMV;
+  typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
 
   out << "Ifpack2::Version(): " << Ifpack2::Version () << std::endl;
 
@@ -1046,10 +1279,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestUpperTriangularBlockCrs
   const int blockSize = 5;
 
   RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > crsgraph =
     tif_utest::create_dense_local_graph<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
+#else
+  RCP<Tpetra::CrsGraph<Node> > crsgraph =
+    tif_utest::create_dense_local_graph<Node>(num_rows_per_proc);
+#endif
   RCP<block_crs_matrix_type> bcrsmatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     rcp_const_cast<block_crs_matrix_type> (tif_utest::create_triangular_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node,false> (crsgraph, blockSize));
+#else
+    rcp_const_cast<block_crs_matrix_type> (tif_utest::create_triangular_matrix<Scalar,Node,false> (crsgraph, blockSize));
+#endif
 
   Ifpack2::Relaxation<row_matrix_type> prec (bcrsmatrix);
 
@@ -1084,23 +1326,39 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, TestUpperTriangularBlockCrs
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, MTSGS, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, MTSGS, Scalar)
+#endif
 {
   using Teuchos::RCP;
   using Teuchos::rcp;
   using Teuchos::ParameterList;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>;
   using row_matrix_type = Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>;
   using MV = Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>;
   using map_type = Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<Scalar,Node>;
+  using row_matrix_type = Tpetra::RowMatrix<Scalar,Node>;
+  using MV = Tpetra::MultiVector<Scalar,Node>;
+  using map_type = Tpetra::Map<Node>;
+#endif
   using prec_type = Ifpack2::Relaxation<row_matrix_type>;
   using STS = Teuchos::ScalarTraits<Scalar>;
   using STM = typename STS::magnitudeType;
   std::string version = Ifpack2::Version();
   out << "Ifpack2::Version(): " << version << std::endl;
   //Generate banded test matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const map_type> rowmap = tif_utest::create_tpetra_map<LocalOrdinal, GlobalOrdinal, Node>(100);
   RCP<const crs_matrix_type> A = tif_utest::create_banded_matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowmap, 8);
+#else
+  RCP<const map_type> rowmap = tif_utest::create_tpetra_map<Node>(100);
+  RCP<const crs_matrix_type> A = tif_utest::create_banded_matrix<Scalar, Node>(rowmap, 8);
+#endif
   RCP<prec_type> prec = rcp(new prec_type(A));
   ParameterList params;
   params.set("relaxation: type", "MT Symmetric Gauss-Seidel");
@@ -1129,23 +1387,39 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, MTSGS, Scalar, LocalOrdinal
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, ClusterMTSGS, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, ClusterMTSGS, Scalar)
+#endif
 {
   using Teuchos::RCP;
   using Teuchos::rcp;
   using Teuchos::ParameterList;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>;
   using row_matrix_type = Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>;
   using MV = Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>;
   using map_type = Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<Scalar,Node>;
+  using row_matrix_type = Tpetra::RowMatrix<Scalar,Node>;
+  using MV = Tpetra::MultiVector<Scalar,Node>;
+  using map_type = Tpetra::Map<Node>;
+#endif
   using prec_type = Ifpack2::Relaxation<row_matrix_type>;
   using STS = Teuchos::ScalarTraits<Scalar>;
   using STM = typename STS::magnitudeType;
   std::string version = Ifpack2::Version();
   out << "Ifpack2::Version(): " << version << std::endl;
   //Generate banded test matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const map_type> rowmap = tif_utest::create_tpetra_map<LocalOrdinal, GlobalOrdinal, Node>(100);
   RCP<const crs_matrix_type> A = tif_utest::create_banded_matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(rowmap, 8);
+#else
+  RCP<const map_type> rowmap = tif_utest::create_tpetra_map<Node>(100);
+  RCP<const crs_matrix_type> A = tif_utest::create_banded_matrix<Scalar, Node>(rowmap, 8);
+#endif
   RCP<prec_type> prec = rcp(new prec_type(A));
   ParameterList params;
   params.set("relaxation: type", "MT Symmetric Gauss-Seidel");
@@ -1176,6 +1450,7 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, ClusterMTSGS, Scalar, Local
 }
 
 #define UNIT_TEST_GROUP_SC_LO_GO( Scalar, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, Test0, Scalar, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, Test1, Scalar, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, Test2, Scalar, LO, GO ) \
@@ -1190,6 +1465,22 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Relaxation, ClusterMTSGS, Scalar, Local
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, TestUpperTriangularBlockCrsMatrix, Scalar, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, MTSGS, Scalar, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, ClusterMTSGS, Scalar, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, Test0, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, Test1, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, Test2, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, Test3, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, Test4, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, Richardson, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, SymGaussSeidelZeroRows, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, LocalSymGaussSeidelZeroRows, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, NotCrsMatrix, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, TestDiagonalBlockCrsMatrix, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, TestLowerTriangularBlockCrsMatrix, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, TestUpperTriangularBlockCrsMatrix, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, MTSGS, Scalar ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, ClusterMTSGS, Scalar )
+#endif
 
   //TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Relaxation, SGS_mult_sweeps, Scalar, LO, GO )
 #include "Ifpack2_ETIHelperMacros.h"

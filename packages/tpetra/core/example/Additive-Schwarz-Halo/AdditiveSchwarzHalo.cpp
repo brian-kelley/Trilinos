@@ -105,7 +105,11 @@ int main (int argc, char *argv[])
       if (numImages < 2) return -1;
       // create a Map
       RCP<const Tpetra::Map<> > map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Tpetra::createContigMapWithNode<LO,GO,Node>(GO_INVALID, ONE, comm);
+#else
+        Tpetra::createContigMapWithNode<Node>(GO_INVALID, ONE, comm);
+#endif
       /* create the following matrix:
          [2 1           ]
          [1 1 1         ]

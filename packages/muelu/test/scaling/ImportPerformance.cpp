@@ -355,16 +355,27 @@ bool epetra_check_importer_correctness(const Epetra_Import & A, const Epetra_Imp
 // =========================================================================
 // =========================================================================
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TestTransfer(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > A, Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > P) {
+#else
+template<class Scalar, class Node>
+void TestTransfer(Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > A, Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > P) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   Xpetra::UnderlyingLib lib = A->getRowMap()->lib();
 
   if (lib == Xpetra::UseTpetra) {
 #if defined(HAVE_MUELU_TPETRA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrixStruct<SC,LO,GO,NO>  crs_matrix_struct_type;
     typedef Tpetra::CrsMatrix<SC,LO,GO,NO>        crs_matrix_type;
     typedef Tpetra::Import<LO,GO,NO>              import_type;
+#else
+    typedef Tpetra::CrsMatrixStruct<SC,NO>  crs_matrix_struct_type;
+    typedef Tpetra::CrsMatrix<SC,NO>        crs_matrix_type;
+    typedef Tpetra::Import<NO>              import_type;
+#endif
 
     RCP<const crs_matrix_type> Au = Utilities::Op2TpetraCrs(A);
     RCP<const crs_matrix_type> Pu = Utilities::Op2TpetraCrs(P);
@@ -450,7 +461,11 @@ void TestTransfer(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,
 // =========================================================================
 // =========================================================================
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp,  Xpetra::UnderlyingLib &lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
     using Teuchos::RCP;
@@ -469,7 +484,11 @@ int main_(Teuchos::CommandLineProcessor &clp,  Xpetra::UnderlyingLib &lib, int a
     typedef Teuchos::ScalarTraits<SC> STS;
     SC one = STS::one();
     typedef typename STS::coordinateType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
     // =========================================================================
     // Parameters initialization
@@ -550,24 +569,44 @@ int main_(Teuchos::CommandLineProcessor &clp,  Xpetra::UnderlyingLib &lib, int a
     // In the future, we hope to be able to first create a Galeri problem, and then request map and coordinates from it
     // At the moment, however, things are fragile as we hope that the Problem uses same map and coordinates inside
     if (matrixType == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#else
+        map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#endif
         coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<Real,LO,GO,Map,RealValuedMultiVector>("1D", map, galeriList);
 
     } else if (matrixType == "Laplace2D" || matrixType == "Star2D" ||
                matrixType == "BigStar2D" || matrixType == "Elasticity2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#else
+        map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#endif
         coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<Real,LO,GO,Map,RealValuedMultiVector>("2D", map, galeriList);
 
     } else if (matrixType == "Laplace3D" || matrixType == "Brick3D" || matrixType == "Elasticity3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#else
+        map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#endif
         coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<Real,LO,GO,Map,RealValuedMultiVector>("3D", map, galeriList);
     }
 
     // Expand map to do multiple DOF per node for block problems
     if (matrixType == "Elasticity2D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 2);
+#else
+        map = Xpetra::MapFactory<Node>::Build(map, 2);
+#endif
     if (matrixType == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 3);
+#else
+        map = Xpetra::MapFactory<Node>::Build(map, 3);
+#endif
 
     galeriStream << "Processor subdomains in x direction: " << galeriList.get<GO>("mx") << std::endl
                  << "Processor subdomains in y direction: " << galeriList.get<GO>("my") << std::endl

@@ -55,46 +55,79 @@
 namespace Xpetra {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    MapExtractor<Scalar, Node>::
+#endif
     MapExtractor(const RCP<const Map>& fullmap, const std::vector<RCP<const Map> >& maps, bool bThyraMode)
     {
       map_ = Teuchos::rcp(new BlockedMap(fullmap, maps, bThyraMode));
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    MapExtractor<Scalar, Node>::
+#endif
     MapExtractor(const std::vector<RCP<const Map> >& maps, const std::vector<RCP<const Map> >& thyramaps)
     {
       map_ = Teuchos::rcp(new BlockedMap(maps, thyramaps));
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    MapExtractor<Scalar, Node>::
+#endif
     MapExtractor(const Teuchos::RCP<const BlockedMap>& map)
         : map_(map)
     {}
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    MapExtractor<Scalar, Node>::
+#endif
     MapExtractor(const MapExtractor& input)
     {
       map_ = Teuchos::rcp(new BlockedMap(*(input.getBlockedMap())));
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    MapExtractor<Scalar, Node>::
+#endif
     ~MapExtractor()
     {
       map_ = Teuchos::null;
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     ExtractVector(const Vector& full, size_t block, Vector& partial) const
     {
       XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(), std::out_of_range,
@@ -106,9 +139,17 @@ namespace Xpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     ExtractVector(const MultiVector& full, size_t block, MultiVector& partial) const
     {
         XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
@@ -122,46 +163,85 @@ namespace Xpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     ExtractVector(RCP<const Vector>& full, size_t block, RCP<Vector>& partial) const
     {
         ExtractVector(*full, block, *partial);
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     ExtractVector(RCP<Vector>& full, size_t block, RCP<Vector>& partial) const
     {
         ExtractVector(*full, block, *partial);
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     ExtractVector(RCP<const MultiVector>& full, size_t block, RCP<MultiVector>& partial) const
     {
         ExtractVector(*full, block, *partial);
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     ExtractVector(RCP<MultiVector>& full, size_t block, RCP<MultiVector>& partial) const
     {
         ExtractVector(*full, block, *partial);
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     ExtractVector(RCP<const Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& full, size_t block, bool bThyraMode) const
+#else
+    template <class Scalar, class Node>
+    RCP<Xpetra::Vector<Scalar,Node> >
+    MapExtractor<Scalar, Node>::
+    ExtractVector(RCP<const Xpetra::Vector<Scalar,Node> >& full, size_t block, bool bThyraMode) const
+#endif
     {
         XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
                                   std::out_of_range,
@@ -170,7 +250,11 @@ namespace Xpetra {
         XPETRA_TEST_FOR_EXCEPTION(
           map_->getMap(block, false) == null, Xpetra::Exceptions::RuntimeError, "ExtractVector: map_->getMap(" << block << ",false) is null");
         // first extract partial vector from full vector (using xpetra style GIDs)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::VectorFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build(getMap(block, false), false);
+#else
+        const RCP<Xpetra::Vector<Scalar,Node> > vv = Xpetra::VectorFactory<Scalar,Node>::Build(getMap(block, false), false);
+#endif
         ExtractVector(*full, block, *vv);
         if(bThyraMode == false)
             return vv;
@@ -183,10 +267,17 @@ namespace Xpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     ExtractVector(RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& full, size_t block, bool bThyraMode) const
+#else
+    template <class Scalar, class Node>
+    RCP<Xpetra::Vector<Scalar, Node> >
+    MapExtractor<Scalar, Node>::
+    ExtractVector(RCP<Xpetra::Vector<Scalar, Node> >& full, size_t block, bool bThyraMode) const
+#endif
     {
         XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
                                   std::out_of_range,
@@ -195,7 +286,11 @@ namespace Xpetra {
         XPETRA_TEST_FOR_EXCEPTION(
           map_->getMap(block, false) == null, Xpetra::Exceptions::RuntimeError, "ExtractVector: map_->getmap(" << block << ",false) is null");
         // first extract partial vector from full vector (using xpetra style GIDs)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::VectorFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build(getMap(block, false), false);
+#else
+const RCP<Xpetra::Vector<Scalar,Node> > vv = Xpetra::VectorFactory<Scalar,Node>::Build(getMap(block, false), false);
+#endif
 
         ExtractVector(*full, block, *vv);
         if(bThyraMode == false)
@@ -209,10 +304,17 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     ExtractVector(RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& full, size_t block, bool bThyraMode) const
+#else
+    template <class Scalar, class Node>
+    RCP<Xpetra::MultiVector<Scalar, Node> >
+    MapExtractor<Scalar, Node>::
+    ExtractVector(RCP<const Xpetra::MultiVector<Scalar,Node> >& full, size_t block, bool bThyraMode) const
+#endif
     {
         XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
                                   std::out_of_range,
@@ -257,10 +359,17 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     ExtractVector(RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& full, size_t block, bool bThyraMode) const
+#else
+    template <class Scalar, class Node>
+    RCP<Xpetra::MultiVector<Scalar,Node> >
+    MapExtractor<Scalar, Node>::
+    ExtractVector(RCP<Xpetra::MultiVector<Scalar,Node> >& full, size_t block, bool bThyraMode) const
+#endif
     {
         XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
                                   std::out_of_range,
@@ -304,10 +413,17 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     ExtractVector(RCP<const Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& full, size_t block, bool bThyraMode) const
+#else
+    template <class Scalar, class Node>
+    RCP<Xpetra::MultiVector<Scalar,Node> >
+    MapExtractor<Scalar, Node>::
+    ExtractVector(RCP<const Xpetra::BlockedMultiVector<Scalar,Node> >& full, size_t block, bool bThyraMode) const
+#endif
     {
         XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
                                   std::out_of_range,
@@ -325,10 +441,17 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     ExtractVector(RCP<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>& full, size_t block, bool bThyraMode) const
+#else
+    template <class Scalar, class Node>
+    RCP<Xpetra::MultiVector<Scalar,Node> >
+    MapExtractor<Scalar, Node>::
+    ExtractVector(RCP<Xpetra::BlockedMultiVector<Scalar, Node>>& full, size_t block, bool bThyraMode) const
+#endif
     {
         XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
                                   std::out_of_range,
@@ -346,10 +469,19 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     InsertVector(const Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& partial, size_t block, Vector& full, bool bThyraMode) const
+#else
+    MapExtractor<Scalar, Node>::
+    InsertVector(const Xpetra::Vector<Scalar,Node>& partial, size_t block, Vector& full, bool bThyraMode) const
+#endif
     {
         XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
                                   std::out_of_range,
@@ -404,10 +536,19 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     InsertVector(const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& partial, size_t block, MultiVector& full, bool bThyraMode) const
+#else
+    MapExtractor<Scalar, Node>::
+    InsertVector(const Xpetra::MultiVector<Scalar,Node>& partial, size_t block, MultiVector& full, bool bThyraMode) const
+#endif
     {
         XPETRA_TEST_FOR_EXCEPTION(block >= map_->getNumMaps(),
                                   std::out_of_range,
@@ -463,30 +604,59 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     InsertVector(RCP<const Vector> partial, size_t block, RCP<Vector> full, bool bThyraMode) const
     {
         InsertVector(*partial, block, *full, bThyraMode);
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     InsertVector(RCP<Vector> partial, size_t block, RCP<Vector> full, bool bThyraMode) const
     {
         InsertVector(*partial, block, *full, bThyraMode);
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     InsertVector(RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > partial,
+#else
+    MapExtractor<Scalar, Node>::
+    InsertVector(RCP<const Xpetra::MultiVector<Scalar,Node> > partial,
+#endif
                  size_t block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>> full,
+#else
+                 RCP<Xpetra::MultiVector<Scalar,Node>> full,
+#endif
                  bool bThyraMode) const
     {
         RCP<BlockedMultiVector> bfull = Teuchos::rcp_dynamic_cast<BlockedMultiVector>(full);
@@ -508,12 +678,25 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     InsertVector(RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > partial,
+#else
+    MapExtractor<Scalar, Node>::
+    InsertVector(RCP<Xpetra::MultiVector<Scalar,Node> > partial,
+#endif
                  size_t block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>> full,
+#else
+                 RCP<Xpetra::MultiVector<Scalar,Node>> full,
+#endif
                  bool bThyraMode) const
     {
         RCP<BlockedMultiVector> bfull = Teuchos::rcp_dynamic_cast<BlockedMultiVector>(full);
@@ -529,12 +712,25 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     InsertVector(RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>>     partial,
+#else
+    MapExtractor<Scalar, Node>::
+    InsertVector(RCP<const Xpetra::MultiVector<Scalar,Node>>     partial,
+#endif
                  size_t                                                                     block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  RCP<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> full,
+#else
+                 RCP<Xpetra::BlockedMultiVector<Scalar, Node>> full,
+#endif
                  bool                                                                       bThyraMode) const
     {
         XPETRA_TEST_FOR_EXCEPTION(
@@ -544,12 +740,25 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     InsertVector(RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>        partial,
+#else
+    MapExtractor<Scalar, Node>::
+    InsertVector(RCP<Xpetra::MultiVector<Scalar, Node>>        partial,
+#endif
                  size_t                                                                     block,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  RCP<Xpetra::BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>> full,
+#else
+                 RCP<Xpetra::BlockedMultiVector<Scalar, Node>> full,
+#endif
                  bool                                                                       bThyraMode ) const
     {
         XPETRA_TEST_FOR_EXCEPTION(
@@ -558,9 +767,15 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    RCP<Xpetra::Vector<Scalar, Node>>
+    MapExtractor<Scalar, Node>::
+#endif
     getVector(size_t i, bool bThyraMode, bool bZero) const
     {
         XPETRA_TEST_FOR_EXCEPTION(map_->getThyraMode() == false && bThyraMode == true,
@@ -568,13 +783,23 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
                                   "MapExtractor::getVector: getVector in Thyra-style numbering only possible if MapExtractor has been created using "
                                   "Thyra-style numbered submaps.");
         // TODO check whether this can return a blocked multivector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return Xpetra::VectorFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build(getMap(i, bThyraMode), bZero);
+#else
+        return Xpetra::VectorFactory<Scalar,Node>::Build(getMap(i, bThyraMode), bZero);
+#endif
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    RCP<Xpetra::MultiVector<Scalar,Node>>
+    MapExtractor<Scalar, Node>::
+#endif
     getVector(size_t i, size_t numvec, bool bThyraMode, bool bZero) const
     {
         XPETRA_TEST_FOR_EXCEPTION(map_->getThyraMode() == false && bThyraMode == true,
@@ -586,63 +811,111 @@ const RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > vv = Xpetra::
     }
 
     /// returns true, if sub maps are stored in Thyra-style numbering
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     getThyraMode() const
     {
         return map_->getThyraMode();
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     NumMaps() const
     {
         return map_->getNumMaps();
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     const RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    const RCP<const Xpetra::Map<Node>>
+    MapExtractor<Scalar, Node>::
+#endif
     getMap(size_t i, bool bThyraMode) const
     {
         return map_->getMap(i, bThyraMode);
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     const RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    const RCP<const Xpetra::Map<Node>>
+    MapExtractor<Scalar, Node>::
+#endif
     getMap() const
     {
         return map_;
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     const RCP<const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node>>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    const RCP<const Xpetra::BlockedMap<Node>>
+    MapExtractor<Scalar, Node>::
+#endif
     getBlockedMap() const
     {
         return map_;
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     const RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    template <class Scalar, class Node>
+    const RCP<const Xpetra::Map<Node>>
+    MapExtractor<Scalar, Node>::
+#endif
     getFullMap() const
     {
         return map_->getFullMap();
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    MapExtractor<Scalar, Node>::
+#endif
     getMapIndexForGID(GlobalOrdinal gid) const
     {
         return map_->getMapIndexForGID(gid);

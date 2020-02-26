@@ -68,7 +68,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TpetraOperator, Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(TpetraOperator, Apply, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -76,15 +80,24 @@ namespace MueLuTests {
     out << "version: " << MueLu::Version() << std::endl;
 
 #if defined(HAVE_MUELU_TPETRA) && defined(HAVE_MUELU_IFPACK2) && defined(HAVE_MUELU_AMESOS2)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MueLu::Utilities<SC,LO,GO,NO> Utils;
     typedef MueLu::TpetraOperator<SC,LO,GO,NO> muelu_tpetra_operator_type;
+#else
+    typedef MueLu::Utilities<SC,NO> Utils;
+    typedef MueLu::TpetraOperator<SC,NO> muelu_tpetra_operator_type;
+#endif
     typedef typename Teuchos::ScalarTraits<SC>::magnitudeType magnitude_type;
 
     if (TestHelpers::Parameters::getLib() == Xpetra::UseTpetra )
     {
       //matrix
       RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Matrix> Op = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(6561*comm->getSize());  //=8*3^6
+#else
+      RCP<Matrix> Op = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(6561*comm->getSize());  //=8*3^6
+#endif
       RCP<const Map > map = Op->getRowMap();
 
       RCP<MultiVector> nullSpace = MultiVectorFactory::Build(map, 1);
@@ -157,8 +170,13 @@ namespace MueLuTests {
 
   } //Apply
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(Scalar, LocalOrdinal, GlobalOrdinal, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TpetraOperator, Apply, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+#define MUELU_ETI_GROUP(Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(TpetraOperator, Apply, Scalar, Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

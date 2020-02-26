@@ -68,31 +68,54 @@ namespace { // (anonymous)
 namespace Tpetra {
 namespace Details {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
 Transfer<LO, GO, NT>::
+#else
+template <class NT>
+Transfer<NT>::
+#endif
 Transfer (const Teuchos::RCP<const map_type>& source,
 	  const Teuchos::RCP<const map_type>& target,
           const Teuchos::RCP<Teuchos::FancyOStream>& out,
           const Teuchos::RCP<Teuchos::ParameterList>& plist,
 	  const std::string& className) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TransferData_ (new ImportExportData<LO, GO, NT> (source, target, out, plist))
+#else
+  TransferData_ (new ImportExportData<NT> (source, target, out, plist))
+#endif
 {
   TEUCHOS_ASSERT( ! TransferData_->out_.is_null () );
   this->setParameterList (plist, className);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
 Transfer<LO, GO, NT>::
 Transfer (const Transfer<LO, GO, NT>& rhs, reverse_tag)
+#else
+template <class NT>
+Transfer<NT>::
+Transfer (const Transfer<NT>& rhs, reverse_tag)
+#endif
 {
   TEUCHOS_ASSERT( ! (rhs.TransferData_).is_null () );
   this->TransferData_ = rhs.TransferData_->reverseClone ();
   TEUCHOS_ASSERT( ! this->TransferData_->out_.is_null () );  
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 setParameterList (const Teuchos::RCP<Teuchos::ParameterList>& plist,
 		  const std::string& className)
 {
@@ -115,23 +138,45 @@ setParameterList (const Teuchos::RCP<Teuchos::ParameterList>& plist,
   this->TransferData_->verbose_ = verboseEnv || verboseParam;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getNumSameIDs () const {
   return TransferData_->numSameIDs_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getNumPermuteIDs () const {
   return static_cast<size_t> (TransferData_->permuteFromLIDs_.extent (0));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>  
 Kokkos::DualView<const LO*, typename Transfer<LO, GO, NT>::device_type>
 Transfer<LO, GO, NT>::
+#else
+template <class NT>  
+Kokkos::DualView<const LO*, typename Transfer<NT>::device_type>
+Transfer<NT>::
+#endif
 getPermuteFromLIDs_dv () const {
   const auto& dv = TransferData_->permuteFromLIDs_;
   TEUCHOS_TEST_FOR_EXCEPTION
@@ -145,16 +190,30 @@ getPermuteFromLIDs_dv () const {
   return dv;
 }
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>  
+#else
+template <class NT>  
+#endif
 Teuchos::ArrayView<const LO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getPermuteFromLIDs () const {
   return makeConstArrayViewFromDualView (TransferData_->permuteFromLIDs_);    
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>  
 Kokkos::DualView<const LO*, typename Transfer<LO, GO, NT>::device_type>
 Transfer<LO, GO, NT>::
+#else
+template <class NT>  
+Kokkos::DualView<const LO*, typename Transfer<NT>::device_type>
+Transfer<NT>::
+#endif
 getPermuteToLIDs_dv () const {
   const auto& dv = TransferData_->permuteToLIDs_;
   TEUCHOS_TEST_FOR_EXCEPTION
@@ -168,23 +227,45 @@ getPermuteToLIDs_dv () const {
   return dv;
 }
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>  
+#else
+template <class NT>  
+#endif
 Teuchos::ArrayView<const LO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getPermuteToLIDs () const {
   return makeConstArrayViewFromDualView (TransferData_->permuteToLIDs_);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>  
+#else
+template <class NT>  
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getNumRemoteIDs () const {
   return static_cast<size_t> (TransferData_->remoteLIDs_.extent (0));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>  
 Kokkos::DualView<const LO*, typename Transfer<LO, GO, NT>::device_type>
 Transfer<LO, GO, NT>::
+#else
+template <class NT>  
+Kokkos::DualView<const LO*, typename Transfer<NT>::device_type>
+Transfer<NT>::
+#endif
 getRemoteLIDs_dv () const {
   const auto& dv = TransferData_->remoteLIDs_;
   TEUCHOS_TEST_FOR_EXCEPTION
@@ -198,23 +279,45 @@ getRemoteLIDs_dv () const {
   return dv;
 }
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>  
+#else
+template <class NT>  
+#endif
 Teuchos::ArrayView<const LO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getRemoteLIDs () const {
   return makeConstArrayViewFromDualView (TransferData_->remoteLIDs_);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getNumExportIDs () const {
   return static_cast<size_t> (TransferData_->exportLIDs_.extent (0));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>  
 Kokkos::DualView<const LO*, typename Transfer<LO, GO, NT>::device_type>
 Transfer<LO, GO, NT>::
+#else
+template <class NT>  
+Kokkos::DualView<const LO*, typename Transfer<NT>::device_type>
+Transfer<NT>::
+#endif
 getExportLIDs_dv () const {
   const auto& dv = TransferData_->exportLIDs_;
   TEUCHOS_TEST_FOR_EXCEPTION
@@ -228,60 +331,120 @@ getExportLIDs_dv () const {
   return dv;
 }
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 Teuchos::ArrayView<const LO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getExportLIDs () const {
   return makeConstArrayViewFromDualView (TransferData_->exportLIDs_);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 Teuchos::ArrayView<const int>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getExportPIDs () const {
   return TransferData_->exportPIDs_ ();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
 Teuchos::RCP<const typename Transfer<LO, GO, NT>::map_type>
 Transfer<LO, GO, NT>::
+#else
+template <class NT>
+Teuchos::RCP<const typename Transfer<NT>::map_type>
+Transfer<NT>::
+#endif
 getSourceMap () const {
   return TransferData_->source_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
 Teuchos::RCP<const typename Transfer<LO, GO, NT>::map_type>
 Transfer<LO, GO, NT>::
+#else
+template <class NT>
+Teuchos::RCP<const typename Transfer<NT>::map_type>
+Transfer<NT>::
+#endif
 getTargetMap () const {
   return TransferData_->target_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 ::Tpetra::Distributor&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 getDistributor () const {
   return TransferData_->distributor_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 isLocallyComplete () const {
   return TransferData_->isLocallyComplete_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 describe (Teuchos::FancyOStream& out,
           const Teuchos::EVerbosityLevel verbLevel) const
 {
   this->describeImpl (out, "Tpetra::Details::Transfer", verbLevel);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 Teuchos::FancyOStream&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 verboseOutputStream () const
 {
   Teuchos::FancyOStream* outPtr = TransferData_->out_.getRawPtr ();
@@ -289,16 +452,32 @@ verboseOutputStream () const
   return *outPtr;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 verbose () const {
   return TransferData_->verbose_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 describeImpl (Teuchos::FancyOStream& out,
               const std::string& className,
               const Teuchos::EVerbosityLevel verbLevel) const
@@ -398,9 +577,17 @@ describeImpl (Teuchos::FancyOStream& out,
   this->getDistributor ().describe (out, vl);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 globalDescribe (Teuchos::FancyOStream& out,
                 const Teuchos::EVerbosityLevel vl) const
 {
@@ -427,9 +614,17 @@ globalDescribe (Teuchos::FancyOStream& out,
   ::Tpetra::Details::gathervPrint (out, myStr, *comm);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Transfer<LO, GO, NT>::
+#else
+Transfer<NT>::
+#endif
 localDescribeToString (const Teuchos::EVerbosityLevel vl) const
 {
   using Teuchos::OSTab;
@@ -472,8 +667,13 @@ localDescribeToString (const Teuchos::EVerbosityLevel vl) const
     }
     else { // vl = VERB_HIGH or VERB_EXTREME
       // Build RemoteGIDs
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Map<LO,GO,NT> > tmap = getTargetMap();
       RCP<const Map<LO,GO,NT> > smap = getSourceMap();
+#else
+      RCP<const Map<NT> > tmap = getTargetMap();
+      RCP<const Map<NT> > smap = getSourceMap();
+#endif
       Teuchos::Array<GO>  RemoteGIDs(getRemoteLIDs().size());
       Teuchos::Array<int> RemotePIDs(getRemoteLIDs().size());
       for(size_t i=0; i<(size_t)getRemoteLIDs().size(); i++)

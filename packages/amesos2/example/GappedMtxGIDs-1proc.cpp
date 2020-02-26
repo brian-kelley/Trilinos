@@ -119,8 +119,13 @@ int main(int argc, char *argv[]) {
   typedef Tpetra::Map<>::local_ordinal_type LO;
   typedef Tpetra::Map<>::global_ordinal_type GO;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LO,GO> MAT;
   typedef Tpetra::MultiVector<Scalar,LO,GO> MV;
+#else
+  typedef Tpetra::CrsMatrix<Scalar> MAT;
+  typedef Tpetra::MultiVector<Scalar> MV;
+#endif
 
   Tpetra::ScopeGuard tpetraScope(&argc,&argv);
   {

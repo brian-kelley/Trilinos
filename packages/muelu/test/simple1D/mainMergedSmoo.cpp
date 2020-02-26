@@ -245,7 +245,11 @@ int main(int argc, char *argv[]) {
   if (comm->getRank() == 0)
     std::cout << "||NS|| = " << norms[0] << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<MueLu::Hierarchy<SC,LO,GO,NO> > H = rcp( new Hierarchy() );
+#else
+  RCP<MueLu::Hierarchy<SC,NO> > H = rcp( new Hierarchy() );
+#endif
   H->setDefaultVerbLevel(Teuchos::VERB_HIGH);
   RCP<MueLu::Level> Finest = rcp( new MueLu::Level() );
   Finest->setDefaultVerbLevel(Teuchos::VERB_HIGH);

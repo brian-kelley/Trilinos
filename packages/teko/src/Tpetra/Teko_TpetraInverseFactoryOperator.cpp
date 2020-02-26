@@ -102,7 +102,11 @@ void InverseFactoryOperator::initInverse(bool clearOld)
   * \param[in] clear If true, than any previous state saved by the operator 
   *                  is discarded.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void InverseFactoryOperator::buildInverseOperator(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A,bool clear)
+#else
+void InverseFactoryOperator::buildInverseOperator(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A,bool clear)
+#endif
 {
    Teko_DEBUG_SCOPE("InverseFactoryOperator::buildInverseOperator",10);
 
@@ -133,7 +137,11 @@ void InverseFactoryOperator::buildInverseOperator(const Teuchos::RCP<const Tpetr
    TEUCHOS_ASSERT(firstBuildComplete_==true);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void InverseFactoryOperator::buildInverseOperator(const Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > & A,bool /* clear */)
+#else
+void InverseFactoryOperator::buildInverseOperator(const Teuchos::RCP<Tpetra::Operator<ST,NT> > & A,bool /* clear */)
+#endif
 {
    setConstFwdOp_ = false;
 
@@ -156,7 +164,11 @@ void InverseFactoryOperator::buildInverseOperator(const Teuchos::RCP<Tpetra::Ope
   *
   * \param[in] A The Epetra source operator. (Should be a EpetraOperatorWrapper!)
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void InverseFactoryOperator::rebuildInverseOperator(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A)
+#else
+void InverseFactoryOperator::rebuildInverseOperator(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A)
+#endif
 {
    Teko_DEBUG_SCOPE("InverseFactoryOperator::rebuildPreconditioner",10);
 
@@ -182,7 +194,11 @@ void InverseFactoryOperator::rebuildInverseOperator(const Teuchos::RCP<const Tpe
    TEUCHOS_ASSERT(firstBuildComplete_==true);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void InverseFactoryOperator::rebuildInverseOperator(const Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > & A)
+#else
+void InverseFactoryOperator::rebuildInverseOperator(const Teuchos::RCP<Tpetra::Operator<ST,NT> > & A)
+#endif
 {
    setConstFwdOp_ = false;
 
@@ -194,7 +210,11 @@ void InverseFactoryOperator::rebuildInverseOperator(const Teuchos::RCP<Tpetra::O
    TEUCHOS_ASSERT(setConstFwdOp_==true);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Thyra::LinearOpBase<ST> > InverseFactoryOperator::extractLinearOp(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A) const
+#else
+Teuchos::RCP<const Thyra::LinearOpBase<ST> > InverseFactoryOperator::extractLinearOp(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A) const
+#endif
 {
    // extract EpetraOperatorWrapper (throw on failure) and corresponding thyra operator
    const RCP<const TpetraOperatorWrapper> & eow = rcp_dynamic_cast<const TpetraOperatorWrapper>(A);
@@ -204,10 +224,18 @@ Teuchos::RCP<const Thyra::LinearOpBase<ST> > InverseFactoryOperator::extractLine
       return eow->getThyraOp(); 
 
    // otherwise wrap it up as a thyra operator 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    return Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(A->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(A->getDomainMap()),A);
+#else
+   return Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(A->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(A->getDomainMap()),A);
+#endif
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const MappingStrategy> InverseFactoryOperator::extractMappingStrategy(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A) const
+#else
+Teuchos::RCP<const MappingStrategy> InverseFactoryOperator::extractMappingStrategy(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A) const
+#endif
 {
    // extract EpetraOperatorWrapper (throw on failure) and corresponding thyra operator
    const RCP<const TpetraOperatorWrapper> & eow = rcp_dynamic_cast<const TpetraOperatorWrapper>(A);
@@ -217,8 +245,13 @@ Teuchos::RCP<const MappingStrategy> InverseFactoryOperator::extractMappingStrate
       return eow->getMapStrategy(); 
 
    // otherwise wrap it up as a thyra operator 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::Map<LO,GO,NT> > range = A->getRangeMap();
    RCP<const Tpetra::Map<LO,GO,NT> > domain = A->getDomainMap();
+#else
+   RCP<const Tpetra::Map<NT> > range = A->getRangeMap();
+   RCP<const Tpetra::Map<NT> > domain = A->getDomainMap();
+#endif
    return rcp(new BasicMappingStrategy(range,domain,*Thyra::convertTpetraToThyraComm(range->getComm())));
 }
 

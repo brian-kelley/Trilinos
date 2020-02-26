@@ -75,10 +75,20 @@
 #ifdef HAVE_BELOS_TSQR
 namespace BelosXpetraTsqrImpl {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   class XpetraStubTsqrAdaptor : public Teuchos::ParameterListAcceptorDefaultBase {
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<Scalar, LO, GO, Node> MV;
+#else
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::MultiVector<Scalar, Node> MV;
+#endif
     typedef Scalar scalar_type;
     typedef LO ordinal_type;
     typedef Teuchos::SerialDenseMatrix<ordinal_type, scalar_type> dense_matrix_type;
@@ -122,10 +132,20 @@ namespace BelosXpetraTsqrImpl {
   };
 
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   class XpetraTpetraTsqrAdaptor : public Teuchos::ParameterListAcceptorDefaultBase {
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<Scalar, LO, GO, Node> MV;
+#else
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::MultiVector<Scalar, Node> MV;
+#endif
     typedef Scalar scalar_type;
     typedef LO ordinal_type;
     typedef Teuchos::SerialDenseMatrix<ordinal_type, scalar_type> dense_matrix_type;
@@ -176,7 +196,11 @@ namespace BelosXpetraTsqrImpl {
     }
 
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef ::Tpetra::TsqrAdaptor< ::Tpetra::MultiVector<Scalar,LO,GO,Node> > tpetra_tsqr_adaptor_type;
+#else
+    typedef ::Tpetra::TsqrAdaptor< ::Tpetra::MultiVector<Scalar,Node> > tpetra_tsqr_adaptor_type;
+#endif
     tpetra_tsqr_adaptor_type tpetraImpl_;
   };
 #endif // HAVE_XPETRA_TPETRA
@@ -199,12 +223,24 @@ namespace Belos {
     This interface will ensure that any Xpetra::MultiVector will be accepted by the Belos
     templated solvers.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LO, class GO, class Node>
   class MultiVecTraits<Scalar, Xpetra::MultiVector<Scalar,LO,GO,Node> > {
+#else
+  template<class Scalar, class Node>
+  class MultiVecTraits<Scalar, Xpetra::MultiVector<Scalar,Node> > {
+#endif
   private:
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::TpetraMultiVector<Scalar,LO,GO,Node>                   TpetraMultiVector;
     typedef MultiVecTraits<Scalar,Tpetra::MultiVector<Scalar,LO,GO,Node> > MultiVecTraitsTpetra;
+#else
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::TpetraMultiVector<Scalar,Node>                   TpetraMultiVector;
+    typedef MultiVecTraits<Scalar,Tpetra::MultiVector<Scalar,Node> > MultiVecTraitsTpetra;
+#endif
 #endif
 
   public:
@@ -213,7 +249,11 @@ namespace Belos {
     static RCP<Teuchos::Time> mvTimesMatAddMvTimer_, mvTransMvTimer_;
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > Clone( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const int numvecs )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > Clone( const Xpetra::MultiVector<Scalar,Node>& mv, const int numvecs )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -225,7 +265,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -237,7 +281,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<int>& index )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<int>& index )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -249,8 +297,13 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> >
     CloneCopy (const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> >
+    CloneCopy (const Xpetra::MultiVector<Scalar,Node>& mv,
+#endif
                const Teuchos::Range1D& index)
     {
 
@@ -263,7 +316,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneViewNonConst( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<int>& index )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > CloneViewNonConst( Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<int>& index )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -275,8 +332,13 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> >
     CloneViewNonConst(Xpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> >
+    CloneViewNonConst(Xpetra::MultiVector<Scalar,Node>& mv,
+#endif
                       const Teuchos::Range1D& index)
     {
 
@@ -289,14 +351,23 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneView(const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<int>& index )
+#else
+    static RCP<const Xpetra::MultiVector<Scalar,Node> > CloneView(const Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<int>& index )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
       if (mv.getMap()->lib() == Xpetra::UseTpetra) {
         //TODO: double check if the const_cast is safe here.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Tpetra::MultiVector<Scalar,LO,GO,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
         return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,LO,GO,Node> >(r)));
+#else
+        RCP<const Tpetra::MultiVector<Scalar,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
+        return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,Node> >(r)));
+#endif
       }
 #endif
 
@@ -304,16 +375,26 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Xpetra::MultiVector<Scalar,LO,GO,Node> >
     CloneView (const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    static RCP<const Xpetra::MultiVector<Scalar,Node> >
+    CloneView (const Xpetra::MultiVector<Scalar,Node>& mv,
+#endif
                const Teuchos::Range1D& index)
     {
 
 #ifdef HAVE_XPETRA_TPETRA
       if (mv.getMap()->lib() == Xpetra::UseTpetra) {
         //TODO: double check if the const_cast is safe here.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Tpetra::MultiVector<Scalar,LO,GO,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
         return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,LO,GO,Node> >(r)));
+#else
+        RCP<const Tpetra::MultiVector<Scalar,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
+        return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,Node> >(r)));
+#endif
       }
 #endif
 
@@ -321,7 +402,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static ptrdiff_t GetGlobalLength( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static ptrdiff_t GetGlobalLength( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -333,7 +418,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static int GetNumberVecs( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static int GetNumberVecs( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -345,7 +434,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static bool HasConstantStride( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static bool HasConstantStride( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -357,9 +450,17 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvTimesMatAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,LO,GO,Node>& A,
+#else
+    static void MvTimesMatAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,Node>& A,
+#endif
                                  const Teuchos::SerialDenseMatrix<int,Scalar>& B,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                  Scalar beta, Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+                                 Scalar beta, Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_BELOS_XPETRA_TIMERS
@@ -378,7 +479,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, Scalar beta, const Xpetra::MultiVector<Scalar,LO,GO,Node>& B, Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static void MvAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,Node>& A, Scalar beta, const Xpetra::MultiVector<Scalar,Node>& B, Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -393,7 +498,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvScale ( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, Scalar alpha )
+#else
+    static void MvScale ( Xpetra::MultiVector<Scalar,Node>& mv, Scalar alpha )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -407,7 +516,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvScale ( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<Scalar>& alphas )
+#else
+    static void MvScale ( Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<Scalar>& alphas )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -421,7 +534,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvTransMv( Scalar alpha, const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, const Xpetra::MultiVector<Scalar,LO,GO,Node>& B, Teuchos::SerialDenseMatrix<int,Scalar>& C)
+#else
+    static void MvTransMv( Scalar alpha, const Xpetra::MultiVector<Scalar,Node>& A, const Xpetra::MultiVector<Scalar,Node>& B, Teuchos::SerialDenseMatrix<int,Scalar>& C)
+#endif
     {
 
 #ifdef HAVE_BELOS_XPETRA_TIMERS
@@ -439,7 +556,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvDot( const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, const Xpetra::MultiVector<Scalar,LO,GO,Node>& B, std::vector<Scalar> &dots)
+#else
+    static void MvDot( const Xpetra::MultiVector<Scalar,Node>& A, const Xpetra::MultiVector<Scalar,Node>& B, std::vector<Scalar> &dots)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -453,7 +574,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvNorm(const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, std::vector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType> &normvec, NormType type=TwoNorm)
+#else
+    static void MvNorm(const Xpetra::MultiVector<Scalar,Node>& mv, std::vector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType> &normvec, NormType type=TwoNorm)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -467,7 +592,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void SetBlock( const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, const std::vector<int>& index, Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static void SetBlock( const Xpetra::MultiVector<Scalar,Node>& A, const std::vector<int>& index, Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -482,9 +611,17 @@ namespace Belos {
     }
 
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     SetBlock (const Xpetra::MultiVector<Scalar,LO,GO,Node>& A,
+#else
+    SetBlock (const Xpetra::MultiVector<Scalar,Node>& A,
+#endif
               const Teuchos::Range1D& index,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               Xpetra::MultiVector<Scalar,LO,GO,Node>& mv)
+#else
+              Xpetra::MultiVector<Scalar,Node>& mv)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -499,8 +636,13 @@ namespace Belos {
     }
 
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Assign (const Xpetra::MultiVector<Scalar,LO,GO,Node>& A,
             Xpetra::MultiVector<Scalar,LO,GO,Node>& mv)
+#else
+    Assign (const Xpetra::MultiVector<Scalar,Node>& A,
+            Xpetra::MultiVector<Scalar,Node>& mv)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -514,7 +656,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvRandom( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static void MvRandom( Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -528,7 +674,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvInit( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, Scalar alpha = Teuchos::ScalarTraits<Scalar>::zero() )
+#else
+    static void MvInit( Xpetra::MultiVector<Scalar,Node>& mv, Scalar alpha = Teuchos::ScalarTraits<Scalar>::zero() )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -542,7 +692,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvPrint( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, std::ostream& os )
+#else
+    static void MvPrint( const Xpetra::MultiVector<Scalar,Node>& mv, std::ostream& os )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -558,9 +712,17 @@ namespace Belos {
 
 #ifdef HAVE_BELOS_TSQR
 #  ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BelosXpetraTsqrImpl::XpetraTpetraTsqrAdaptor<Scalar, LO, GO, Node> tsqr_adaptor_type;
+#else
+    typedef BelosXpetraTsqrImpl::XpetraTpetraTsqrAdaptor<Scalar, Node> tsqr_adaptor_type;
+#endif
 #  else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BelosXpetraTsqrImpl::XpetraStubTsqrAdaptor<Scalar, LO, GO, Node> tsqr_adaptor_type;
+#else
+    typedef BelosXpetraTsqrImpl::XpetraStubTsqrAdaptor<Scalar, Node> tsqr_adaptor_type;
+#endif
 #  endif // HAVE_XPETRA_TPETRA
 #endif // HAVE_BELOS_TSQR
   };
@@ -568,7 +730,11 @@ namespace Belos {
 #ifdef HAVE_XPETRA_EPETRA
 #ifndef  EPETRA_NO_32BIT_GLOBAL_INDICES
   template<>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class MultiVecTraits<double, Xpetra::MultiVector<double,int,int,Xpetra::EpetraNode> > {
+#else
+  class MultiVecTraits<double, Xpetra::MultiVector<double,Xpetra::EpetraNode> > {
+#endif
   private:
     typedef double              Scalar;
     typedef int                 LO;
@@ -578,8 +744,13 @@ namespace Belos {
 #ifdef HAVE_XPETRA_TPETRA // TODO check whether Tpetra is instantiated on all template parameters!
 #if ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_INT))) || \
     (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_INT))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::TpetraMultiVector<Scalar,LO,GO,Node>                    TpetraMultiVector;
     typedef MultiVecTraits<Scalar, Tpetra::MultiVector<Scalar,LO,GO,Node> > MultiVecTraitsTpetra;
+#else
+    typedef Xpetra::TpetraMultiVector<Scalar,Node>                    TpetraMultiVector;
+    typedef MultiVecTraits<Scalar, Tpetra::MultiVector<Scalar,Node> > MultiVecTraitsTpetra;
+#endif
 #endif
 #endif
 
@@ -594,7 +765,11 @@ namespace Belos {
     static RCP<Teuchos::Time> mvTimesMatAddMvTimer_, mvTransMvTimer_;
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > Clone( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const int numvecs )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > Clone( const Xpetra::MultiVector<Scalar,Node>& mv, const int numvecs )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -614,7 +789,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -634,7 +813,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<int>& index )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<int>& index )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -654,8 +837,13 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> >
     CloneCopy (const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> >
+    CloneCopy (const Xpetra::MultiVector<Scalar,Node>& mv,
+#endif
                const Teuchos::Range1D& index)
     {
 
@@ -676,7 +864,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneViewNonConst( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<int>& index )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > CloneViewNonConst( Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<int>& index )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -696,8 +888,13 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> >
     CloneViewNonConst(Xpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> >
+    CloneViewNonConst(Xpetra::MultiVector<Scalar,Node>& mv,
+#endif
                       const Teuchos::Range1D& index)
     {
 
@@ -718,7 +915,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneView(const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<int>& index )
+#else
+    static RCP<const Xpetra::MultiVector<Scalar,Node> > CloneView(const Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<int>& index )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -726,8 +927,13 @@ namespace Belos {
 #if ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_INT))) || \
     (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_INT))))
         //TODO: double check if the const_cast is safe here.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Tpetra::MultiVector<Scalar,LO,GO,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
         return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,LO,GO,Node> >(r)));
+#else
+        RCP<const Tpetra::MultiVector<Scalar,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
+        return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,Node> >(r)));
+#endif
 #endif
       }
 #endif
@@ -743,8 +949,13 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Xpetra::MultiVector<Scalar,LO,GO,Node> >
     CloneView (const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    static RCP<const Xpetra::MultiVector<Scalar,Node> >
+    CloneView (const Xpetra::MultiVector<Scalar,Node>& mv,
+#endif
                const Teuchos::Range1D& index)
     {
 
@@ -753,8 +964,13 @@ namespace Belos {
 #if ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_INT))) || \
     (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_INT))))
         //TODO: double check if the const_cast is safe here.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Tpetra::MultiVector<Scalar,LO,GO,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
         return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,LO,GO,Node> >(r)));
+#else
+        RCP<const Tpetra::MultiVector<Scalar,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
+        return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,Node> >(r)));
+#endif
 #endif
       }
 #endif
@@ -770,7 +986,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static ptrdiff_t GetGlobalLength( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static ptrdiff_t GetGlobalLength( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -790,7 +1010,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static int GetNumberVecs( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static int GetNumberVecs( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -810,7 +1034,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static bool HasConstantStride( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static bool HasConstantStride( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -830,9 +1058,17 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvTimesMatAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,LO,GO,Node>& A,
+#else
+    static void MvTimesMatAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,Node>& A,
+#endif
                                  const Teuchos::SerialDenseMatrix<int,Scalar>& B,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                  Scalar beta, Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+                                 Scalar beta, Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_BELOS_XPETRA_TIMERS
@@ -859,7 +1095,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, Scalar beta, const Xpetra::MultiVector<Scalar,LO,GO,Node>& B, Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static void MvAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,Node>& A, Scalar beta, const Xpetra::MultiVector<Scalar,Node>& B, Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -882,7 +1122,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvScale ( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, Scalar alpha )
+#else
+    static void MvScale ( Xpetra::MultiVector<Scalar,Node>& mv, Scalar alpha )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -905,7 +1149,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvScale ( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<Scalar>& alphas )
+#else
+    static void MvScale ( Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<Scalar>& alphas )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -928,7 +1176,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvTransMv( Scalar alpha, const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, const Xpetra::MultiVector<Scalar,LO,GO,Node>& B, Teuchos::SerialDenseMatrix<int,Scalar>& C)
+#else
+    static void MvTransMv( Scalar alpha, const Xpetra::MultiVector<Scalar,Node>& A, const Xpetra::MultiVector<Scalar,Node>& B, Teuchos::SerialDenseMatrix<int,Scalar>& C)
+#endif
     {
 
 #ifdef HAVE_BELOS_XPETRA_TIMERS
@@ -955,7 +1207,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvDot( const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, const Xpetra::MultiVector<Scalar,LO,GO,Node>& B, std::vector<Scalar> &dots)
+#else
+    static void MvDot( const Xpetra::MultiVector<Scalar,Node>& A, const Xpetra::MultiVector<Scalar,Node>& B, std::vector<Scalar> &dots)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -978,7 +1234,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvNorm(const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, std::vector<Teuchos::ScalarTraits<Scalar>::magnitudeType> &normvec, NormType type=TwoNorm)
+#else
+    static void MvNorm(const Xpetra::MultiVector<Scalar,Node>& mv, std::vector<Teuchos::ScalarTraits<Scalar>::magnitudeType> &normvec, NormType type=TwoNorm)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1001,7 +1261,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void SetBlock( const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, const std::vector<int>& index, Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static void SetBlock( const Xpetra::MultiVector<Scalar,Node>& A, const std::vector<int>& index, Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1025,9 +1289,17 @@ namespace Belos {
     }
 
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     SetBlock (const Xpetra::MultiVector<Scalar,LO,GO,Node>& A,
+#else
+    SetBlock (const Xpetra::MultiVector<Scalar,Node>& A,
+#endif
               const Teuchos::Range1D& index,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               Xpetra::MultiVector<Scalar,LO,GO,Node>& mv)
+#else
+              Xpetra::MultiVector<Scalar,Node>& mv)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1051,8 +1323,13 @@ namespace Belos {
     }
 
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Assign (const Xpetra::MultiVector<Scalar,LO,GO,Node>& A,
             Xpetra::MultiVector<Scalar,LO,GO,Node>& mv)
+#else
+    Assign (const Xpetra::MultiVector<Scalar,Node>& A,
+            Xpetra::MultiVector<Scalar,Node>& mv)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1075,7 +1352,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvRandom( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static void MvRandom( Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1098,7 +1379,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvInit( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, Scalar alpha = Teuchos::ScalarTraits<Scalar>::zero() )
+#else
+    static void MvInit( Xpetra::MultiVector<Scalar,Node>& mv, Scalar alpha = Teuchos::ScalarTraits<Scalar>::zero() )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1121,7 +1406,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvPrint( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, std::ostream& os )
+#else
+    static void MvPrint( const Xpetra::MultiVector<Scalar,Node>& mv, std::ostream& os )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1148,9 +1437,17 @@ namespace Belos {
 #  if defined(HAVE_XPETRA_TPETRA) && \
   ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_INT))) || \
    (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_INT))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BelosXpetraTsqrImpl::XpetraTpetraTsqrAdaptor<Scalar, LO, GO, Node> tsqr_adaptor_type;
+#else
+    typedef BelosXpetraTsqrImpl::XpetraTpetraTsqrAdaptor<Scalar, Node> tsqr_adaptor_type;
+#endif
 #  else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BelosXpetraTsqrImpl::XpetraStubTsqrAdaptor<Scalar, LO, GO, Node> tsqr_adaptor_type;
+#else
+    typedef BelosXpetraTsqrImpl::XpetraStubTsqrAdaptor<Scalar, Node> tsqr_adaptor_type;
+#endif
 #  endif
 #endif // HAVE_BELOS_TSQR
   };
@@ -1161,7 +1458,11 @@ namespace Belos {
 #ifdef HAVE_XPETRA_EPETRA
 #ifndef  EPETRA_NO_64BIT_GLOBAL_INDICES
   template<>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class MultiVecTraits<double, Xpetra::MultiVector<double,int,long long,Xpetra::EpetraNode> > {
+#else
+  class MultiVecTraits<double, Xpetra::MultiVector<double,Xpetra::EpetraNode> > {
+#endif
   private:
     typedef double              Scalar;
     typedef int                 LO;
@@ -1171,8 +1472,13 @@ namespace Belos {
 #ifdef HAVE_XPETRA_TPETRA // TODO check whether Tpetra is instantiated on all template parameters!
 #if ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_LONG_LONG))) || \
     (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::TpetraMultiVector<Scalar,LO,GO,Node>                    TpetraMultiVector;
     typedef MultiVecTraits<Scalar, Tpetra::MultiVector<Scalar,LO,GO,Node> > MultiVecTraitsTpetra;
+#else
+    typedef Xpetra::TpetraMultiVector<Scalar,Node>                    TpetraMultiVector;
+    typedef MultiVecTraits<Scalar, Tpetra::MultiVector<Scalar,Node> > MultiVecTraitsTpetra;
+#endif
 #endif
 #endif
 
@@ -1187,7 +1493,11 @@ namespace Belos {
     static RCP<Teuchos::Time> mvTimesMatAddMvTimer_, mvTransMvTimer_;
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > Clone( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const int numvecs )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > Clone( const Xpetra::MultiVector<Scalar,Node>& mv, const int numvecs )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1207,7 +1517,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1227,7 +1541,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<int>& index )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > CloneCopy( const Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<int>& index )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1247,8 +1565,13 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> >
     CloneCopy (const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> >
+    CloneCopy (const Xpetra::MultiVector<Scalar,Node>& mv,
+#endif
                const Teuchos::Range1D& index)
     {
 
@@ -1269,7 +1592,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneViewNonConst( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<int>& index )
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> > CloneViewNonConst( Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<int>& index )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1289,8 +1616,13 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<Scalar,LO,GO,Node> >
     CloneViewNonConst(Xpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    static RCP<Xpetra::MultiVector<Scalar,Node> >
+    CloneViewNonConst(Xpetra::MultiVector<Scalar,Node>& mv,
+#endif
                       const Teuchos::Range1D& index)
     {
 
@@ -1311,7 +1643,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Xpetra::MultiVector<Scalar,LO,GO,Node> > CloneView(const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<int>& index )
+#else
+    static RCP<const Xpetra::MultiVector<Scalar,Node> > CloneView(const Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<int>& index )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1319,8 +1655,13 @@ namespace Belos {
 #if ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_LONG_LONG))) || \
     (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
         //TODO: double check if the const_cast is safe here.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Tpetra::MultiVector<Scalar,LO,GO,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
         return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,LO,GO,Node> >(r)));
+#else
+        RCP<const Tpetra::MultiVector<Scalar,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
+        return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,Node> >(r)));
+#endif
 #endif
       }
 #endif
@@ -1336,8 +1677,13 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Xpetra::MultiVector<Scalar,LO,GO,Node> >
     CloneView (const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    static RCP<const Xpetra::MultiVector<Scalar,Node> >
+    CloneView (const Xpetra::MultiVector<Scalar,Node>& mv,
+#endif
                const Teuchos::Range1D& index)
     {
 
@@ -1346,8 +1692,13 @@ namespace Belos {
 #if ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_LONG_LONG))) || \
     (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
         //TODO: double check if the const_cast is safe here.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Tpetra::MultiVector<Scalar,LO,GO,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
         return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,LO,GO,Node> >(r)));
+#else
+        RCP<const Tpetra::MultiVector<Scalar,Node> > r = MultiVecTraitsTpetra::CloneView(toTpetra(mv), index);
+        return rcp(new TpetraMultiVector(Teuchos::rcp_const_cast<Tpetra::MultiVector<Scalar,Node> >(r)));
+#endif
 #endif
       }
 #endif
@@ -1363,7 +1714,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static ptrdiff_t GetGlobalLength( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static ptrdiff_t GetGlobalLength( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1383,7 +1738,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static int GetNumberVecs( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static int GetNumberVecs( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1403,7 +1762,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static bool HasConstantStride( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static bool HasConstantStride( const Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1423,9 +1786,17 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvTimesMatAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,LO,GO,Node>& A,
+#else
+    static void MvTimesMatAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,Node>& A,
+#endif
                                  const Teuchos::SerialDenseMatrix<int,Scalar>& B,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                  Scalar beta, Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+                                 Scalar beta, Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_BELOS_XPETRA_TIMERS
@@ -1452,7 +1823,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, Scalar beta, const Xpetra::MultiVector<Scalar,LO,GO,Node>& B, Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static void MvAddMv( Scalar alpha, const Xpetra::MultiVector<Scalar,Node>& A, Scalar beta, const Xpetra::MultiVector<Scalar,Node>& B, Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1475,7 +1850,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvScale ( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, Scalar alpha )
+#else
+    static void MvScale ( Xpetra::MultiVector<Scalar,Node>& mv, Scalar alpha )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1498,7 +1877,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvScale ( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, const std::vector<Scalar>& alphas )
+#else
+    static void MvScale ( Xpetra::MultiVector<Scalar,Node>& mv, const std::vector<Scalar>& alphas )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1521,7 +1904,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvTransMv( Scalar alpha, const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, const Xpetra::MultiVector<Scalar,LO,GO,Node>& B, Teuchos::SerialDenseMatrix<int,Scalar>& C)
+#else
+    static void MvTransMv( Scalar alpha, const Xpetra::MultiVector<Scalar,Node>& A, const Xpetra::MultiVector<Scalar,Node>& B, Teuchos::SerialDenseMatrix<int,Scalar>& C)
+#endif
     {
 
 #ifdef HAVE_BELOS_XPETRA_TIMERS
@@ -1548,7 +1935,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvDot( const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, const Xpetra::MultiVector<Scalar,LO,GO,Node>& B, std::vector<Scalar> &dots)
+#else
+    static void MvDot( const Xpetra::MultiVector<Scalar,Node>& A, const Xpetra::MultiVector<Scalar,Node>& B, std::vector<Scalar> &dots)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1571,7 +1962,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvNorm(const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, std::vector<Teuchos::ScalarTraits<Scalar>::magnitudeType> &normvec, NormType type=TwoNorm)
+#else
+    static void MvNorm(const Xpetra::MultiVector<Scalar,Node>& mv, std::vector<Teuchos::ScalarTraits<Scalar>::magnitudeType> &normvec, NormType type=TwoNorm)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1594,7 +1989,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void SetBlock( const Xpetra::MultiVector<Scalar,LO,GO,Node>& A, const std::vector<int>& index, Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static void SetBlock( const Xpetra::MultiVector<Scalar,Node>& A, const std::vector<int>& index, Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1618,9 +2017,17 @@ namespace Belos {
     }
 
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     SetBlock (const Xpetra::MultiVector<Scalar,LO,GO,Node>& A,
+#else
+    SetBlock (const Xpetra::MultiVector<Scalar,Node>& A,
+#endif
               const Teuchos::Range1D& index,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               Xpetra::MultiVector<Scalar,LO,GO,Node>& mv)
+#else
+              Xpetra::MultiVector<Scalar,Node>& mv)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1644,8 +2051,13 @@ namespace Belos {
     }
 
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Assign (const Xpetra::MultiVector<Scalar,LO,GO,Node>& A,
             Xpetra::MultiVector<Scalar,LO,GO,Node>& mv)
+#else
+    Assign (const Xpetra::MultiVector<Scalar,Node>& A,
+            Xpetra::MultiVector<Scalar,Node>& mv)
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1668,7 +2080,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvRandom( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv )
+#else
+    static void MvRandom( Xpetra::MultiVector<Scalar,Node>& mv )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1691,7 +2107,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvInit( Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, Scalar alpha = Teuchos::ScalarTraits<Scalar>::zero() )
+#else
+    static void MvInit( Xpetra::MultiVector<Scalar,Node>& mv, Scalar alpha = Teuchos::ScalarTraits<Scalar>::zero() )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1714,7 +2134,11 @@ namespace Belos {
       XPETRA_FACTORY_END;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static void MvPrint( const Xpetra::MultiVector<Scalar,LO,GO,Node>& mv, std::ostream& os )
+#else
+    static void MvPrint( const Xpetra::MultiVector<Scalar,Node>& mv, std::ostream& os )
+#endif
     {
 
 #ifdef HAVE_XPETRA_TPETRA
@@ -1741,9 +2165,17 @@ namespace Belos {
 #  if defined(HAVE_XPETRA_TPETRA) && \
   ((defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_OPENMP) && defined(HAVE_TPETRA_INST_INT_LONG_LONG))) || \
    (!defined(EPETRA_HAVE_OMP) && (defined(HAVE_TPETRA_INST_SERIAL) && defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BelosXpetraTsqrImpl::XpetraTpetraTsqrAdaptor<Scalar, LO, GO, Node> tsqr_adaptor_type;
+#else
+    typedef BelosXpetraTsqrImpl::XpetraTpetraTsqrAdaptor<Scalar, Node> tsqr_adaptor_type;
+#endif
 #  else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef BelosXpetraTsqrImpl::XpetraStubTsqrAdaptor<Scalar, LO, GO, Node> tsqr_adaptor_type;
+#else
+    typedef BelosXpetraTsqrImpl::XpetraStubTsqrAdaptor<Scalar, Node> tsqr_adaptor_type;
+#endif
 #  endif
 #endif // HAVE_BELOS_TSQR
 

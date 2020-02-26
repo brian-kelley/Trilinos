@@ -87,15 +87,24 @@ namespace MueLu {
     */
 
   template <class Scalar = SmootherPrototype<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = typename SmootherPrototype<Scalar>::local_ordinal_type,
             class GlobalOrdinal = typename SmootherPrototype<Scalar, LocalOrdinal>::global_ordinal_type,
             class Node = typename SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
   class Ifpack2Smoother : public SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node> {
+#else
+            class Node = typename SmootherPrototype<Scalar>::node_type>
+  class Ifpack2Smoother : public SmootherPrototype<Scalar,Node> {
+#endif
 #undef MUELU_IFPACK2SMOOTHER_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors / destructors
     //@{
     //TODO: update doc for Ifpack2. Right now, it's a copy of the doc of IfpackSmoother
@@ -136,7 +145,11 @@ namespace MueLu {
 
 #ifndef _MSC_VER
     // Avoid error C3772: invalid friend template declaration
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class Scalar2, class LocalOrdinal2, class GlobalOrdinal2, class Node2>
+#else
+    template<class Scalar2, class Node2>
+#endif
     friend class Ifpack2Smoother;
 #endif
 
@@ -201,7 +214,11 @@ namespace MueLu {
     //@}
 
     //! For diagnostic purposes
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> > getPreconditioner(){return prec_;}
+#else
+    RCP<Ifpack2::Preconditioner<Scalar,Node> > getPreconditioner(){return prec_;}
+#endif
 
     //! Get a rough estimate of cost per iteration
     size_t getNodeSmootherComplexity() const;
@@ -225,7 +242,11 @@ namespace MueLu {
     LO overlap_;
 
     //! pointer to Ifpack2 preconditioner object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> > prec_;
+#else
+    RCP<Ifpack2::Preconditioner<Scalar,Node> > prec_;
+#endif
 
     //! matrix, used in apply if solving residual equation
     RCP<Matrix> A_;
@@ -238,7 +259,11 @@ namespace MueLu {
     (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
   // Stub specialization for missing Epetra template args
   template<>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class Ifpack2Smoother<double,int,int,Xpetra::EpetraNode> : public SmootherPrototype<double,int,int,Xpetra::EpetraNode> {
+#else
+  class Ifpack2Smoother<double,Xpetra::EpetraNode> : public SmootherPrototype<double,Xpetra::EpetraNode> {
+#endif
     typedef double              Scalar;
     typedef int                 LocalOrdinal;
     typedef int                 GlobalOrdinal;
@@ -249,7 +274,11 @@ namespace MueLu {
   public:
 #ifndef _MSC_VER
     // Avoid error C3772: invalid friend template declaration
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class Scalar2, class LocalOrdinal2, class GlobalOrdinal2, class Node2>
+#else
+    template<class Scalar2, class Node2>
+#endif
     friend class Ifpack2Smoother;
 #endif
 

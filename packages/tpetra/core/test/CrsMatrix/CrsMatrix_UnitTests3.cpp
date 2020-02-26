@@ -200,14 +200,23 @@ inline void tupleToArray(Array<T> &arr, const tuple &tup)
   ////
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, EmptyFillComplete, LO, GO, Scalar, Node )
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
     typedef CrsGraph<LO,GO,Node>  GRPH;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+    typedef CrsGraph<Node>  GRPH;
+#endif
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
     // get a comm
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
     // create a Map with numLocal entries per process
     const size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > map = createContigMapWithNode<LO,GO,Node>(INVALID,numLocal,comm);
+#else
+    RCP<const Map<Node> > map = createContigMapWithNode<Node>(INVALID,numLocal,comm);
+#endif
     {
       // send in a parameterlist, check the defaults
       RCP<ParameterList> defparams = parameterList();
@@ -232,7 +241,11 @@ inline void tupleToArray(Array<T> &arr, const tuple &tup)
   {
     // test that an exception is thrown when we exceed statically allocated memory
     typedef ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
     // get a comm
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
@@ -241,7 +254,11 @@ inline void tupleToArray(Array<T> &arr, const tuple &tup)
     if (numImages < 2) return;
     // create a Map, one row per processor
     const size_t numLocal = 1;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > rmap = createContigMapWithNode<LO,GO,Node>(INVALID,numLocal,comm);
+#else
+    RCP<const Map<Node> > rmap = createContigMapWithNode<Node>(INVALID,numLocal,comm);
+#endif
     GO myrowind = rmap->getGlobalElement(0);
     // specify the column map to control ordering
     // construct tridiagonal graph
@@ -260,14 +277,22 @@ inline void tupleToArray(Array<T> &arr, const tuple &tup)
       tupleToArray( linds , tuple<LO>(0,1,2) );
     }
     Array<Scalar> vals(ginds.size(),ST::one());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,Node> > cmap = rcp( new Map<LO,GO,Node>(INVALID,ginds(),0,comm) );
+#else
+    RCP<Map<Node> > cmap = rcp( new Map<Node>(INVALID,ginds(),0,comm) );
+#endif
     RCP<ParameterList> params = parameterList();
     for (int T=0; T<4; ++T) {
       if ( (T & 1) != 1 ) continue;
       Tpetra::ProfileType pftype = Tpetra::StaticProfile;
       params->set("Optimize Storage",((T & 2) == 2));
       MAT matrix(rmap,cmap, ginds.size(), pftype);   // only allocate as much room as necessary
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RowMatrix<Scalar,LO,GO,Node> &rowmatrix = matrix;
+#else
+      RowMatrix<Scalar,Node> &rowmatrix = matrix;
+#endif
       Array<GO> GCopy(4); Array<LO> LCopy(4); Array<Scalar> SCopy(4);
       ArrayView<const GO> CGView; ArrayView<const LO> CLView; ArrayView<const Scalar> CSView;
       size_t numentries;
@@ -328,9 +353,17 @@ inline void tupleToArray(Array<T> &arr, const tuple &tup)
 
     // this is the same matrix as in test NonSquare, but we will apply the transpose
     typedef ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<Scalar,LO,GO,Node> MV;
+#else
+    typedef MultiVector<Scalar,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef ScalarTraits<Mag> MT;
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
 
@@ -384,8 +417,13 @@ inline void tupleToArray(Array<T> &arr, const tuple &tup)
 
     out << "Construct Maps" << endl;
     const int numVecs = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > rowmap = createContigMapWithNode<LO,GO,Node>(INVALID,M,comm);
     RCP<const Map<LO,GO,Node> > lclmap = createLocalMapWithNode<LO,GO,Node>(P,comm);
+#else
+    RCP<const Map<Node> > rowmap = createContigMapWithNode<Node>(INVALID,M,comm);
+    RCP<const Map<Node> > lclmap = createLocalMapWithNode<Node>(P,comm);
+#endif
 
     // create the matrix
     out << "Create matrix" << endl;
@@ -447,7 +485,11 @@ inline void tupleToArray(Array<T> &arr, const tuple &tup)
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+#endif
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, Transpose,      LO, GO, SCALAR, NODE ) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, EmptyFillComplete, LO, GO, SCALAR, NODE ) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, CopiesAndViews, LO, GO, SCALAR, NODE )

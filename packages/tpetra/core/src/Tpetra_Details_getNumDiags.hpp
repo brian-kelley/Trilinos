@@ -110,11 +110,21 @@ namespace Impl {
     LocalMapType colMap_;
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   typename ::Tpetra::CrsGraph<LO, GO, NT>::local_ordinal_type
   countLocalNumDiagsInFillCompleteGraph (const ::Tpetra::CrsGraph<LO, GO, NT>& G)
+#else
+  template<class NT>
+  typename ::Tpetra::CrsGraph<NT>::local_ordinal_type
+  countLocalNumDiagsInFillCompleteGraph (const ::Tpetra::CrsGraph<NT>& G)
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using crs_graph_type = ::Tpetra::CrsGraph<LO, GO, NT>;
+#else
+    using crs_graph_type = ::Tpetra::CrsGraph<NT>;
+#endif
     using local_map_type = typename crs_graph_type::map_type::local_map_type;
     using local_graph_type = typename crs_graph_type::local_graph_type;
     using functor_type = CountLocalNumDiags<local_graph_type, local_map_type>;
@@ -153,9 +163,15 @@ namespace Impl {
   }
 
   //! Return local number of diagonal entries.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   typename ::Tpetra::RowGraph<LO, GO, NT>::local_ordinal_type
   countLocalNumDiagsInNonFillCompleteLocallyIndexedGraphWithRowViews (const ::Tpetra::RowGraph<LO, GO, NT>& G)
+#else
+  template<class NT>
+  typename ::Tpetra::RowGraph<NT>::local_ordinal_type
+  countLocalNumDiagsInNonFillCompleteLocallyIndexedGraphWithRowViews (const ::Tpetra::RowGraph<NT>& G)
+#endif
   {
     using LOT = typename ::Tpetra::Details::OrdinalTraits<LO>;
 
@@ -196,9 +212,15 @@ namespace Impl {
   }
 
   //! Return local number of diagonal entries.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   typename ::Tpetra::RowGraph<LO, GO, NT>::local_ordinal_type
   countLocalNumDiagsInNonFillCompleteLocallyIndexedGraphWithoutRowViews (const ::Tpetra::RowGraph<LO, GO, NT>& G)
+#else
+  template<class NT>
+  typename ::Tpetra::RowGraph<NT>::local_ordinal_type
+  countLocalNumDiagsInNonFillCompleteLocallyIndexedGraphWithoutRowViews (const ::Tpetra::RowGraph<NT>& G)
+#endif
   {
     using LOT = typename ::Tpetra::Details::OrdinalTraits<LO>;
 
@@ -243,9 +265,15 @@ namespace Impl {
   }
 
   //! Return local number of diagonal entries.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   typename ::Tpetra::RowGraph<LO, GO, NT>::local_ordinal_type
   countLocalNumDiagsInNonFillCompleteGloballyIndexedGraphWithRowViews (const ::Tpetra::RowGraph<LO, GO, NT>& G)
+#else
+  template<class NT>
+  typename ::Tpetra::RowGraph<NT>::local_ordinal_type
+  countLocalNumDiagsInNonFillCompleteGloballyIndexedGraphWithRowViews (const ::Tpetra::RowGraph<NT>& G)
+#endif
   {
     const auto rowMap = G.getRowMap ();
     if (rowMap.get () == nullptr) {
@@ -277,9 +305,15 @@ namespace Impl {
   }
 
   //! Return local number of diagonal entries.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   typename ::Tpetra::RowGraph<LO, GO, NT>::local_ordinal_type
   countLocalNumDiagsInNonFillCompleteGloballyIndexedGraphWithoutRowViews (const ::Tpetra::RowGraph<LO, GO, NT>& G)
+#else
+  template<class NT>
+  typename ::Tpetra::RowGraph<NT>::local_ordinal_type
+  countLocalNumDiagsInNonFillCompleteGloballyIndexedGraphWithoutRowViews (const ::Tpetra::RowGraph<NT>& G)
+#endif
   {
     const auto rowMap = G.getRowMap ();
     if (rowMap.get () == nullptr) {
@@ -330,7 +364,11 @@ namespace Impl {
       using LO = typename MatrixType::local_ordinal_type;
       using GO = typename MatrixType::global_ordinal_type;
       using NT = typename MatrixType::node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using row_graph_type = ::Tpetra::RowGraph<LO, GO, NT>;
+#else
+      using row_graph_type = ::Tpetra::RowGraph<NT>;
+#endif
 
       auto G = A.getGraph ();
       if (G.get () == nullptr) {
@@ -343,12 +381,27 @@ namespace Impl {
   };
 
   /// \brief Specialization of GetLocalNumDiags for RowGraph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   struct GetLocalNumDiags< ::Tpetra::RowGraph<LO, GO, NT> > {
+#else
+  template<class NT>
+  struct GetLocalNumDiags< ::Tpetra::RowGraph<NT> > {
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     static LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getLocalNumDiags (const ::Tpetra::RowGraph<LO, GO, NT>& G)
+#else
+    getLocalNumDiags (const ::Tpetra::RowGraph<NT>& G)
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using crs_graph_type = ::Tpetra::CrsGraph<LO, GO, NT>;
+#else
+      using crs_graph_type = ::Tpetra::CrsGraph<NT>;
+#endif
 
       const crs_graph_type* G_crs = dynamic_cast<const crs_graph_type*> (&G);
       if (G_crs != nullptr && G_crs->isFillComplete ()) {
@@ -379,12 +432,27 @@ namespace Impl {
   };
 
   /// \brief Specialization of GetLocalNumDiags for CrsGraph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class NT>
   struct GetLocalNumDiags< ::Tpetra::CrsGraph<LO, GO, NT> > {
+#else
+  template<class NT>
+  struct GetLocalNumDiags< ::Tpetra::CrsGraph<NT> > {
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     static LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getLocalNumDiags (const ::Tpetra::CrsGraph<LO, GO, NT>& G)
+#else
+    getLocalNumDiags (const ::Tpetra::CrsGraph<NT>& G)
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using row_graph_type = ::Tpetra::RowGraph<LO, GO, NT>;
+#else
+      using row_graph_type = ::Tpetra::RowGraph<NT>;
+#endif
       return GetLocalNumDiags<row_graph_type>::getLocalNumDiags (G);
     }
   };

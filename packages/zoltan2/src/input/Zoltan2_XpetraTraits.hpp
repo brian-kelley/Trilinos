@@ -126,14 +126,28 @@ struct XpetraTraits
 //////////////////////////////////////////////////////////////////////////////
 // Tpetra::CrsMatrix
 template <typename scalar_t,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typename lno_t,
           typename gno_t,
+#endif
           typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Tpetra::CrsMatrix<scalar_t, lno_t, gno_t, node_t> >
+#else
+struct XpetraTraits<Tpetra::CrsMatrix<scalar_t, node_t> >
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Xpetra::CrsMatrix<scalar_t,lno_t,gno_t,node_t> xmatrix_t;
   typedef typename Xpetra::TpetraCrsMatrix<scalar_t,lno_t,gno_t,node_t> xtmatrix_t;
   typedef typename Tpetra::CrsMatrix<scalar_t,lno_t,gno_t,node_t> tmatrix_t;
+#else
+  using lno_t = typename Tpetra::Map<>::local_ordinal_type;
+  using gno_t = typename Tpetra::Map<>::global_ordinal_type;
+  typedef typename Xpetra::CrsMatrix<scalar_t,node_t> xmatrix_t;
+  typedef typename Xpetra::TpetraCrsMatrix<scalar_t,node_t> xtmatrix_t;
+  typedef typename Tpetra::CrsMatrix<scalar_t,node_t> tmatrix_t;
+#endif
 
   static inline RCP<xmatrix_t> convertToXpetra(const RCP<tmatrix_t> &a)
   {
@@ -143,7 +157,11 @@ struct XpetraTraits<Tpetra::CrsMatrix<scalar_t, lno_t, gno_t, node_t> >
   static RCP<tmatrix_t> doMigration(const tmatrix_t &from,
       size_t numLocalRows, const gno_t *myNewRows)
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<lno_t, gno_t, node_t> map_t;
+#else
+    typedef Tpetra::Map<node_t> map_t;
+#endif
 
     // source map
     const RCP<const map_t> &smap = from.getRowMap();
@@ -156,7 +174,11 @@ struct XpetraTraits<Tpetra::CrsMatrix<scalar_t, lno_t, gno_t, node_t> >
     RCP<const map_t> tmap = rcp(new map_t(numGlobalRows, rowList, base, comm));
 
     // importer
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Import<lno_t, gno_t, node_t> importer(smap, tmap);
+#else
+    Tpetra::Import<node_t> importer(smap, tmap);
+#endif
 
     // target matrix
     // Chris Siefert proposed using the following to make migration
@@ -219,7 +241,11 @@ struct XpetraTraits<Epetra_CrsMatrix>
   typedef InputTraits<Epetra_CrsMatrix>::gno_t gno_t;
   typedef InputTraits<Epetra_CrsMatrix>::node_t node_t;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static inline RCP<Xpetra::CrsMatrix<scalar_t,lno_t,gno_t,node_t> >
+#else
+  static inline RCP<Xpetra::CrsMatrix<scalar_t,node_t> >
+#endif
   convertToXpetra(const RCP<Epetra_CrsMatrix> &a)
   {
     RCP<Xpetra::EpetraCrsMatrixT<gno_t, node_t> > xa;
@@ -306,14 +332,28 @@ struct XpetraTraits<Epetra_CrsMatrix>
 // KDDKDD:  Do we need specializations for Xpetra::EpetraCrsMatrix and
 // KDDKDD:  Xpetra::TpetraCrsMatrix
 template <typename scalar_t,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typename lno_t,
           typename gno_t,
+#endif
           typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Xpetra::CrsMatrix<scalar_t, lno_t, gno_t, node_t> >
+#else
+struct XpetraTraits<Xpetra::CrsMatrix<scalar_t, node_t> >
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::CrsMatrix<scalar_t, lno_t, gno_t, node_t> x_matrix_t;
   typedef Xpetra::TpetraCrsMatrix<scalar_t, lno_t, gno_t, node_t> xt_matrix_t;
   typedef Tpetra::CrsMatrix<scalar_t,lno_t,gno_t,node_t> t_matrix_t;
+#else
+  using lno_t = typename Tpetra::Map<>::local_ordinal_type;
+  using gno_t = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Xpetra::CrsMatrix<scalar_t, node_t> x_matrix_t;
+  typedef Xpetra::TpetraCrsMatrix<scalar_t, node_t> xt_matrix_t;
+  typedef Tpetra::CrsMatrix<scalar_t,node_t> t_matrix_t;
+#endif
 
   static inline RCP<x_matrix_t> convertToXpetra(const RCP<x_matrix_t > &a)
   {
@@ -346,14 +386,24 @@ struct XpetraTraits<Xpetra::CrsMatrix<scalar_t, lno_t, gno_t, node_t> >
 // Xpetra::CrsMatrix specialization
 
 template <typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Xpetra::CrsMatrix<double, int, int, node_t> >
+#else
+struct XpetraTraits<Xpetra::CrsMatrix<double, node_t> >
+#endif
 {
   typedef double scalar_t;
   typedef int lno_t;
   typedef int gno_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::CrsMatrix<scalar_t, lno_t, gno_t, node_t> x_matrix_t;
   typedef Xpetra::TpetraCrsMatrix<scalar_t, lno_t, gno_t, node_t> xt_matrix_t;
   typedef Tpetra::CrsMatrix<scalar_t,lno_t,gno_t,node_t> t_matrix_t;
+#else
+  typedef Xpetra::CrsMatrix<scalar_t, node_t> x_matrix_t;
+  typedef Xpetra::TpetraCrsMatrix<scalar_t, node_t> xt_matrix_t;
+  typedef Tpetra::CrsMatrix<scalar_t,node_t> t_matrix_t;
+#endif
 
   static inline RCP<x_matrix_t> convertToXpetra(const RCP<x_matrix_t > &a)
   {
@@ -401,14 +451,27 @@ struct XpetraTraits<Xpetra::CrsMatrix<double, int, int, node_t> >
 
 //////////////////////////////////////////////////////////////////////////////
 // Tpetra::CrsGraph
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename lno_t,
           typename gno_t,
           typename node_t>
 struct XpetraTraits<Tpetra::CrsGraph<lno_t, gno_t, node_t> >
+#else
+template <typename node_t>
+struct XpetraTraits<Tpetra::CrsGraph<node_t> >
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Xpetra::CrsGraph<lno_t, gno_t, node_t> xgraph_t;
   typedef typename Xpetra::TpetraCrsGraph<lno_t, gno_t, node_t> xtgraph_t;
   typedef typename Tpetra::CrsGraph<lno_t, gno_t, node_t> tgraph_t;
+#else
+  using lno_t = typename Tpetra::Map<>::local_ordinal_type;
+  using gno_t = typename Tpetra::Map<>::global_ordinal_type;
+  typedef typename Xpetra::CrsGraph<node_t> xgraph_t;
+  typedef typename Xpetra::TpetraCrsGraph<node_t> xtgraph_t;
+  typedef typename Tpetra::CrsGraph<node_t> tgraph_t;
+#endif
 
   static inline RCP<xgraph_t> convertToXpetra(const RCP<tgraph_t> &a)
     {
@@ -418,7 +481,11 @@ struct XpetraTraits<Tpetra::CrsGraph<lno_t, gno_t, node_t> >
   static RCP<tgraph_t> doMigration(const tgraph_t &from,
       size_t numLocalRows, const gno_t *myNewRows)
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<lno_t, gno_t, node_t> map_t;
+#else
+    typedef Tpetra::Map<node_t> map_t;
+#endif
 
     // source map
     const RCP<const map_t> &smap = from.getRowMap();
@@ -432,7 +499,11 @@ struct XpetraTraits<Tpetra::CrsGraph<lno_t, gno_t, node_t> >
     RCP<const map_t> tmap = rcp(new map_t(numGlobalRows, rowList, base, comm));
 
     // importer
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Import<lno_t, gno_t, node_t> importer(smap, tmap);
+#else
+    Tpetra::Import<node_t> importer(smap, tmap);
+#endif
 
     // number of entries in my new rows
     typedef Tpetra::Vector<gno_t, lno_t, gno_t, node_t> vector_t;
@@ -482,7 +553,11 @@ struct XpetraTraits<Epetra_CrsGraph>
   typedef InputTraits<Epetra_CrsGraph>::lno_t    lno_t;
   typedef InputTraits<Epetra_CrsGraph>::gno_t    gno_t;
   typedef InputTraits<Epetra_CrsGraph>::node_t   node_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static inline RCP<Xpetra::CrsGraph<lno_t,gno_t,node_t> >
+#else
+  static inline RCP<Xpetra::CrsGraph<node_t> >
+#endif
   convertToXpetra(const RCP<Epetra_CrsGraph> &a)
   {
     RCP<Xpetra::EpetraCrsGraphT<gno_t, node_t> > xa;
@@ -552,14 +627,27 @@ struct XpetraTraits<Epetra_CrsGraph>
 // Xpetra::CrsGraph
 // KDDKDD Do we need specializations for Xpetra::TpetraCrsGraph and
 // KDDKDD Xpetra::EpetraCrsGraph?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename lno_t,
           typename gno_t,
           typename node_t>
 struct XpetraTraits<Xpetra::CrsGraph<lno_t, gno_t, node_t> >
+#else
+template <typename node_t>
+struct XpetraTraits<Xpetra::CrsGraph<node_t> >
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::CrsGraph<lno_t, gno_t, node_t> x_graph_t;
   typedef Xpetra::TpetraCrsGraph<lno_t, gno_t, node_t> xt_graph_t;
   typedef Tpetra::CrsGraph<lno_t,gno_t,node_t> t_graph_t;
+#else
+  using lno_t = typename Tpetra::Map<>::local_ordinal_type;
+  using gno_t = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Xpetra::CrsGraph<node_t> x_graph_t;
+  typedef Xpetra::TpetraCrsGraph<node_t> xt_graph_t;
+  typedef Tpetra::CrsGraph<node_t> t_graph_t;
+#endif
 
   static inline RCP<x_graph_t> convertToXpetra(const RCP<x_graph_t> &a)
   {
@@ -591,13 +679,23 @@ struct XpetraTraits<Xpetra::CrsGraph<lno_t, gno_t, node_t> >
 //////////////////////////////////////////////////////////////////////////////
 // Xpetra::CrsGraph specialization
 template < typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Xpetra::CrsGraph<int, int, node_t> >
+#else
+struct XpetraTraits<Xpetra::CrsGraph<node_t> >
+#endif
 {
   typedef int lno_t;
   typedef int gno_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::CrsGraph<lno_t, gno_t, node_t> x_graph_t;
   typedef Xpetra::TpetraCrsGraph<lno_t, gno_t, node_t> xt_graph_t;
   typedef Tpetra::CrsGraph<lno_t,gno_t,node_t> t_graph_t;
+#else
+  typedef Xpetra::CrsGraph<node_t> x_graph_t;
+  typedef Xpetra::TpetraCrsGraph<node_t> xt_graph_t;
+  typedef Tpetra::CrsGraph<node_t> t_graph_t;
+#endif
 
   static inline RCP<x_graph_t> convertToXpetra(const RCP<x_graph_t> &a)
   {
@@ -645,14 +743,28 @@ struct XpetraTraits<Xpetra::CrsGraph<int, int, node_t> >
 //////////////////////////////////////////////////////////////////////////////
 // Tpetra::Vector
 template <typename scalar_t,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typename lno_t,
           typename gno_t,
+#endif
           typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Tpetra::Vector<scalar_t, lno_t, gno_t, node_t> >
+#else
+struct XpetraTraits<Tpetra::Vector<scalar_t, node_t> >
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<scalar_t, lno_t, gno_t, node_t> t_vector_t;
   typedef Xpetra::TpetraVector<scalar_t, lno_t, gno_t, node_t> xt_vector_t;
   typedef Xpetra::Vector<scalar_t, lno_t, gno_t, node_t> x_vector_t;
+#else
+  using lno_t = typename Tpetra::Map<>::local_ordinal_type;
+  using gno_t = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::Vector<scalar_t, node_t> t_vector_t;
+  typedef Xpetra::TpetraVector<scalar_t, node_t> xt_vector_t;
+  typedef Xpetra::Vector<scalar_t, node_t> x_vector_t;
+#endif
 
   static inline RCP<x_vector_t> convertToXpetra(const RCP<t_vector_t> &a)
   {
@@ -662,7 +774,11 @@ struct XpetraTraits<Tpetra::Vector<scalar_t, lno_t, gno_t, node_t> >
   static RCP<t_vector_t> doMigration(const t_vector_t &from,
       size_t numLocalElts, const gno_t *myNewElts)
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<lno_t, gno_t, node_t> map_t;
+#else
+    typedef Tpetra::Map<node_t> map_t;
+#endif
 
     // source map
     const RCP<const map_t> &smap = from.getMap();
@@ -675,11 +791,19 @@ struct XpetraTraits<Tpetra::Vector<scalar_t, lno_t, gno_t, node_t> >
     RCP<const map_t> tmap = rcp(new map_t(numGlobalElts, eltList, base, comm));
 
     // importer
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Import<lno_t, gno_t, node_t> importer(smap, tmap);
+#else
+    Tpetra::Import<node_t> importer(smap, tmap);
+#endif
 
     // target vector
     RCP<t_vector_t> V =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::createVector<scalar_t,lno_t,gno_t,node_t>(tmap);
+#else
+      Tpetra::createVector<scalar_t,node_t>(tmap);
+#endif
     V->doImport(from, importer, Tpetra::INSERT);
 
     return V;
@@ -697,7 +821,11 @@ struct XpetraTraits<Epetra_Vector>
   typedef InputTraits<Epetra_Vector>::node_t   node_t;
   typedef InputTraits<Epetra_Vector>::scalar_t   scalar_t;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Vector<scalar_t, lno_t, gno_t, node_t> x_vector_t;
+#else
+  typedef Xpetra::Vector<scalar_t, node_t> x_vector_t;
+#endif
 
   static inline RCP<x_vector_t> convertToXpetra(const RCP<Epetra_Vector> &a)
   {
@@ -751,14 +879,28 @@ struct XpetraTraits<Epetra_Vector>
 //////////////////////////////////////////////////////////////////////////////
 // Xpetra::Vector
 template <typename scalar_t,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typename lno_t,
           typename gno_t,
+#endif
           typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Xpetra::Vector<scalar_t, lno_t, gno_t, node_t> >
+#else
+struct XpetraTraits<Xpetra::Vector<scalar_t, node_t> >
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Vector<scalar_t, lno_t, gno_t, node_t> x_vector_t;
   typedef Xpetra::TpetraVector<scalar_t, lno_t, gno_t, node_t> xt_vector_t;
   typedef Tpetra::Vector<scalar_t, lno_t, gno_t, node_t> t_vector_t;
+#else
+  using lno_t = typename Tpetra::Map<>::local_ordinal_type;
+  using gno_t = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Xpetra::Vector<scalar_t, node_t> x_vector_t;
+  typedef Xpetra::TpetraVector<scalar_t, node_t> xt_vector_t;
+  typedef Tpetra::Vector<scalar_t, node_t> t_vector_t;
+#endif
 
   static inline RCP<x_vector_t> convertToXpetra(const RCP<x_vector_t> &a)
   {
@@ -790,14 +932,24 @@ struct XpetraTraits<Xpetra::Vector<scalar_t, lno_t, gno_t, node_t> >
 //////////////////////////////////////////////////////////////////////////////
 // Xpetra::Vector specialization
 template <typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Xpetra::Vector<double, int, int, node_t> >
+#else
+struct XpetraTraits<Xpetra::Vector<double, node_t> >
+#endif
 {
   typedef double scalar_t;
   typedef int lno_t;
   typedef int gno_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Vector<scalar_t, lno_t, gno_t, node_t> x_vector_t;
   typedef Xpetra::TpetraVector<scalar_t, lno_t, gno_t, node_t> xt_vector_t;
   typedef Tpetra::Vector<scalar_t, lno_t, gno_t, node_t> t_vector_t;
+#else
+  typedef Xpetra::Vector<scalar_t, node_t> x_vector_t;
+  typedef Xpetra::TpetraVector<scalar_t, node_t> xt_vector_t;
+  typedef Tpetra::Vector<scalar_t, node_t> t_vector_t;
+#endif
 
   static inline RCP<x_vector_t> convertToXpetra(const RCP<x_vector_t> &a)
   {
@@ -845,14 +997,28 @@ struct XpetraTraits<Xpetra::Vector<double, int, int, node_t> >
 //////////////////////////////////////////////////////////////////////////////
 // Tpetra::MultiVector
 template <typename scalar_t,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typename lno_t,
           typename gno_t,
+#endif
           typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> >
+#else
+struct XpetraTraits<Tpetra::MultiVector<scalar_t, node_t> >
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> t_vector_t;
   typedef Xpetra::TpetraMultiVector<scalar_t, lno_t, gno_t, node_t> xt_vector_t;
   typedef Xpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> x_vector_t;
+#else
+  using lno_t = typename Tpetra::Map<>::local_ordinal_type;
+  using gno_t = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Tpetra::MultiVector<scalar_t, node_t> t_vector_t;
+  typedef Xpetra::TpetraMultiVector<scalar_t, node_t> xt_vector_t;
+  typedef Xpetra::MultiVector<scalar_t, node_t> x_vector_t;
+#endif
 
   static inline RCP<x_vector_t> convertToXpetra(const RCP<t_vector_t> &a)
   {
@@ -862,7 +1028,11 @@ struct XpetraTraits<Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> >
   static RCP<t_vector_t> doMigration(const t_vector_t &from,
       size_t numLocalElts, const gno_t *myNewElts)
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<lno_t, gno_t, node_t> map_t;
+#else
+    typedef Tpetra::Map<node_t> map_t;
+#endif
 
     // source map
     const RCP<const map_t> &smap = from.getMap();
@@ -875,7 +1045,11 @@ struct XpetraTraits<Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> >
     RCP<const map_t> tmap = rcp(new map_t(numGlobalElts, eltList, base, comm));
 
     // importer
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Import<lno_t, gno_t, node_t> importer(smap, tmap);
+#else
+    Tpetra::Import<node_t> importer(smap, tmap);
+#endif
 
     // target vector
     RCP<t_vector_t> MV = rcp(
@@ -896,7 +1070,11 @@ struct XpetraTraits<Epetra_MultiVector>
   typedef InputTraits<Epetra_MultiVector>::gno_t    gno_t;
   typedef InputTraits<Epetra_MultiVector>::node_t   node_t;
   typedef InputTraits<Epetra_MultiVector>::scalar_t   scalar_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> x_mvector_t;
+#else
+  typedef Xpetra::MultiVector<scalar_t, node_t> x_mvector_t;
+#endif
 
   static inline RCP<x_mvector_t> convertToXpetra(
     const RCP<Epetra_MultiVector> &a)
@@ -952,14 +1130,28 @@ struct XpetraTraits<Epetra_MultiVector>
 //////////////////////////////////////////////////////////////////////////////
 // Xpetra::MultiVector
 template <typename scalar_t,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typename lno_t,
           typename gno_t,
+#endif
           typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Xpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> >
+#else
+struct XpetraTraits<Xpetra::MultiVector<scalar_t, node_t> >
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> x_mvector_t;
   typedef Xpetra::TpetraMultiVector<scalar_t, lno_t, gno_t, node_t> xt_mvector_t;
   typedef Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> t_mvector_t;
+#else
+  using lno_t = typename Tpetra::Map<>::local_ordinal_type;
+  using gno_t = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Xpetra::MultiVector<scalar_t, node_t> x_mvector_t;
+  typedef Xpetra::TpetraMultiVector<scalar_t, node_t> xt_mvector_t;
+  typedef Tpetra::MultiVector<scalar_t, node_t> t_mvector_t;
+#endif
 
   static inline RCP<x_mvector_t> convertToXpetra(const RCP<x_mvector_t> &a)
   {
@@ -991,14 +1183,24 @@ struct XpetraTraits<Xpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> >
 //////////////////////////////////////////////////////////////////////////////
 // Xpetra::MultiVector specialization
 template <typename node_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 struct XpetraTraits<Xpetra::MultiVector<double, int, int, node_t> >
+#else
+struct XpetraTraits<Xpetra::MultiVector<double, node_t> >
+#endif
 {
   typedef double scalar_t;
   typedef int lno_t;
   typedef int gno_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> x_mvector_t;
   typedef Xpetra::TpetraMultiVector<scalar_t, lno_t, gno_t, node_t> xt_mvector_t;
   typedef Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> t_mvector_t;
+#else
+  typedef Xpetra::MultiVector<scalar_t, node_t> x_mvector_t;
+  typedef Xpetra::TpetraMultiVector<scalar_t, node_t> xt_mvector_t;
+  typedef Tpetra::MultiVector<scalar_t, node_t> t_mvector_t;
+#endif
 
   static inline RCP<x_mvector_t> convertToXpetra(const RCP<x_mvector_t> &a)
   {

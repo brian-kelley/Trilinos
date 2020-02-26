@@ -75,8 +75,10 @@ namespace Tpetra {
     template <class Scalar, class OperatorType>
     class ApplyOp :
       public Tpetra::Operator<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                               typename OperatorType::local_ordinal_type,
                               typename OperatorType::global_ordinal_type,
+#endif
                               typename OperatorType::node_type> {
     public:
       // \name Typedefs

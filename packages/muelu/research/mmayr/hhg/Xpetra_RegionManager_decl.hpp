@@ -194,11 +194,19 @@ private:
  *
  *  \author mayr.mt \date 09/2017
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NO>
+#else
+template<class SC, class NO>
+#endif
 class RegionManager
 {
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   //! @name Construction/Destruction
   //@{
 
@@ -226,10 +234,18 @@ class RegionManager
   virtual GO getNumRegions() const { return numRegions_; }
 
   //! Get composite map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Xpetra::Map<LO,GO,NO> > getCompositeMap() const { return compositeMap_; }
+#else
+  virtual Teuchos::RCP<const Xpetra::Map<NO> > getCompositeMap() const { return compositeMap_; }
+#endif
 
   //! Get map of region \c regID
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Xpetra::Map<LO,GO,NO> > getRegionMap(const GO regID) const { return regionMaps_[regID]; }
+#else
+  virtual Teuchos::RCP<const Xpetra::Map<NO> > getRegionMap(const GO regID) const { return regionMaps_[regID]; }
+#endif
 
   /*! \brief Get mapping of local node ID to global node ID for region \c regID
    *
@@ -319,10 +335,18 @@ class RegionManager
   virtual void setupRegionRowMaps();
 
   //! Composite map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Map<LO,GO,NO> > compositeMap_;
+#else
+  Teuchos::RCP<const Xpetra::Map<NO> > compositeMap_;
+#endif
 
   //! Collection of region maps
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::Array<Teuchos::RCP<const Xpetra::Map<LO,GO,NO> > > regionMaps_;
+#else
+  Teuchos::Array<Teuchos::RCP<const Xpetra::Map<NO> > > regionMaps_;
+#endif
 
   //@}
 

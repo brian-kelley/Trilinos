@@ -116,23 +116,33 @@ public:
   typedef typename STS::magnitudeType MT;
   //! Specialization of Tpetra::Operator.
   typedef Tpetra::Operator<typename MV::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                            typename MV::local_ordinal_type,
                            typename MV::global_ordinal_type,
+#endif
                            typename MV::node_type> op_type;
   //! Specialization of Tpetra::RowMatrix.
   typedef Tpetra::RowMatrix<typename MV::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                            typename MV::local_ordinal_type,
                            typename MV::global_ordinal_type,
+#endif
                            typename MV::node_type> row_matrix_type;
   //! Specialization of Tpetra::Vector.
   typedef Tpetra::Vector<typename MV::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          typename MV::local_ordinal_type,
                          typename MV::global_ordinal_type,
+#endif
                          typename MV::node_type> V;
   //! Specialization of Tpetra::Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<typename MV::local_ordinal_type,
                       typename MV::global_ordinal_type,
                       typename MV::node_type> map_type;
+#else
+  typedef Tpetra::Map<typename MV::node_type> map_type;
+#endif
   //@}
 
   /// Constructor that takes a sparse matrix and sets default parameters.

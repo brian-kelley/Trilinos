@@ -88,7 +88,11 @@ using Thyra::createMember;
 using Thyra::LinearOpTester;
 
 void tBlockedTpetraOperator::buildBlockGIDs(std::vector<std::vector<GO> > & gids,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                             const Tpetra::Map<LO,GO,NT> & map) const
+#else
+                                            const Tpetra::Map<NT> & map) const
+#endif
 {
    LO numLocal = map.getNodeNumElements();
    LO numHalf = numLocal/2;
@@ -192,13 +196,23 @@ bool tBlockedTpetraOperator::test_vector_constr(int verbosity,std::ostream & os)
    FGallery.Set("nx",nx);
    FGallery.Set("ny",ny);
    RCP<Epetra_CrsMatrix> epetraA = rcp(FGallery.GetMatrix(),false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#endif
    ST beforeNorm = A->getFrobeniusNorm();
 
    int width = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::MultiVector<ST,LO,GO,NT> x(A->getDomainMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> ys(A->getRangeMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> y(A->getRangeMap(),width);
+#else
+   Tpetra::MultiVector<ST,NT> x(A->getDomainMap(),width);
+   Tpetra::MultiVector<ST,NT> ys(A->getRangeMap(),width);
+   Tpetra::MultiVector<ST,NT> y(A->getRangeMap(),width);
+#endif
 
    std::vector<std::vector<GO> > vars;
    buildBlockGIDs(vars,*A->getRowMap());
@@ -217,7 +231,11 @@ bool tBlockedTpetraOperator::test_vector_constr(int verbosity,std::ostream & os)
       shell.apply(x,y);
       A->apply(x,ys);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> e(y,Teuchos::Copy);
+#else
+      Tpetra::MultiVector<ST,NT> e(y,Teuchos::Copy);
+#endif
       e.update(-1.0,ys,1.0);
       e.norm2(Teuchos::ArrayView<ST>(norm));
 
@@ -259,7 +277,11 @@ bool tBlockedTpetraOperator::test_vector_constr(int verbosity,std::ostream & os)
       shell.apply(x,y);
       A->apply(x,ys);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> e(y,Teuchos::Copy);
+#else
+      Tpetra::MultiVector<ST,NT> e(y,Teuchos::Copy);
+#endif
       e.update(-1.0,ys,1.0);
       e.norm2(Teuchos::ArrayView<ST>(norm));
 
@@ -305,12 +327,22 @@ bool tBlockedTpetraOperator::test_reorder(int verbosity,std::ostream & os,int to
    FGallery.Set("nx",nx);
    FGallery.Set("ny",ny);
    RCP<Epetra_CrsMatrix> epetraA = rcp(FGallery.GetMatrix(),false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#endif
 
    int width = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::MultiVector<ST,LO,GO,NT> x(A->getDomainMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> yf(A->getRangeMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> yr(A->getRangeMap(),width);
+#else
+   Tpetra::MultiVector<ST,NT> x(A->getDomainMap(),width);
+   Tpetra::MultiVector<ST,NT> yf(A->getRangeMap(),width);
+   Tpetra::MultiVector<ST,NT> yr(A->getRangeMap(),width);
+#endif
 
    std::vector<std::vector<GO> > vars;
    buildBlockGIDs(vars,*A->getRowMap());
@@ -359,7 +391,11 @@ bool tBlockedTpetraOperator::test_reorder(int verbosity,std::ostream & os,int to
       flatShell.apply(x,yf);
       reorderShell.apply(x,yr);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> e(yf,Teuchos::Copy);
+#else
+      Tpetra::MultiVector<ST,NT> e(yf,Teuchos::Copy);
+#endif
       e.update(-1.0,yr,1.0);
       e.norm2(Teuchos::ArrayView<ST>(norm));
 

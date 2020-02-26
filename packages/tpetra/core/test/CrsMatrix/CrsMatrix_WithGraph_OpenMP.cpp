@@ -62,7 +62,11 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node_type;
 
 #define UNIT_TEST_GROUP_OPENMP( SCALAR, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   UNIT_TEST_GROUP( SCALAR, LO, GO, openmp_node_type )
+#else
+  UNIT_TEST_GROUP( SCALAR, openmp_node_type )
+#endif
 
 TPETRA_INSTANTIATE_SLG_NO_ORDINAL_SCALAR( UNIT_TEST_GROUP_OPENMP )
 

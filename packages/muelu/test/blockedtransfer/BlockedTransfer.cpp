@@ -110,8 +110,13 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> > GenerateProblemMatrix(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > map, Scalar a = 2.0, Scalar b = -1.0, Scalar c = -1.0) {
+#else
+  template<class Scalar, class Node>
+  Teuchos::RCP<Xpetra::CrsMatrixWrap<Scalar, Node> > GenerateProblemMatrix(const Teuchos::RCP<const Xpetra::Map<Node> > map, Scalar a = 2.0, Scalar b = -1.0, Scalar c = -1.0) {
+#endif
 #include "MueLu_UseShortNames.hpp"
     Teuchos::RCP<CrsMatrixWrap> mtx = Galeri::Xpetra::MatrixTraits<Map,CrsMatrixWrap>::Build(map, 3);
 
@@ -175,7 +180,11 @@ namespace MueLuTests {
 /////////////////
 // MAIN
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -239,16 +248,29 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
     std::vector<Teuchos::RCP<const Map> > maps;
     maps.push_back(map1); maps.push_back(map2);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::MapExtractor<Scalar, LO, GO, Node> > mapExtractor = Xpetra::MapExtractorFactory<Scalar,LO,GO,Node>::Build(bigMap, maps);
+#else
+    Teuchos::RCP<const Xpetra::MapExtractor<Scalar, Node> > mapExtractor = Xpetra::MapExtractorFactory<Scalar,Node>::Build(bigMap, maps);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<CrsMatrixWrap> Op11 = MueLuTests::GenerateProblemMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(map1,2,-1,-1);
     RCP<CrsMatrixWrap> Op22 = MueLuTests::GenerateProblemMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(map2,3,-2,-1);
+#else
+    RCP<CrsMatrixWrap> Op11 = MueLuTests::GenerateProblemMatrix<Scalar, Node>(map1,2,-1,-1);
+    RCP<CrsMatrixWrap> Op22 = MueLuTests::GenerateProblemMatrix<Scalar, Node>(map2,3,-2,-1);
+#endif
 
     /*Op11->describe(*out,Teuchos::VERB_EXTREME);
       Op22->describe(*out,Teuchos::VERB_EXTREME);*/
 
     // build blocked operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp = Teuchos::rcp(new Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node>(mapExtractor,mapExtractor,10));
+#else
+    Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp = Teuchos::rcp(new Xpetra::BlockedCrsMatrix<Scalar,Node>(mapExtractor,mapExtractor,10));
+#endif
 
     bOp->setMatrix(0,0,Op11);
     bOp->setMatrix(1,1,Op22);

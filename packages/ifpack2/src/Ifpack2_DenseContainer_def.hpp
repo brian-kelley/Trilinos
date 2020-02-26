@@ -440,7 +440,12 @@ std::string DenseContainer<MatrixType, LocalScalarType>::getName()
 // preconditioners can and should do dynamic casts if they need a type
 // more specific than RowMatrix.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DENSECONTAINER_INSTANT(S,LO,GO,N) \
   template class Ifpack2::DenseContainer< Tpetra::RowMatrix<S, LO, GO, N>, S >;
+#else
+#define IFPACK2_DENSECONTAINER_INSTANT(S,N) \
+  template class Ifpack2::DenseContainer< Tpetra::RowMatrix<S, N>, S >;
+#endif
 
 #endif // IFPACK2_DENSECONTAINER_DEF_HPP

@@ -68,12 +68,23 @@ namespace {
   //
 
   // Test BlockCrsMatrix's constructors.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, ctor, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, ctor, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
     typedef Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node> BCM;
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::BlockMultiVector<Scalar, Node> BMV;
+    typedef Tpetra::BlockCrsMatrix<Scalar, Node> BCM;
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     out << "Testing Tpetra::BlockCrsMatrix" << endl;
     Teuchos::OSTab tab0 (out);
@@ -149,8 +160,13 @@ namespace {
   // Test for basic functionality of a BlockCrsMatrix.  We create a
   // BlockCrsMatrix with a nontrivial graph; exercise getLocalRowView,
   // getLocalRowCopy, and replaceLocalValues; and test applyBlock and apply.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, basic, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, basic, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
     typedef Tpetra::BlockVector<Scalar, LO, GO, Node> BV;
     typedef Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node> BCM;
@@ -158,6 +174,15 @@ namespace {
     typedef Tpetra::Vector<Scalar, LO, GO, Node> vec_type;
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::BlockMultiVector<Scalar, Node> BMV;
+    typedef Tpetra::BlockVector<Scalar, Node> BV;
+    typedef Tpetra::BlockCrsMatrix<Scalar, Node> BCM;
+    typedef Tpetra::MultiVector<Scalar, Node> mv_type;
+    typedef Tpetra::Vector<Scalar, Node> vec_type;
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     // The typedef below is also a test.  BlockCrsMatrix must have
     // this typedef, or this test won't compile.
     typedef typename BCM::little_block_type little_block_type;
@@ -865,11 +890,21 @@ namespace {
   }
 
   // Test writing of a BlockCrsMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, write, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, write, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node> BCM;
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::BlockCrsMatrix<Scalar, Node> BCM;
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     // The typedef below is also a test.  BlockCrsMatrix must have
     // this typedef, or this test won't compile.
     typedef typename BCM::little_block_type little_block_type;
@@ -992,15 +1027,28 @@ namespace {
 
 
   // Test BlockCrsMatrix::getLocalDiagCopy.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, getLocalDiagCopy, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, getLocalDiagCopy, Scalar, Node )
+#endif
   {
     using Kokkos::ALL;
     using Kokkos::subview;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node> BCM;
+#else
+    typedef Tpetra::BlockCrsMatrix<Scalar, Node> BCM;
+#endif
     typedef typename BCM::device_type device_type;
     typedef typename BCM::impl_scalar_type IST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     // The typedef below is also a test.  BlockCrsMatrix must have
     // this typedef, or this test won't compile.
     typedef typename BCM::little_block_type little_block_type;
@@ -1238,12 +1286,23 @@ namespace {
 
 
   // Test BlockCrsMatrix::setAllToScalar.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, SetAllToScalar, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, SetAllToScalar, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
     typedef Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node> BCM;
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::BlockMultiVector<Scalar, Node> BMV;
+    typedef Tpetra::BlockCrsMatrix<Scalar, Node> BCM;
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> STS;
 
     out << "Testing Tpetra::BlockCrsMatrix::setAllToScalar" << endl;
@@ -1359,14 +1418,26 @@ namespace {
 
   // Test BlockCrsMatrix Import for the same graphs.  This is really
   // just a test of the "copy" part of copyAndPermute.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, ImportCopy, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, ImportCopy, Scalar, Node )
+#endif
   {
     using Tpetra::Details::gathervPrint;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
     typedef Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node> BCM;
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
     typedef Tpetra::Import<LO, GO, Node> import_type;
+#else
+    typedef Tpetra::BlockMultiVector<Scalar, Node> BMV;
+    typedef Tpetra::BlockCrsMatrix<Scalar, Node> BCM;
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::Map<Node> map_type;
+    typedef Tpetra::Import<Node> import_type;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> STS;
 
     out << "Testing Tpetra::BlockCrsMatrix Import with same "
@@ -1519,13 +1590,24 @@ namespace {
 
   // Test BlockCrsMatrix Export for different graphs with different
   // row Maps.  This tests packAndPrepare and unpackAndCombine.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, ExportDiffRowMaps, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, ExportDiffRowMaps, Scalar, Node )
+#endif
   {
     // typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node> BCM;
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
     typedef Tpetra::Export<LO, GO, Node> export_type;
+#else
+    typedef Tpetra::BlockCrsMatrix<Scalar, Node> BCM;
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::Map<Node> map_type;
+    typedef Tpetra::Export<Node> export_type;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> STS;
     int lclSuccess = 1;
     int gblSuccess = 1;
@@ -1766,14 +1848,25 @@ namespace {
   //
   // Test BlockCrsMatrix's localGaussSeidel with a block diagonal matrix.
   //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, localGSDiagonalMatrix, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, localGSDiagonalMatrix, Scalar, Node )
+#endif
   {
     using Kokkos::ALL;
     typedef Scalar ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockVector<ST, LO, GO, Node> BV;
     typedef Tpetra::BlockCrsMatrix<ST, LO, GO, Node> BCM;
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::BlockVector<ST, Node> BV;
+    typedef Tpetra::BlockCrsMatrix<ST, Node> BCM;
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     typedef typename graph_type::device_type device_type;
     typedef typename BCM::impl_scalar_type IST;
     typedef Teuchos::ScalarTraits<ST> STS;
@@ -1957,15 +2050,32 @@ namespace {
   //
   // Test BlockCrsMatrix's localGaussSeidel with a triangular matrix (???)
   //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, localGSTriangularMatrices, ST, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, localGSTriangularMatrices, ST,Node )
+#endif
   {
     using Kokkos::ALL;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockVector<ST, LO, GO, Node> BV;
     typedef Tpetra::BlockCrsMatrix<ST, LO, GO, Node> BCM;
+#else
+    typedef Tpetra::BlockVector<ST, Node> BV;
+    typedef Tpetra::BlockCrsMatrix<ST, Node> BCM;
+#endif
     typedef typename BCM::impl_scalar_type IST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
+#else
+    typedef Tpetra::CrsGraph<Node> graph_type;
+#endif
     typedef typename graph_type::device_type device_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::Map<Node> map_type;
+#endif
     typedef Teuchos::ScalarTraits<ST> STS;
 
     const ST two = STS::one () + STS::one ();
@@ -2211,13 +2321,25 @@ namespace {
   // Test conversion from CrsMatrix to BlockCrsMatrix.  This test is valid only on
   // 1, 2, or 4 processes.  (See note below.)
   //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, point2block, ST, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockCrsMatrix, point2block, ST,Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockCrsMatrix<ST, LO, GO, Node> block_matrix_type;
     typedef Tpetra::CrsMatrix<ST, LO, GO, Node>                    crs_matrix_type;
     typedef Tpetra::Import<LO, GO, Node>                           import_type;
     typedef Tpetra::MultiVector<ST, LO, GO, Node>                  mv_type;
     typedef Tpetra::Map<LO, GO, Node>                              map_type;
+#else
+    typedef Tpetra::BlockCrsMatrix<ST, Node> block_matrix_type;
+    typedef Tpetra::CrsMatrix<ST, Node>                    crs_matrix_type;
+    typedef Tpetra::Import<Node>                           import_type;
+    typedef Tpetra::MultiVector<ST, Node>                  mv_type;
+    typedef Tpetra::Map<Node>                              map_type;
+#endif
     typedef Tpetra::MatrixMarket::Reader<crs_matrix_type>          reader_type;
     typedef Teuchos::ScalarTraits<ST>                              STS;
     typedef typename STS::magnitudeType                            magnitude_type;
@@ -2474,6 +2596,7 @@ namespace {
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, ctor, SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, basic, SCALAR, LO, GO, NODE ) \
@@ -2485,6 +2608,19 @@ namespace {
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, localGSDiagonalMatrix, SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, localGSTriangularMatrices, SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, point2block, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, ctor, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, basic, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, write, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, getLocalDiagCopy, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, SetAllToScalar, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, ImportCopy, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, ExportDiffRowMaps, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, localGSDiagonalMatrix, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, localGSTriangularMatrices, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockCrsMatrix, point2block, SCALAR,NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

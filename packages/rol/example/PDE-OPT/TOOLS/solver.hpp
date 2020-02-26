@@ -91,17 +91,29 @@ class Solver {
   typedef Tpetra::Map<>::local_ordinal_type LO;
   typedef Tpetra::Map<>::global_ordinal_type GO;
   typedef Tpetra::Map<>::node_type NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Real,LO,GO,NO> MV;
   typedef Tpetra::Operator<Real,LO,GO,NO> OP;
+#else
+  typedef Tpetra::MultiVector<Real,NO> MV;
+  typedef Tpetra::Operator<Real,NO> OP;
+#endif
 
 private:
 
   // Linear solvers and preconditioners for Jacobian and adjoint Jacobian
   ROL::Ptr<Amesos2::Solver< Tpetra::CrsMatrix<>, Tpetra::MultiVector<>>> solver_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   ROL::Ptr<MueLu::TpetraOperator<Real,LO,GO,NO>> mueLuPreconditioner_;
   ROL::Ptr<MueLu::TpetraOperator<Real,LO,GO,NO>> mueLuPreconditioner_trans_;
   ROL::Ptr<Ifpack2::Preconditioner<Real,LO,GO,NO>> ifpack2Preconditioner_;
   ROL::Ptr<Ifpack2::Preconditioner<Real,LO,GO,NO>> ifpack2Preconditioner_trans_;
+#else
+  ROL::Ptr<MueLu::TpetraOperator<Real,NO>> mueLuPreconditioner_;
+  ROL::Ptr<MueLu::TpetraOperator<Real,NO>> mueLuPreconditioner_trans_;
+  ROL::Ptr<Ifpack2::Preconditioner<Real,NO>> ifpack2Preconditioner_;
+  ROL::Ptr<Ifpack2::Preconditioner<Real,NO>> ifpack2Preconditioner_trans_;
+#endif
   ROL::Ptr<Belos::BlockGmresSolMgr<Real,MV,OP>> solverBelos_;
   ROL::Ptr<Belos::BlockGmresSolMgr<Real,MV,OP>> solverBelos_trans_;
   ROL::Ptr<Belos::LinearProblem<Real,MV,OP>> problemBelos_;

@@ -128,16 +128,30 @@ namespace Tpetra {
 /// \endcode
 ///
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LO,
          class GO,
+#endif
          class Node>
 class BlockCrsMatrix :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual public ::Tpetra::RowMatrix<Scalar, LO, GO, Node>,
   virtual public ::Tpetra::DistObject<char, LO, GO, Node>
+#else
+  virtual public ::Tpetra::RowMatrix<Scalar, Node>,
+  virtual public ::Tpetra::DistObject<char,Node>
+#endif
 {
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using dist_object_type = ::Tpetra::DistObject<char, LO, GO, Node>;
   using BMV = BlockMultiVector<Scalar, LO, GO, Node>;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  using dist_object_type = ::Tpetra::DistObject<char,Node>;
+  using BMV = BlockMultiVector<Scalar, Node>;
+#endif
   using STS = Teuchos::ScalarTraits<Scalar>;
 
 protected:
@@ -177,11 +191,23 @@ public:
   typedef typename device_type::memory_space memory_space;
 
   //! The implementation of Map that this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::Map<LO, GO, node_type> map_type;
+#else
+  typedef ::Tpetra::Map<node_type> map_type;
+#endif
   //! The implementation of MultiVector that this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::MultiVector<Scalar, LO, GO, node_type> mv_type;
+#else
+  typedef ::Tpetra::MultiVector<Scalar, node_type> mv_type;
+#endif
   //! The implementation of CrsGraph that this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::CrsGraph<LO, GO, node_type> crs_graph_type;
+#else
+  typedef ::Tpetra::CrsGraph<node_type> crs_graph_type;
+#endif
 
   //! The type used to access nonconst matrix blocks.
   typedef Kokkos::View<impl_scalar_type**,
@@ -334,7 +360,11 @@ public:
   LO getBlockSize () const { return blockSize_; }
 
   //! Get the (mesh) graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const ::Tpetra::RowGraph<LO,GO,Node> > getGraph () const;
+#else
+  virtual Teuchos::RCP<const ::Tpetra::RowGraph<Node> > getGraph () const;
+#endif
 
   const crs_graph_type & getCrsGraph () const { return graph_; }
 
@@ -343,8 +373,13 @@ public:
   /// This method is deliberately not marked const, because it may do
   /// lazy initialization of temporary internal block multivectors.
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   applyBlock (const BlockMultiVector<Scalar, LO, GO, Node>& X,
               BlockMultiVector<Scalar, LO, GO, Node>& Y,
+#else
+  applyBlock (const BlockMultiVector<Scalar, Node>& X,
+              BlockMultiVector<Scalar, Node>& Y,
+#endif
               Teuchos::ETransp mode = Teuchos::NO_TRANS,
               const Scalar alpha = Teuchos::ScalarTraits<Scalar>::one (),
               const Scalar beta = Teuchos::ScalarTraits<Scalar>::zero ());
@@ -353,9 +388,15 @@ public:
   ///
   /// Not Implemented
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   gaussSeidelCopy (MultiVector<Scalar,LO,GO,Node> &X,
                    const ::Tpetra::MultiVector<Scalar,LO,GO,Node> &B,
                    const ::Tpetra::MultiVector<Scalar,LO,GO,Node> &D,
+#else
+  gaussSeidelCopy (MultiVector<Scalar,Node> &X,
+                   const ::Tpetra::MultiVector<Scalar,Node> &B,
+                   const ::Tpetra::MultiVector<Scalar,Node> &D,
+#endif
                    const Scalar& dampingFactor,
                    const ESweepDirection direction,
                    const int numSweeps,
@@ -365,9 +406,15 @@ public:
   ///
   /// Not Implemented
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   reorderedGaussSeidelCopy (::Tpetra::MultiVector<Scalar,LO,GO,Node>& X,
                             const ::Tpetra::MultiVector<Scalar,LO,GO,Node>& B,
                             const ::Tpetra::MultiVector<Scalar,LO,GO,Node>& D,
+#else
+  reorderedGaussSeidelCopy (::Tpetra::MultiVector<Scalar,Node>& X,
+                            const ::Tpetra::MultiVector<Scalar,Node>& B,
+                            const ::Tpetra::MultiVector<Scalar,Node>& D,
+#endif
                             const Teuchos::ArrayView<LO>& rowIndices,
                             const Scalar& dampingFactor,
                             const ESweepDirection direction,
@@ -394,8 +441,13 @@ public:
   /// \endcode
   /// The resulting block is b x b, where <tt>b = this->getBlockSize()</tt>.
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   localGaussSeidel (const BlockMultiVector<Scalar, LO, GO, Node>& Residual,
                           BlockMultiVector<Scalar, LO, GO, Node>& Solution,
+#else
+  localGaussSeidel (const BlockMultiVector<Scalar, Node>& Residual,
+                          BlockMultiVector<Scalar, Node>& Solution,
+#endif
                     const Kokkos::View<impl_scalar_type***, device_type,
                           Kokkos::MemoryUnmanaged>& D_inv,
                     const Scalar& omega,
@@ -713,7 +765,11 @@ protected:
   /// \brief Kokkos::Device specialization for communication buffers.
   ///
   /// See #1088 for why this is not just <tt>device_type::device_type</tt>.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using buffer_device_type = typename DistObject<Scalar, LO, GO,
+#else
+  using buffer_device_type = typename DistObject<Scalar,
+#endif
                                                  Node>::buffer_device_type;
 
   virtual bool checkSizes (const ::Tpetra::SrcDistObject& source);
@@ -1024,8 +1080,13 @@ private:
   /// their usual BLAS meaning; this only matters if (A or X) resp. Y
   /// contain Inf or NaN values.
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   applyBlockTrans (const BlockMultiVector<Scalar, LO, GO, Node>& X,
                    BlockMultiVector<Scalar, LO, GO, Node>& Y,
+#else
+  applyBlockTrans (const BlockMultiVector<Scalar, Node>& X,
+                   BlockMultiVector<Scalar, Node>& Y,
+#endif
                    const Teuchos::ETransp mode,
                    const Scalar alpha,
                    const Scalar beta);
@@ -1038,8 +1099,13 @@ private:
   /// meaning; this only matters if (A or X) resp. Y contain Inf or
   /// NaN values.
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   applyBlockNoTrans (const BlockMultiVector<Scalar, LO, GO, Node>& X,
                      BlockMultiVector<Scalar, LO, GO, Node>& Y,
+#else
+  applyBlockNoTrans (const BlockMultiVector<Scalar, Node>& X,
+                     BlockMultiVector<Scalar, Node>& Y,
+#endif
                      const Scalar alpha,
                      const Scalar beta);
 
@@ -1051,8 +1117,13 @@ private:
   /// meaning; this only matters if (A or X) resp. Y contain Inf or
   /// NaN values.
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   localApplyBlockNoTrans (const BlockMultiVector<Scalar, LO, GO, Node>& X,
                           BlockMultiVector<Scalar, LO, GO, Node>& Y,
+#else
+  localApplyBlockNoTrans (const BlockMultiVector<Scalar, Node>& X,
+                          BlockMultiVector<Scalar, Node>& Y,
+#endif
                           const Scalar alpha,
                           const Scalar beta);
 
@@ -1258,7 +1329,11 @@ public:
   /// same diagonal element.  You may combine these overlapping
   /// diagonal elements by doing an Export from the row Map Vector
   /// to a range Map Vector.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void getLocalDiagCopy (::Tpetra::Vector<Scalar,LO,GO,Node>& diag) const;
+#else
+  virtual void getLocalDiagCopy (::Tpetra::Vector<Scalar,Node>& diag) const;
+#endif
 
   //@}
   //! \name Mathematical methods
@@ -1269,14 +1344,22 @@ public:
    *
    * On return, for all entries i,j in the matrix, \f$A(i,j) = x(i)*A(i,j)\f$.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void leftScale (const ::Tpetra::Vector<Scalar, LO, GO, Node>& x);
+#else
+  virtual void leftScale (const ::Tpetra::Vector<Scalar, Node>& x);
+#endif
 
   /**
    * \brief Scale the RowMatrix on the right with the given Vector x.
    *
    * On return, for all entries i,j in the matrix, \f$A(i,j) = x(j)*A(i,j)\f$.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void rightScale (const ::Tpetra::Vector<Scalar, LO, GO, Node>& x);
+#else
+  virtual void rightScale (const ::Tpetra::Vector<Scalar, Node>& x);
+#endif
 
   /// \brief The Frobenius norm of the matrix.
   ///
@@ -1286,7 +1369,11 @@ public:
   /// \f$\|A\|_F = \sqrt{ \sum_{i,j} |A(i,j)|^2 }\f$.
   /// It has the same value as the Euclidean norm of a vector made
   /// by stacking the columns of \f$A\f$.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual typename ::Tpetra::RowMatrix<Scalar, LO, GO, Node>::mag_type
+#else
+  virtual typename ::Tpetra::RowMatrix<Scalar, Node>::mag_type
+#endif
   getFrobeniusNorm () const;
   //@}
 };

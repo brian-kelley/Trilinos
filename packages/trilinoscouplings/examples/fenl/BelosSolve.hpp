@@ -115,10 +115,17 @@ struct ExtractEnsembleIts {
 template <class SM, class SV, class LO, class GO, class N, class Mesh>
 result_struct
 belos_solve(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::CrsMatrix<SM,LO,GO,N>& A,
   const Tpetra::MultiVector<SV,LO,GO,N>& b,
   Tpetra::MultiVector<SV,LO,GO,N>& x,
   Teuchos::RCP< Tpetra::Operator<SM,LO,GO,N> >& precOp,
+#else
+  Tpetra::CrsMatrix<SM,N>& A,
+  const Tpetra::MultiVector<SV,N>& b,
+  Tpetra::MultiVector<SV,N>& x,
+  Teuchos::RCP< Tpetra::Operator<SM,N> >& precOp,
+#endif
   const Mesh& mesh,
   const int use_muelu,
   const int use_mean_based,
@@ -127,14 +134,23 @@ belos_solve(
   const typename Kokkos::Details::ArithTraits<SV>::mag_type tolerance =
     Kokkos::Details::ArithTraits<SV>::epsilon())
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Operator<SM,LO,GO,N> OperatorType;
   typedef Tpetra::MultiVector<SV,LO,GO,N> VectorType;
+#else
+  typedef Tpetra::Operator<SM,N> OperatorType;
+  typedef Tpetra::MultiVector<SV,N> VectorType;
+#endif
   typedef typename VectorType::dot_type BelosScalarType;
   typedef Belos::LinearProblem<BelosScalarType, VectorType, OperatorType> ProblemType;
   typedef Belos::PseudoBlockCGSolMgr<BelosScalarType, VectorType, OperatorType> CGSolverType;
   typedef Belos::PseudoBlockGmresSolMgr<BelosScalarType, VectorType, OperatorType> GmresSolverType;
   typedef Belos::SolverManager<BelosScalarType, VectorType, OperatorType> SolverType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef SGPreconditioner<SM,LO,GO,N> PreconditionerType;
+#else
+  typedef SGPreconditioner<SM,N> PreconditionerType;
+#endif
   using Teuchos::RCP;
   using Teuchos::rcp;
   using Teuchos::rcpFromRef;
@@ -158,8 +174,13 @@ belos_solve(
     // Create tpetra-vector storing coordinates for repartitioning
     typename Mesh::node_coord_type node_coords = mesh.node_coord();
     //Teuchos::RCP<VectorType> coords =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Tpetra::MultiVector<double,LO,GO,N> > coords =
       Teuchos::rcp(new Tpetra::MultiVector<double,LO,GO,N>(x.getMap(), node_coords.extent(1)));
+#else
+    Teuchos::RCP<Tpetra::MultiVector<double,N> > coords =
+      Teuchos::rcp(new Tpetra::MultiVector<double,N>(x.getMap(), node_coords.extent(1)));
+#endif
     fill_coords(node_coords, coords->getLocalViewDevice());
 
     RCP<ParameterList> mueluParams = Teuchos::sublist(fenlParams, "MueLu");
@@ -258,10 +279,17 @@ namespace Example {
 template <class SM, class SV, class LO, class GO, class N, class Mesh>
 result_struct
 belos_solve(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::CrsMatrix<SM,LO,GO,N>& A,
   const Tpetra::MultiVector<SV,LO,GO,N>& b,
   Tpetra::MultiVector<SV,LO,GO,N>& x,
   Teuchos::RCP< Tpetra::Operator<SM,LO,GO,N> >& precOp,
+#else
+  Tpetra::CrsMatrix<SM,N>& A,
+  const Tpetra::MultiVector<SV,N>& b,
+  Tpetra::MultiVector<SV,N>& x,
+  Teuchos::RCP< Tpetra::Operator<SM,N> >& precOp,
+#endif
   const Mesh& mesh,
   const int use_muelu,
   const int use_mean_based,

@@ -255,7 +255,11 @@ AdditiveSchwarz (const Teuchos::RCP<const row_matrix_type>& A,
 {}
 
 template<class MatrixType,class LocalInverseType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type > >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type > >
+#endif
 AdditiveSchwarz<MatrixType,LocalInverseType>::
 getDomainMap () const
 {
@@ -269,7 +273,11 @@ getDomainMap () const
 
 
 template<class MatrixType,class LocalInverseType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 AdditiveSchwarz<MatrixType,LocalInverseType>::getRangeMap () const
 {
   TEUCHOS_TEST_FOR_EXCEPTION(
@@ -282,7 +290,11 @@ AdditiveSchwarz<MatrixType,LocalInverseType>::getRangeMap () const
 
 
 template<class MatrixType,class LocalInverseType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type, typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> > AdditiveSchwarz<MatrixType,LocalInverseType>::getMatrix() const
+#else
+Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type, typename MatrixType::node_type> > AdditiveSchwarz<MatrixType,LocalInverseType>::getMatrix() const
+#endif
 {
   return Matrix_;
 }
@@ -1572,8 +1584,13 @@ setMatrix (const Teuchos::RCP<const row_matrix_type>& A)
 // NOTE (mfh 26 Aug 2015) There's no need to instantiate for CrsMatrix
 // too.  All Ifpack2 preconditioners can and should do dynamic casts
 // internally, if they need a type more specific than RowMatrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_ADDITIVESCHWARZ_INSTANT(S,LO,GO,N) \
   template class Ifpack2::AdditiveSchwarz< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_ADDITIVESCHWARZ_INSTANT(S,N) \
+  template class Ifpack2::AdditiveSchwarz< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif // IFPACK2_ADDITIVESCHWARZ_DECL_HPP
 

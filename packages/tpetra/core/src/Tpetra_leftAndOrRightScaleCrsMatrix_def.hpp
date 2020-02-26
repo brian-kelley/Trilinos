@@ -58,9 +58,17 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
+#else
+leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, NT>& A,
+#endif
                               const Kokkos::View<
                                 const typename Kokkos::ArithTraits<SC>::mag_type*,
                                 typename NT::device_type>& rowScalingFactors,
@@ -119,15 +127,31 @@ leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
+#else
+leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, NT>& A,
+#endif
                               const Tpetra::Vector<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                 typename Kokkos::ArithTraits<SC>::mag_type,
                                 LO, GO, NT>& rowScalingFactors,
+#else
+                                typename Kokkos::ArithTraits<SC>::mag_type,NT>& rowScalingFactors,
+#endif
                               const Tpetra::Vector<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                 typename Kokkos::ArithTraits<SC>::mag_type,
                                 LO, GO, NT>& colScalingFactors,
+#else
+                                typename Kokkos::ArithTraits<SC>::mag_type,NT>& colScalingFactors,
+#endif
                               const bool leftScale,
                               const bool rightScale,
                               const bool assumeSymmetric,
@@ -136,7 +160,11 @@ leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
   using device_type = typename NT::device_type;
   using dev_memory_space = typename device_type::memory_space;
   using mag_type = typename Kokkos::ArithTraits<SC>::mag_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using vec_type = Tpetra::Vector<mag_type, LO, GO, NT>;
+#else
+  using vec_type = Tpetra::Vector<mag_type,NT>;
+#endif
   const char prefix[] = "leftAndOrRightScaleCrsMatrix: ";
   const bool debug = ::Tpetra::Details::Behavior::debug ();
 
@@ -184,10 +212,18 @@ leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
 // Must be expanded from within the Tpetra namespace!
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_LEFTANDORRIGHTSCALECRSMATRIX_INSTANT(SC,LO,GO,NT) \
+#else
+#define TPETRA_LEFTANDORRIGHTSCALECRSMATRIX_INSTANT(SC,NT) \
+#endif
   template void \
   leftAndOrRightScaleCrsMatrix ( \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrix<SC, LO, GO, NT>& A, \
+#else
+    Tpetra::CrsMatrix<SC, NT>& A, \
+#endif
     const Kokkos::View< \
       const Kokkos::ArithTraits<SC>::mag_type*, \
       NT::device_type>& rowScalingFactors, \
@@ -201,9 +237,15 @@ leftAndOrRightScaleCrsMatrix (Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
   \
   template void \
   leftAndOrRightScaleCrsMatrix ( \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrix<SC, LO, GO, NT>& A, \
     const Tpetra::Vector<Kokkos::ArithTraits<SC>::mag_type, LO, GO, NT>& rowScalingFactors, \
     const Tpetra::Vector<Kokkos::ArithTraits<SC>::mag_type, LO, GO, NT>& colScalingFactors, \
+#else
+    Tpetra::CrsMatrix<SC, NT>& A, \
+    const Tpetra::Vector<Kokkos::ArithTraits<SC>::mag_type,NT>& rowScalingFactors, \
+    const Tpetra::Vector<Kokkos::ArithTraits<SC>::mag_type,NT>& colScalingFactors, \
+#endif
     const bool leftScale, \
     const bool rightScale, \
     const bool assumeSymmetric, \

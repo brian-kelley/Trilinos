@@ -114,7 +114,11 @@ const RCP<const Thyra::LinearOpBase<double> > build2x2(const Epetra_Comm & comm,
 
 const RCP<const Thyra::LinearOpBase<ST> > build2x2(const Teuchos::RCP<const Teuchos::Comm<int> > comm,ST a,ST b,ST c,ST d)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::Map<LO,GO,NT> > map = rcp(new const Tpetra::Map<LO,GO,NT>(2,0,comm));
+#else
+   RCP<const Tpetra::Map<NT> > map = rcp(new const Tpetra::Map<NT>(2,0,comm));
+#endif
 
    GO indices[2];
    ST row0[2];
@@ -124,14 +128,22 @@ const RCP<const Thyra::LinearOpBase<ST> > build2x2(const Teuchos::RCP<const Teuc
    indices[1] = 1;
 
    // build a CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> >blk  = Tpetra::createCrsMatrix<ST,LO,GO,NT>(map, 2);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> >blk  = Tpetra::createCrsMatrix<ST,NT>(map, 2);
+#endif
    row0[0] = a; row0[1] = b;  // do a transpose here!
    row1[0] = c; row1[1] = d;
    blk->insertGlobalValues(0,Teuchos::ArrayView<GO>(indices,2),Teuchos::ArrayView<ST>(row0,2));
    blk->insertGlobalValues(1,Teuchos::ArrayView<GO>(indices,2),Teuchos::ArrayView<ST>(row1,2));
    blk->fillComplete();
    
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    return Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(blk->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(blk->getRangeMap()),blk);
+#else
+   return Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(blk->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(blk->getRangeMap()),blk);
+#endif
 }
 
 RCP<Teuchos::ParameterList> buildLibPL(int count,std::string scalingType)

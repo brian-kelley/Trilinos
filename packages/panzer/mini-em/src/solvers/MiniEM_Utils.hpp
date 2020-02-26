@@ -27,8 +27,13 @@ namespace mini_em {
 
   void describeMatrix(const std::string & s,const Thyra::LinearOpBase<double> & op,Teuchos::RCP<Teuchos::FancyOStream> out);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node=Tpetra::Map<>::node_type>
   Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > get_Tpetra_CrsMatrix(const Thyra::LinearOpBase<double> & op);
+#else
+  template<class Scalar, class Node=Tpetra::Map<>::node_type>
+  Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,Node> > get_Tpetra_CrsMatrix(const Thyra::LinearOpBase<double> & op);
+#endif
 
   Teuchos::RCP<const Epetra_CrsMatrix> get_Epetra_CrsMatrix(const Thyra::LinearOpBase<double> & op);
 

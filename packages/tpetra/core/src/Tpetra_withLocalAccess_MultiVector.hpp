@@ -60,20 +60,36 @@ namespace Tpetra {
 
     template<class SC, class LO, class GO, class NT, class ... Args>
     struct GetMasterLocalObject<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       LocalAccess<Tpetra::MultiVector<SC, LO, GO, NT>, Args...>
+#else
+      LocalAccess<Tpetra::MultiVector<SC, NT>, Args...>
+#endif
       >;
     template<class SC, class LO, class GO, class NT, class ... Args>
     struct GetMasterLocalObject<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       LocalAccess<Tpetra::Vector<SC, LO, GO, NT>, Args...>
+#else
+      LocalAccess<Tpetra::Vector<SC, NT>, Args...>
+#endif
       >;
 
     template<class SC, class LO, class GO, class NT, class ... Args>
     struct GetNonowningLocalObject<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       LocalAccess<Tpetra::MultiVector<SC, LO, GO, NT>, Args...>
+#else
+      LocalAccess<Tpetra::MultiVector<SC, NT>, Args...>
+#endif
       >;
     template<class SC, class LO, class GO, class NT, class ... Args>
     struct GetNonowningLocalObject<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       LocalAccess<Tpetra::Vector<SC, LO, GO, NT>, Args...>
+#else
+      LocalAccess<Tpetra::Vector<SC, NT>, Args...>
+#endif
       >;
 
     //////////////////////////////////////////////////////////////////
@@ -99,11 +115,19 @@ namespace Tpetra {
     //! Specialization of GetMasterLocalObject for Tpetra::MultiVector.
     template<class SC, class LO, class GO, class NT, class ... Args>
     struct GetMasterLocalObject<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       LocalAccess<Tpetra::MultiVector<SC, LO, GO, NT>, Args...>
+#else
+      LocalAccess<Tpetra::MultiVector<SC, NT>, Args...>
+#endif
       >
     {
     private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using global_object_type = Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+      using global_object_type = Tpetra::MultiVector<SC, NT>;
+#endif
 
     public:
       using local_access_type =
@@ -262,11 +286,19 @@ namespace Tpetra {
     //! Specialization of GetMasterLocalObject for Tpetra::Vector.
     template<class SC, class LO, class GO, class NT, class ... Args>
     struct GetMasterLocalObject<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       LocalAccess<Tpetra::Vector<SC, LO, GO, NT>, Args...>
+#else
+      LocalAccess<Tpetra::Vector<SC, NT>, Args...>
+#endif
       >
     {
     private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using global_object_type = Tpetra::Vector<SC, LO, GO, NT>;
+#else
+      using global_object_type = Tpetra::Vector<SC, NT>;
+#endif
 
     public:
       using local_access_type =
@@ -404,11 +436,19 @@ namespace Tpetra {
     ///   Tpetra::MultiVector.
     template<class SC, class LO, class GO, class NT, class ... Args>
     struct GetNonowningLocalObject<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       LocalAccess<Tpetra::MultiVector<SC, LO, GO, NT>, Args...>
+#else
+      LocalAccess<Tpetra::MultiVector<SC, NT>, Args...>
+#endif
       >
     {
     private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using global_object_type = Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+      using global_object_type = Tpetra::MultiVector<SC, NT>;
+#endif
     public:
       using local_access_type =
         LocalAccess<global_object_type, Args...>;
@@ -460,11 +500,19 @@ namespace Tpetra {
     ///   Tpetra::Vector.
     template<class SC, class LO, class GO, class NT, class ... Args>
     struct GetNonowningLocalObject<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       LocalAccess<Tpetra::Vector<SC, LO, GO, NT>, Args...>
+#else
+      LocalAccess<Tpetra::Vector<SC, NT>, Args...>
+#endif
       >
     {
     private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using global_object_type = Tpetra::Vector<SC, LO, GO, NT>;
+#else
+      using global_object_type = Tpetra::Vector<SC, NT>;
+#endif
     public:
       using local_access_type =
         LocalAccess<global_object_type, Args...>;

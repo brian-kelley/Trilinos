@@ -73,17 +73,30 @@ using Teuchos::rcp;
 using Teuchos::RCP;
 
 //this macro declares the unit-test-class:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Partitioning, Test0, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Partitioning, Test0, Scalar)
+#endif
 {
   std::string version = Ifpack2::Version();
   out << "Ifpack2::Version(): " << version << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> CRSG;
+#else
+  typedef Tpetra::CrsGraph<Node> CRSG;
+#endif
 
   // Useful matrices and such (tridiagonal test)
   global_size_t num_rows_per_proc = 5;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > rowmap = tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
   Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > Matrix = tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rowmap);
+#else
+  const Teuchos::RCP<const Tpetra::Map<Node> > rowmap = tif_utest::create_tpetra_map<Node>(num_rows_per_proc);
+  Teuchos::RCP<const Tpetra::CrsMatrix<Scalar,Node> > Matrix = tif_utest::create_test_matrix<Scalar,Node>(rowmap);
+#endif
 
   // ====================================== //
   //            point blocking              //
@@ -124,7 +137,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Partitioning, Test0, Scalar, LocalOrdin
 }
 
 #define UNIT_TEST_GROUP_SC_LO_GO( SC, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Partitioning, Test0, SC, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Partitioning, Test0, SC )
+#endif
 
 #include "Ifpack2_ETIHelperMacros.h"
 

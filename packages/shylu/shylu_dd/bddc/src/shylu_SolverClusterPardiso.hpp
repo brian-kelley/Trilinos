@@ -60,7 +60,11 @@ namespace bddc {
 
 template <class SX, class SM, class LO, class GO> 
   class SolverClusterPardiso : 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   public SolverBase<SX,SM,LO,GO>
+#else
+  public SolverBase<SX,SM>
+#endif
 {
 public:
   ~SolverClusterPardiso()
@@ -75,7 +79,11 @@ public:
 		       SX* values,
 		       Teuchos::ParameterList & Parameters,
 		       MPI_Comm* pComm) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   SolverBase<SX,SM,LO,GO>(numRows, rowBegin, columns, values, Parameters,
+#else
+  SolverBase<SX,SM>(numRows, rowBegin, columns, values, Parameters,
+#endif
 			  pComm),
     m_matrixIsSymmetric(true),
     m_rowBeginP(0),

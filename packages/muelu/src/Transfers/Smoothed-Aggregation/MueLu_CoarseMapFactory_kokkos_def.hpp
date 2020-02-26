@@ -58,8 +58,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   RCP<const ParameterList> CoarseMapFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::GetValidParameterList() const {
+#else
+  template <class Scalar, class DeviceType>
+  RCP<const ParameterList> CoarseMapFactory_kokkos<Scalar, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set<RCP<const FactoryBase> >("Aggregates", Teuchos::null, "Generating factory for aggregates.");
@@ -68,14 +73,24 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   void CoarseMapFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class DeviceType>
+  void CoarseMapFactory_kokkos<Scalar, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "Aggregates");
     Input(currentLevel, "Nullspace");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   void CoarseMapFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class DeviceType>
+  void CoarseMapFactory_kokkos<Scalar, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::Build(Level& currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", currentLevel);
 
     auto aggregates = Get<RCP<Aggregates_kokkos> >(currentLevel, "Aggregates");

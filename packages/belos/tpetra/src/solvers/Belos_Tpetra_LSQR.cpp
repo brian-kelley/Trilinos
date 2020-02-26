@@ -47,12 +47,21 @@
 namespace BelosTpetra {
 namespace Impl {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void register_LSQR_tmpl (const bool verbose)
 {
   using ::Belos::Impl::registerSolverSubclassForTypes;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
   using OP = ::Tpetra::Operator<SC, LO, GO, NT>;
+#else
+  using MV = ::Tpetra::MultiVector<SC, NT>;
+  using OP = ::Tpetra::Operator<SC, NT>;
+#endif
   using solver_type = ::Belos::LSQRSolMgr<SC, MV, OP>;
 
   if (verbose) {
@@ -74,7 +83,11 @@ void register_LSQR (const bool verbose)
 #ifdef BELOS_TPETRA_REGISTER_LSQR
 #  undef BELOS_TPETRA_REGISTER_LSQR
 #endif // BELOS_TPETRA_REGISTER_LSQR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define BELOS_TPETRA_REGISTER_LSQR( SC, LO, GO, NT ) register_LSQR_tmpl<SC, LO, GO, NT> (verbose);
+#else
+#define BELOS_TPETRA_REGISTER_LSQR( SC, NT ) register_LSQR_tmpl<SC, NT> (verbose);
+#endif
 
   TPETRA_INSTANTIATE_SLGN_NO_ORDINAL_SCALAR( BELOS_TPETRA_REGISTER_LSQR )
 

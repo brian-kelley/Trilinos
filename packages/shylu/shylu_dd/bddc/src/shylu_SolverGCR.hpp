@@ -66,7 +66,11 @@ public:
   }
 
   SolverGCR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     (RCP< PreconditionerBDDC<SX,SM,LO,GO> > Preconditioner,
+#else
+    (RCP< PreconditionerBDDC<SX,SM> > Preconditioner,
+#endif
      RCP<Teuchos::ParameterList> Parameters) :
   m_Preconditioner(Preconditioner),
     m_Parameters(Parameters),
@@ -94,7 +98,11 @@ public:
     if (m_printFlag > 1) m_calculateRelativeResidualActual = true;
     if (m_myPID != 0) m_printFlag = 0;
     reserveMemory();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     m_Orthog = Teuchos::rcp( new OrthogGCR<SX,SM,LO,GO>
+#else
+    m_Orthog = Teuchos::rcp( new OrthogGCR<SX,SM>
+#endif
 			     (m_Preconditioner,
 			      m_Parameters,
 			      m_krylovLength) );
@@ -139,7 +147,11 @@ public:
   }
 
  private: // data
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP< PreconditionerBDDC<SX,SM,LO,GO> > m_Preconditioner;
+#else
+  RCP< PreconditionerBDDC<SX,SM> > m_Preconditioner;
+#endif
   RCP<Teuchos::ParameterList> m_Parameters;
   bool m_interfacePreconditioner, m_calculateRelativeResidualActual;
   LO m_vectorLength, m_krylovLength, m_maxIter, 
@@ -150,7 +162,11 @@ public:
   SM m_originalNorm, m_currentNorm;
   std::vector<SX> m_residualVector, m_deltaSol, m_Pr, m_APr;
   std::ofstream m_outputFileKrylov, m_outputFileDD;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< OrthogGCR<SX,SM,LO,GO> > m_Orthog;
+#else
+  Teuchos::RCP< OrthogGCR<SX,SM> > m_Orthog;
+#endif
   Teuchos::BLAS<int, SX> m_BLAS;
 
  private: // methods

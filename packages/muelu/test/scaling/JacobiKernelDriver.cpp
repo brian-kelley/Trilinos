@@ -92,8 +92,13 @@ inline void copy_view(const View1 x1, View2 x2) {
 #include "mkl.h"
 
   // mkl_sparse_spmm
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void Jacobi_MKL_SPMM(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,  const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B, Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &C, Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &D, Scalar omega) {
+#else
+template<class Scalar, class Node>
+void Jacobi_MKL_SPMM(const Xpetra::Matrix<Scalar,Node> &A,  const Xpetra::Matrix<Scalar,Node> &B, Xpetra::Matrix<Scalar,Node> &C, Xpetra::Vector<Scalar,Node> &D, Scalar omega) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -105,8 +110,13 @@ void Jacobi_MKL_SPMM(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node
   Xpetra::UnderlyingLib lib = A.getRowMap()->lib();
   RCP<TimeMonitor> tm;
 #ifdef HAVE_MUELU_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
     typedef Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>    vector_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+    typedef Tpetra::Vector<Scalar,Node>    vector_type;
+#endif
     typedef typename crs_matrix_type::local_matrix_type    KCRS;
     typedef typename KCRS::StaticCrsGraphType              graph_t;
     typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -261,8 +271,13 @@ void Jacobi_MKL_SPMM(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node
 #include "TpetraExt_MatrixMatrix_ExtraKernels_def.hpp"
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void Jacobi_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,  const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B,  Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &C,const Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &D, Scalar omega, std::string jacobi_algorithm_name, std::string spgemm_algorithm_name, int team_work_size) {
+#else
+template<class Scalar, class Node>
+void Jacobi_Wrapper(const Xpetra::Matrix<Scalar,Node> &A,  const Xpetra::Matrix<Scalar,Node> &B,  Xpetra::Matrix<Scalar,Node> &C,const Xpetra::Vector<Scalar,Node> &D, Scalar omega, std::string jacobi_algorithm_name, std::string spgemm_algorithm_name, int team_work_size) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -275,9 +290,15 @@ void Jacobi_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>
 
   if (lib == Xpetra::UseTpetra) {
 #if defined(HAVE_MUELU_TPETRA) && defined(HAVE_TPETRA_INST_OPENMP)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
     typedef Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>    vector_type;
     typedef Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>           import_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+    typedef Tpetra::Vector<Scalar,Node>    vector_type;
+    typedef Tpetra::Import<Node>           import_type;
+#endif
     typedef typename crs_matrix_type::local_matrix_type    KCRS;
     typedef typename KCRS::device_type device_t;
     typedef typename KCRS::StaticCrsGraphType graph_t;
@@ -285,7 +306,11 @@ void Jacobi_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>
     typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;
     typedef typename KCRS::values_type::non_const_type scalar_view_t;
     typedef Kokkos::View<LO*, typename lno_view_t::array_layout, typename lno_view_t::device_type> lo_view_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO,GO,NO>                                     map_type;
+#else
+    typedef Tpetra::Map<NO>                                     map_type;
+#endif
     typedef typename map_type::local_map_type                         local_map_type;
     typedef typename Node::execution_space execution_space;
     typedef Kokkos::RangePolicy<execution_space, size_t> range_type;
@@ -302,7 +327,11 @@ void Jacobi_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>
     // Copy in the data for Jacobi Kernel Wrapper
     tm = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("Jacobi "+name+": CopyIn")));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node> Aview, Bview;
+#else
+    Tpetra::CrsMatrixStruct<Scalar, Node> Aview, Bview;
+#endif
     Aview.origMatrix   = Au;
     Aview.origRowMap   = Au->getRowMap();
     Aview.rowMap       = Au->getRowMap();
@@ -356,7 +385,11 @@ void Jacobi_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>
     params->set("openmp: team work size",team_work_size);
 
     tm = rcp(new TimeMonitor(*TimeMonitor::getNewTimer(std::string("Jacobi ")+name+": Kernel")));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::MMdetails::KernelWrappers2<SC,LO,GO,Node,lno_nnz_view_t>::jacobi_A_B_newmatrix_kernel_wrapper(omega,*Du,Aview,Bview,targetMapToOrigRow,targetMapToImportRow,Bcol2Ccol,Icol2Ccol,*Cnc,Cimport,name,params);
+#else
+    Tpetra::MMdetails::KernelWrappers2<SC,Node,lno_nnz_view_t>::jacobi_A_B_newmatrix_kernel_wrapper(omega,*Du,Aview,Bview,targetMapToOrigRow,targetMapToImportRow,Bcol2Ccol,Icol2Ccol,*Cnc,Cimport,name,params);
+#endif
 
     tm = Teuchos::null;
     Au->getComm()->barrier();
@@ -369,7 +402,11 @@ void Jacobi_Wrapper(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>
 // =========================================================================
 // =========================================================================
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -492,14 +529,27 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
     comm->barrier();
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = Xpetra::IO<SC,LO,GO,Node>::Read(std::string(matrixFileNameA), lib, comm);
     RCP<Matrix> B = Xpetra::IO<SC,LO,GO,Node>::Read(std::string(matrixFileNameB), lib, comm);
+#else
+    RCP<Matrix> A = Xpetra::IO<SC,Node>::Read(std::string(matrixFileNameA), lib, comm);
+    RCP<Matrix> B = Xpetra::IO<SC,Node>::Read(std::string(matrixFileNameB), lib, comm);
+#endif
     RCP<Matrix> C;
 
     // Jacobi-specific
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Vector> Diagonal = Xpetra::VectorFactory<SC,LO,GO,Node>::Build(A->getRowMap(),true);
+#else
+    RCP<Vector> Diagonal = Xpetra::VectorFactory<SC,Node>::Build(A->getRowMap(),true);
+#endif
     A->getLocalDiagCopy(*Diagonal);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Vector> D = Xpetra::VectorFactory<SC,LO,GO,Node>::Build(A->getRowMap(),true);
+#else
+    RCP<Vector> D = Xpetra::VectorFactory<SC,Node>::Build(A->getRowMap(),true);
+#endif
     D->reciprocal(*Diagonal);
     SC omega = (4.0/3.0)*Teuchos::ScalarTraits<Scalar>::one();
       
@@ -540,7 +590,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
         // MKL_SPMM
         case Experiments::MKL_SPMM:
           #ifdef HAVE_MUELU_MKL
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("JAC MKL: Total"));            
             Jacobi_MKL_SPMM(*A,*B,*C,*D,omega);
@@ -549,7 +603,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // KK Algorithms (KK Memory)
         case Experiments::KK_MEM:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("JAC MSAK/SPGEMM_KK_MEMORY: Total"));
             Jacobi_Wrapper(*A,*B,*C,*D,omega,std::string("MSAK"),std::string("SPGEMM_KK_MEMORY"),kk_team_work_size);
@@ -557,7 +615,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // KK Algorithms (KK Dense)
         case Experiments::KK_DENSE:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("JAC MSAK/SPGEMM_KK_DENSE: Total"));
             Jacobi_Wrapper(*A,*B,*C,*D,omega,std::string("MSAK"),std::string("SPGEMM_KK_DENSE"),kk_team_work_size);
@@ -565,7 +627,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // KK Algorithms (KK Default)
         case Experiments::KK_DEFAULT:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("JAC SPGEMM_KK: Total"));
             Jacobi_Wrapper(*A,*B,*C,*D,omega,std::string("MSAK"),std::string("SPGEMM_KK"),kk_team_work_size);
@@ -573,7 +639,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // LTG (MSAK)
         case Experiments::LTG_MSAK:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("JAC MSAK/LTG: Total"));
             Jacobi_Wrapper(*A,*B,*C,*D,omega,std::string("MSAK"),std::string("LTG"),0);
@@ -581,7 +651,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // LTG (Jacobi)
         case Experiments::LTG_JAC:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("JAC JLTG: Total"));
             Jacobi_Wrapper(*A,*B,*C,*D,omega,std::string("LTG"),std::string("--"),0);

@@ -140,33 +140,64 @@ int main(int argc, char *argv[])
         GaleriList.set("my", GO(N));
         GaleriList.set("mz", GO(N));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Map<LO,GO,NO> > UniqueMap;
         RCP<MultiVector<SC,LO,GO,NO> > Coordinates;
         RCP<Matrix<SC,LO,GO,NO> > K;
+#else
+        RCP<const Map<NO> > UniqueMap;
+        RCP<MultiVector<SC,NO> > Coordinates;
+        RCP<Matrix<SC,NO> > K;
+#endif
         if (Dimension==2) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             UniqueMap = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian2D",comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
             Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("2D",UniqueMap,GaleriList);
             RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Laplace2D",UniqueMap,GaleriList);
+#else
+            UniqueMap = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian2D",comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+            Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("2D",UniqueMap,GaleriList);
+            RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Laplace2D",UniqueMap,GaleriList);
+#endif
             K = Problem->BuildMatrix();
         } else if (Dimension==3) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             UniqueMap = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian3D",comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
             Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("3D",UniqueMap,GaleriList);
             RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Laplace3D",UniqueMap,GaleriList);
+#else
+            UniqueMap = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian3D",comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+            Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("3D",UniqueMap,GaleriList);
+            RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Laplace3D",UniqueMap,GaleriList);
+#endif
             K = Problem->BuildMatrix();
         }
 
         comm->barrier(); if (comm->getRank()==0) cout << "#############\n# Constructing Repeated Map #\n#############\n" << endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Map<LO,GO,NO> > RepeatedMap = BuildRepeatedMap<LO,GO,NO>(K->getCrsGraph());
+#else
+        RCP<const Map<NO> > RepeatedMap = BuildRepeatedMap<NO>(K->getCrsGraph());
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Map<LO,GO,NO> > RepeatedNodesMap;
         ArrayRCP<RCP<const Map<LO,GO,NO> > > RepeatedDofMaps;
+#else
+        RCP<const Map<NO> > RepeatedNodesMap;
+        ArrayRCP<RCP<const Map<NO> > > RepeatedDofMaps;
+#endif
         BuildDofMaps(RepeatedMap,1,NodeWise,RepeatedNodesMap,RepeatedDofMaps);
 
         comm->barrier(); if (comm->getRank()==0) cout << "#############\n# Constructing Interface Partition of Unity #\n#############\n" << endl;
         RCP<const Comm<int> > SerialComm = createSerialComm<int>();
 
         RCP<ParameterList> parameterList = getParametersFromXmlFile("ParametersIPOU.xml");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<InterfacePartitionOfUnity<SC,LO,GO,NO> > IPOU(new GDSWInterfacePartitionOfUnity<SC,LO,GO,NO>(RepeatedMap->getComm(),SerialComm,Dimension,1,RepeatedNodesMap,RepeatedDofMaps,sublist(parameterList,"GDSW"),All,UN(1)));
+#else
+        RCP<InterfacePartitionOfUnity<SC,NO> > IPOU(new GDSWInterfacePartitionOfUnity<SC,NO>(RepeatedMap->getComm(),SerialComm,Dimension,1,RepeatedNodesMap,RepeatedDofMaps,sublist(parameterList,"GDSW"),All,UN(1)));
+#endif
         IPOU->sortInterface(K);
         IPOU->computePartitionOfUnity();
 

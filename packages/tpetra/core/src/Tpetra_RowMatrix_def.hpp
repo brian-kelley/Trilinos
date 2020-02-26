@@ -48,17 +48,37 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>::~RowMatrix() {}
+#else
+  template <class Scalar, class Node>
+  RowMatrix<Scalar,Node>::~RowMatrix() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<RowMatrix<Scalar, Node> >
+  RowMatrix<Scalar, Node>::
+#endif
   add (const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
        const RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+       const RowMatrix<Scalar, Node>& A,
+#endif
        const Scalar& beta,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
        const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& domainMap,
        const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& rangeMap,
+#else
+       const Teuchos::RCP<const Map<Node> >& domainMap,
+       const Teuchos::RCP<const Map<Node> >& rangeMap,
+#endif
        const Teuchos::RCP<Teuchos::ParameterList>& params) const
   {
     using Teuchos::Array;
@@ -71,9 +91,15 @@ namespace Tpetra {
     typedef LocalOrdinal LO;
     typedef GlobalOrdinal GO;
     typedef Teuchos::ScalarTraits<Scalar> STS;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LO, GO, Node> map_type;
     typedef RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> this_type;
     typedef CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> crs_matrix_type;
+#else
+    typedef Map<Node> map_type;
+    typedef RowMatrix<Scalar, Node> this_type;
+    typedef CrsMatrix<Scalar, Node> crs_matrix_type;
+#endif
 
     const this_type& B = *this; // a convenient abbreviation
 
@@ -290,9 +316,17 @@ namespace Tpetra {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  RowMatrix<Scalar, Node>::
+#endif
   pack (const Teuchos::ArrayView<const LocalOrdinal>& exportLIDs,
         Teuchos::Array<char>& exports,
         const Teuchos::ArrayView<size_t>& numPacketsPerLID,
@@ -340,9 +374,17 @@ namespace Tpetra {
 #endif // HAVE_TPETRA_DEBUG
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  RowMatrix<Scalar, Node>::
+#endif
   allocatePackSpace (Teuchos::Array<char>& exports,
                      size_t& totalNumEntries,
                      const Teuchos::ArrayView<const LocalOrdinal>& exportLIDs) const
@@ -382,9 +424,17 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  RowMatrix<Scalar, Node>::
+#endif
   packRow (char* const numEntOut,
            char* const valOut,
            char* const indOut,
@@ -395,7 +445,11 @@ namespace Tpetra {
     using Teuchos::ArrayView;
     typedef LocalOrdinal LO;
     typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const LO numEntLO = static_cast<LO> (numEnt);
     memcpy (numEntOut, &numEntLO, sizeof (LO));
@@ -479,9 +533,17 @@ namespace Tpetra {
     return true;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  RowMatrix<Scalar, Node>::
+#endif
   packImpl (const Teuchos::ArrayView<const LocalOrdinal>& exportLIDs,
             Teuchos::Array<char>& exports,
             const Teuchos::ArrayView<size_t>& numPacketsPerLID,
@@ -590,9 +652,17 @@ namespace Tpetra {
       << ", numBytes: " << firstBadNumBytes << ".");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   LocalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  RowMatrix<Scalar, Node>::
+#endif
   getLocalRowViewRaw (const LocalOrdinal lclRow,
                       LocalOrdinal& numEnt,
                       const LocalOrdinal*& lclColInds,
@@ -626,8 +696,13 @@ namespace Tpetra {
 // Must be expanded from within the Tpetra namespace!
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_ROWMATRIX_INSTANT(SCALAR,LO,GO,NODE) \
   template class RowMatrix< SCALAR , LO , GO , NODE >;
+#else
+#define TPETRA_ROWMATRIX_INSTANT(SCALAR,NODE) \
+  template class RowMatrix< SCALAR , NODE >;
+#endif
 
 
 #endif // TPETRA_ROWMATRIX_DEF_HPP

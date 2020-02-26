@@ -219,7 +219,11 @@ namespace Tpetra {
              class UnaryFunctionType>
     class UnaryTransformSameMultiVector {
     private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+      using MV = ::Tpetra::MultiVector<SC, NT>;
+#endif
       using IST = typename MV::impl_scalar_type;
 
     public:
@@ -242,22 +246,42 @@ namespace Tpetra {
     void
     unaryTransformSameMultiVector (const char kernelLabel[],
                                    ExecutionSpace execSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    ::Tpetra::MultiVector<SC, LO, GO, NT>& output,
+#else
+                                   ::Tpetra::MultiVector<SC, NT>& output,
+#endif
                                    UnaryFunctionType f)
     {
       using functor_type = UnaryTransformSameMultiVector<ExecutionSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         SC, LO, GO, NT, UnaryFunctionType>;
+#else
+        SC, NT, UnaryFunctionType>;
+#endif
       ::Tpetra::for_each (kernelLabel, execSpace, output, functor_type (f));
     }
 
     /// \brief Implementation of Tpetra::transform for
     ///   Tpetra::MultiVector.
     template<class ExecutionSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              class SC, class LO, class GO, class NT>
+#else
+             class SC, class NT>
+#endif
     struct Transform<ExecutionSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      ::Tpetra::MultiVector<SC, LO, GO, NT> >
+#else
+                     ::Tpetra::MultiVector<SC, NT> >
+#endif
     {
     private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LO = typename Tpetra::Map<>::local_ordinal_type;
+      using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       // Given a Kokkos execution space on which the user wants to run
       // the transform, and a memory space in which the MultiVector's
       // data live, determine the memory space that transform should
@@ -271,7 +295,11 @@ namespace Tpetra {
           typename MemorySpace::memory_space,
           typename ExecutionSpace::memory_space>::type;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+      using MV = ::Tpetra::MultiVector<SC, NT>;
+#endif
       using preferred_memory_space =
         typename MV::device_type::memory_space;
       using memory_space =
@@ -283,8 +311,13 @@ namespace Tpetra {
       // can sync correctly.  The result of transform is undefined if
       // input and output partially alias one another.
       static bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       sameObject (const ::Tpetra::MultiVector<SC, LO, GO, NT>& input,
                   const ::Tpetra::MultiVector<SC, LO, GO, NT>& output)
+#else
+      sameObject (const ::Tpetra::MultiVector<SC, NT>& input,
+                  const ::Tpetra::MultiVector<SC, NT>& output)
+#endif
       {
         return &input == &output ||
           input.getLocalViewHost ().data () ==
@@ -298,8 +331,13 @@ namespace Tpetra {
       transform_vec_notSameObject
         (const char kernelLabel[],
          ExecutionSpace execSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          ::Tpetra::Vector<SC, LO, GO, NT>& input,
          ::Tpetra::Vector<SC, LO, GO, NT>& output,
+#else
+         ::Tpetra::Vector<SC, NT>& input,
+         ::Tpetra::Vector<SC, NT>& output,
+#endif
          UnaryFunctionType f)
       {
         memory_space memSpace;
@@ -333,8 +371,13 @@ namespace Tpetra {
       transform_mv_notSameObject
         (const char kernelLabel[],
          ExecutionSpace execSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          ::Tpetra::MultiVector<SC, LO, GO, NT>& input,
          ::Tpetra::MultiVector<SC, LO, GO, NT>& output,
+#else
+         ::Tpetra::MultiVector<SC, NT>& input,
+         ::Tpetra::MultiVector<SC, NT>& output,
+#endif
          UnaryFunctionType f)
       {
         memory_space memSpace;
@@ -368,8 +411,13 @@ namespace Tpetra {
       static void
       transform (const char kernelLabel[],
                  ExecutionSpace execSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  ::Tpetra::MultiVector<SC, LO, GO, NT>& input,
                  ::Tpetra::MultiVector<SC, LO, GO, NT>& output,
+#else
+                 ::Tpetra::MultiVector<SC, NT>& input,
+                 ::Tpetra::MultiVector<SC, NT>& output,
+#endif
                  UnaryFunctionType f)
       {
         using Teuchos::TypeNameTraits;
@@ -431,9 +479,15 @@ namespace Tpetra {
       static void
       transform (const char kernelLabel[],
                  ExecutionSpace execSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  ::Tpetra::MultiVector<SC, LO, GO, NT>& input1,
                  ::Tpetra::MultiVector<SC, LO, GO, NT>& input2,
                  ::Tpetra::MultiVector<SC, LO, GO, NT>& output,
+#else
+                 ::Tpetra::MultiVector<SC, NT>& input1,
+                 ::Tpetra::MultiVector<SC, NT>& input2,
+                 ::Tpetra::MultiVector<SC, NT>& output,
+#endif
                  BinaryFunctionType f)
       {
         using Teuchos::TypeNameTraits;
@@ -491,7 +545,11 @@ namespace Tpetra {
             // Help GCC 4.9.3 deduce the types of *output_j,
             // *input1_j, and *input2_j.  See discussion here:
             // https://github.com/trilinos/Trilinos/pull/5115
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             using vec_type = ::Tpetra::Vector<SC, LO, GO, NT>;
+#else
+            using vec_type = ::Tpetra::Vector<SC, NT>;
+#endif
             vec_type& input1_j_ref = *input1_j;
             vec_type& input2_j_ref = *input2_j;
             vec_type& output_j_ref = *output_j;
@@ -701,20 +759,41 @@ namespace Tpetra {
     /// specializations don't recognize subclasses of their
     /// specialized template arguments.
     template<class ExecutionSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              class SC, class LO, class GO, class NT>
+#else
+             class SC, class NT>
+#endif
     struct Transform<ExecutionSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      ::Tpetra::Vector<SC, LO, GO, NT> >
+#else
+                     ::Tpetra::Vector<SC, NT> >
+#endif
     {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LO = typename Tpetra::Map<>::local_ordinal_type;
+      using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       // Implementation of unary transform on Vectors.
       template<class UnaryFunctionType>
       static void
       transform (const char kernelLabel[],
                  ExecutionSpace execSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  ::Tpetra::Vector<SC, LO, GO, NT>& input,
                  ::Tpetra::Vector<SC, LO, GO, NT>& output,
+#else
+                 ::Tpetra::Vector<SC, NT>& input,
+                 ::Tpetra::Vector<SC, NT>& output,
+#endif
                  UnaryFunctionType f)
       {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+        using MV = ::Tpetra::MultiVector<SC, NT>;
+#endif
         using impl_type = Transform<ExecutionSpace, MV>;
         using UFT = UnaryFunctionType;
 
@@ -727,12 +806,22 @@ namespace Tpetra {
       static void
       transform (const char kernelLabel[],
                  ExecutionSpace execSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  ::Tpetra::Vector<SC, LO, GO, NT>& input1,
                  ::Tpetra::Vector<SC, LO, GO, NT>& input2,
                  ::Tpetra::Vector<SC, LO, GO, NT>& output,
+#else
+                 ::Tpetra::Vector<SC, NT>& input1,
+                 ::Tpetra::Vector<SC, NT>& input2,
+                 ::Tpetra::Vector<SC, NT>& output,
+#endif
                  BinaryFunctionType f)
       {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+        using MV = ::Tpetra::MultiVector<SC, NT>;
+#endif
         using impl_type = Transform<ExecutionSpace, MV>;
         using BFT = BinaryFunctionType;
 

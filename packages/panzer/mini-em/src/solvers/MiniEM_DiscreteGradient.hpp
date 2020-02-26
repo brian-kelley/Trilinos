@@ -66,8 +66,13 @@ void addDiscreteGradientToRequestHandler(
     typedef LocalOrdinalTpetra LocalOrdinal;
     typedef GlobalOrdinalTpetra GlobalOrdinal;
     typedef panzer::GlobalIndexer UGI;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename panzer::BlockedTpetraLinearObjContainer<Scalar,LocalOrdinal,GlobalOrdinal> linObjContainer;
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal> matrix;
+#else
+    typedef typename panzer::BlockedTpetraLinearObjContainer<Scalar> linObjContainer;
+    typedef Tpetra::CrsMatrix<Scalar> matrix;
+#endif
     typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal> map;
 
     RCP<const panzer::BlockedDOFManager> blockedDOFMngr = tblof->getGlobalIndexer();
@@ -150,8 +155,13 @@ void addDiscreteGradientToRequestHandler(
     }//end element block loop
     grad_matrix->fillComplete(domainmap,rangemap);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Thyra::LinearOpBase<double> > thyra_gradient = Thyra::tpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,typename matrix::node_type>(Thyra::createVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal>(rangemap),
                                                                                                                                            Thyra::createVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal>(domainmap),
+#else
+    RCP<Thyra::LinearOpBase<double> > thyra_gradient = Thyra::tpetraLinearOp<Scalar,typename matrix::node_type>(Thyra::createVectorSpace<Scalar>(rangemap),
+                                                                                                                                           Thyra::createVectorSpace<Scalar>(domainmap),
+#endif
                                                                                                                                            grad_matrix);
 
     // add gradient callback to request handler

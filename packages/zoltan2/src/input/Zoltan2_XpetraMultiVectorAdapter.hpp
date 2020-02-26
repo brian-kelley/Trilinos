@@ -92,9 +92,17 @@ public:
   typedef User user_t;
   typedef User userCoord_t;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> x_mvector_t;
+#else
+  typedef Xpetra::MultiVector<scalar_t, node_t> x_mvector_t;
+#endif
   typedef Xpetra::TpetraMultiVector<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     scalar_t, lno_t, gno_t, node_t> xt_mvector_t;
+#else
+    scalar_t, node_t> xt_mvector_t;
+#endif
 #endif
 
   /*! \brief Destructor
@@ -218,7 +226,11 @@ private:
 
   RCP<const User> invector_;
   RCP<const x_mvector_t> vector_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::Map<lno_t, gno_t, node_t> > map_;
+#else
+  RCP<const Xpetra::Map<node_t> > map_;
+#endif
 
   int numWeights_;
   ArrayRCP<StridedData<lno_t, scalar_t> > weights_;

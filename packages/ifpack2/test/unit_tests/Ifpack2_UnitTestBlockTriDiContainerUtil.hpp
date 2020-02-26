@@ -55,8 +55,16 @@
 
 namespace tif_utest {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LO, typename GO>
+#else
+template <typename Scalar,>
+#endif
 struct BlockTriDiContainerTester {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   typedef LO Int;
   typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType Magnitude;
 #if defined(HAVE_IFPACK2_BLOCKTRIDICONTAINER_SMALL_SCALAR) 
@@ -64,7 +72,11 @@ struct BlockTriDiContainerTester {
 #else 
   typedef Magnitude SmallMagnitude;  
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef tif_utest::BlockCrsMatrixMaker<Scalar, LO, GO> bcmm;
+#else
+  typedef tif_utest::BlockCrsMatrixMaker<Scalar> bcmm;
+#endif
   typedef typename bcmm::Tpetra_RowMatrix Tpetra_RowMatrix;
   typedef typename bcmm::Tpetra_BlockCrsMatrix Tpetra_BlockCrsMatrix;
   typedef typename bcmm::Tpetra_MultiVector Tpetra_MultiVector;

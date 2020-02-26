@@ -122,7 +122,11 @@ int main(int argc, char *argv[]) {
   typedef MV::global_ordinal_type GO;
 
   typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LO,GO> MAT;
+#else
+  typedef Tpetra::CrsMatrix<Scalar> MAT;
+#endif
 
   using Tpetra::global_size_t;
   using Teuchos::tuple;

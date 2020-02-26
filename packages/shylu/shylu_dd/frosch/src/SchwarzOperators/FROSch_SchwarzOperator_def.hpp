@@ -50,16 +50,26 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     SchwarzOperator<SC,LO,GO,NO>::SchwarzOperator(CommPtr comm) :
+#else
+    template<class SC,class NO>
+    SchwarzOperator<SC,NO>::SchwarzOperator(CommPtr comm) :
+#endif
     MpiComm_ (comm),
     Verbose_ (comm->getRank()==0)
     {
         
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     SchwarzOperator<SC,LO,GO,NO>::SchwarzOperator(ConstXMatrixPtr k,
+#else
+    template<class SC,class NO>
+    SchwarzOperator<SC,NO>::SchwarzOperator(ConstXMatrixPtr k,
+#endif
                                                   ParameterListPtr parameterList) :
     MpiComm_ (k->getRangeMap()->getComm()),
     K_ (k),
@@ -70,14 +80,24 @@ namespace FROSch {
         FROSCH_ASSERT(getDomainMap()->isSameAs(*getRangeMap()),"SchwarzOperator assumes DomainMap==RangeMap");
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     SchwarzOperator<SC,LO,GO,NO>::~SchwarzOperator()
+#else
+    template<class SC,class NO>
+    SchwarzOperator<SC,NO>::~SchwarzOperator()
+#endif
     {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     void SchwarzOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
+#else
+    template<class SC,class NO>
+    void SchwarzOperator<SC,NO>::apply(const XMultiVector &x,
+#endif
                                              XMultiVector &y,
                                              ETransp mode,
                                              SC alpha,
@@ -86,32 +106,57 @@ namespace FROSch {
         return apply(x,y,false,mode,alpha,beta);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename SchwarzOperator<SC,LO,GO,NO>::ConstXMapPtr SchwarzOperator<SC,LO,GO,NO>::getDomainMap() const
+#else
+    template<class SC,class NO>
+    typename SchwarzOperator<SC,NO>::ConstXMapPtr SchwarzOperator<SC,NO>::getDomainMap() const
+#endif
     {
         return K_->getDomainMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     typename SchwarzOperator<SC,LO,GO,NO>::ConstXMapPtr SchwarzOperator<SC,LO,GO,NO>::getRangeMap() const
+#else
+    template<class SC,class NO>
+    typename SchwarzOperator<SC,NO>::ConstXMapPtr SchwarzOperator<SC,NO>::getRangeMap() const
+#endif
     {
         return K_->getRangeMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     bool SchwarzOperator<SC,LO,GO,NO>::isInitialized() const
+#else
+    template<class SC,class NO>
+    bool SchwarzOperator<SC,NO>::isInitialized() const
+#endif
     {
         return IsInitialized_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     bool SchwarzOperator<SC,LO,GO,NO>::isComputed() const
+#else
+    template<class SC,class NO>
+    bool SchwarzOperator<SC,NO>::isComputed() const
+#endif
     {
         return IsComputed_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     int SchwarzOperator<SC,LO,GO,NO>::resetMatrix(ConstXMatrixPtr &k) {
+#else
+    template<class SC,class NO>
+    int SchwarzOperator<SC,NO>::resetMatrix(ConstXMatrixPtr &k) {
+#endif
     // Maybe set IsComputed_ = false ? -> Go through code to be saver/cleaner
     // This function must be actively called by the user, and is only for recycling purposes.
     // The preconditioner is still computed and this point or the preconditioner was never computed and can now be computed with the matrix k now.
@@ -119,8 +164,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC,class LO,class GO,class NO>
     void SchwarzOperator<SC,LO,GO,NO>::residual(const XMultiVector & X,
+#else
+    template<class SC,class NO>
+    void SchwarzOperator<SC,NO>::residual(const XMultiVector & X,
+#endif
                                                 const XMultiVector & B,
                                                 XMultiVector& R) const {
       SC one = Teuchos::ScalarTraits<SC>::one(), negone = -one;

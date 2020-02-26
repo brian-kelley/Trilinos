@@ -239,7 +239,11 @@ OverlappingRowMatrix<MatrixType>::getComm () const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 OverlappingRowMatrix<MatrixType>::getRowMap () const
 {
   // FIXME (mfh 12 July 2013) Is this really the right Map to return?
@@ -248,7 +252,11 @@ OverlappingRowMatrix<MatrixType>::getRowMap () const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 OverlappingRowMatrix<MatrixType>::getColMap () const
 {
   // FIXME (mfh 12 July 2013) Is this really the right Map to return?
@@ -257,7 +265,11 @@ OverlappingRowMatrix<MatrixType>::getColMap () const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 OverlappingRowMatrix<MatrixType>::getDomainMap () const
 {
   // The original matrix's domain map is irrelevant; we want the map associated
@@ -273,7 +285,11 @@ OverlappingRowMatrix<MatrixType>::getDomainMap () const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 OverlappingRowMatrix<MatrixType>::getRangeMap () const
 {
   return RowMap_;
@@ -281,7 +297,11 @@ OverlappingRowMatrix<MatrixType>::getRangeMap () const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::node_type> >
+#endif
 OverlappingRowMatrix<MatrixType>::getGraph() const
 {
   return graph_;
@@ -830,14 +850,22 @@ void OverlappingRowMatrix<MatrixType>::describe(Teuchos::FancyOStream &out,
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type, typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type, typename MatrixType::node_type> >
+#endif
 OverlappingRowMatrix<MatrixType>::getUnderlyingMatrix() const
 {
   return A_;
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type, typename MatrixType::local_ordinal_type, typename MatrixType::global_ordinal_type, typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type, typename MatrixType::node_type> >
+#endif
 OverlappingRowMatrix<MatrixType>::getExtMatrix() const
 {
   return ExtMatrix_;
@@ -852,7 +880,12 @@ Teuchos::ArrayView<const size_t> OverlappingRowMatrix<MatrixType>::getExtHaloSta
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_OVERLAPPINGROWMATRIX_INSTANT(S,LO,GO,N)                 \
   template class Ifpack2::OverlappingRowMatrix< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_OVERLAPPINGROWMATRIX_INSTANT(S,N)                 \
+  template class Ifpack2::OverlappingRowMatrix< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif // IFPACK2_OVERLAPPINGROWMATRIX_DEF_HPP

@@ -145,13 +145,24 @@ main (int argc, char *argv[])
   typedef Tpetra::Map<>::node_type Node;
 
   // Matrix stuff
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO,GO,Node> map_type;
   typedef Tpetra::CrsMatrix<ST,LO,GO,Node> crs_matrix_type;
   typedef Tpetra::RowMatrix<ST,LO,GO,Node> row_matrix_type;
   typedef Tpetra::Vector<ST,LO,GO,Node> vector_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::CrsMatrix<ST,Node> crs_matrix_type;
+  typedef Tpetra::RowMatrix<ST,Node> row_matrix_type;
+  typedef Tpetra::Vector<ST,Node> vector_type;
+#endif
 
   // Ifpack2 stuff
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::Preconditioner< ST, LO, GO, Node > PrecType;
+#else
+  typedef Ifpack2::Preconditioner< ST, Node > PrecType;
+#endif
   typedef Ifpack2::BlockRelaxation<row_matrix_type> BlockRelax;
   typedef Ifpack2::AdditiveSchwarz< row_matrix_type > TheSchwarz;
 

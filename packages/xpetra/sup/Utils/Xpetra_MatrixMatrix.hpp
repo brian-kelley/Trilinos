@@ -89,8 +89,10 @@ namespace Xpetra {
 Note: this class is not in the Xpetra_UseShortNames.hpp
 */
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal  = int,
             class GlobalOrdinal = LocalOrdinal,
+#endif
             class Node          = KokkosClassic::DefaultNode::DefaultNodeType>
   class Helpers {
 #include "Xpetra_UseShortNames.hpp"
@@ -98,6 +100,10 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
   public:
 
 #ifdef HAVE_XPETRA_EPETRA
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     static RCP<const Epetra_CrsMatrix> Op2EpetraCrs(RCP<Matrix> Op) {
       // Get the underlying Epetra Mtx
       RCP<const CrsMatrixWrap> crsOp = Teuchos::rcp_dynamic_cast<const CrsMatrixWrap>(Op);
@@ -160,35 +166,59 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
 #endif // HAVE_XPETRA_EPETRA
 
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Tpetra::CrsMatrix<SC,LO,GO,NO> > Op2TpetraCrs(RCP<Matrix> Op) {
+#else
+    static RCP<const Tpetra::CrsMatrix<SC,NO> > Op2TpetraCrs(RCP<Matrix> Op) {
+#endif
       // Get the underlying Tpetra Mtx
       RCP<const CrsMatrixWrap> crsOp = Teuchos::rcp_dynamic_cast<const CrsMatrixWrap>(Op);
       TEUCHOS_TEST_FOR_EXCEPTION(crsOp == Teuchos::null, Xpetra::Exceptions::BadCast, "Cast from Xpetra::Matrix to Xpetra::CrsMatrixWrap failed");
 
       RCP<const CrsMatrix> tmp_CrsMtx = crsOp->getCrsMatrix();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const RCP<const Xpetra::TpetraCrsMatrix<SC,LO,GO,NO> > &tmp_ECrsMtx = Teuchos::rcp_dynamic_cast<const Xpetra::TpetraCrsMatrix<SC,LO,GO,NO> >(tmp_CrsMtx);
+#else
+      const RCP<const Xpetra::TpetraCrsMatrix<SC,NO> > &tmp_ECrsMtx = Teuchos::rcp_dynamic_cast<const Xpetra::TpetraCrsMatrix<SC,NO> >(tmp_CrsMtx);
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(tmp_ECrsMtx == Teuchos::null, Xpetra::Exceptions::BadCast, "Cast from Xpetra::CrsMatrix to Xpetra::TpetraCrsMatrix failed");
 
       return tmp_ECrsMtx->getTpetra_CrsMatrix();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Tpetra::CrsMatrix<SC,LO,GO,NO> > Op2NonConstTpetraCrs(RCP<Matrix> Op) {
+#else
+    static RCP<Tpetra::CrsMatrix<SC,NO> > Op2NonConstTpetraCrs(RCP<Matrix> Op) {
+#endif
       // Get the underlying Tpetra Mtx
       RCP<const CrsMatrixWrap> crsOp = Teuchos::rcp_dynamic_cast<const CrsMatrixWrap>(Op);
       TEUCHOS_TEST_FOR_EXCEPTION(crsOp == Teuchos::null, Xpetra::Exceptions::BadCast, "Cast from Xpetra::Matrix to Xpetra::CrsMatrixWrap failed");
       RCP<const CrsMatrix> tmp_CrsMtx = crsOp->getCrsMatrix();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const RCP<const Xpetra::TpetraCrsMatrix<SC,LO,GO,NO> > &tmp_ECrsMtx = Teuchos::rcp_dynamic_cast<const Xpetra::TpetraCrsMatrix<SC,LO,GO,NO> >(tmp_CrsMtx);
+#else
+      const RCP<const Xpetra::TpetraCrsMatrix<SC,NO> > &tmp_ECrsMtx = Teuchos::rcp_dynamic_cast<const Xpetra::TpetraCrsMatrix<SC,NO> >(tmp_CrsMtx);
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(tmp_ECrsMtx == Teuchos::null, Xpetra::Exceptions::BadCast, "Cast from Xpetra::CrsMatrix to Xpetra::TpetraCrsMatrix failed");
 
       return tmp_ECrsMtx->getTpetra_CrsMatrixNonConst();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static const Tpetra::CrsMatrix<SC,LO,GO,NO> & Op2TpetraCrs(const Matrix& Op) {
+#else
+    static const Tpetra::CrsMatrix<SC,NO> & Op2TpetraCrs(const Matrix& Op) {
+#endif
       // Get the underlying Tpetra Mtx
       try{
         const CrsMatrixWrap& crsOp = dynamic_cast<const CrsMatrixWrap&>(Op);
         RCP<const CrsMatrix> tmp_CrsMtx = crsOp.getCrsMatrix();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const RCP<const Xpetra::TpetraCrsMatrix<SC,LO,GO,NO> > &tmp_TCrsMtx = Teuchos::rcp_dynamic_cast<const Xpetra::TpetraCrsMatrix<SC,LO,GO,NO> >(tmp_CrsMtx);
+#else
+        const RCP<const Xpetra::TpetraCrsMatrix<SC,NO> > &tmp_TCrsMtx = Teuchos::rcp_dynamic_cast<const Xpetra::TpetraCrsMatrix<SC,NO> >(tmp_CrsMtx);
+#endif
         TEUCHOS_TEST_FOR_EXCEPTION(tmp_TCrsMtx == Teuchos::null, Xpetra::Exceptions::BadCast, "Cast from Xpetra::CrsMatrix to Xpetra::TpetraCrsMatrix failed");
 
         return *tmp_TCrsMtx->getTpetra_CrsMatrix();
@@ -198,15 +228,27 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static Tpetra::CrsMatrix<SC,LO,GO,NO> & Op2NonConstTpetraCrs(const Matrix& Op) {
+#else
+    static Tpetra::CrsMatrix<SC,NO> & Op2NonConstTpetraCrs(const Matrix& Op) {
+#endif
       // Get the underlying Tpetra Mtx
       try{
         const CrsMatrixWrap& crsOp = dynamic_cast<const CrsMatrixWrap& >(Op);
         RCP<const CrsMatrix> tmp_CrsMtx = crsOp.getCrsMatrix();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const RCP<const Xpetra::TpetraCrsMatrix<SC,LO,GO,NO> > &tmp_TCrsMtx = Teuchos::rcp_dynamic_cast<const Xpetra::TpetraCrsMatrix<SC,LO,GO,NO> >(tmp_CrsMtx);
+#else
+        const RCP<const Xpetra::TpetraCrsMatrix<SC,NO> > &tmp_TCrsMtx = Teuchos::rcp_dynamic_cast<const Xpetra::TpetraCrsMatrix<SC,NO> >(tmp_CrsMtx);
+#endif
         TEUCHOS_TEST_FOR_EXCEPTION(tmp_TCrsMtx == Teuchos::null, Xpetra::Exceptions::BadCast, "Cast from Xpetra::CrsMatrix to Xpetra::TpetraCrsMatrix failed");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return *Teuchos::rcp_const_cast<Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(tmp_TCrsMtx->getTpetra_CrsMatrix());
+#else
+        return *Teuchos::rcp_const_cast<Tpetra::CrsMatrix<Scalar, Node> >(tmp_TCrsMtx->getTpetra_CrsMatrix());
+#endif
 
       } catch (...) {
         throw(Xpetra::Exceptions::BadCast("Cast from Xpetra::Matrix to Xpetra::CrsMatrixWrap failed"));
@@ -215,7 +257,11 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
 #endif // HAVE_XPETRA_TPETRA
 
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using tcrs_matrix_type = Tpetra::CrsMatrix<SC,LO,GO,NO>;
+#else
+    using tcrs_matrix_type = Tpetra::CrsMatrix<SC,NO>;
+#endif
     static Teuchos::RCP<Matrix> tpetraAdd(
       const tcrs_matrix_type& A, bool transposeA, const typename tcrs_matrix_type::scalar_type alpha,
       const tcrs_matrix_type& B, bool transposeB, const typename tcrs_matrix_type::scalar_type beta)
@@ -226,11 +272,19 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
       using Teuchos::rcp_implicit_cast;
       using Teuchos::rcpFromRef;
       using Teuchos::ParameterList;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using XTCrsType = Xpetra::TpetraCrsMatrix<SC,LO,GO,NO>;
       using CrsType = Xpetra::CrsMatrix<SC,LO,GO,NO>;
       using CrsWrap = Xpetra::CrsMatrixWrap<SC,LO,GO,NO>;
       using transposer_type = Tpetra::RowMatrixTransposer<SC,LO,GO,NO>;
       using import_type = Tpetra::Import<LO,GO,NO>;
+#else
+      using XTCrsType = Xpetra::TpetraCrsMatrix<SC,NO>;
+      using CrsType = Xpetra::CrsMatrix<SC,NO>;
+      using CrsWrap = Xpetra::CrsMatrixWrap<SC,NO>;
+      using transposer_type = Tpetra::RowMatrixTransposer<SC,NO>;
+      using import_type = Tpetra::Import<NO>;
+#endif
       RCP<const tcrs_matrix_type> Aprime = rcpFromRef(A);
       if(transposeA)
         Aprime = transposer_type(Aprime).createTranspose();
@@ -241,7 +295,11 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
         RCP<ParameterList> addParams = rcp(new ParameterList);
         addParams->set("Call fillComplete", false);
         //passing A after B means C will have the same domain/range map as A (or A^T if transposeA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Tpetra::MatrixMatrix::add<SC,LO,GO,NO>(beta, transposeB, B, alpha, false, *Aprime, *C, Teuchos::null, Teuchos::null, addParams);
+#else
+        Tpetra::MatrixMatrix::add<SC,NO>(beta, transposeB, B, alpha, false, *Aprime, *C, Teuchos::null, Teuchos::null, addParams);
+#endif
         return rcp_implicit_cast<Matrix>(rcp(new CrsWrap(rcp_implicit_cast<CrsType>(rcp(new XTCrsType(C))))));
       }
       else
@@ -270,7 +328,11 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
         //Construct C
         RCP<tcrs_matrix_type> C = rcp(new tcrs_matrix_type(Aprime->getRowMap(), allocPerRow(), Tpetra::StaticProfile));
         //Compute the sum in C (already took care of transposes)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Tpetra::MatrixMatrix::Add<SC,LO,GO,NO>(
+#else
+        Tpetra::MatrixMatrix::Add<SC,NO>(
+#endif
             *Aprime, false, alpha,
             *Bprime, false, beta,
             C);
@@ -332,8 +394,10 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
   };
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal  /*= int*/,
             class GlobalOrdinal /*= LocalOrdinal*/,
+#endif
             class Node          /*= KokkosClassic::DefaultNode::DefaultNodeType*/>
   class MatrixMatrix {
 #undef XPETRA_MATRIXMATRIX_SHORT
@@ -341,6 +405,10 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal  /*= int*/ = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal /*= LocalOrdinal*/ = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     /** Given CrsMatrix objects A, B and C, form the product C = A*B.
       In a parallel setting, A and B need not have matching distributions,
       but C needs to have the same row-map as A (if transposeA is false).
@@ -392,9 +460,15 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
 #endif
       } else if (C.getRowMap()->lib() == Xpetra::UseTpetra) {
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpB = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(B);
         Tpetra::CrsMatrix<SC,LO,GO,NO> &       tpC = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(C);
+#else
+        const Tpetra::CrsMatrix<SC,NO> & tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+        const Tpetra::CrsMatrix<SC,NO> & tpB = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(B);
+        Tpetra::CrsMatrix<SC,NO> &       tpC = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(C);
+#endif
 
         // 18Feb2013 JJH I'm reenabling the code that allows the matrix matrix multiply to do the fillComplete.
         // Previously, Tpetra's matrix matrix multiply did not support fillComplete.
@@ -642,8 +716,13 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
         throw Exceptions::RuntimeError("TwoMatrixAdd for Epetra matrices needs <double,int,int> for Scalar, LocalOrdinal and GlobalOrdinal.");
       } else if (A.getRowMap()->lib() == Xpetra::UseTpetra) {
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO>& tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
         Tpetra::CrsMatrix<SC,LO,GO,NO>& tpB = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(B);
+#else
+        const Tpetra::CrsMatrix<SC,NO>& tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+        Tpetra::CrsMatrix<SC,NO>& tpB = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(B);
+#endif
 
         Tpetra::MatrixMatrix::Add(tpA, transposeA, alpha, tpB, beta);
 #else
@@ -687,8 +766,13 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
           throw Exceptions::RuntimeError("MatrixMatrix::Add for Epetra only available with Scalar = double, LO = GO = int.");
         } else if (lib == Xpetra::UseTpetra) {
   #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           using tcrs_matrix_type = Tpetra::CrsMatrix<SC,LO,GO,NO>;
           using helpers = Xpetra::Helpers<SC,LO,GO,NO>;
+#else
+          using tcrs_matrix_type = Tpetra::CrsMatrix<SC,NO>;
+          using helpers = Xpetra::Helpers<SC,NO>;
+#endif
           const tcrs_matrix_type& tpA = helpers::Op2TpetraCrs(A);
           const tcrs_matrix_type& tpB = helpers::Op2TpetraCrs(B);
           C = helpers::tpetraAdd(tpA, transposeA, alpha, tpB, transposeB, beta);
@@ -883,7 +967,11 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
 
       bool haveMultiplyDoFillComplete = call_FillComplete_on_result && doOptimizeStorage;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using helpers = Xpetra::Helpers<SC,LO,GO,NO>;
+#else
+      using helpers = Xpetra::Helpers<SC,NO>;
+#endif
 
       if (C.getRowMap()->lib() == Xpetra::UseEpetra) {
 #if defined(HAVE_XPETRA_EPETRA) && defined(HAVE_XPETRA_EPETRAEXT)
@@ -897,9 +985,15 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
         throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra <double,int,int> ETI enabled."));
 # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpA = helpers::Op2TpetraCrs(A);
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpB = helpers::Op2TpetraCrs(B);
         Tpetra::CrsMatrix<SC,LO,GO,NO> &       tpC = helpers::Op2NonConstTpetraCrs(C);
+#else
+        const Tpetra::CrsMatrix<SC,NO> & tpA = helpers::Op2TpetraCrs(A);
+        const Tpetra::CrsMatrix<SC,NO> & tpB = helpers::Op2TpetraCrs(B);
+        Tpetra::CrsMatrix<SC,NO> &       tpC = helpers::Op2NonConstTpetraCrs(C);
+#endif
 
         // 18Feb2013 JJH I'm reenabling the code that allows the matrix matrix multiply to do the fillComplete.
         // Previously, Tpetra's matrix matrix multiply did not support fillComplete.
@@ -962,11 +1056,20 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
       // This feature is currently not supported. We would have to introduce the HAVE_XPETRA_ML_MMM flag
 #if defined(HAVE_XPETRA_EPETRA) && defined(HAVE_XPETRA_EPETRAEXT) && defined(HAVE_XPETRA_ML_MMM)
       if (B.getDomainMap()->lib() == Xpetra::UseEpetra && !transposeA && !transposeB) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Epetra_CrsMatrix> epA = Xpetra::Helpers<SC,LO,GO,NO>::Op2EpetraCrs(rcpFromRef(A));
         RCP<const Epetra_CrsMatrix> epB = Xpetra::Helpers<SC,LO,GO,NO>::Op2EpetraCrs(rcpFromRef(B));
+#else
+        RCP<const Epetra_CrsMatrix> epA = Xpetra::Helpers<SC,NO>::Op2EpetraCrs(rcpFromRef(A));
+        RCP<const Epetra_CrsMatrix> epB = Xpetra::Helpers<SC,NO>::Op2EpetraCrs(rcpFromRef(B));
+#endif
         RCP<Epetra_CrsMatrix>       epC = MLTwoMatrixMultiply(*epA, *epB, fos);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Matrix> C = Convert_Epetra_CrsMatrix_ToXpetra_CrsMatrixWrap<SC,LO,GO,NO> (epC);
+#else
+        RCP<Matrix> C = Convert_Epetra_CrsMatrix_ToXpetra_CrsMatrixWrap<SC,NO> (epC);
+#endif
         if (doFillComplete) {
           RCP<Teuchos::ParameterList> fillParams = rcp(new Teuchos::ParameterList());
           fillParams->set("Optimize Storage", doOptimizeStorage);
@@ -1308,8 +1411,13 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
 
       if (A.getRowMap()->lib() == Xpetra::UseEpetra) {
 #if defined(HAVE_XPETRA_EPETRA) && defined(HAVE_XPETRA_EPETRAEXT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,LO,GO,NO>::Op2EpetraCrs(A);
         Epetra_CrsMatrix&       epB = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(B);
+#else
+        const Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,NO>::Op2EpetraCrs(A);
+        Epetra_CrsMatrix&       epB = Xpetra::Helpers<SC,NO>::Op2NonConstEpetraCrs(B);
+#endif
 
         //FIXME is there a bug if beta=0?
         int rv = EpetraExt::MatrixMatrix::Add(epA, transposeA, alpha, epB, beta);
@@ -1326,8 +1434,13 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
         throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra GO=int enabled."));
 # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO>& tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
         Tpetra::CrsMatrix<SC,LO,GO,NO>& tpB = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(B);
+#else
+        const Tpetra::CrsMatrix<SC,NO>& tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+        Tpetra::CrsMatrix<SC,NO>& tpB = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(B);
+#endif
 
         Tpetra::MatrixMatrix::Add(tpA, transposeA, alpha, tpB, beta);
 # endif
@@ -1353,7 +1466,11 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
     static void TwoMatrixAdd(const Matrix& A, bool transposeA, const SC& alpha,
                              const Matrix& B, bool transposeB, const SC& beta,
                              RCP<Matrix>& C,  Teuchos::FancyOStream &fos, bool AHasFixedNnzPerRow = false) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using helpers = Xpetra::Helpers<SC,LO,GO,NO>;
+#else
+      using helpers = Xpetra::Helpers<SC,NO>;
+#endif
       RCP<const Matrix> rcpA = Teuchos::rcpFromRef(A);
       RCP<const Matrix> rcpB = Teuchos::rcpFromRef(B);
       RCP<const BlockedCrsMatrix> rcpBopA = Teuchos::rcp_dynamic_cast<const BlockedCrsMatrix>(rcpA);
@@ -1399,12 +1516,20 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
 
               fos << "MatrixMatrix::TwoMatrixAdd : special case detected (one matrix has a fixed nnz per row)"
                 << ", using static profiling" << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               C = rcp(new Xpetra::CrsMatrixWrap<SC,LO,GO,NO>(A.getRowMap(), exactNnzPerRow));
+#else
+              C = rcp(new Xpetra::CrsMatrixWrap<SC,NO>(A.getRowMap(), exactNnzPerRow));
+#endif
 
             } else {
               // general case
               LO maxPossibleNNZ = A.getNodeMaxNumRowEntries() + B.getNodeMaxNumRowEntries();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               C = rcp(new Xpetra::CrsMatrixWrap<SC,LO,GO,NO>(A.getRowMap(), maxPossibleNNZ));
+#else
+              C = rcp(new Xpetra::CrsMatrixWrap<SC,NO>(A.getRowMap(), maxPossibleNNZ));
+#endif
             }
             if (transposeB)
               fos << "MatrixMatrix::TwoMatrixAdd : ** WARNING ** estimate could be badly wrong because second summand is transposed" << std::endl;
@@ -1426,7 +1551,11 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
          (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
           throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra GO=int enabled."));
     # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           using tcrs_matrix_type = Tpetra::CrsMatrix<SC,LO,GO,NO>;
+#else
+          using tcrs_matrix_type = Tpetra::CrsMatrix<SC,NO>;
+#endif
           const tcrs_matrix_type& tpA = helpers::Op2TpetraCrs(A);
           const tcrs_matrix_type& tpB = helpers::Op2TpetraCrs(B);
           C = helpers::tpetraAdd(tpA, transposeA, alpha, tpB, transposeB, beta);
@@ -1613,7 +1742,11 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
                          bool doOptimizeStorage           = true,
                          const std::string & label        = std::string(),
                          const RCP<ParameterList>& params = null) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using helpers = Xpetra::Helpers<SC,LO,GO,NO>;
+#else
+      using helpers = Xpetra::Helpers<SC,NO>;
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(transposeA == false && C.getRowMap()->isSameAs(*A.getRowMap()) == false,
         Xpetra::Exceptions::RuntimeError, "XpetraExt::MatrixMatrix::Multiply: row map of C is not same as row map of A");
       TEUCHOS_TEST_FOR_EXCEPTION(transposeA == true && C.getRowMap()->isSameAs(*A.getDomainMap()) == false,
@@ -1636,9 +1769,15 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
         throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra <double,int,long long, EpetraNode> ETI enabled."));
 # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpA = helpers::Op2TpetraCrs(A);
         const Tpetra::CrsMatrix<SC,LO,GO,NO> & tpB = helpers::Op2TpetraCrs(B);
         Tpetra::CrsMatrix<SC,LO,GO,NO> &       tpC = helpers::Op2NonConstTpetraCrs(C);
+#else
+        const Tpetra::CrsMatrix<SC,NO> & tpA = helpers::Op2TpetraCrs(A);
+        const Tpetra::CrsMatrix<SC,NO> & tpB = helpers::Op2TpetraCrs(B);
+        Tpetra::CrsMatrix<SC,NO> &       tpC = helpers::Op2NonConstTpetraCrs(C);
+#endif
 
         //18Feb2013 JJH I'm reenabling the code that allows the matrix matrix multiply to do the fillComplete.
         //Previously, Tpetra's matrix matrix multiply did not support fillComplete.
@@ -1892,8 +2031,13 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
 
       if (A.getRowMap()->lib() == Xpetra::UseEpetra) {
 #if defined(HAVE_XPETRA_EPETRA) && defined(HAVE_XPETRA_EPETRAEXT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,LO,GO,NO>::Op2EpetraCrs(A);
         Epetra_CrsMatrix&       epB = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(B);
+#else
+        const Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,NO>::Op2EpetraCrs(A);
+        Epetra_CrsMatrix&       epB = Xpetra::Helpers<SC,NO>::Op2NonConstEpetraCrs(B);
+#endif
 
         //FIXME is there a bug if beta=0?
         int rv = EpetraExt::MatrixMatrix::Add(epA, transposeA, alpha, epB, beta);
@@ -1910,8 +2054,13 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
      (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
         throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra GO=long long enabled."));
 # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const Tpetra::CrsMatrix<SC,LO,GO,NO>& tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
         Tpetra::CrsMatrix<SC,LO,GO,NO>& tpB = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(B);
+#else
+        const Tpetra::CrsMatrix<SC,NO>& tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+        Tpetra::CrsMatrix<SC,NO>& tpB = Xpetra::Helpers<SC,NO>::Op2NonConstTpetraCrs(B);
+#endif
 
         Tpetra::MatrixMatrix::Add(tpA, transposeA, alpha, tpB, beta);
 # endif
@@ -1948,8 +2097,13 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
         auto lib = A.getRowMap()->lib();
         if (lib == Xpetra::UseEpetra) {
   #if defined(HAVE_XPETRA_EPETRA) && defined(HAVE_XPETRA_EPETRAEXT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           const Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,LO,GO,NO>::Op2EpetraCrs(A);
           const Epetra_CrsMatrix& epB = Xpetra::Helpers<SC,LO,GO,NO>::Op2EpetraCrs(B);
+#else
+          const Epetra_CrsMatrix& epA = Xpetra::Helpers<SC,NO>::Op2EpetraCrs(A);
+          const Epetra_CrsMatrix& epB = Xpetra::Helpers<SC,NO>::Op2EpetraCrs(B);
+#endif
           if(C.is_null())
           {
             size_t maxNzInA     = 0;
@@ -1978,17 +2132,29 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
 
               fos << "MatrixMatrix::TwoMatrixAdd : special case detected (one matrix has a fixed nnz per row)"
                 << ", using static profiling" << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               C = rcp(new Xpetra::CrsMatrixWrap<SC,LO,GO,NO>(A.getRowMap(), exactNnzPerRow));
+#else
+              C = rcp(new Xpetra::CrsMatrixWrap<SC,NO>(A.getRowMap(), exactNnzPerRow));
+#endif
 
             } else {
               // general case
               LO maxPossibleNNZ = A.getNodeMaxNumRowEntries() + B.getNodeMaxNumRowEntries();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               C = rcp(new Xpetra::CrsMatrixWrap<SC,LO,GO,NO>(A.getRowMap(), maxPossibleNNZ));
+#else
+              C = rcp(new Xpetra::CrsMatrixWrap<SC,NO>(A.getRowMap(), maxPossibleNNZ));
+#endif
             }
             if (transposeB)
               fos << "MatrixMatrix::TwoMatrixAdd : ** WARNING ** estimate could be badly wrong because second summand is transposed" << std::endl;
           }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<Epetra_CrsMatrix>   epC = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(C);
+#else
+          RCP<Epetra_CrsMatrix>   epC = Xpetra::Helpers<SC,NO>::Op2NonConstEpetraCrs(C);
+#endif
           Epetra_CrsMatrix* ref2epC = &*epC; //to avoid a compiler error...
 
           //FIXME is there a bug if beta=0?
@@ -2005,10 +2171,17 @@ Note: this class is not in the Xpetra_UseShortNames.hpp
          (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_LONG_LONG))))
           throw(Xpetra::Exceptions::RuntimeError("Xpetra must be compiled with Tpetra GO=long long enabled."));
     # else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           using helpers = Xpetra::Helpers<SC,LO,GO,NO>;
           using tcrs_matrix_type = Tpetra::CrsMatrix<SC,LO,GO,NO>;
           const tcrs_matrix_type& tpA = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(A);
           const tcrs_matrix_type& tpB = Xpetra::Helpers<SC,LO,GO,NO>::Op2TpetraCrs(B);
+#else
+          using helpers = Xpetra::Helpers<SC,NO>;
+          using tcrs_matrix_type = Tpetra::CrsMatrix<SC,NO>;
+          const tcrs_matrix_type& tpA = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(A);
+          const tcrs_matrix_type& tpB = Xpetra::Helpers<SC,NO>::Op2TpetraCrs(B);
+#endif
           C = helpers::tpetraAdd(tpA, transposeA, alpha, tpB, transposeB, beta);
     # endif
   #else

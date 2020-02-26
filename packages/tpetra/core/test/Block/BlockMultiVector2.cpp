@@ -66,16 +66,28 @@ namespace {
 
   // Test BlockMultiVector::blockWiseMultiply (analog of
   // MultiVector::elementWiseMultiply).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, BlockWiseMultiply, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, BlockWiseMultiply, Scalar, Node )
+#endif
   {
     using Kokkos::view_alloc;
     using Kokkos::WithoutInitializing;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using BMV = Tpetra::BlockMultiVector<Scalar, LO, GO, Node>;
+#else
+    using BMV = Tpetra::BlockMultiVector<Scalar, Node>;
+#endif
     using device_type = typename BMV::device_type;
     using IST = typename BMV::impl_scalar_type;
     using host_device_type = Kokkos::Device<Kokkos::DefaultHostExecutionSpace, Kokkos::HostSpace>;
     using host_layout_type = typename Kokkos::View<IST**, device_type>::array_layout;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Tpetra::Map<LO, GO, Node>;
+#else
+    using map_type = Tpetra::Map<Node>;
+#endif
     using GST = Tpetra::global_size_t;
     using KAT = Kokkos::Details::ArithTraits<IST>;
     using MT = typename KAT::mag_type;
@@ -378,16 +390,28 @@ namespace {
   //
   // Test BlockMultiVector::blockJacobiUpdate.
   //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, BlockJacobiUpdate, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, BlockJacobiUpdate, Scalar, Node )
+#endif
   {
     using Kokkos::view_alloc;
     using Kokkos::WithoutInitializing;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using BMV = Tpetra::BlockMultiVector<Scalar, LO, GO, Node>;
+#else
+    using BMV = Tpetra::BlockMultiVector<Scalar, Node>;
+#endif
     using IST = typename BMV::impl_scalar_type;
     using device_type = typename BMV::device_type;
     using host_device_type = Kokkos::Device<Kokkos::DefaultHostExecutionSpace, Kokkos::HostSpace>;
     using host_layout_type = typename Kokkos::View<IST**, device_type>::array_layout;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Tpetra::Map<LO, GO, Node>;
+#else
+    using map_type = Tpetra::Map<Node>;
+#endif
     using GST = Tpetra::global_size_t;
     using KAT = Kokkos::Details::ArithTraits<IST>;
     using MT = typename KAT::mag_type;
@@ -677,9 +701,15 @@ namespace {
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, BlockWiseMultiply, SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, BlockJacobiUpdate, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, BlockWiseMultiply, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, BlockJacobiUpdate, SCALAR,NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

@@ -10,9 +10,17 @@ template<class Real,
          class Node=Tpetra::Map<>::node_type> 
 class PDE_OptVector_BatchManager : public ROL::TeuchosBatchManager<Real,GO> {
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Real,LO,GO,Node> FieldVector;
+#else
+  typedef Tpetra::MultiVector<Real,Node> FieldVector;
+#endif
   typedef std::vector<Real>                    ParamVector;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef PDE_OptVector<Real,LO,GO,Node>       OptVector;
+#else
+  typedef PDE_OptVector<Real,Node>       OptVector;
+#endif
 
 public:
   PDE_OptVector_BatchManager(const ROL::Ptr<const Teuchos::Comm<int> > &comm)
@@ -21,9 +29,17 @@ public:
   using ROL::TeuchosBatchManager<Real,GO>::sumAll;
   void sumAll(ROL::Vector<Real> &input, ROL::Vector<Real> &output) {
     // Sum all field components across processors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ROL::Ptr<ROL::TpetraMultiVector<Real,LO,GO,Node> > input_field_ptr
+#else
+    ROL::Ptr<ROL::TpetraMultiVector<Real,Node> > input_field_ptr
+#endif
       = dynamic_cast<OptVector&>(input).getField();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ROL::Ptr<ROL::TpetraMultiVector<Real,LO,GO,Node> > output_field_ptr
+#else
+    ROL::Ptr<ROL::TpetraMultiVector<Real,Node> > output_field_ptr
+#endif
       = dynamic_cast<OptVector&>(output).getField();
 
     if ( input_field_ptr != ROL::nullPtr ) {

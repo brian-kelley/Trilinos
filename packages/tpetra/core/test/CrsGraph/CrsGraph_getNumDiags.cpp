@@ -63,10 +63,19 @@ namespace { // (anonymous)
   // UNIT TESTS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, getNumDiags, LO, GO, NT )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, getNumDiags, NT )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, NT> crs_graph_type;
     typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+    typedef Tpetra::CrsGraph<NT> crs_graph_type;
+    typedef Tpetra::Map<NT> map_type;
+#endif
     int lclSuccess = 1;
     int gblSuccess = 0;
 
@@ -227,8 +236,13 @@ namespace { // (anonymous)
   // INSTANTIATIONS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, getNumDiags, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP(NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, getNumDiags, NT )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

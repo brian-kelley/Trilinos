@@ -130,7 +130,11 @@ void blockTpetraToThyra(int numVectors,Teuchos::ArrayRCP<const ST> tpetraData,in
 // Convert a Tpetra_MultiVector with assumed block structure dictated by the
 // vector space into a Thyra::MultiVectorBase object.
 // const Teuchos::RCP<const Thyra::MultiVectorBase<double> > blockTpetraToThyra(const Tpetra_MultiVector & e,const Teuchos::RCP<const Thyra::VectorSpaceBase<double> > & vs)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void blockTpetraToThyra(const Tpetra::MultiVector<ST,LO,GO,NT> & tpetraX,const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyraX) 
+#else
+void blockTpetraToThyra(const Tpetra::MultiVector<ST,NT> & tpetraX,const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyraX) 
+#endif
 {
    TEUCHOS_ASSERT((Tpetra::global_size_t) thyraX->range()->dim()==tpetraX.getGlobalLength());
 
@@ -206,7 +210,11 @@ void blockThyraToTpetra(LO numVectors,Teuchos::ArrayRCP<ST> tpetraData,LO leadin
 // the map defined by the Tpetra_Map.
 // const Teuchos::RCP<const Tpetra_MultiVector> 
 // blockThyraToTpetra(const Teuchos::RCP<const Thyra::MultiVectorBase<double> > & tX,const RCP<const Tpetra_Map> & map)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void blockThyraToTpetra(const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > & thyraX,Tpetra::MultiVector<ST,LO,GO,NT> & tpetraX)
+#else
+void blockThyraToTpetra(const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > & thyraX,Tpetra::MultiVector<ST,NT> & tpetraX)
+#endif
 {
    // build an Tpetra_MultiVector object
    LO numVectors = thyraX->domain()->dim();
@@ -273,7 +281,11 @@ void thyraVSToTpetraMap(std::vector<GO> & myIndicies, int blockOffset, const Thy
 }
 
 // From a Thyra vector space create a compatable Tpetra_Map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const RCP<Tpetra::Map<LO,GO,NT> > thyraVSToTpetraMap(const Thyra::VectorSpaceBase<ST> & vs,const RCP<const Teuchos::Comm<Thyra::Ordinal> > & /* comm */)
+#else
+const RCP<Tpetra::Map<NT> > thyraVSToTpetraMap(const Thyra::VectorSpaceBase<ST> & vs,const RCP<const Teuchos::Comm<Thyra::Ordinal> > & /* comm */)
+#endif
 {
    int localDim = 0;
    std::vector<GO> myGIDs;
@@ -287,7 +299,11 @@ const RCP<Tpetra::Map<LO,GO,NT> > thyraVSToTpetraMap(const Thyra::VectorSpaceBas
    // be right.
    
    // create the map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    return rcp(new Tpetra::Map<LO,GO,NT>(vs.dim(), Teuchos::ArrayView<const GO>(myGIDs), 0, Tpetra::getDefaultComm()));
+#else
+   return rcp(new Tpetra::Map<NT>(vs.dim(), Teuchos::ArrayView<const GO>(myGIDs), 0, Tpetra::getDefaultComm()));
+#endif
 }
 
 } // end namespace Tpetra

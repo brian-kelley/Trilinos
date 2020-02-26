@@ -112,8 +112,10 @@ namespace MueLu {
 
   //FIXME: this class should not be templated
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class Zoltan2Interface : public SingleLevelFactoryBase {
 #undef MUELU_ZOLTAN2INTERFACE_SHORT
@@ -121,6 +123,10 @@ namespace MueLu {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors
     //@{
 
@@ -158,7 +164,11 @@ namespace MueLu {
   // Stub partial specialization of Zoltan2Interface for EpetraNode
   // Use ZoltanInterface instead of Zoltan2Interface
   template<>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class Zoltan2Interface<double,int,int,Xpetra::EpetraNode> : public SingleLevelFactoryBase {
+#else
+  class Zoltan2Interface<double,Xpetra::EpetraNode> : public SingleLevelFactoryBase {
+#endif
     typedef double              Scalar;
     typedef int                 LocalOrdinal;
     typedef int                 GlobalOrdinal;
@@ -167,7 +177,11 @@ namespace MueLu {
 #include "MueLu_UseShortNames.hpp"
   public:
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
     Zoltan2Interface() {
       level_           = rcp(new Level());
@@ -216,7 +230,11 @@ namespace MueLu {
       level_->Request("Partition", zoltanInterface_.get());
       zoltanInterface_->Build(*level_);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition;
+#else
+      RCP<Xpetra::Vector<GO,NO> > decomposition;
+#endif
       level_->Get("Partition", decomposition, zoltanInterface_.get());
       Set(currentLevel, "Partition", decomposition);
     };
@@ -228,7 +246,11 @@ namespace MueLu {
 #else
   // Stub partial specialization of Zoltan2Interface for EpetraNode
   template<>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class Zoltan2Interface<double,int,int,Xpetra::EpetraNode> : public SingleLevelFactoryBase {
+#else
+  class Zoltan2Interface<double,Xpetra::EpetraNode> : public SingleLevelFactoryBase {
+#endif
   public:
     Zoltan2Interface() { throw Exceptions::RuntimeError("Tpetra does not support <double,int,int,EpetraNode> instantiation"); }
     virtual ~Zoltan2Interface() { }

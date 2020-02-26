@@ -81,13 +81,25 @@ namespace Tpetra {
     ///   Tpetra::Directory.  We separate out the interface
     ///   (Tpetra::Directory) from the implementation in order to keep
     ///   backwards compatibility of the interface.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LocalOrdinal, class GlobalOrdinal, class NodeType>
+#else
+    template<class NodeType>
+#endif
     class Directory : public Teuchos::Describable {
     public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       typedef LocalOrdinal local_ordinal_type;
       typedef GlobalOrdinal global_ordinal_type;
       typedef NodeType node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef ::Tpetra::Map<LocalOrdinal, GlobalOrdinal, NodeType> map_type;
+#else
+      typedef ::Tpetra::Map<NodeType> map_type;
+#endif
 
       /// \brief Constructor.
       ///
@@ -159,11 +171,25 @@ namespace Tpetra {
 
     /// \class ReplicatedDirectory
     /// \brief Implementation of Directory for a locally replicated Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LocalOrdinal, class GlobalOrdinal, class NodeType>
+#else
+    template<class NodeType>
+#endif
     class ReplicatedDirectory :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       public Directory<LocalOrdinal, GlobalOrdinal, NodeType> {
+#else
+      public Directory<NodeType> {
+#endif
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Directory<LocalOrdinal, GlobalOrdinal, NodeType> base_type;
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      typedef Directory<NodeType> base_type;
+#endif
       typedef typename base_type::map_type map_type;
 
       //! Constructor (that takes no arguments).
@@ -205,15 +231,35 @@ namespace Tpetra {
     /// processes, this implementation of Directory can compute which
     /// process owns a GID (and the GID's corresponding LID) in
     /// \f$O(1)\f$ space and time.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LocalOrdinal, class GlobalOrdinal, class NodeType>
+#else
+    template<class NodeType>
+#endif
     class ContiguousUniformDirectory :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       public Directory<LocalOrdinal, GlobalOrdinal, NodeType> {
+#else
+      public Directory<NodeType> {
+#endif
     private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       // This friend declaration lets us implement clone().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template <class LO, class GO, class N> friend class ContiguousUniformDirectory;
+#else
+      template <class N> friend class ContiguousUniformDirectory;
+#endif
 
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Directory<LocalOrdinal, GlobalOrdinal, NodeType> base_type;
+#else
+      typedef Directory<NodeType> base_type;
+#endif
       typedef typename base_type::map_type map_type;
 
       ContiguousUniformDirectory () = default;
@@ -244,14 +290,32 @@ namespace Tpetra {
 
     /// \class DistributedContiguousDirectory
     /// \brief Implementation of Directory for a distributed contiguous Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LocalOrdinal, class GlobalOrdinal, class NodeType>
+#else
+    template<class NodeType>
+#endif
     class DistributedContiguousDirectory :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       public Directory<LocalOrdinal, GlobalOrdinal, NodeType> {
+#else
+      public Directory<NodeType> {
+#endif
     private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template <class LO, class GO, class N> friend class DistributedContiguousDirectory;
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      template <class N> friend class DistributedContiguousDirectory;
+#endif
 
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Directory<LocalOrdinal, GlobalOrdinal, NodeType> base_type;
+#else
+      typedef Directory<NodeType> base_type;
+#endif
       typedef typename base_type::map_type map_type;
 
       DistributedContiguousDirectory () = default;
@@ -307,16 +371,34 @@ namespace Tpetra {
 
     /// \class DistributedNoncontiguousDirectory
     /// \brief Implementation of Directory for a distributed noncontiguous Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LocalOrdinal, class GlobalOrdinal, class NodeType>
+#else
+    template<class NodeType>
+#endif
     class DistributedNoncontiguousDirectory :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       public Directory<LocalOrdinal, GlobalOrdinal, NodeType> {
+#else
+      public Directory<NodeType> {
+#endif
     private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       template <class LO, class GO, class N>
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      template <class N>
+#endif
       friend class DistributedNoncontiguousDirectory;
 
     public:
       typedef Tpetra::Details::TieBreak<LocalOrdinal, GlobalOrdinal> tie_break_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using base_type = Directory<LocalOrdinal, GlobalOrdinal, NodeType>;
+#else
+      using base_type = Directory<NodeType>;
+#endif
       using map_type = typename base_type::map_type;
 
       DistributedNoncontiguousDirectory () = default;

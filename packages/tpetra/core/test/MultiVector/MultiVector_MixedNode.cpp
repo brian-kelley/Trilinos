@@ -166,7 +166,11 @@ namespace {
     using LO = typename MapClass::local_ordinal_type;
     using GO = typename MapClass::global_ordinal_type;
     typedef typename ScalarTraits<Scalar>::magnitudeType Magnitude;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using MV = MultiVector<Scalar,LO,GO,typename MapClass::node_type>;
+#else
+    using MV = MultiVector<Scalar,typename MapClass::node_type>;
+#endif
 
    Teuchos::RCP<MV> mvec;
     TEST_NOTHROW( mvec = rcp (new MV(map, numVecs, true)) );
@@ -200,7 +204,11 @@ namespace {
     return success;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( MultiVector, mixed_node_basic, Scalar, LO, GO)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( MultiVector, mixed_node_basic, Scalar)
+#endif
   {
     // Here we use CudaNode on Rank 0 and SerialNode on everything else
     typedef typename ScalarTraits<Scalar>::magnitudeType Magnitude;
@@ -248,7 +256,11 @@ namespace {
 //
 
 #define UNIT_TEST_GROUP( SCALAR, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( MultiVector, mixed_node_basic, SCALAR, LO, GO ) 
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( MultiVector, mixed_node_basic, SCALAR ) 
+#endif
 
 
   typedef Tpetra::Map<>::local_ordinal_type default_local_ordinal_type;

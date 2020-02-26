@@ -60,9 +60,13 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, 
          class GlobalOrdinal, 
          class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+template<class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
 class StridedMapFactory
 {
 
@@ -71,6 +75,10 @@ class StridedMapFactory
 
   private:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Private constructor. This is a static class.
     StridedMapFactory();
 
@@ -79,7 +87,11 @@ class StridedMapFactory
     //! Map constructor with Xpetra-defined contiguous uniform distribution.
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::StridedMap<LocalOrdinal, GlobalOrdinal, Node>> 
+#else
+    static RCP<Xpetra::StridedMap<Node>> 
+#endif
     Build(UnderlyingLib                                 lib,
           global_size_t                                 numGlobalElements,
           GlobalOrdinal                                 indexBase,

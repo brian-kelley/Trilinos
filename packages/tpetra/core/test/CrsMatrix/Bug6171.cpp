@@ -75,15 +75,25 @@ using Teuchos::Comm;
 using Teuchos::OrdinalTraits;
 using Tpetra::TestingUtilities::getDefaultComm;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6171, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6171, SC, NT)
+#endif
 {
 
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType MagnitudeType;
   typedef Tpetra::global_size_t GST; // Map's constructor needs this
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO,GO,NT> MapType;
   typedef Tpetra::CrsMatrix<SC,LO,GO,NT> CrsMatrixType;
   typedef Tpetra::Vector<SC,LO,GO,NT> VectorType;
+#else
+  typedef Tpetra::Map<NT> MapType;
+  typedef Tpetra::CrsMatrix<SC,NT> CrsMatrixType;
+  typedef Tpetra::Vector<SC,NT> VectorType;
+#endif
 
   RCP<const Comm<int> > comm = getDefaultComm();
   TEUCHOS_TEST_FOR_EXCEPTION(
@@ -155,8 +165,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrix, Bug6171, SC, LO, GO, NT)
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, LO, GO, NT )                   \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, Bug6171, SC, LO, GO, NT)
+#else
+#define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, NT )                   \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrix, Bug6171, SC, NT)
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

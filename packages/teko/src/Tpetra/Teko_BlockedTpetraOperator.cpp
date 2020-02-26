@@ -69,7 +69,11 @@ using Teuchos::rcp;
 using Teuchos::rcp_dynamic_cast;
 
 BlockedTpetraOperator::BlockedTpetraOperator(const std::vector<std::vector<GO> > & vars,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                              const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & content,
+#else
+                                             const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & content,
+#endif
                                              const std::string & label) 
       : Teko::TpetraHelpers::TpetraOperatorWrapper(), label_(label)
 {
@@ -77,7 +81,11 @@ BlockedTpetraOperator::BlockedTpetraOperator(const std::vector<std::vector<GO> >
 }
 
 void BlockedTpetraOperator::SetContent(const std::vector<std::vector<GO> > & vars,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                        const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & content)
+#else
+                                       const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & content)
+#endif
 { 
    fullContent_ = content;
    blockedMapping_ = rcp(new TpetraBlockedMappingStrategy(vars,fullContent_->getDomainMap(),
@@ -93,8 +101,13 @@ void BlockedTpetraOperator::BuildBlockedOperator()
    TEUCHOS_ASSERT(blockedMapping_!=Teuchos::null);
 
    // get a CRS matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > crsContent 
          = rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(fullContent_);
+#else
+   const RCP<const Tpetra::CrsMatrix<ST,NT> > crsContent 
+         = rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(fullContent_);
+#endif
 
    // ask the strategy to build the Thyra operator for you
    if(blockedOperator_==Teuchos::null) {
@@ -114,12 +127,20 @@ void BlockedTpetraOperator::BuildBlockedOperator()
       Reorder(*reorderManager_);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > BlockedTpetraOperator::GetBlock(int i,int j) const
+#else
+const Teuchos::RCP<const Tpetra::Operator<ST,NT> > BlockedTpetraOperator::GetBlock(int i,int j) const
+#endif
 {
    const RCP<const Thyra::BlockedLinearOpBase<ST> > blkOp 
          = Teuchos::rcp_dynamic_cast<const Thyra::BlockedLinearOpBase<ST> >(getThyraOp());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(blkOp->getBlock(i,j),true);
+#else
+   RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(blkOp->getBlock(i,j),true);
+#endif
    return tOp->getConstTpetraOperator();
 }
 
@@ -167,21 +188,37 @@ void BlockedTpetraOperator::WriteBlocks(const std::string & prefix) const
          ss << prefix << "_" << i << j << ".mm";
 
          // get the row matrix object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<const Thyra::TpetraLinearOp<ST,LO,GO,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,LO,GO,NT> >(blockOp->getBlock(i,j));
          RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > mat
                = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,LO,GO,NT> >(tOp->getConstTpetraOperator());
+#else
+         RCP<const Thyra::TpetraLinearOp<ST,NT> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<ST,NT> >(blockOp->getBlock(i,j));
+         RCP<const Tpetra::CrsMatrix<ST,NT> > mat
+               = Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<ST,NT> >(tOp->getConstTpetraOperator());
+#endif
 
          // write to file
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          Tpetra::MatrixMarket::Writer<Tpetra::CrsMatrix<ST,LO,GO,NT> >::writeSparseFile(ss.str().c_str(),mat);
+#else
+         Tpetra::MatrixMarket::Writer<Tpetra::CrsMatrix<ST,NT> >::writeSparseFile(ss.str().c_str(),mat);
+#endif
       }
    }
 }
 
 bool BlockedTpetraOperator::testAgainstFullOperator(int count,ST tol) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT> xf(getRangeMap());
    Tpetra::Vector<ST,LO,GO,NT> xs(getRangeMap());
    Tpetra::Vector<ST,LO,GO,NT> y(getDomainMap());
+#else
+   Tpetra::Vector<ST,NT> xf(getRangeMap());
+   Tpetra::Vector<ST,NT> xs(getRangeMap());
+   Tpetra::Vector<ST,NT> y(getDomainMap());
+#endif
 
    // test operator many times
    bool result = true;

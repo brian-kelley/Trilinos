@@ -11,9 +11,15 @@ typedef Tpetra::Map<int, int> map_type;
 typedef map_type::local_ordinal_type LO;
 typedef map_type::global_ordinal_type GO;
 typedef double ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::CrsMatrix<ST, LO, GO> crs_matrix_type;
 typedef Tpetra::Operator<ST, LO, GO> op_type;
 typedef Tpetra::Vector<ST, LO, GO> vec_type;
+#else
+typedef Tpetra::CrsMatrix<ST> crs_matrix_type;
+typedef Tpetra::Operator<ST> op_type;
+typedef Tpetra::Vector<ST> vec_type;
+#endif
 
 Teuchos::RCP<const crs_matrix_type>
 create_matrix (const Teuchos::RCP<const Teuchos::Comm<int> >& comm)

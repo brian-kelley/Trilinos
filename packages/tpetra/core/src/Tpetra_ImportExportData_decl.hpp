@@ -77,15 +77,27 @@ namespace Tpetra {
   /// and outgoing ("export") local indices (LIDs), LIDs to permute on
   /// the source and target of the Import or Export, and process ranks
   /// ("image IDs") to which to send.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal,
            class GlobalOrdinal,
            class Node>
+#else
+  template<class Node>
+#endif
   class ImportExportData {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
 
     ImportExportData () = delete;
 
@@ -132,13 +144,25 @@ namespace Tpetra {
     ///
     /// "Reverse the direction of the transfer" means that an Import
     /// becomes an Export in the opposite direction, and vice versa.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<ImportExportData<LocalOrdinal, GlobalOrdinal, Node> > reverseClone();
+#else
+    Teuchos::RCP<ImportExportData<Node> > reverseClone();
+#endif
 
     //! Source Map of the Import or Export
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > source_;
+#else
+    const Teuchos::RCP<const Map<Node> > source_;
+#endif
 
     //! Target Map of the Import or Export
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > target_;
+#else
+    const Teuchos::RCP<const Map<Node> > target_;
+#endif
 
     //! Output stream for verbose debugging output.
     Teuchos::RCP<Teuchos::FancyOStream> out_;
@@ -238,10 +262,19 @@ namespace Tpetra {
 
   private:
     //! Copy constructor (declared but not defined, do not use)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ImportExportData (const ImportExportData<LocalOrdinal,GlobalOrdinal,Node> &rhs);
+#else
+    ImportExportData (const ImportExportData<Node> &rhs);
+#endif
     //! Assignment operator (declared but not defined, do not use)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ImportExportData<LocalOrdinal,GlobalOrdinal,Node>&
     operator= (const ImportExportData<LocalOrdinal,GlobalOrdinal,Node> & rhs);
+#else
+    ImportExportData<Node>&
+    operator= (const ImportExportData<Node> & rhs);
+#endif
   }; // class ImportExportData
 
 } // namespace Tpetra

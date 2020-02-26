@@ -100,24 +100,40 @@ namespace MueLuTests {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(AggregateQualityEstimateFactory, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(AggregateQualityEstimateFactory, Constructor, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<MT,LO,GO,Node> MultiVectorDouble;
+#else
+    typedef Xpetra::MultiVector<MT,Node> MultiVectorDouble;
+#endif
 
     out << "version: " << MueLu::Version() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MueLu::AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggregateQualityEstimateFactory;
+#else
+    typedef MueLu::AggregateQualityEstimateFactory<Scalar, Node> AggregateQualityEstimateFactory;
+#endif
 
     RCP<AggregateQualityEstimateFactory> aggQualityEstimateFactory = rcp(new AggregateQualityEstimateFactory);
     TEST_EQUALITY(aggQualityEstimateFactory != Teuchos::null, true);
 
   } // Constructor test
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(AggregateQualityEstimateFactory, Poisson2D, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(AggregateQualityEstimateFactory, Poisson2D, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -125,19 +141,35 @@ namespace MueLuTests {
 
     out << "version: " << MueLu::Version() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MueLu::AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggregateQualityEstimateFactory;
+#else
+    typedef MueLu::AggregateQualityEstimateFactory<Scalar, Node> AggregateQualityEstimateFactory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar> TST;
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<MT,LO,GO,NO> MultiVectorDouble;
+#else
+    typedef Xpetra::MultiVector<MT,NO> MultiVectorDouble;
+#endif
 
     RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
     Level level;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers::TestFactory<Scalar, LO, GO, NO>::createSingleLevelHierarchy(level);
+#else
+    TestHelpers::TestFactory<Scalar, NO>::createSingleLevelHierarchy(level);
+#endif
 
     GO nx = 20*comm->getSize();
     GO ny = nx;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> Op = TestHelpers::TestFactory<Scalar, LO, GO, NO>::Build2DPoisson(nx, ny);
+#else
+    RCP<Matrix> Op = TestHelpers::TestFactory<Scalar, NO>::Build2DPoisson(nx, ny);
+#endif
     level.Set("A",Op);
 
     AggregateQualityEstimateFactory aggQualityEstimateFactory;
@@ -166,14 +198,23 @@ namespace MueLuTests {
 
   } // Poisson 2D test
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(AggregateQualityEstimateFactory, AnisotropicDiffusion2D, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(AggregateQualityEstimateFactory, AnisotropicDiffusion2D, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<MT,LO,GO,Node> MultiVectorDouble;
     typedef MueLu::AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggregateQualityEstimateFactory;
+#else
+    typedef Xpetra::MultiVector<MT,Node> MultiVectorDouble;
+    typedef MueLu::AggregateQualityEstimateFactory<Scalar, Node> AggregateQualityEstimateFactory;
+#endif
 
     out << "version: " << MueLu::Version() << std::endl;
 
@@ -188,7 +229,11 @@ namespace MueLuTests {
 
     LO num_nodes = (LO) nx*nx;
     RCP<Map> map_for_read = MapFactory::Build(TestHelpers::Parameters::getLib(),num_nodes,0,comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A =  Xpetra::IO<SC, LO, GO, NO>::Read("TestMatrices/aniso2dx.mat", map_for_read);
+#else
+    RCP<Matrix> A =  Xpetra::IO<SC, NO>::Read("TestMatrices/aniso2dx.mat", map_for_read);
+#endif
 
     std::vector<std::string> test_matrices = { "TestMatrices/aniso2dx.mat", "TestMatrices/aniso2dy.mat", "TestMatrices/iso2d.mat" };
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
@@ -234,9 +279,17 @@ namespace MueLuTests {
       out << "Aggregating Matrix " << i << "..." << std::endl;
 
       Level level;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       TestHelpers::TestFactory<Scalar, LO, GO, NO>::createSingleLevelHierarchy(level);
+#else
+      TestHelpers::TestFactory<Scalar, NO>::createSingleLevelHierarchy(level);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Matrix> A_agg =  Xpetra::IO<SC, LO, GO, NO>::Read(test_matrices.at(i), map_for_read);
+#else
+      RCP<Matrix> A_agg =  Xpetra::IO<SC, NO>::Read(test_matrices.at(i), map_for_read);
+#endif
 
       level.Set("A",A_agg);
 
@@ -375,14 +428,23 @@ namespace MueLuTests {
 
   } // Anisotropic Diffusion 2D test
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(AggregateQualityEstimateFactory, ConvectionDiffusion2D, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(AggregateQualityEstimateFactory, ConvectionDiffusion2D, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<MT,LO,GO,Node> MultiVectorDouble;
     typedef MueLu::AggregateQualityEstimateFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> AggregateQualityEstimateFactory;
+#else
+    typedef Xpetra::MultiVector<MT,Node> MultiVectorDouble;
+    typedef MueLu::AggregateQualityEstimateFactory<Scalar, Node> AggregateQualityEstimateFactory;
+#endif
 
     out << "version: " << MueLu::Version() << std::endl;
 
@@ -397,7 +459,11 @@ namespace MueLuTests {
 
     LO num_nodes = (LO) nx*nx;
     RCP<Map> map_for_read = MapFactory::Build(TestHelpers::Parameters::getLib(),num_nodes,0,comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A =  Xpetra::IO<SC, LO, GO, NO>::Read("TestMatrices/cd2dx.mat", map_for_read);
+#else
+    RCP<Matrix> A =  Xpetra::IO<SC, NO>::Read("TestMatrices/cd2dx.mat", map_for_read);
+#endif
 
     std::vector<std::string> test_matrices = { "TestMatrices/cd2dx.mat", "TestMatrices/cd2dy.mat", "TestMatrices/aniso2dx.mat", "TestMatrices/aniso2dy.mat", "TestMatrices/iso2d.mat" };
 
@@ -442,9 +508,17 @@ namespace MueLuTests {
       out << "Aggregating Matrix " << i << "..." << std::endl;
 
       Level level;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       TestHelpers::TestFactory<Scalar, LO, GO, NO>::createSingleLevelHierarchy(level);
+#else
+      TestHelpers::TestFactory<Scalar, NO>::createSingleLevelHierarchy(level);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Matrix> A_agg =  Xpetra::IO<SC, LO, GO, NO>::Read(test_matrices.at(i), map_for_read);
+#else
+      RCP<Matrix> A_agg =  Xpetra::IO<SC, NO>::Read(test_matrices.at(i), map_for_read);
+#endif
 
       level.Set("A",A_agg);
 
@@ -583,10 +657,17 @@ namespace MueLuTests {
 
   } // Convection Diffusion 2D test
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(Scalar, LO, GO, Node)				\
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(AggregateQualityEstimateFactory,Constructor,Scalar,LO,GO,Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(AggregateQualityEstimateFactory,Poisson2D,Scalar,LO,GO,Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(AggregateQualityEstimateFactory,AnisotropicDiffusion2D,Scalar,LO,GO,Node)
+#else
+#define MUELU_ETI_GROUP(Scalar, Node)				\
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(AggregateQualityEstimateFactory,Constructor,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(AggregateQualityEstimateFactory,Poisson2D,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(AggregateQualityEstimateFactory,AnisotropicDiffusion2D,Scalar,Node)
+#endif
 
 
   //  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(AggregateQualityEstimateFactory,ConvectionDiffusion2D,Scalar,LO,GO,Node) 

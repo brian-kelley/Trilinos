@@ -73,16 +73,29 @@
 namespace Xpetra {
 
   // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GlobalOrdinal, class Node>
   const Epetra_MultiVector &          toEpetra(const MultiVector<double,int,GlobalOrdinal,Node> &);
   template<class GlobalOrdinal, class Node>
   Epetra_MultiVector &                toEpetra(MultiVector<double, int,GlobalOrdinal,Node> &);
   template<class GlobalOrdinal, class Node>
   RCP<MultiVector<double, int, GlobalOrdinal, Node> > toXpetra(RCP<Epetra_MultiVector> vec);
+#else
+  template<class Node>
+  const Epetra_MultiVector &          toEpetra(const MultiVector<double,Node> &);
+  template<class Node>
+  Epetra_MultiVector &                toEpetra(MultiVector<double,Node> &);
+  template<class Node>
+  RCP<MultiVector<double, Node> > toXpetra(RCP<Epetra_MultiVector> vec);
+#endif
 
   // we need this forward declaration
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GlobalOrdinal, class Node> class EpetraVectorT;
+#else
+  template<class Node> class EpetraVectorT;
+#endif
 #endif
 
   template<class EpetraGlobalOrdinal, class Node>
@@ -99,19 +112,31 @@ namespace Xpetra {
     //@{
 
     //! Basic MultiVector constuctor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     EpetraMultiVectorT(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map, size_t NumVectors, bool zeroOut=true) {
+#else
+    EpetraMultiVectorT(const Teuchos::RCP< const Map<Node > > &map, size_t NumVectors, bool zeroOut=true) {
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(true, Xpetra::Exceptions::RuntimeError,
         "Xpetra::EpetraMultiVector only available for GO=int or GO=long long with EpetraNode (Serial or OpenMP depending on configuration)");
     }
 
     //! MultiVector copy constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     EpetraMultiVectorT(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &source) {
+#else
+    EpetraMultiVectorT(const MultiVector< Scalar, Node > &source) {
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(true, Xpetra::Exceptions::RuntimeError,
         "Xpetra::EpetraMultiVector only available for GO=int or GO=long long with EpetraNode (Serial or OpenMP depending on configuration)");
     }
 
     //! Set multi-vector values from array of pointers using Teuchos memory management classes. (copy).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     EpetraMultiVectorT(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map, const Teuchos::ArrayView< const Teuchos::ArrayView< const Scalar > > &ArrayOfPtrs, size_t NumVectors) {
+#else
+    EpetraMultiVectorT(const Teuchos::RCP< const Map<Node > > &map, const Teuchos::ArrayView< const Teuchos::ArrayView< const Scalar > > &ArrayOfPtrs, size_t NumVectors) {
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION(true, Xpetra::Exceptions::RuntimeError,
         "Xpetra::EpetraMultiVector only available for GO=int or GO=long long with EpetraNode (Serial or OpenMP depending on configuration)");
     }
@@ -145,12 +170,20 @@ namespace Xpetra {
     //@{
 
     //! Return a Vector which is a const view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Vector< double, int, GlobalOrdinal, Node > > getVector(size_t j) const {
+#else
+    Teuchos::RCP< const Vector< double, Node > > getVector(size_t j) const {
+#endif
       return Teuchos::null;
     }
 
     //! Return a Vector which is a nonconst view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< Vector< double, int, GlobalOrdinal, Node > > getVectorNonConst(size_t j) {
+#else
+    Teuchos::RCP< Vector< double, Node > > getVectorNonConst(size_t j) {
+#endif
       return Teuchos::null;
     }
 
@@ -170,13 +203,25 @@ namespace Xpetra {
     //@{
 
     //! Compute the dot product of each corresponding pair of vectors (columns) in A and B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void dot(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Teuchos::ArrayView< Scalar > &dots) const {  }
+#else
+    void dot(const MultiVector< Scalar, Node > &A, const Teuchos::ArrayView< Scalar > &dots) const {  }
+#endif
 
     //! Put element-wise absolute values of input Multi-vector in target: A = abs(this).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void abs(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A) {  }
+#else
+    void abs(const MultiVector< Scalar, Node > &A) {  }
+#endif
 
     //! Put element-wise reciprocal values of input Multi-vector in target, this(i,j) = 1/A(i,j).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void reciprocal(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A) {  }
+#else
+    void reciprocal(const MultiVector< Scalar, Node > &A) {  }
+#endif
 
     //! Scale in place: this = alpha*this.
     void scale(const Scalar &alpha) {  }
@@ -185,10 +230,18 @@ namespace Xpetra {
     void scale (Teuchos::ArrayView< const Scalar > alpha) {  }
 
     //! Update: this = beta*this + alpha*A.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void update(const Scalar &alpha, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Scalar &beta) {  }
+#else
+    void update(const Scalar &alpha, const MultiVector< Scalar, Node > &A, const Scalar &beta) {  }
+#endif
 
     //! Update: this = gamma*this + alpha*A + beta*B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void update(const Scalar &alpha, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Scalar &beta, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, const Scalar &gamma) {  }
+#else
+    void update(const Scalar &alpha, const MultiVector< Scalar, Node > &A, const Scalar &beta, const MultiVector< Scalar, Node > &B, const Scalar &gamma) {  }
+#endif
 
     //! Compute 1-norm of each vector in multi-vector.
     void norm1(const Teuchos::ArrayView< Teuchos::ScalarTraits< Scalar >::magnitudeType > &norms) const {  }
@@ -203,10 +256,18 @@ namespace Xpetra {
     void meanValue(const Teuchos::ArrayView< Scalar > &means) const {  }
 
     //! Matrix-matrix multiplication: this = beta*this + alpha*op(A)*op(B).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void multiply(Teuchos::ETransp transA, Teuchos::ETransp transB, const Scalar &alpha, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, const Scalar &beta) {  }
+#else
+    void multiply(Teuchos::ETransp transA, Teuchos::ETransp transB, const Scalar &alpha, const MultiVector< Scalar, Node > &A, const MultiVector< Scalar, Node > &B, const Scalar &beta) {  }
+#endif
 
     //! Multiply a Vector A elementwise by a MultiVector B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void elementWiseMultiply(Scalar scalarAB, const Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, Scalar scalarThis) {  }
+#else
+    void elementWiseMultiply(Scalar scalarAB, const Vector< Scalar, Node > &A, const MultiVector< Scalar, Node > &B, Scalar scalarThis) {  }
+#endif
 
     //@}
 
@@ -223,7 +284,11 @@ namespace Xpetra {
     global_size_t getGlobalLength() const { return 0; }
 
     // \brief Checks to see if the local length, number of vectors and size of Scalar type match
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool isSameSize(const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & vec) const { return false; }
+#else
+    bool isSameSize(const MultiVector<Scalar,Node> & vec) const { return false; }
+#endif
 
     //@}
 
@@ -245,22 +310,46 @@ namespace Xpetra {
     //{@
 
     //! Access function for the Tpetra::Map this DistObject was constructed with.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getMap() const { return Teuchos::null; }
+#else
+    Teuchos::RCP< const Map<Node > > getMap() const { return Teuchos::null; }
+#endif
 
     //! Import.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &source, const Import< LocalOrdinal, GlobalOrdinal, Node > &importer, CombineMode CM) {  }
+#else
+    void doImport(const DistObject<Scalar, Node> &source, const Import<Node > &importer, CombineMode CM) {  }
+#endif
 
     //! Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &dest, const Import< LocalOrdinal, GlobalOrdinal, Node >& importer, CombineMode CM) {  }
+#else
+    void doExport(const DistObject<Scalar, Node> &dest, const Import<Node >& importer, CombineMode CM) {  }
+#endif
 
     //! Import (using an Exporter).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &source, const Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) {  }
+#else
+    void doImport(const DistObject<Scalar, Node> &source, const Export<Node >& exporter, CombineMode CM) {  }
+#endif
 
     //! Export (using an Importer).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &dest, const Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) {  }
+#else
+    void doExport(const DistObject<Scalar, Node> &dest, const Export<Node >& exporter, CombineMode CM) {  }
+#endif
 
     //! Replace the underlying Map in place.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void replaceMap(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map) {  }
+#else
+    void replaceMap(const Teuchos::RCP< const Map<Node > > &map) {  }
+#endif
 
     //@}
 
@@ -281,7 +370,11 @@ namespace Xpetra {
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type dual_view_type;
+#else
+    typedef typename Xpetra::MultiVector<Scalar, Node>::dual_view_type dual_view_type;
+#endif
 
     /// \brief Return an unmanaged non-const view of the local data on a specific device.
     /// \tparam TargetDeviceType The Kokkos Device type whose data to return.
@@ -330,7 +423,11 @@ namespace Xpetra {
     /// \brief Implementation of the assignment operator (operator=);
     ///   does a deep copy.
     virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     assign (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs) {  }
+#else
+    assign (const MultiVector<Scalar, Node>& rhs) {  }
+#endif
 
   }; // EpetraMultiVectorT class
 
@@ -351,15 +448,27 @@ namespace Xpetra {
     //@{
 
     //! Basic MultiVector constuctor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     EpetraMultiVectorT(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map, size_t NumVectors, bool zeroOut=true)
+#else
+    EpetraMultiVectorT(const Teuchos::RCP< const Map<Node > > &map, size_t NumVectors, bool zeroOut=true)
+#endif
       : vec_(Teuchos::rcp(new Epetra_MultiVector(toEpetra<GlobalOrdinal,Node>(map), Teuchos::as<int>(NumVectors), zeroOut))) { }
 
     //! MultiVector copy constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     EpetraMultiVectorT(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &source)
+#else
+    EpetraMultiVectorT(const MultiVector< Scalar, Node > &source)
+#endif
       : vec_(Teuchos::rcp(new Epetra_MultiVector(toEpetra<GlobalOrdinal,Node>(source)))) { }
 
     //! Set multi-vector values from array of pointers using Teuchos memory management classes. (copy).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     EpetraMultiVectorT(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map, const Teuchos::ArrayView< const Teuchos::ArrayView< const Scalar > > &ArrayOfPtrs, size_t NumVectors) {
+#else
+    EpetraMultiVectorT(const Teuchos::RCP< const Map<Node > > &map, const Teuchos::ArrayView< const Teuchos::ArrayView< const Scalar > > &ArrayOfPtrs, size_t NumVectors) {
+#endif
       //TODO: input argument 'NumVectors' is not necessary in both Xpetra and Tpetra interface. Should it be removed?
 
       const std::string tfecfFuncName("MultiVector(ArrayOfPtrs)");
@@ -457,7 +566,11 @@ namespace Xpetra {
     //@{
 
     //! Compute the dot product of each corresponding pair of vectors (columns) in A and B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void dot(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Teuchos::ArrayView< Scalar > &dots) const {
+#else
+    void dot(const MultiVector< Scalar, Node > &A, const Teuchos::ArrayView< Scalar > &dots) const {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::dot");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, A, eA, "This Xpetra::EpetraMultiVectorT method only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -465,10 +578,18 @@ namespace Xpetra {
     }
 
     //! Put element-wise absolute values of input Multi-vector in target: A = abs(this).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void abs(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A) { XPETRA_MONITOR("EpetraMultiVectorT::abs"); vec_->Abs(toEpetra<GlobalOrdinal,Node>(A)); }
+#else
+    void abs(const MultiVector< Scalar, Node > &A) { XPETRA_MONITOR("EpetraMultiVectorT::abs"); vec_->Abs(toEpetra<GlobalOrdinal,Node>(A)); }
+#endif
 
     //! Put element-wise reciprocal values of input Multi-vector in target, this(i,j) = 1/A(i,j).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void reciprocal(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A) { XPETRA_MONITOR("EpetraMultiVectorT::reciprocal"); vec_->Reciprocal(toEpetra<GlobalOrdinal,Node>(A)); }
+#else
+    void reciprocal(const MultiVector< Scalar, Node > &A) { XPETRA_MONITOR("EpetraMultiVectorT::reciprocal"); vec_->Reciprocal(toEpetra<GlobalOrdinal,Node>(A)); }
+#endif
 
     //! Scale in place: this = alpha*this.
     void scale(const Scalar &alpha) { XPETRA_MONITOR("EpetraMultiVectorT::scale"); vec_->Scale(alpha); }
@@ -486,10 +607,18 @@ namespace Xpetra {
     }
 
     //! Update: this = beta*this + alpha*A.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void update(const Scalar &alpha, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Scalar &beta) { XPETRA_MONITOR("EpetraMultiVectorT::update"); vec_->Update(alpha, toEpetra<GlobalOrdinal,Node>(A), beta); }
+#else
+    void update(const Scalar &alpha, const MultiVector< Scalar, Node > &A, const Scalar &beta) { XPETRA_MONITOR("EpetraMultiVectorT::update"); vec_->Update(alpha, toEpetra<GlobalOrdinal,Node>(A), beta); }
+#endif
 
     //! Update: this = gamma*this + alpha*A + beta*B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void update(const Scalar &alpha, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Scalar &beta, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, const Scalar &gamma) { XPETRA_MONITOR("EpetraMultiVectorT::update"); vec_->Update(alpha, toEpetra<GlobalOrdinal,Node>(A), beta, toEpetra<GlobalOrdinal,Node>(B), gamma); }
+#else
+    void update(const Scalar &alpha, const MultiVector< Scalar, Node > &A, const Scalar &beta, const MultiVector< Scalar, Node > &B, const Scalar &gamma) { XPETRA_MONITOR("EpetraMultiVectorT::update"); vec_->Update(alpha, toEpetra<GlobalOrdinal,Node>(A), beta, toEpetra<GlobalOrdinal,Node>(B), gamma); }
+#endif
 
     //! Compute 1-norm of each vector in multi-vector.
     void norm1(const Teuchos::ArrayView< Teuchos::ScalarTraits< Scalar >::magnitudeType > &norms) const { XPETRA_MONITOR("EpetraMultiVectorT::norm1"); vec_->Norm1(norms.getRawPtr()); }
@@ -504,10 +633,18 @@ namespace Xpetra {
     void meanValue(const Teuchos::ArrayView< Scalar > &means) const { XPETRA_MONITOR("EpetraMultiVectorT::meanValue"); vec_->MeanValue(means.getRawPtr()); } //TODO: modify ArrayView size ??
 
     //! Matrix-matrix multiplication: this = beta*this + alpha*op(A)*op(B).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void multiply(Teuchos::ETransp transA, Teuchos::ETransp transB, const Scalar &alpha, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, const Scalar &beta) { XPETRA_MONITOR("EpetraMultiVectorT::multiply"); vec_->Multiply(toEpetra(transA), toEpetra(transB), alpha, toEpetra(A), toEpetra(B), beta); }
+#else
+    void multiply(Teuchos::ETransp transA, Teuchos::ETransp transB, const Scalar &alpha, const MultiVector< Scalar, Node > &A, const MultiVector< Scalar, Node > &B, const Scalar &beta) { XPETRA_MONITOR("EpetraMultiVectorT::multiply"); vec_->Multiply(toEpetra(transA), toEpetra(transB), alpha, toEpetra(A), toEpetra(B), beta); }
+#endif
 
     //! Multiply a Vector A elementwise by a MultiVector B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void elementWiseMultiply(Scalar scalarAB, const Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, Scalar scalarThis) { XPETRA_MONITOR("EpetraMultiVectorT::elementWiseMultiply"); vec_->Multiply(scalarAB, toEpetra<GlobalOrdinal,Node>(A), toEpetra<GlobalOrdinal,Node>(B), scalarThis); }
+#else
+    void elementWiseMultiply(Scalar scalarAB, const Vector< Scalar, Node > &A, const MultiVector< Scalar, Node > &B, Scalar scalarThis) { XPETRA_MONITOR("EpetraMultiVectorT::elementWiseMultiply"); vec_->Multiply(scalarAB, toEpetra<GlobalOrdinal,Node>(A), toEpetra<GlobalOrdinal,Node>(B), scalarThis); }
+#endif
 
     //@}
 
@@ -524,7 +661,11 @@ namespace Xpetra {
     global_size_t getGlobalLength() const { XPETRA_MONITOR("EpetraMultiVectorT::getGlobalLength"); return vec_->GlobalLength64(); }
 
     //! Checks to see if the local length, number of vectors and size of Scalar type match
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool isSameSize(const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & vec) const { 
+#else
+    bool isSameSize(const MultiVector<Scalar,Node> & vec) const { 
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::isSameSize"); 
       auto vv = toEpetra<GlobalOrdinal,Node>(vec); 
       return ( (vec_->MyLength() == vv.MyLength()) && (vec_->NumVectors() == vv.NumVectors()));
@@ -555,7 +696,11 @@ namespace Xpetra {
       XPETRA_MONITOR("EpetraMultiVectorT::randomize");
 
       if (bUseXpetraImplementation)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::Xpetra_randomize();
+#else
+        Xpetra::MultiVector< Scalar, Node >::Xpetra_randomize();
+#endif
       else
         vec_->Random();
     }
@@ -564,10 +709,18 @@ namespace Xpetra {
     //{@
 
     //! Access function for the Tpetra::Map this DistObject was constructed with.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getMap() const { XPETRA_MONITOR("EpetraMultiVectorT::getMap"); return toXpetra<GlobalOrdinal,Node>(vec_->Map()); }
+#else
+    Teuchos::RCP< const Map<Node > > getMap() const { XPETRA_MONITOR("EpetraMultiVectorT::getMap"); return toXpetra<GlobalOrdinal,Node>(vec_->Map()); }
+#endif
 
     //! Import.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &source, const Import< LocalOrdinal, GlobalOrdinal, Node > &importer, CombineMode CM) {
+#else
+    void doImport(const DistObject<Scalar, Node> &source, const Import<Node > &importer, CombineMode CM) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::doImport");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, source, tSource, "Xpetra::EpetraMultiVectorT::doImport only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -579,7 +732,11 @@ namespace Xpetra {
     }
 
     //! Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &dest, const Import< LocalOrdinal, GlobalOrdinal, Node >& importer, CombineMode CM) {
+#else
+    void doExport(const DistObject<Scalar, Node> &dest, const Import<Node >& importer, CombineMode CM) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::doExport");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, dest, tDest, "Xpetra::EpetraMultiVectorT::doImport only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -591,7 +748,11 @@ namespace Xpetra {
     }
 
     //! Import (using an Exporter).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &source, const Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) {
+#else
+    void doImport(const DistObject<Scalar, Node> &source, const Export<Node >& exporter, CombineMode CM) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::doImport");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, source, tSource, "Xpetra::EpetraMultiVectorT::doImport only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -603,7 +764,11 @@ namespace Xpetra {
     }
 
     //! Export (using an Importer).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &dest, const Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) {
+#else
+    void doExport(const DistObject<Scalar, Node> &dest, const Export<Node >& exporter, CombineMode CM) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::doExport");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, dest, tDest, "Xpetra::EpetraMultiVectorT::doImport only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -615,7 +780,11 @@ namespace Xpetra {
     }
 
     //! Replace the underlying Map in place.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void replaceMap(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map) {
+#else
+    void replaceMap(const Teuchos::RCP< const Map<Node > > &map) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::replaceMap");
       int err = 0;
       if (!map.is_null()) {
@@ -651,7 +820,11 @@ namespace Xpetra {
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type dual_view_type;
+#else
+    typedef typename Xpetra::MultiVector<Scalar, Node>::dual_view_type dual_view_type;
+#endif
 
     /// \brief Return an unmanaged non-const view of the local data on a specific device.
     /// \tparam TargetDeviceType The Kokkos Device type whose data to return.
@@ -671,7 +844,11 @@ namespace Xpetra {
         typename dual_view_type::t_dev_um,
         typename dual_view_type::t_host_um>::type
     getLocalView () const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return this->MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::template getLocalView<TargetDeviceType>();
+#else
+      return this->MultiVector< Scalar, Node >::template getLocalView<TargetDeviceType>();
+#endif
     }
 
     typename dual_view_type::t_host_um getHostLocalView () const {
@@ -710,7 +887,11 @@ namespace Xpetra {
     /// \brief Implementation of the assignment operator (operator=);
     ///   does a deep copy.
     virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     assign (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs) {
+#else
+    assign (const MultiVector<Scalar, Node>& rhs) {
+#endif
       typedef EpetraMultiVectorT this_type;
       const this_type* rhsPtr = dynamic_cast<const this_type*> (&rhs);
       TEUCHOS_TEST_FOR_EXCEPTION(
@@ -765,15 +946,27 @@ namespace Xpetra {
     //@{
 
     //! Basic MultiVector constuctor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     EpetraMultiVectorT(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map, size_t NumVectors, bool zeroOut=true)
+#else
+    EpetraMultiVectorT(const Teuchos::RCP< const Map<Node > > &map, size_t NumVectors, bool zeroOut=true)
+#endif
       : vec_(Teuchos::rcp(new Epetra_MultiVector(toEpetra<GlobalOrdinal,Node>(map), Teuchos::as<int>(NumVectors), zeroOut))) { }
 
     //! MultiVector copy constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     EpetraMultiVectorT(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &source)
+#else
+    EpetraMultiVectorT(const MultiVector< Scalar, Node > &source)
+#endif
       : vec_(Teuchos::rcp(new Epetra_MultiVector(toEpetra<GlobalOrdinal,Node>(source)))) { }
 
     //! Set multi-vector values from array of pointers using Teuchos memory management classes. (copy).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     EpetraMultiVectorT(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map, const Teuchos::ArrayView< const Teuchos::ArrayView< const Scalar > > &ArrayOfPtrs, size_t NumVectors) {
+#else
+    EpetraMultiVectorT(const Teuchos::RCP< const Map<Node > > &map, const Teuchos::ArrayView< const Teuchos::ArrayView< const Scalar > > &ArrayOfPtrs, size_t NumVectors) {
+#endif
       //TODO: input argument 'NumVectors' is not necessary in both Xpetra and Tpetra interface. Should it be removed?
 
       const std::string tfecfFuncName("MultiVector(ArrayOfPtrs)");
@@ -871,7 +1064,11 @@ namespace Xpetra {
     //@{
 
     //! Compute the dot product of each corresponding pair of vectors (columns) in A and B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void dot(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Teuchos::ArrayView< Scalar > &dots) const {
+#else
+    void dot(const MultiVector< Scalar, Node > &A, const Teuchos::ArrayView< Scalar > &dots) const {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::dot");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, A, eA, "This Xpetra::EpetraMultiVectorT method only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -879,10 +1076,18 @@ namespace Xpetra {
     }
 
     //! Put element-wise absolute values of input Multi-vector in target: A = abs(this).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void abs(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A) { XPETRA_MONITOR("EpetraMultiVectorT::abs"); vec_->Abs(toEpetra<GlobalOrdinal,Node>(A)); }
+#else
+    void abs(const MultiVector< Scalar, Node > &A) { XPETRA_MONITOR("EpetraMultiVectorT::abs"); vec_->Abs(toEpetra<GlobalOrdinal,Node>(A)); }
+#endif
 
     //! Put element-wise reciprocal values of input Multi-vector in target, this(i,j) = 1/A(i,j).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void reciprocal(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A) { XPETRA_MONITOR("EpetraMultiVectorT::reciprocal"); vec_->Reciprocal(toEpetra<GlobalOrdinal,Node>(A)); }
+#else
+    void reciprocal(const MultiVector< Scalar, Node > &A) { XPETRA_MONITOR("EpetraMultiVectorT::reciprocal"); vec_->Reciprocal(toEpetra<GlobalOrdinal,Node>(A)); }
+#endif
 
     //! Scale in place: this = alpha*this.
     void scale(const Scalar &alpha) { XPETRA_MONITOR("EpetraMultiVectorT::scale"); vec_->Scale(alpha); }
@@ -900,10 +1105,18 @@ namespace Xpetra {
     }
 
     //! Update: this = beta*this + alpha*A.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void update(const Scalar &alpha, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Scalar &beta) { XPETRA_MONITOR("EpetraMultiVectorT::update"); vec_->Update(alpha, toEpetra<GlobalOrdinal,Node>(A), beta); }
+#else
+    void update(const Scalar &alpha, const MultiVector< Scalar, Node > &A, const Scalar &beta) { XPETRA_MONITOR("EpetraMultiVectorT::update"); vec_->Update(alpha, toEpetra<GlobalOrdinal,Node>(A), beta); }
+#endif
 
     //! Update: this = gamma*this + alpha*A + beta*B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void update(const Scalar &alpha, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Scalar &beta, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, const Scalar &gamma) { XPETRA_MONITOR("EpetraMultiVectorT::update"); vec_->Update(alpha, toEpetra<GlobalOrdinal,Node>(A), beta, toEpetra<GlobalOrdinal,Node>(B), gamma); }
+#else
+    void update(const Scalar &alpha, const MultiVector< Scalar, Node > &A, const Scalar &beta, const MultiVector< Scalar, Node > &B, const Scalar &gamma) { XPETRA_MONITOR("EpetraMultiVectorT::update"); vec_->Update(alpha, toEpetra<GlobalOrdinal,Node>(A), beta, toEpetra<GlobalOrdinal,Node>(B), gamma); }
+#endif
 
     //! Compute 1-norm of each vector in multi-vector.
     void norm1(const Teuchos::ArrayView< Teuchos::ScalarTraits< Scalar >::magnitudeType > &norms) const { XPETRA_MONITOR("EpetraMultiVectorT::norm1"); vec_->Norm1(norms.getRawPtr()); }
@@ -918,10 +1131,18 @@ namespace Xpetra {
     void meanValue(const Teuchos::ArrayView< Scalar > &means) const { XPETRA_MONITOR("EpetraMultiVectorT::meanValue"); vec_->MeanValue(means.getRawPtr()); } //TODO: modify ArrayView size ??
 
     //! Matrix-matrix multiplication: this = beta*this + alpha*op(A)*op(B).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void multiply(Teuchos::ETransp transA, Teuchos::ETransp transB, const Scalar &alpha, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, const Scalar &beta) { XPETRA_MONITOR("EpetraMultiVectorT::multiply"); vec_->Multiply(toEpetra(transA), toEpetra(transB), alpha, toEpetra(A), toEpetra(B), beta); }
+#else
+    void multiply(Teuchos::ETransp transA, Teuchos::ETransp transB, const Scalar &alpha, const MultiVector< Scalar, Node > &A, const MultiVector< Scalar, Node > &B, const Scalar &beta) { XPETRA_MONITOR("EpetraMultiVectorT::multiply"); vec_->Multiply(toEpetra(transA), toEpetra(transB), alpha, toEpetra(A), toEpetra(B), beta); }
+#endif
 
     //! Multiply a Vector A elementwise by a MultiVector B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void elementWiseMultiply(Scalar scalarAB, const Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, Scalar scalarThis) { XPETRA_MONITOR("EpetraMultiVectorT::elementWiseMultiply"); vec_->Multiply(scalarAB, toEpetra<GlobalOrdinal,Node>(A), toEpetra<GlobalOrdinal,Node>(B), scalarThis); }
+#else
+    void elementWiseMultiply(Scalar scalarAB, const Vector< Scalar, Node > &A, const MultiVector< Scalar, Node > &B, Scalar scalarThis) { XPETRA_MONITOR("EpetraMultiVectorT::elementWiseMultiply"); vec_->Multiply(scalarAB, toEpetra<GlobalOrdinal,Node>(A), toEpetra<GlobalOrdinal,Node>(B), scalarThis); }
+#endif
 
     //@}
 
@@ -938,7 +1159,11 @@ namespace Xpetra {
     global_size_t getGlobalLength() const { XPETRA_MONITOR("EpetraMultiVectorT::getGlobalLength"); return vec_->GlobalLength64(); }
 
     //! Checks to see if the local length, number of vectors and size of Scalar type match
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool isSameSize(const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & vec) const { 
+#else
+    bool isSameSize(const MultiVector<Scalar,Node> & vec) const { 
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::isSameSize"); 
       auto vv = toEpetra<GlobalOrdinal,Node>(vec); 
       return ( (vec_->MyLength() == vv.MyLength()) && (vec_->NumVectors() == vv.NumVectors()));
@@ -969,7 +1194,11 @@ namespace Xpetra {
       XPETRA_MONITOR("EpetraMultiVectorT::randomize");
 
       if (bUseXpetraImplementation)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Xpetra::MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::Xpetra_randomize();
+#else
+        Xpetra::MultiVector< Scalar, Node >::Xpetra_randomize();
+#endif
       else
         vec_->Random();
     }
@@ -978,10 +1207,18 @@ namespace Xpetra {
     //{@
 
     //! Access function for the Tpetra::Map this DistObject was constructed with.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getMap() const { XPETRA_MONITOR("EpetraMultiVectorT::getMap"); return toXpetra<GlobalOrdinal,Node>(vec_->Map()); }
+#else
+    Teuchos::RCP< const Map<Node > > getMap() const { XPETRA_MONITOR("EpetraMultiVectorT::getMap"); return toXpetra<GlobalOrdinal,Node>(vec_->Map()); }
+#endif
 
     //! Import.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &source, const Import< LocalOrdinal, GlobalOrdinal, Node > &importer, CombineMode CM) {
+#else
+    void doImport(const DistObject<Scalar, Node> &source, const Import<Node > &importer, CombineMode CM) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::doImport");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, source, tSource, "Xpetra::EpetraMultiVectorT::doImport only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -993,7 +1230,11 @@ namespace Xpetra {
     }
 
     //! Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &dest, const Import< LocalOrdinal, GlobalOrdinal, Node >& importer, CombineMode CM) {
+#else
+    void doExport(const DistObject<Scalar, Node> &dest, const Import<Node >& importer, CombineMode CM) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::doExport");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, dest, tDest, "Xpetra::EpetraMultiVectorT::doImport only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -1005,7 +1246,11 @@ namespace Xpetra {
     }
 
     //! Import (using an Exporter).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doImport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &source, const Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) {
+#else
+    void doImport(const DistObject<Scalar, Node> &source, const Export<Node >& exporter, CombineMode CM) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::doImport");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, source, tSource, "Xpetra::EpetraMultiVectorT::doImport only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -1017,7 +1262,11 @@ namespace Xpetra {
     }
 
     //! Export (using an Importer).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void doExport(const DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node> &dest, const Export< LocalOrdinal, GlobalOrdinal, Node >& exporter, CombineMode CM) {
+#else
+    void doExport(const DistObject<Scalar, Node> &dest, const Export<Node >& exporter, CombineMode CM) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::doExport");
 
       XPETRA_DYNAMIC_CAST(const EpetraMultiVectorT<GlobalOrdinal XPETRA_COMMA Node>, dest, tDest, "Xpetra::EpetraMultiVectorT::doImport only accept Xpetra::EpetraMultiVectorT as input arguments.");
@@ -1029,7 +1278,11 @@ namespace Xpetra {
     }
 
     //! Replace the underlying Map in place.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void replaceMap(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map) {
+#else
+    void replaceMap(const Teuchos::RCP< const Map<Node > > &map) {
+#endif
       XPETRA_MONITOR("EpetraMultiVectorT::replaceMap");
       int err = 0;
       if (!map.is_null()) {
@@ -1065,7 +1318,11 @@ namespace Xpetra {
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type dual_view_type;
+#else
+    typedef typename Xpetra::MultiVector<Scalar, Node>::dual_view_type dual_view_type;
+#endif
 
     /// \brief Return an unmanaged non-const view of the local data on a specific device.
     /// \tparam TargetDeviceType The Kokkos Device type whose data to return.
@@ -1085,7 +1342,11 @@ namespace Xpetra {
         typename dual_view_type::t_dev_um,
         typename dual_view_type::t_host_um>::type
     getLocalView () const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return this->MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::template getLocalView<TargetDeviceType>();
+#else
+      return this->MultiVector< Scalar, Node >::template getLocalView<TargetDeviceType>();
+#endif
     }
 
     typename dual_view_type::t_host_um getHostLocalView () const {
@@ -1124,7 +1385,11 @@ namespace Xpetra {
     /// \brief Implementation of the assignment operator (operator=);
     ///   does a deep copy.
     virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     assign (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& rhs) {
+#else
+    assign (const MultiVector<Scalar, Node>& rhs) {
+#endif
       typedef EpetraMultiVectorT this_type;
       const this_type* rhsPtr = dynamic_cast<const this_type*> (&rhs);
       TEUCHOS_TEST_FOR_EXCEPTION(

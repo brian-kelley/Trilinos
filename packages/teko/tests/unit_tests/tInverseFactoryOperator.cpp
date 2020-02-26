@@ -127,11 +127,23 @@ const RCP<Epetra_Operator> buildSystem(const Epetra_Comm & comm,int size)
    return mat;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const RCP<Tpetra::Operator<ST,LO,GO,NT> > buildSystem(const Teuchos::RCP<const Teuchos::Comm<int> > comm,GO size)
+#else
+const RCP<Tpetra::Operator<ST,NT> > buildSystem(const Teuchos::RCP<const Teuchos::Comm<int> > comm,GO size)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(size,0,comm));
+#else
+   RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(size,0,comm));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > mat = Tpetra::createCrsMatrix<ST,LO,GO,NT>(map,3);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > mat = Tpetra::createCrsMatrix<ST,NT>(map,3);
+#endif
 
    ST values[] = { -1.0, 2.0, -1.0};
    GO iTemp[] = {-1,0,1}, indices[3];
@@ -234,8 +246,13 @@ TEUCHOS_UNIT_TEST(tInverseFactoryOperator, test_Direct_Solve_tpetra)
    Teuchos::RCP<Teko::InverseFactory> invFactory
          = invLib->getInverseFactory("Ifpack2");
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > eA = buildSystem(comm,50);
    Teko::LinearOp A = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(eA->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(eA->getDomainMap()),eA);
+#else
+   Teuchos::RCP<Tpetra::Operator<ST,NT> > eA = buildSystem(comm,50);
+   Teko::LinearOp A = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(eA->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(eA->getDomainMap()),eA);
+#endif
    Teko::ModifiableLinearOp invA = Teko::buildInverse(*invFactory,A);
 
    Teko::TpetraHelpers::InverseFactoryOperator invFactOp(invFactory);
@@ -244,7 +261,11 @@ TEUCHOS_UNIT_TEST(tInverseFactoryOperator, test_Direct_Solve_tpetra)
    {
       // because InverseFactoryOperator is a "Preconditioner" then need to
       // call Tpetra_Operator::ApplyInverse
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teko::LinearOp testInvA = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(invFactOp.getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(invFactOp.getDomainMap()),Teuchos::rcpFromRef(invFactOp));
+#else
+      Teko::LinearOp testInvA = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(invFactOp.getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(invFactOp.getDomainMap()),Teuchos::rcpFromRef(invFactOp));
+#endif
 
       Thyra::LinearOpTester<ST> tester;
       tester.show_all_tests(true);
@@ -263,7 +284,11 @@ TEUCHOS_UNIT_TEST(tInverseFactoryOperator, test_Direct_Solve_tpetra)
    {
       // because InverseFactoryOperator is a "Preconditioner" then need to
       // call Tpetra_Operator::ApplyInverse
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teko::LinearOp testInvA = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(invFactOp.getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(invFactOp.getDomainMap()),Teuchos::rcpFromRef(invFactOp));
+#else
+      Teko::LinearOp testInvA = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(invFactOp.getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(invFactOp.getDomainMap()),Teuchos::rcpFromRef(invFactOp));
+#endif
 
       Thyra::LinearOpTester<ST> tester;
       tester.show_all_tests(true);
@@ -357,18 +382,32 @@ TEUCHOS_UNIT_TEST(tInverseFactoryOperator, test_Block_Solve_tpetra)
    Teuchos::RCP<Teko::InverseFactory> amesosFactory
          = invLib->getInverseFactory("Ifpack2");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > eA00 = buildSystem(comm,50);
    Teko::LinearOp A_00 = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(eA00->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(eA00->getDomainMap()),eA00);
+#else
+   Teuchos::RCP<Tpetra::Operator<ST,NT> > eA00 = buildSystem(comm,50);
+   Teko::LinearOp A_00 = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(eA00->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(eA00->getDomainMap()),eA00);
+#endif
    Teko::ModifiableLinearOp invA_00 = Teko::buildInverse(*amesosFactory,A_00);
 
    Teko::LinearOp A = Thyra::block2x2<ST>(A_00,Teuchos::null,Teuchos::null,A_00);
    Teko::LinearOp invA = Thyra::block2x2<ST>(invA_00,Teuchos::null,Teuchos::null,invA_00); 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > eInvA = Teuchos::rcp(new Teko::TpetraHelpers::TpetraOperatorWrapper(invA));
    Teko::LinearOp cmpInvA = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(eInvA->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(eInvA->getDomainMap()),eInvA);
+#else
+   Teuchos::RCP<Tpetra::Operator<ST,NT> > eInvA = Teuchos::rcp(new Teko::TpetraHelpers::TpetraOperatorWrapper(invA));
+   Teko::LinearOp cmpInvA = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(eInvA->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(eInvA->getDomainMap()),eInvA);
+#endif
 
    Teuchos::RCP<Teko::PreconditionerFactory> jacFact = Teuchos::rcp(new Teko::JacobiPreconditionerFactory(invA_00,invA_00));
    Teuchos::RCP<Teko::InverseFactory> invFactory = Teuchos::rcp(new Teko::PreconditionerInverseFactory(jacFact,Teuchos::null));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > eA = Teuchos::rcp(new Teko::TpetraHelpers::TpetraOperatorWrapper(A));
+#else
+   Teuchos::RCP<Tpetra::Operator<ST,NT> > eA = Teuchos::rcp(new Teko::TpetraHelpers::TpetraOperatorWrapper(A));
+#endif
 
    Teko::TpetraHelpers::InverseFactoryOperator invFactOp(invFactory);
    invFactOp.buildInverseOperator(eA);
@@ -376,7 +415,11 @@ TEUCHOS_UNIT_TEST(tInverseFactoryOperator, test_Block_Solve_tpetra)
    {
       // because InverseFactoryOperator is a "Preconditioner" then need to
       // call Tpetra_Operator::ApplyInverse
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teko::LinearOp testInvA = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(invFactOp.getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(invFactOp.getDomainMap()),Teuchos::rcpFromRef(invFactOp));
+#else
+      Teko::LinearOp testInvA = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(invFactOp.getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(invFactOp.getDomainMap()),Teuchos::rcpFromRef(invFactOp));
+#endif
 
       Thyra::LinearOpTester<ST> tester;
       tester.show_all_tests(true);
@@ -395,7 +438,11 @@ TEUCHOS_UNIT_TEST(tInverseFactoryOperator, test_Block_Solve_tpetra)
    {
       // because InverseFactoryOperator is a "Preconditioner" then need to
       // call Tpetra_Operator::ApplyInverse
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teko::LinearOp testInvA = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(invFactOp.getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(invFactOp.getDomainMap()),Teuchos::rcpFromRef(invFactOp));
+#else
+      Teko::LinearOp testInvA = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(invFactOp.getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(invFactOp.getDomainMap()),Teuchos::rcpFromRef(invFactOp));
+#endif
 
       Thyra::LinearOpTester<ST> tester;
       tester.show_all_tests(true);

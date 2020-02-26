@@ -56,7 +56,11 @@
 namespace panzer {
 
 template <typename EvalT,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<ResponseBase> ResponseEvaluatorFactory_ExtremeValue<EvalT,LO,GO>::
+#else
+Teuchos::RCP<ResponseBase> ResponseEvaluatorFactory_ExtremeValue<EvalT>::
+#endif
 buildResponseObject(const std::string & responseName) const
 { 
   Teuchos::RCP<ResponseBase> response = Teuchos::rcp(new Response_ExtremeValue<EvalT>(responseName,comm_,useMax_,linearObjFactory_)); 
@@ -66,7 +70,11 @@ buildResponseObject(const std::string & responseName) const
 }
 
 template <typename EvalT,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void ResponseEvaluatorFactory_ExtremeValue<EvalT,LO,GO>::
+#else
+void ResponseEvaluatorFactory_ExtremeValue<EvalT>::
+#endif
 buildAndRegisterEvaluators(const std::string & responseName,
                            PHX::FieldManager<panzer::Traits> & fm,
                            const panzer::PhysicsBlock & physicsBlock,
@@ -120,7 +128,11 @@ buildAndRegisterEvaluators(const std::string & responseName,
 }
 
 template <typename EvalT,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool ResponseEvaluatorFactory_ExtremeValue<EvalT,LO,GO>::
+#else
+bool ResponseEvaluatorFactory_ExtremeValue<EvalT>::
+#endif
 typeSupported() const
 {
   if(   PHX::print<EvalT>()==PHX::print<panzer::Traits::Residual>()  ||

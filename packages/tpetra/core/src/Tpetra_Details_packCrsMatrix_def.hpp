@@ -724,7 +724,11 @@ do_pack (const LocalMatrix& local_matrix,
 ///   (i.e., a possibly different number of entries per row).
 template<typename ST, typename LO, typename GO, typename NT, typename BufferDeviceType>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsMatrix (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
+#else
+packCrsMatrix (const CrsMatrix<ST, NT>& sourceMatrix,
+#endif
                Kokkos::DualView<char*, BufferDeviceType>& exports,
                const Kokkos::View<size_t*, BufferDeviceType>& num_packets_per_lid,
                const Kokkos::View<const LO*, BufferDeviceType>& export_lids,
@@ -864,18 +868,34 @@ packCrsMatrix (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
 
 } // namespace PackCrsMatrixImpl
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename ST, typename LO, typename GO, typename NT>
+#else
+template<typename ST, typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsMatrix (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
+#else
+packCrsMatrix (const CrsMatrix<ST, NT>& sourceMatrix,
+#endif
                Teuchos::Array<char>& exports,
                const Teuchos::ArrayView<size_t>& numPacketsPerLID,
                const Teuchos::ArrayView<const LO>& exportLIDs,
                size_t& constantNumPackets,
                Distributor& distor)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using local_matrix_type = typename CrsMatrix<ST,LO,GO,NT>::local_matrix_type;
+#else
+  using local_matrix_type = typename CrsMatrix<ST,NT>::local_matrix_type;
+#endif
   using device_type = typename local_matrix_type::device_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using buffer_device_type = typename DistObject<char, LO, GO, NT>::buffer_device_type;
+#else
+  using buffer_device_type = typename DistObject<char,NT>::buffer_device_type;
+#endif
   using host_exec_space = typename Kokkos::View<size_t*, device_type>::HostMirror::execution_space;
   using host_dev_type = Kokkos::Device<host_exec_space, Kokkos::HostSpace>;
 
@@ -903,7 +923,11 @@ packCrsMatrix (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
   Kokkos::View<int*, device_type> export_pids_d; // output arg
   Kokkos::DualView<char*, buffer_device_type> exports_dv; // output arg
   constexpr bool pack_pids = false;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   PackCrsMatrixImpl::packCrsMatrix<ST, LO, GO, NT, buffer_device_type> (
+#else
+  PackCrsMatrixImpl::packCrsMatrix<ST,NT, buffer_device_type> (
+#endif
       sourceMatrix, exports_dv, num_packets_per_lid_d, export_lids_d,
       export_pids_d, constantNumPackets, pack_pids, distor);
 
@@ -928,20 +952,45 @@ packCrsMatrix (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
   Kokkos::deep_copy (exports_h, exports_dv.d_view);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename ST, typename LO, typename GO, typename NT>
+#else
+template<typename ST, typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsMatrixNew (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
+#else
+packCrsMatrixNew (const CrsMatrix<ST, NT>& sourceMatrix,
+#endif
                   Kokkos::DualView<char*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     typename DistObject<char, LO, GO, NT>::buffer_device_type>& exports,
+#else
+                    typename DistObject<char,NT>::buffer_device_type>& exports,
+#endif
                   const Kokkos::DualView<size_t*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     typename DistObject<char, LO, GO, NT>::buffer_device_type>& numPacketsPerLID,
+#else
+                    typename DistObject<char,NT>::buffer_device_type>& numPacketsPerLID,
+#endif
                   const Kokkos::DualView<const LO*,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     typename DistObject<char, LO, GO, NT>::buffer_device_type>& exportLIDs,
+#else
+                    typename DistObject<char,NT>::buffer_device_type>& exportLIDs,
+#endif
                   size_t& constantNumPackets,
                   Distributor& distor)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using device_type = typename CrsMatrix<ST, LO, GO, NT>::device_type;
   using buffer_device_type = typename DistObject<char, LO, GO, NT>::buffer_device_type;
+#else
+  using device_type = typename CrsMatrix<ST, NT>::device_type;
+  using buffer_device_type = typename DistObject<char,NT>::buffer_device_type;
+#endif
 
   // Create an empty array of PIDs, since the interface needs it.
   Kokkos::View<int*, device_type> exportPIDs_d ("exportPIDs", 0);
@@ -957,23 +1006,41 @@ packCrsMatrixNew (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
   TEUCHOS_ASSERT( ! exportLIDs.need_sync_device () );
   auto exportLIDs_d = exportLIDs.view_device ();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   PackCrsMatrixImpl::packCrsMatrix<ST,LO,GO,NT,buffer_device_type> (
+#else
+  PackCrsMatrixImpl::packCrsMatrix<ST,NT,buffer_device_type> (
+#endif
       sourceMatrix, exports, numPacketsPerLID_d, exportLIDs_d,
       exportPIDs_d, constantNumPackets, pack_pids, distor);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename ST, typename LO, typename GO, typename NT>
+#else
+template<typename ST, typename NT>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 packCrsMatrixWithOwningPIDs (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
                              Kokkos::DualView<char*, typename DistObject<char, LO, GO, NT>::buffer_device_type>& exports_dv,
+#else
+packCrsMatrixWithOwningPIDs (const CrsMatrix<ST, NT>& sourceMatrix,
+                             Kokkos::DualView<char*, typename DistObject<char,NT>::buffer_device_type>& exports_dv,
+#endif
                              const Teuchos::ArrayView<size_t>& numPacketsPerLID,
                              const Teuchos::ArrayView<const LO>& exportLIDs,
                              const Teuchos::ArrayView<const int>& sourcePIDs,
                              size_t& constantNumPackets,
                              Distributor& distor)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename CrsMatrix<ST,LO,GO,NT>::local_matrix_type local_matrix_type;
   typedef typename DistObject<char, LO, GO, NT>::buffer_device_type buffer_device_type;
+#else
+  typedef typename CrsMatrix<ST,NT>::local_matrix_type local_matrix_type;
+  typedef typename DistObject<char,NT>::buffer_device_type buffer_device_type;
+#endif
   typedef typename Kokkos::DualView<char*, buffer_device_type>::t_host::execution_space host_exec_space;
   typedef Kokkos::Device<host_exec_space, Kokkos::HostSpace> host_dev_type;
 
@@ -1088,24 +1155,44 @@ packCrsMatrixWithOwningPIDs (const CrsMatrix<ST, LO, GO, NT>& sourceMatrix,
 } // namespace Details
 } // namespace Tpetra
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DETAILS_PACKCRSMATRIX_INSTANT( ST, LO, GO, NT ) \
+#else
+#define TPETRA_DETAILS_PACKCRSMATRIX_INSTANT( ST, NT ) \
+#endif
   template void \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::packCrsMatrix<ST, LO, GO, NT> (const CrsMatrix<ST, LO, GO, NT>&, \
+#else
+  Details::packCrsMatrix<ST, NT> (const CrsMatrix<ST, NT>&, \
+#endif
     Teuchos::Array<char>&, \
     const Teuchos::ArrayView<size_t>&, \
     const Teuchos::ArrayView<const LO>&, \
     size_t&, \
     Distributor&); \
   template void \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::packCrsMatrixNew<ST, LO, GO, NT> (const CrsMatrix<ST, LO, GO, NT>&, \
     Kokkos::DualView<char*, DistObject<char, LO, GO, NT>::buffer_device_type>&, \
     const Kokkos::DualView<size_t*, DistObject<char, LO, GO, NT>::buffer_device_type>&, \
     const Kokkos::DualView<const LO*, DistObject<char, LO, GO, NT>::buffer_device_type>&, \
+#else
+  Details::packCrsMatrixNew<ST, NT> (const CrsMatrix<ST, NT>&, \
+    Kokkos::DualView<char*, DistObject<char,NT>::buffer_device_type>&, \
+    const Kokkos::DualView<size_t*, DistObject<char,NT>::buffer_device_type>&, \
+    const Kokkos::DualView<const LO*, DistObject<char,NT>::buffer_device_type>&, \
+#endif
     size_t&, \
     Distributor&); \
   template void \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Details::packCrsMatrixWithOwningPIDs<ST, LO, GO, NT> (const CrsMatrix<ST, LO, GO, NT>&, \
     Kokkos::DualView<char*, DistObject<char, LO, GO, NT>::buffer_device_type>&, \
+#else
+  Details::packCrsMatrixWithOwningPIDs<ST, NT> (const CrsMatrix<ST, NT>&, \
+    Kokkos::DualView<char*, DistObject<char,NT>::buffer_device_type>&, \
+#endif
     const Teuchos::ArrayView<size_t>&, \
     const Teuchos::ArrayView<const LO>&, \
     const Teuchos::ArrayView<const int>&, \

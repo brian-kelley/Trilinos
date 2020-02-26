@@ -167,14 +167,24 @@ bool tStridedTpetraOperator::test_numvars_constr(int verbosity,std::ostream & os
    FGallery.Set("nx",nx);
    FGallery.Set("ny",ny);
    RCP<Epetra_CrsMatrix> epetraA = rcp(FGallery.GetMatrix(),false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#endif
    ST beforeNorm = A->getFrobeniusNorm();
 
    int vars = 3;
    int width = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::MultiVector<ST,LO,GO,NT> x(A->getDomainMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> ys(A->getRangeMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> y(A->getRangeMap(),width);
+#else
+   Tpetra::MultiVector<ST,NT> x(A->getDomainMap(),width);
+   Tpetra::MultiVector<ST,NT> ys(A->getRangeMap(),width);
+   Tpetra::MultiVector<ST,NT> y(A->getRangeMap(),width);
+#endif
 
    Teko::TpetraHelpers::StridedTpetraOperator shell(vars,A);
 
@@ -190,7 +200,11 @@ bool tStridedTpetraOperator::test_numvars_constr(int verbosity,std::ostream & os
       shell.apply(x,y);
       A->apply(x,ys);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> e(y,Teuchos::Copy);
+#else
+      Tpetra::MultiVector<ST,NT> e(y,Teuchos::Copy);
+#endif
       e.update(-1.0,ys,1.0);
       e.norm2(Teuchos::ArrayView<ST>(norm));
 
@@ -232,7 +246,11 @@ bool tStridedTpetraOperator::test_numvars_constr(int verbosity,std::ostream & os
       shell.apply(x,y);
       A->apply(x,ys);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> e(y,Teuchos::Copy);
+#else
+      Tpetra::MultiVector<ST,NT> e(y,Teuchos::Copy);
+#endif
       e.update(-1.0,ys,1.0);
       e.norm2(Teuchos::ArrayView<ST>(norm));
 
@@ -276,13 +294,23 @@ bool tStridedTpetraOperator::test_vector_constr(int verbosity,std::ostream & os)
    FGallery.Set("nx",nx);
    FGallery.Set("ny",ny);
    RCP<Epetra_CrsMatrix> epetraA = rcp(FGallery.GetMatrix(),false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#endif
    ST beforeNorm = A->getFrobeniusNorm();
 
    int width = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::MultiVector<ST,LO,GO,NT> x(A->getDomainMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> ys(A->getRangeMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> y(A->getRangeMap(),width);
+#else
+   Tpetra::MultiVector<ST,NT> x(A->getDomainMap(),width);
+   Tpetra::MultiVector<ST,NT> ys(A->getRangeMap(),width);
+   Tpetra::MultiVector<ST,NT> y(A->getRangeMap(),width);
+#endif
 
    std::vector<int> vars;
    vars.push_back(2);
@@ -301,7 +329,11 @@ bool tStridedTpetraOperator::test_vector_constr(int verbosity,std::ostream & os)
       shell.apply(x,y);
       A->apply(x,ys);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> e(y,Teuchos::Copy);
+#else
+      Tpetra::MultiVector<ST,NT> e(y,Teuchos::Copy);
+#endif
       e.update(-1.0,ys,1.0);
       e.norm2(Teuchos::ArrayView<ST>(norm));
 
@@ -344,7 +376,11 @@ bool tStridedTpetraOperator::test_vector_constr(int verbosity,std::ostream & os)
       shell.apply(x,y);
       A->apply(x,ys);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> e(y);
+#else
+      Tpetra::MultiVector<ST,NT> e(y);
+#endif
       e.update(-1.0,ys,1.0);
       e.norm2(Teuchos::ArrayView<ST>(norm));
 
@@ -390,12 +426,22 @@ bool tStridedTpetraOperator::test_reorder(int verbosity,std::ostream & os,int to
    FGallery.Set("nx",nx);
    FGallery.Set("ny",ny);
    RCP<Epetra_CrsMatrix> epetraA = rcp(FGallery.GetMatrix(),false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > A = Teko::TpetraHelpers::nonConstEpetraCrsMatrixToTpetra(epetraA,comm_tpetra);
+#endif
 
    int width = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::MultiVector<ST,LO,GO,NT> x(A->getDomainMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> yf(A->getRangeMap(),width);
    Tpetra::MultiVector<ST,LO,GO,NT> yr(A->getRangeMap(),width);
+#else
+   Tpetra::MultiVector<ST,NT> x(A->getDomainMap(),width);
+   Tpetra::MultiVector<ST,NT> yf(A->getRangeMap(),width);
+   Tpetra::MultiVector<ST,NT> yr(A->getRangeMap(),width);
+#endif
 
    Teko::TpetraHelpers::StridedTpetraOperator flatShell(3,A,"Af");
    Teko::TpetraHelpers::StridedTpetraOperator reorderShell(3,A,"Ar");
@@ -441,7 +487,11 @@ bool tStridedTpetraOperator::test_reorder(int verbosity,std::ostream & os,int to
       flatShell.apply(x,yf);
       reorderShell.apply(x,yr);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> e(yf,Teuchos::Copy);
+#else
+      Tpetra::MultiVector<ST,NT> e(yf,Teuchos::Copy);
+#endif
       e.update(-1.0,yr,1.0);
       e.norm2(Teuchos::ArrayView<ST>(norm));
 

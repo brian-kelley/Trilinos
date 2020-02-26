@@ -131,7 +131,11 @@ namespace {
 
     out << "Calling createOneToOne" << endl;
     ModTwoTieBreak<LO,GO> tie_break;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> new_map = Tpetra::createOneToOne<LO,GO,NT> (map, tie_break);
+#else
+    RCP<const Map> new_map = Tpetra::createOneToOne<NT> (map, tie_break);
+#endif
 
     out << "Print the new map" << endl;
     // The "Teuchos::" stuff turns std::cout into a FancyOStream.

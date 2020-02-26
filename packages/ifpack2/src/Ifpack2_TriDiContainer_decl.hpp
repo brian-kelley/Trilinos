@@ -134,11 +134,19 @@ private:
   using typename Container<MatrixType>::ISC;
   using typename ContainerImpl<MatrixType, LocalScalarType>::LISC;
   using typename Container<MatrixType>::HostView;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using local_mv_type = Tpetra::MultiVector<LSC, LO, GO, NO>;
+#else
+  using local_mv_type = Tpetra::MultiVector<LSC, NO>;
+#endif
   using HostViewLocal = typename Kokkos::View<LSC**, Kokkos::HostSpace>;
   using typename ContainerImpl<MatrixType, LocalScalarType>::HostSubviewLocal;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static_assert (std::is_same<MatrixType, Tpetra::RowMatrix<SC, LO, GO, NO>>::value,
+#else
+  static_assert (std::is_same<MatrixType, Tpetra::RowMatrix<SC, NO>>::value,
+#endif
                  "Ifpack2::TriDiContainer: MatrixType must be a Tpetra::RowMatrix specialization.");
 
   /// \brief The (base class) type of the input matrix.

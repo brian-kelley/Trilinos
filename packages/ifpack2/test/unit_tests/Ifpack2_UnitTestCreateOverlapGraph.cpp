@@ -74,14 +74,23 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL(Ifpack2CreateOverlapGraph, OverlapGraphTest0, 
 
 //Create a Tpetra::CrsGraph:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > crsgraph = tif_utest::create_tridiag_graph<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
+#else
+  Teuchos::RCP<const Tpetra::CrsGraph<Node> > crsgraph = tif_utest::create_tridiag_graph<Node>(num_rows_per_proc);
+#endif
 
   TEST_EQUALITY( crsgraph->getMap()->getNodeNumElements(), num_rows_per_proc)
 
   LocalOrdinal overlap_levels = 2;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > overlapgraph =
     Ifpack2::createOverlapGraph<Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> >(crsgraph, overlap_levels);
+#else
+  Teuchos::RCP<const Tpetra::CrsGraph<Node> > overlapgraph =
+    Ifpack2::createOverlapGraph<Tpetra::CrsGraph<Node> >(crsgraph, overlap_levels);
+#endif
 
   const int numProcs = overlapgraph->getMap()->getComm()->getSize();
   const int myProc   = overlapgraph->getMap()->getComm()->getRank();

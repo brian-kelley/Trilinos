@@ -53,8 +53,13 @@ int main(int argc, char* argv[])
   typedef global_ordinal_type 												GlobalOrdinal;
   typedef KokkosClassic::DefaultNode::DefaultNodeType Node;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> multivector_type;
   typedef Xpetra::MatrixSplitting<Scalar,LocalOrdinal,GlobalOrdinal,Node,Xpetra::UseTpetra, false> tpetra_splitting;
+#else
+  typedef Xpetra::MultiVector<Scalar,Node> multivector_type;
+  typedef Xpetra::MatrixSplitting<Scalar,Node,Xpetra::UseTpetra, false> tpetra_splitting;
+#endif
 
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
@@ -101,7 +106,11 @@ int main(int argc, char* argv[])
   //A = Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Read(argv[2], Xpetra::UseTpetra, comm);
 
   // Create the RegionHandler to deal with mappings of nodes to regions etc.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Xpetra::RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node> > regionHandler = Teuchos::rcp(new Xpetra::RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node> (mappingFileName, comm));
+#else
+  Teuchos::RCP<Xpetra::RegionHandler<Scalar, Node> > regionHandler = Teuchos::rcp(new Xpetra::RegionHandler<Scalar, Node> (mappingFileName, comm));
+#endif
   Teuchos::Array<GlobalOrdinal> elementlist = regionHandler->GetGlobalRowMap();
   std::size_t num_total_elements = regionHandler->GetNumGlobalElements();
   std::size_t num_total_regions = regionHandler->GetNumTotalRegions();
@@ -112,7 +121,11 @@ int main(int argc, char* argv[])
   // Create region-wise AMG hierarchy
   int max_num_levels = 4;
   int coarsening_factor = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::RegionAMG<Scalar,LocalOrdinal,GlobalOrdinal,Node> preconditioner(matrixSplitting, regionHandler, comm, mueluParams, max_num_levels, coarsening_factor);
+#else
+  Xpetra::RegionAMG<Scalar,Node> preconditioner(matrixSplitting, regionHandler, comm, mueluParams, max_num_levels, coarsening_factor);
+#endif
 
 //  // Setup vectors for test problem
 //  Teuchos::RCP<multivector_type> X = Xpetra::MultiVectorFactory< Scalar, LocalOrdinal, GlobalOrdinal, Node >::Build(preconditioner.getDomainMap(), 1) ;

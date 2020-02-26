@@ -66,8 +66,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Constraint<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(const MultiVector& /* B */, const MultiVector& Bc, RCP<const CrsGraph> Ppattern) {
+#else
+  template<class Scalar, class Node>
+  void Constraint<Scalar, Node>::Setup(const MultiVector& /* B */, const MultiVector& Bc, RCP<const CrsGraph> Ppattern) {
+#endif
     const size_t NSDim = Bc.getNumVectors();
 
     Ppattern_ = Ppattern;
@@ -133,8 +138,13 @@ namespace MueLu {
   }
 
   //! \note We assume that the graph of Projected is the same as Ppattern_
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Constraint<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Apply(const Matrix& P, Matrix& Projected) const {
+#else
+  template<class Scalar, class Node>
+  void Constraint<Scalar, Node>::Apply(const Matrix& P, Matrix& Projected) const {
+#endif
     // We check only row maps. Column may be different.
     TEUCHOS_TEST_FOR_EXCEPTION(!P.getRowMap()->isSameAs(*Projected.getRowMap()), Exceptions::Incompatible,
                                "Row maps are incompatible");

@@ -71,15 +71,24 @@ namespace MueLu {
   */
 
   template <class Scalar = SmootherPrototype<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = typename SmootherPrototype<Scalar>::local_ordinal_type,
             class GlobalOrdinal = typename SmootherPrototype<Scalar, LocalOrdinal>::global_ordinal_type,
             class Node = typename SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
   class Amesos2Smoother : public SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node> {
+#else
+            class Node = typename SmootherPrototype<Scalar>::node_type>
+  class Amesos2Smoother : public SmootherPrototype<Scalar,Node> {
+#endif
 #undef MUELU_AMESOS2SMOOTHER_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors / destructors
     //@{
 
@@ -139,8 +148,13 @@ namespace MueLu {
     //@}
 
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Tpetra_CrsMatrix;
     typedef Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> Tpetra_MultiVector;
+#else
+    typedef Tpetra::CrsMatrix<Scalar, Node> Tpetra_CrsMatrix;
+    typedef Tpetra::MultiVector<Scalar, Node> Tpetra_MultiVector;
+#endif
 
     //! amesos2-specific key phrase that denote smoother type
     std::string type_;
@@ -159,7 +173,11 @@ namespace MueLu {
     (!defined(EPETRA_HAVE_OMP) && (!defined(HAVE_TPETRA_INST_SERIAL) || !defined(HAVE_TPETRA_INST_INT_INT))))
   // Stub specialization for missing Epetra template args
   template<>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class Amesos2Smoother<double,int,int,Xpetra::EpetraNode> : public SmootherPrototype<double,int,int,Xpetra::EpetraNode> {
+#else
+  class Amesos2Smoother<double,Xpetra::EpetraNode> : public SmootherPrototype<double,Xpetra::EpetraNode> {
+#endif
     typedef double              Scalar;
     typedef int                 LocalOrdinal;
     typedef int                 GlobalOrdinal;

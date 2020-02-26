@@ -242,10 +242,19 @@ namespace MueLu {
   };
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   struct VariableContainer::Getter<Teuchos::RCP<Xpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > > {
     typedef Xpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> Operator;
     typedef Xpetra::Matrix  <Scalar,LocalOrdinal,GlobalOrdinal,Node> Matrix;
+#else
+  template<class Scalar, class Node>
+  struct VariableContainer::Getter<Teuchos::RCP<Xpetra::Operator<Scalar,Node> > > {
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::Operator<Scalar,Node> Operator;
+    typedef Xpetra::Matrix  <Scalar,Node> Matrix;
+#endif
 
     static Teuchos::RCP<Operator>& get(DataBase* data_, DataBase*& datah_) {
       typedef Teuchos::RCP<Operator> TO;

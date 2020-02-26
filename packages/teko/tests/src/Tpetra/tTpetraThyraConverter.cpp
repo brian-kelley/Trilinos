@@ -85,11 +85,19 @@ namespace {
 double compareTpetraMVToThyra(const Tpetra_MultiVector & eX,
                             const Teuchos::RCP<const Thyra::MultiVectorBase<double> > & tX,
                             int indexStart=-1,int indexEnd=-1); */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 double compareTpetraMVToThyra(const Tpetra::MultiVector<ST,LO,GO,NT> & eX,
+#else
+double compareTpetraMVToThyra(const Tpetra::MultiVector<ST,NT> & eX,
+#endif
                             const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > & tX,
                             int verbosity,std::ostream & os,GO indexStart=-1,GO indexEnd=-1);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 double compareTpetraMVToThyra(const Tpetra::MultiVector<ST,LO,GO,NT> & eX,
+#else
+double compareTpetraMVToThyra(const Tpetra::MultiVector<ST,NT> & eX,
+#endif
                             const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > & tX,
                             int verbosity,std::ostream & os,GO indexStart,GO indexEnd)
 {
@@ -108,7 +116,11 @@ double compareTpetraMVToThyra(const Tpetra::MultiVector<ST,LO,GO,NT> & eX,
       // base case
       TEST_MSG("      compareTpetraMVToThyra - base case ( " << indexStart << ", " << indexEnd << " )" );
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::Map<LO,GO,NT> & map = *eX.getMap();
+#else
+      const Tpetra::Map<NT> & map = *eX.getMap();
+#endif
       int vecs = eX.getNumVectors();
 /*
       // get vector view for comparing elements
@@ -262,7 +274,11 @@ bool tTpetraThyraConverter::test_blockThyraToTpetra(int verbosity,std::ostream &
 
    // from the vector space build an tpetra map
    TEST_MSG("\n   1. creating Map");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::Map<LO,GO,NT> > map = Teko::TpetraHelpers::thyraVSToTpetraMap(*prodVS,tComm);
+#else
+   const RCP<const Tpetra::Map<NT> > map = Teko::TpetraHelpers::thyraVSToTpetraMap(*prodVS,tComm);
+#endif
 
    // create a vector
    const RCP<Thyra::MultiVectorBase<ST> > tX = Thyra::createMembers<ST>(prodVS,5);
@@ -270,7 +286,11 @@ bool tTpetraThyraConverter::test_blockThyraToTpetra(int verbosity,std::ostream &
 
    TEST_MSG("   2. creating MultiVector");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::MultiVector<ST,LO,GO,NT> > eX = rcp(new Tpetra::MultiVector<ST,LO,GO,NT>(map,5));
+#else
+   const RCP<Tpetra::MultiVector<ST,NT> > eX = rcp(new Tpetra::MultiVector<ST,NT>(map,5));
+#endif
    TEST_MSG("   3. calling blockThyraToTpetra");
    Teko::TpetraHelpers::blockThyraToTpetra(tX,*eX);
 
@@ -308,13 +328,21 @@ bool tTpetraThyraConverter::test_single_blockThyraToTpetra(int verbosity,std::os
          = Thyra::defaultSpmdVectorSpace<ST>(tComm,myElmts,glElmts); 
 
    // from the vector space build an tpetra map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::Map<LO,GO,NT> > map = Teko::TpetraHelpers::thyraVSToTpetraMap(*vs,tComm);
+#else
+   const RCP<const Tpetra::Map<NT> > map = Teko::TpetraHelpers::thyraVSToTpetraMap(*vs,tComm);
+#endif
 
    // create a vector
    const RCP<Thyra::MultiVectorBase<ST> > tX = Thyra::createMembers<ST>(vs,5);
    Thyra::randomize<ST>(-10.0,10.0,tX.ptr()); 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::MultiVector<ST,LO,GO,NT> > eX = rcp(new Tpetra::MultiVector<ST,LO,GO,NT>(map,5));
+#else
+   const RCP<Tpetra::MultiVector<ST,NT> > eX = rcp(new Tpetra::MultiVector<ST,NT>(map,5));
+#endif
    Teko::TpetraHelpers::blockThyraToTpetra(tX,*eX);
 
    TEST_ASSERT(eX!=Teuchos::null,
@@ -351,10 +379,18 @@ bool tTpetraThyraConverter::test_blockTpetraToThyra(int verbosity,std::ostream &
    const RCP<const Thyra::VectorSpaceBase<ST> > prodVS = Thyra::productVectorSpace(vs,2); 
  
    // from the vector space build an tpetra map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::Map<LO,GO,NT> > map = Teko::TpetraHelpers::thyraVSToTpetraMap(*prodVS,tComm);
+#else
+   const RCP<const Tpetra::Map<NT> > map = Teko::TpetraHelpers::thyraVSToTpetraMap(*prodVS,tComm);
+#endif
    
    // build an tpetra multivector 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::MultiVector<ST,LO,GO,NT> eX(map,3);
+#else
+   Tpetra::MultiVector<ST,NT> eX(map,3);
+#endif
    eX.randomize();
 
    // build a Thyra copy of this Tpetra_MultiVector
@@ -391,11 +427,19 @@ bool tTpetraThyraConverter::test_single_blockTpetraToThyra(int verbosity, std::o
    const RCP<const Thyra::VectorSpaceBase<ST> > prodVS = vs;
  
    // from the vector space build an tpetra map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::Map<LO,GO,NT> > map = Teko::TpetraHelpers::thyraVSToTpetraMap(*prodVS,tComm);
+#else
+   const RCP<const Tpetra::Map<NT> > map = Teko::TpetraHelpers::thyraVSToTpetraMap(*prodVS,tComm);
+#endif
    
    // build an tpetra multivector 
    int vecs = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::MultiVector<ST,LO,GO,NT> eX(map,vecs);
+#else
+   Tpetra::MultiVector<ST,NT> eX(map,vecs);
+#endif
    eX.randomize();
 
    // build a Thyra copy of this Tpetra::MultiVector

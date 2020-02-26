@@ -108,19 +108,41 @@ namespace Tpetra {
   ///   the Import (i.e., when calling DistObject's doImport()
   ///   (forward mode) or doExport() (reverse mode)).
   ///
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal,
            class GlobalOrdinal,
            class Node>
+#else
+  template<class Node>
+#endif
   class Import:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public ::Tpetra::Details::Transfer<LocalOrdinal, GlobalOrdinal, Node>
+#else
+    public ::Tpetra::Details::Transfer<Node>
+#endif
   {
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     friend class Export<LocalOrdinal,GlobalOrdinal,Node>;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    friend class Export<Node>;
+#endif
     using base_type =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ::Tpetra::Details::Transfer<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+      ::Tpetra::Details::Transfer<Node>;
+#endif
   public:
     //! The specialization of Map used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = ::Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using map_type = ::Tpetra::Map<Node>;
+#endif
 
     //! @name Constructors, assignment, and destructor
     //@{
@@ -205,7 +227,11 @@ namespace Tpetra {
     ///
     /// \note Currently this only makes a shallow copy of the Import's
     ///   underlying data.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Import (const Import<LocalOrdinal,GlobalOrdinal,Node>& importer);
+#else
+    Import (const Import<Node>& importer);
+#endif
 
     /// \brief "Copy" constructor from an Export object.
     ///
@@ -213,7 +239,11 @@ namespace Tpetra {
     /// of the given Export object.  This method is mainly useful for
     /// Tpetra developers, for example when building the explicit
     /// transpose of a sparse matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Import (const Export<LocalOrdinal,GlobalOrdinal,Node>& exporter);
+#else
+    Import (const Export<Node>& exporter);
+#endif
 
     /// \brief Constructor that computes optimized target Map.
     ///
@@ -245,7 +275,11 @@ namespace Tpetra {
     ///   this constructor reserves the right to reorder the target
     ///   Map indices on each process, for better communication
     ///   performance.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Import (const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& sourceMap,
+#else
+    Import (const Teuchos::RCP<const Map<Node> >& sourceMap,
+#endif
             const GlobalOrdinal targetMapRemoteOrPermuteGlobalIndices[],
             const int targetMapRemoteOrPermuteProcessRanks[],
             const LocalOrdinal numTargetMapRemoteOrPermuteGlobalIndices,
@@ -254,8 +288,13 @@ namespace Tpetra {
             const Teuchos::RCP<Teuchos::FancyOStream>& out = Teuchos::null);
 
     /// \brief Expert constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Import (const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& source,
             const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& target,
+#else
+    Import (const Teuchos::RCP<const Map<Node> >& source,
+            const Teuchos::RCP<const Map<Node> >& target,
+#endif
             const Teuchos::ArrayView<int> & remotePIDs,
             const Teuchos::ArrayView<const LocalOrdinal> & userExportLIDs,
             const Teuchos::ArrayView<const int> & userExportPIDs,
@@ -263,8 +302,13 @@ namespace Tpetra {
             const Teuchos::RCP<Teuchos::FancyOStream>& out = Teuchos::null);
 
     //! Assignment operator.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Import<LocalOrdinal,GlobalOrdinal,Node>&
     operator= (const Import<LocalOrdinal,GlobalOrdinal,Node>& Source) = default;
+#else
+    Import<Node>&
+    operator= (const Import<Node>& Source) = default;
+#endif
     
     //! Destructor.
     virtual ~Import () = default;
@@ -329,8 +373,13 @@ namespace Tpetra {
     /// though it would be a bit confusing for operator+ to return a
     /// pointer but take a reference (or to take a pointer, but have
     /// the left-hand side of the + expression be a reference).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Import<LocalOrdinal, GlobalOrdinal, Node> >
     setUnion (const Import<LocalOrdinal, GlobalOrdinal, Node>& rhs) const;
+#else
+    Teuchos::RCP<const Import<Node> >
+    setUnion (const Import<Node>& rhs) const;
+#endif
 
     /// \brief Return the union of this Import this->getSourceMap()
     ///
@@ -348,14 +397,22 @@ namespace Tpetra {
     /// (CrsMatrix), since its can skip over many of the steps of
     /// creating the result matrix's column Map from scratch.
     ///
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Import<LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<const Import<Node> >
+#endif
     setUnion () const;
 
     /// \brief Returns an importer that contains only the remote entries of this
     ///
     /// Returns an importer that contains only the remote entries of this importer.
     /// It is expected that remoteTarget represents such a map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Import<LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<const Import<Node> >
+#endif
     createRemoteOnlyImport (const Teuchos::RCP<const map_type>& remoteTarget) const;
 
     //@}
@@ -532,10 +589,17 @@ namespace Tpetra {
   /// (Debug mode: throws std::runtime_error if one of \c src or \c tgt is \c null.)
   ///
   /// \relatesalso Import
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<const Import<LocalOrdinal, GlobalOrdinal, Node> >
   createImport (const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& src,
                 const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& tgt)
+#else
+  template<class Node>
+  Teuchos::RCP<const Import<Node> >
+  createImport (const Teuchos::RCP<const Map<Node> >& src,
+                const Teuchos::RCP<const Map<Node> >& tgt)
+#endif
   {
     if (src == tgt) {
       return Teuchos::null;
@@ -545,7 +609,11 @@ namespace Tpetra {
       src == Teuchos::null || tgt == Teuchos::null, std::runtime_error,
       "Tpetra::createImport: Neither source nor target Map may be null.");
 #endif // HAVE_TPETRA_DEBUG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using import_type = Import<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using import_type = Import<Node>;
+#endif
     return Teuchos::rcp (new import_type (src, tgt));
   }
 
@@ -559,10 +627,17 @@ namespace Tpetra {
   /// (Debug mode: throws std::runtime_error if one of \c src or \c tgt is \c null.)
   ///
   /// \relatesalso Import
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<const Import<LocalOrdinal, GlobalOrdinal, Node> >
   createImport (const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& src,
                 const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& tgt,
+#else
+  template<class Node>
+  Teuchos::RCP<const Import<Node> >
+  createImport (const Teuchos::RCP<const Map<Node> >& src,
+                const Teuchos::RCP<const Map<Node> >& tgt,
+#endif
                 const Teuchos::RCP<Teuchos::ParameterList>& plist)
   {
     if (src == tgt) {
@@ -575,7 +650,11 @@ namespace Tpetra {
       << std::endl << "source: " << src << std::endl << "target: " << tgt
       << std::endl);
 #endif // HAVE_TPETRA_DEBUG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Import<LocalOrdinal, GlobalOrdinal, Node> import_type;
+#else
+    typedef Import<Node> import_type;
+#endif
     return Teuchos::rcp (new import_type (src, tgt, plist));
   }
 

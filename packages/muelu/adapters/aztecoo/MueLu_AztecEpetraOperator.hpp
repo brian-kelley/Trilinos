@@ -22,9 +22,17 @@ namespace MueLu {
     typedef int                 GO;
     typedef Xpetra::EpetraNode  NO;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO,GO,NO>                        Map;
+#else
+    typedef Xpetra::Map<NO>                        Map;
+#endif
     typedef Xpetra::EpetraMapT<GO,NO>                    EpetraMap;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Operator<SC,LO,GO,NO>                Operator;
+#else
+    typedef Xpetra::Operator<SC,NO>                Operator;
+#endif
 
   public:
 

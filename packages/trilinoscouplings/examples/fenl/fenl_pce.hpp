@@ -69,12 +69,25 @@ namespace Kokkos {
 namespace Example {
 
   // Overload of build_mean_based_muelu_preconditioner() for UQ::PCE scalar type
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class S, class LO, class GO, class N>
   Teuchos::RCP<Tpetra::Operator<Sacado::UQ::PCE<S>,LO,GO,N> >
+#else
+  template<class S, class N>
+  Teuchos::RCP<Tpetra::Operator<Sacado::UQ::PCE<S>,N> >
+#endif
   build_mean_based_muelu_preconditioner(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP<Tpetra::CrsMatrix<Sacado::UQ::PCE<S>,LO,GO,N> >& A,
+#else
+    const Teuchos::RCP<Tpetra::CrsMatrix<Sacado::UQ::PCE<S>,N> >& A,
+#endif
     const Teuchos::RCP<Teuchos::ParameterList>& precParams,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP<Tpetra::MultiVector<double,LO,GO,N> >& coords)
+#else
+    const Teuchos::RCP<Tpetra::MultiVector<double,N> >& coords)
+#endif
   {
     typedef Sacado::UQ::PCE<S> Scalar;
     typedef typename Scalar::value_type BaseScalar;
@@ -83,16 +96,37 @@ namespace Example {
     using Teuchos::rcp;
 
 #if USE_SCALAR_MEAN_BASED_PREC
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::CrsMatrix<BaseScalar,LO,GO,N> > mean_scalar =
+#else
+    RCP<Tpetra::CrsMatrix<BaseScalar,N> > mean_scalar =
+#endif
       build_mean_scalar_matrix(*A);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Operator<BaseScalar,LO,GO,N> > prec_scalar =
+#else
+    RCP<Tpetra::Operator<BaseScalar,N> > prec_scalar =
+#endif
       build_muelu_preconditioner(mean_scalar, precParams, coords);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Operator<Scalar,LO,GO,N> > prec =
       rcp(new Stokhos::MeanBasedTpetraOperator<Scalar,LO,GO,N>(prec_scalar));
 #else
+    RCP<Tpetra::Operator<Scalar,N> > prec =
+      rcp(new Stokhos::MeanBasedTpetraOperator<Scalar,N>(prec_scalar));
+#endif
+#else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::CrsMatrix<Scalar,LO,GO,N> > mean =
+#else
+    RCP<Tpetra::CrsMatrix<Scalar,N> > mean =
+#endif
       Stokhos::build_mean_matrix(*A);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Operator<Scalar,LO,GO,N> > prec =
+#else
+    RCP<Tpetra::Operator<Scalar,N> > prec =
+#endif
       build_muelu_preconditioner(mean, precParams, coords);
 #endif
 

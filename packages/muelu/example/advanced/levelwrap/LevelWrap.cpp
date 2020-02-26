@@ -95,22 +95,42 @@ const std::string prefSeparator = "=====================================";
 namespace MueLuExamples {
 
 #ifdef HAVE_MUELU_BELOS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void solve_system_hierarchy(Xpetra::UnderlyingLib& lib,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                               Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>>&   A,
                               Teuchos::RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>>&   X,
                               Teuchos::RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>>&   B,
                               Teuchos::RCP<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node>>& H,
+#else
+                              Teuchos::RCP<Xpetra::Matrix<Scalar,Node>>&   A,
+                              Teuchos::RCP<Xpetra::Vector<Scalar,Node>>&   X,
+                              Teuchos::RCP<Xpetra::Vector<Scalar,Node>>&   B,
+                              Teuchos::RCP<MueLu::Hierarchy<Scalar,Node>>& H,
+#endif
                               Teuchos::RCP<Teuchos::ParameterList>& SList) {
 #include "MueLu_UseShortNames.hpp"
     using Teuchos::rcp;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector <Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+    typedef Xpetra::MultiVector <Scalar,Node> MV;
+#endif
     typedef Belos::OperatorT<MV>                                         OP;
 
     // Construct a Belos LinearProblem object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<OP> belosOp   = rcp(new Belos::XpetraOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>(A));
     RCP<OP> belosPrec = rcp(new Belos::MueLuOp <Scalar,LocalOrdinal,GlobalOrdinal,Node>(H));
+#else
+    RCP<OP> belosOp   = rcp(new Belos::XpetraOp<Scalar,Node>(A));
+    RCP<OP> belosPrec = rcp(new Belos::MueLuOp <Scalar,Node>(H));
+#endif
 
     RCP<Belos::LinearProblem<Scalar, MV, OP> > belosProblem =
         rcp(new Belos::LinearProblem<Scalar, MV, OP>(belosOp, X, B));
@@ -125,26 +145,50 @@ namespace MueLuExamples {
   }
 
   // --------------------------------------------------------------------------------------
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void solve_system_list(Xpetra::UnderlyingLib& lib,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>>& A,
                          Teuchos::RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>>& X,
                          Teuchos::RCP<Xpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>>& B,
+#else
+                         Teuchos::RCP<Xpetra::Matrix<Scalar,Node>>& A,
+                         Teuchos::RCP<Xpetra::Vector<Scalar,Node>>& X,
+                         Teuchos::RCP<Xpetra::Vector<Scalar,Node>>& B,
+#endif
                          Teuchos::ParameterList& MueLuList,
                          Teuchos::RCP<Teuchos::ParameterList>& SList) {
 #include "MueLu_UseShortNames.hpp"
     using Teuchos::rcp;
 
     if(lib == Xpetra::UseEpetra) {MueLuList.set("use kokkos refactor", false);}
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node> > H =
         MueLu::CreateXpetraPreconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node>(A, MueLuList);
+#else
+    Teuchos::RCP<MueLu::Hierarchy<Scalar,Node> > H =
+        MueLu::CreateXpetraPreconditioner<Scalar,Node>(A, MueLuList);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector <Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+    typedef Xpetra::MultiVector <Scalar,Node> MV;
+#endif
     typedef Belos::OperatorT<MV>                                         OP;
 
     // Construct a Belos LinearProblem object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<OP> belosOp   = rcp(new Belos::XpetraOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>(A));
     RCP<OP> belosPrec = rcp(new Belos::MueLuOp <Scalar,LocalOrdinal,GlobalOrdinal,Node>(H));
+#else
+    RCP<OP> belosOp   = rcp(new Belos::XpetraOp<Scalar,Node>(A));
+    RCP<OP> belosPrec = rcp(new Belos::MueLuOp <Scalar,Node>(H));
+#endif
 
     RCP<Belos::LinearProblem<Scalar, MV, OP> > belosProblem =
         rcp(new Belos::LinearProblem<Scalar, MV, OP>(belosOp, X, B));
@@ -162,13 +206,22 @@ namespace MueLuExamples {
 
   // --------------------------------------------------------------------------------------
   // This routine generate's the user's original A matrix and nullspace
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void generate_user_matrix_and_nullspace(std::string& matrixType,
                                           Xpetra::UnderlyingLib& lib,
                                           Teuchos::ParameterList& galeriList,
                                           Teuchos::RCP<const Teuchos::Comm<int>>& comm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                           Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>>&      A,
                                           Teuchos::RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>>& nullspace) {
+#else
+                                          Teuchos::RCP<Xpetra::Matrix<Scalar,Node>>&      A,
+                                          Teuchos::RCP<Xpetra::MultiVector<Scalar,Node>>& nullspace) {
+#endif
 #include "MueLu_UseShortNames.hpp"
 
     RCP<Teuchos::FancyOStream> fancy = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
@@ -177,21 +230,37 @@ namespace MueLuExamples {
     RCP<const Map>   map;
     RCP<MultiVector> coordinates;
     if (matrixType == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian1D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian1D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("1D", map, galeriList);
 
     } else if (matrixType == "Laplace2D" || matrixType == "Star2D" || matrixType == "BigStar2D" || matrixType == "Elasticity2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian2D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian2D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("2D", map, galeriList);
 
     } else if (matrixType == "Laplace3D" || matrixType == "Brick3D" || matrixType == "Elasticity3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(lib, "Cartesian3D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian3D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("3D", map, galeriList);
     }
 
     // Expand map to do multiple DOF per node for block problems
     if (matrixType == "Elasticity2D" || matrixType == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Xpetra::MapFactory<LO,GO,Node>::Build(map, (matrixType == "Elasticity2D" ? 2 : 3));
+#else
+      map = Xpetra::MapFactory<Node>::Build(map, (matrixType == "Elasticity2D" ? 2 : 3));
+#endif
 
     out << "Processor subdomains in x direction: " << galeriList.get<GO>("mx") << std::endl
         << "Processor subdomains in y direction: " << galeriList.get<GO>("my") << std::endl
@@ -212,7 +281,11 @@ namespace MueLuExamples {
 
 
 // --------------------------------------------------------------------------------------
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::TimeMonitor;
@@ -250,7 +323,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
     // =========================================================================
     RCP<const Map>   map;
     RCP<Matrix> A,P,R, Ac;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal,Node> > nullspace;
+#else
+    RCP<Xpetra::MultiVector<Scalar,Node> > nullspace;
+#endif
     std::string matrixType = galeriParameters.GetMatrixType();
     MueLuExamples::generate_user_matrix_and_nullspace(matrixType,lib,galeriList,comm,A,nullspace);
     map=A->getRowMap();
@@ -300,7 +377,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
 
 #ifdef HAVE_MUELU_BELOS
       // Solve
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLuExamples::solve_system_hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node>(lib,A,X,B,H,SList);
+#else
+      MueLuExamples::solve_system_hierarchy<Scalar,Node>(lib,A,X,B,H,SList);
+#endif
 #endif
 
       // Extract R,P & Ac for LevelWrap Usage

@@ -10,15 +10,24 @@
 #include "Tpetra_CrsMatrix.hpp"
 #include "Teuchos_TimeMonitor.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 class EvaluatorTpetra1DFEM;
 
 /** \brief Nonmember constuctor.
  *
  * \relates EvaluatorTpetra1DFEM
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 Teuchos::RCP<EvaluatorTpetra1DFEM<Scalar, LO, GO, Node> >
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<EvaluatorTpetra1DFEM<Scalar, Node> >
+#endif
 evaluatorTpetra1DFEM(const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
                      const Tpetra::global_size_t numGlobalElements,
                      const Scalar zMin,
@@ -46,21 +55,36 @@ evaluatorTpetra1DFEM(const Teuchos::RCP<const Teuchos::Comm<int> >& comm,
  * <tt>Thyra::DefaultSerialDenseLinearOpWithSolveFactory</tt> is used to
  * create the linear solver.
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 class EvaluatorTpetra1DFEM
   : public ::Thyra::StateFuncModelEvaluatorBase<Scalar>
 {
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   // Public typedefs
   typedef Scalar scalar_type;
   typedef LO local_ordinal_type;
   typedef GO global_ordinal_type;
   typedef Node node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, Node> tpetra_map;
   typedef Tpetra::CrsGraph<LO, GO, Node> tpetra_graph;
   typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> tpetra_matrix;
   typedef Tpetra::Vector<Scalar, LO, GO, Node> tpetra_vec;
+#else
+  typedef Tpetra::Map<Node> tpetra_map;
+  typedef Tpetra::CrsGraph<Node> tpetra_graph;
+  typedef Tpetra::CrsMatrix<Scalar, Node> tpetra_matrix;
+  typedef Tpetra::Vector<Scalar, Node> tpetra_vec;
+#endif
   typedef ::Thyra::VectorBase<Scalar> thyra_vec;
   typedef ::Thyra::VectorSpaceBase<Scalar> thyra_vec_space;
   typedef ::Thyra::LinearOpBase<Scalar> thyra_op;
@@ -132,7 +156,11 @@ private: // data members
   Teuchos::RCP<const thyra_vec_space> xSpace_;
   Teuchos::RCP<const tpetra_map>   xOwnedMap_;
   Teuchos::RCP<const tpetra_map>   xGhostedMap_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Import<LO, GO, Node> > importer_;
+#else
+  Teuchos::RCP<const Tpetra::Import<Node> > importer_;
+#endif
 
   Teuchos::RCP<const thyra_vec_space> fSpace_;
   Teuchos::RCP<const tpetra_map>   fOwnedMap_;

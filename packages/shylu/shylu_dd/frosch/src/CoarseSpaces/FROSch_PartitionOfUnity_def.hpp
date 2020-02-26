@@ -50,8 +50,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     PartitionOfUnity<SC,LO,GO,NO>::PartitionOfUnity(CommPtr mpiComm,
+#else
+    template <class SC,class NO>
+    PartitionOfUnity<SC,NO>::PartitionOfUnity(CommPtr mpiComm,
+#endif
                                                     CommPtr serialComm,
                                                     UN dofsPerNode,
                                                     ConstXMapPtr nodesMap,
@@ -69,14 +74,24 @@ namespace FROSch {
         
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     PartitionOfUnity<SC,LO,GO,NO>::~PartitionOfUnity()
+#else
+    template <class SC,class NO>
+    PartitionOfUnity<SC,NO>::~PartitionOfUnity()
+#endif
     {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int PartitionOfUnity<SC,LO,GO,NO>::assembledPartitionOfUnityMaps()
+#else
+    template <class SC,class NO>
+    int PartitionOfUnity<SC,NO>::assembledPartitionOfUnityMaps()
+#endif
     {
         if (!AssmbledPartitionOfUnityMap_.is_null()) {
             FROSCH_NOTIFICATION("FROSch::PartitionOfUnity",Verbosity_,"AssmbledPartitionOfUnityMap_ has already been assembled previously.");
@@ -86,20 +101,35 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename PartitionOfUnity<SC,LO,GO,NO>::XMultiVectorPtrVecPtr PartitionOfUnity<SC,LO,GO,NO>::getLocalPartitionOfUnity() const
+#else
+    template <class SC,class NO>
+    typename PartitionOfUnity<SC,NO>::XMultiVectorPtrVecPtr PartitionOfUnity<SC,NO>::getLocalPartitionOfUnity() const
+#endif
     {
         return LocalPartitionOfUnity_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename PartitionOfUnity<SC,LO,GO,NO>::XMapPtrVecPtr PartitionOfUnity<SC,LO,GO,NO>::getPartitionOfUnityMaps() const
+#else
+    template <class SC,class NO>
+    typename PartitionOfUnity<SC,NO>::XMapPtrVecPtr PartitionOfUnity<SC,NO>::getPartitionOfUnityMaps() const
+#endif
     {
         return PartitionOfUnityMaps_;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename PartitionOfUnity<SC,LO,GO,NO>::XMapPtr PartitionOfUnity<SC,LO,GO,NO>::getAssembledPartitionOfUnityMap() const
+#else
+    template <class SC,class NO>
+    typename PartitionOfUnity<SC,NO>::XMapPtr PartitionOfUnity<SC,NO>::getAssembledPartitionOfUnityMap() const
+#endif
     {
         return AssmbledPartitionOfUnityMap_;
     }

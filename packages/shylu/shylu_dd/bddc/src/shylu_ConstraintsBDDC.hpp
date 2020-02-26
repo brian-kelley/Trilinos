@@ -78,8 +78,13 @@ public:
      const SM* yCoord,
      const SM* zCoord,
      const std::vector< std::vector<LO> > & subNodes,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      std::vector< SubdomainBDDC<SX,SM,LO,GO>* > & Subdomain,
      RCP< PartitionOfUnity<SX,SM,LO,GO> > & Partition,
+#else
+     std::vector< SubdomainBDDC<SX,SM>* > & Subdomain,
+     RCP< PartitionOfUnity<SX,SM> > & Partition,
+#endif
      const std::vector<SM> & diagBoundary,
      RCP<Teuchos::ParameterList> & Parameters) :
   m_numNodes(numNodes),
@@ -145,8 +150,13 @@ private:
   const LO* m_localDofs;
   const SM *m_xCoord, *m_yCoord, *m_zCoord;
   const std::vector< std::vector<LO> > & m_subNodes;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   std::vector< SubdomainBDDC<SX,SM,LO,GO>* > & m_Subdomain;
   RCP< PartitionOfUnity<SX,SM,LO,GO> > & m_Partition;
+#else
+  std::vector< SubdomainBDDC<SX,SM>* > & m_Subdomain;
+  RCP< PartitionOfUnity<SX,SM> > & m_Partition;
+#endif
   const std::vector<SM> m_diagBoundary;
   RCP<Teuchos::ParameterList> & m_Parameters;
   LO m_numSub, m_numDofs, m_spatialDim;

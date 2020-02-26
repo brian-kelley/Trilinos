@@ -23,8 +23,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalPermutationStrategy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildPermutations(size_t nDofsPerNode) const {
+#else
+  template<class Scalar, class Node>
+  void LocalPermutationStrategy<Scalar, Node>::BuildPermutations(size_t nDofsPerNode) const {
+#endif
 
     permWidth_ = nDofsPerNode;
 
@@ -48,8 +53,13 @@ namespace MueLu {
     } while (std::next_permutation(cs.begin(),cs.end()));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void LocalPermutationStrategy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildPermutation(const Teuchos::RCP<Matrix> & A, const Teuchos::RCP<const Map> /* permRowMap */, Level & currentLevel, const FactoryBase* genFactory) const {
+#else
+  template<class Scalar, class Node>
+  void LocalPermutationStrategy<Scalar, Node>::BuildPermutation(const Teuchos::RCP<Matrix> & A, const Teuchos::RCP<const Map> /* permRowMap */, Level & currentLevel, const FactoryBase* genFactory) const {
+#endif
 
     SC SC_ZERO = Teuchos::ScalarTraits<SC>::zero();
 
@@ -227,8 +237,13 @@ namespace MueLu {
     }*/
 
     // build permP * A * permQT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Matrix> ApermQt = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *permQTmatrix, false, GetOStream(Statistics2),true,true);
     Teuchos::RCP<Matrix> permPApermQt = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*permPmatrix, false, *ApermQt, false, GetOStream(Statistics2),true,true);
+#else
+    Teuchos::RCP<Matrix> ApermQt = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *permQTmatrix, false, GetOStream(Statistics2),true,true);
+    Teuchos::RCP<Matrix> permPApermQt = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*permPmatrix, false, *ApermQt, false, GetOStream(Statistics2),true,true);
+#endif
 
     /*
     MueLu::Utils<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Write("A.mat", *A);
@@ -270,7 +285,11 @@ namespace MueLu {
     }
     diagScalingOp->fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Matrix> scaledA = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*diagScalingOp, false, *permPApermQt, false, GetOStream(Statistics2), true, true);
+#else
+    Teuchos::RCP<Matrix> scaledA = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*diagScalingOp, false, *permPApermQt, false, GetOStream(Statistics2), true, true);
+#endif
     currentLevel.Set("A", Teuchos::rcp_dynamic_cast<Matrix>(scaledA), genFactory);
 
     currentLevel.Set("permA", Teuchos::rcp_dynamic_cast<Matrix>(permPApermQt), genFactory);
@@ -319,8 +338,13 @@ namespace MueLu {
     GetOStream(Statistics0) << "#Column permutations/max possible permutations: " << gNumColPermutations << "/" << diagQTVec->getMap()->getGlobalNumElements() << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   GlobalOrdinal LocalPermutationStrategy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getGlobalDofId(const Teuchos::RCP<Matrix> & A, LocalOrdinal localNodeId, LocalOrdinal localDof) const {
+#else
+  template<class Scalar, class Node>
+  GlobalOrdinal LocalPermutationStrategy<Scalar, Node>::getGlobalDofId(const Teuchos::RCP<Matrix> & A, LocalOrdinal localNodeId, LocalOrdinal localDof) const {
+#endif
     size_t nDofsPerNode = 1;
     if (A->IsView("stridedMaps")) {
       Teuchos::RCP<const Map> permRowMapStrided = A->getRowMap("stridedMaps");
@@ -332,8 +356,13 @@ namespace MueLu {
     return A->getRowMap()->getGlobalElement(localDofId);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   GlobalOrdinal LocalPermutationStrategy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::globalDofId2globalNodeId( const Teuchos::RCP<Matrix> & A, GlobalOrdinal grid ) const {
+#else
+  template<class Scalar, class Node>
+  GlobalOrdinal LocalPermutationStrategy<Scalar, Node>::globalDofId2globalNodeId( const Teuchos::RCP<Matrix> & A, GlobalOrdinal grid ) const {
+#endif
     size_t nDofsPerNode = 1;
     if (A->IsView("stridedMaps")) {
       Teuchos::RCP<const Map> permRowMapStrided = A->getRowMap("stridedMaps");

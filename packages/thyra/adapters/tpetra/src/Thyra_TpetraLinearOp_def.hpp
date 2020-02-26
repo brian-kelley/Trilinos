@@ -62,9 +62,17 @@ namespace Thyra {
 
 
 /** \brief Default class returns null. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal>
+#else
+  template<class Scalar,>
+#endif
 class GetTpetraEpetraRowMatrixWrapper {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   template<class TpetraMatrixType>
   static
   RCP<Tpetra::EpetraRowMatrix<TpetraMatrixType> >
@@ -134,44 +142,79 @@ convertToTeuchosTransMode(const Thyra::EOpTransp transp)
 // Constructors/initializers
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::TpetraLinearOp()
+#else
+template <class Scalar, class Node>
+TpetraLinearOp<Scalar,Node>::TpetraLinearOp()
+#endif
 {}
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initialize(
+#else
+template <class Scalar, class Node>
+void TpetraLinearOp<Scalar,Node>::initialize(
+#endif
   const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
   const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraOperator
+#else
+  const RCP<Tpetra::Operator<Scalar,Node> > &tpetraOperator
+#endif
   )
 {
   initializeImpl(rangeSpace, domainSpace, tpetraOperator);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::constInitialize(
+#else
+template <class Scalar, class Node>
+void TpetraLinearOp<Scalar,Node>::constInitialize(
+#endif
   const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
   const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraOperator
+#else
+  const RCP<const Tpetra::Operator<Scalar,Node> > &tpetraOperator
+#endif
   )
 {
   initializeImpl(rangeSpace, domainSpace, tpetraOperator);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getTpetraOperator()
+#else
+template <class Scalar, class Node>
+RCP<Tpetra::Operator<Scalar,Node> >
+TpetraLinearOp<Scalar,Node>::getTpetraOperator()
+#endif
 {
   return tpetraOperator_.getNonconstObj();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
 TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getConstTpetraOperator() const
+#else
+template <class Scalar, class Node>
+RCP<const Tpetra::Operator<Scalar,Node> >
+TpetraLinearOp<Scalar,Node>::getConstTpetraOperator() const
+#endif
 {
   return tpetraOperator_;
 }
@@ -180,17 +223,33 @@ TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getConstTpetraOperator()
 // Public Overridden functions from LinearOpBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::range() const
+#else
+TpetraLinearOp<Scalar,Node>::range() const
+#endif
 {
   return rangeSpace_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 RCP<const Thyra::VectorSpaceBase<Scalar> >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::domain() const
+#else
+TpetraLinearOp<Scalar,Node>::domain() const
+#endif
 {
   return domainSpace_;
 }
@@ -202,8 +261,13 @@ TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::domain() const
 #ifdef HAVE_THYRA_TPETRA_EPETRA
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getNonconstEpetraOpView(
+#else
+template <class Scalar, class Node>
+void TpetraLinearOp<Scalar,Node>::getNonconstEpetraOpView(
+#endif
   const Ptr<RCP<Epetra_Operator> > &epetraOp,
   const Ptr<EOpTransp> &epetraOpTransp,
   const Ptr<EApplyEpetraOpAs> &epetraOpApplyAs,
@@ -214,8 +278,13 @@ void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getNonconstEpetraOp
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getEpetraOpView(
+#else
+template <class Scalar, class Node>
+void TpetraLinearOp<Scalar,Node>::getEpetraOpView(
+#endif
   const Ptr<RCP<const Epetra_Operator> > &epetraOp,
   const Ptr<EOpTransp> &epetraOpTransp,
   const Ptr<EApplyEpetraOpAs> &epetraOpApplyAs,
@@ -223,10 +292,18 @@ void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getEpetraOpView(
   ) const
 {
   using Teuchos::rcp_dynamic_cast;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> TpetraRowMatrix_t;
+#else
+  typedef Tpetra::RowMatrix<Scalar,Node> TpetraRowMatrix_t;
+#endif
   if (nonnull(tpetraOperator_)) {
     if (is_null(epetraOp_)) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       epetraOp_ = GetTpetraEpetraRowMatrixWrapper<Scalar,LocalOrdinal,GlobalOrdinal>::get(
+#else
+      epetraOp_ = GetTpetraEpetraRowMatrixWrapper<Scalar>::get(
+#endif
         rcp_dynamic_cast<const TpetraRowMatrix_t>(tpetraOperator_.getConstObj(), true));
     }
     *epetraOp = epetraOp_;
@@ -247,8 +324,13 @@ void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getEpetraOpView(
 // Protected Overridden functions from LinearOpBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 bool TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::opSupportedImpl(
+#else
+template <class Scalar, class Node>
+bool TpetraLinearOp<Scalar,Node>::opSupportedImpl(
+#endif
   Thyra::EOpTransp M_trans) const
 {
   if (is_null(tpetraOperator_))
@@ -267,8 +349,13 @@ bool TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::opSupportedImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
+#else
+template <class Scalar, class Node>
+void TpetraLinearOp<Scalar,Node>::applyImpl(
+#endif
   const Thyra::EOpTransp M_trans,
   const Thyra::MultiVectorBase<Scalar> &X_in,
   const Teuchos::Ptr<Thyra::MultiVectorBase<Scalar> > &Y_inout,
@@ -278,9 +365,17 @@ void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
 {
   using Teuchos::rcpFromRef;
   using Teuchos::rcpFromPtr;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef TpetraOperatorVectorExtraction<Scalar,LocalOrdinal,GlobalOrdinal,Node>
+#else
+  typedef TpetraOperatorVectorExtraction<Scalar,Node>
+#endif
     ConverterT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>
+#else
+  typedef Tpetra::MultiVector<Scalar,Node>
+#endif
     TpetraMultiVector_t;
 
   // Get Tpetra::MultiVector objects for X and Y
@@ -302,49 +397,95 @@ void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::applyImpl(
 // Protected member functions overridden from ScaledLinearOpBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 bool TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::supportsScaleLeftImpl() const
+#else
+template <class Scalar, class Node>
+bool TpetraLinearOp<Scalar,Node>::supportsScaleLeftImpl() const
+#endif
 {
   return true;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 bool TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::supportsScaleRightImpl() const
+#else
+template <class Scalar, class Node>
+bool TpetraLinearOp<Scalar,Node>::supportsScaleRightImpl() const
+#endif
 {
   return true;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+TpetraLinearOp<Scalar,Node>::
+#endif
 scaleLeftImpl(const VectorBase<Scalar> &row_scaling_in)
 {
   using Teuchos::rcpFromRef;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > row_scaling =
     TpetraOperatorVectorExtraction<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getConstTpetraVector(rcpFromRef(row_scaling_in));
+#else
+  const RCP<const Tpetra::Vector<Scalar,Node> > row_scaling =
+    TpetraOperatorVectorExtraction<Scalar,Node>::getConstTpetraVector(rcpFromRef(row_scaling_in));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<typename Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > rowMatrix =
     Teuchos::rcp_dynamic_cast<Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(tpetraOperator_.getNonconstObj(),true);
+#else
+  const RCP<typename Tpetra::RowMatrix<Scalar,Node> > rowMatrix =
+    Teuchos::rcp_dynamic_cast<Tpetra::RowMatrix<Scalar,Node> >(tpetraOperator_.getNonconstObj(),true);
+#endif
 
   rowMatrix->leftScale(*row_scaling);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+TpetraLinearOp<Scalar,Node>::
+#endif
 scaleRightImpl(const VectorBase<Scalar> &col_scaling_in)
 {
   using Teuchos::rcpFromRef;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > col_scaling =
     TpetraOperatorVectorExtraction<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getConstTpetraVector(rcpFromRef(col_scaling_in));
+#else
+  const RCP<const Tpetra::Vector<Scalar,Node> > col_scaling =
+    TpetraOperatorVectorExtraction<Scalar,Node>::getConstTpetraVector(rcpFromRef(col_scaling_in));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<typename Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > rowMatrix =
     Teuchos::rcp_dynamic_cast<Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(tpetraOperator_.getNonconstObj(),true);
+#else
+  const RCP<typename Tpetra::RowMatrix<Scalar,Node> > rowMatrix =
+    Teuchos::rcp_dynamic_cast<Tpetra::RowMatrix<Scalar,Node> >(tpetraOperator_.getNonconstObj(),true);
+#endif
 
   rowMatrix->rightScale(*col_scaling);
 }
@@ -352,8 +493,13 @@ scaleRightImpl(const VectorBase<Scalar> &col_scaling_in)
 // Protected member functions overridden from RowStatLinearOpBase
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 bool TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::
+#else
+template <class Scalar, class Node>
+bool TpetraLinearOp<Scalar,Node>::
+#endif
 rowStatIsSupportedImpl(
   const RowStatLinearOpBaseUtils::ERowStat rowStat) const
 {
@@ -372,13 +518,22 @@ rowStatIsSupportedImpl(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getRowStatImpl(
+#else
+template <class Scalar, class Node>
+void TpetraLinearOp<Scalar,Node>::getRowStatImpl(
+#endif
   const RowStatLinearOpBaseUtils::ERowStat rowStat,
   const Ptr<VectorBase<Scalar> > &rowStatVec_in
   ) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>
+#else
+  typedef Tpetra::Vector<Scalar,Node>
+#endif
     TpetraVector_t;
   typedef Teuchos::ScalarTraits<Scalar> STS;
   typedef typename STS::magnitudeType MT;
@@ -398,10 +553,19 @@ void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getRowStatImpl(
     // tpetra matrix types.
 
     const RCP<TpetraVector_t> tRowSumVec =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       TpetraOperatorVectorExtraction<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getTpetraVector(rcpFromPtr(rowStatVec_in));
+#else
+      TpetraOperatorVectorExtraction<Scalar,Node>::getTpetraVector(rcpFromPtr(rowStatVec_in));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<const typename Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tCrsMatrix =
       Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(tpetraOperator_.getConstObj(),true);
+#else
+    const RCP<const typename Tpetra::CrsMatrix<Scalar,Node> > tCrsMatrix =
+      Teuchos::rcp_dynamic_cast<const Tpetra::CrsMatrix<Scalar,Node> >(tpetraOperator_.getConstObj(),true);
+#endif
 
     // EGP: The following assert fails when row sum scaling is applied to blocked Tpetra operators, but without the assert, the correct row sum scaling is obtained.
     // Furthermore, no valgrind memory errors occur in this case when the assert is removed.
@@ -448,9 +612,17 @@ void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getRowStatImpl(
 // private
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 template<class TpetraOperator_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>::initializeImpl(
+#else
+void TpetraLinearOp<Scalar,Node>::initializeImpl(
+#endif
   const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
   const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
   const RCP<TpetraOperator_t> &tpetraOperator

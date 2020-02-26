@@ -201,7 +201,11 @@ TEUCHOS_UNIT_TEST(Distributor, ReverseDistributeToNonuniformMap)
   typedef typename matrix_type::global_ordinal_type GO;
   typedef typename matrix_type::node_type NT;
   typedef Tpetra::global_size_t GST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
   typedef Tpetra::Export<LO, GO> export_type;
   typedef Tpetra::Import<LO, GO> import_type;
 

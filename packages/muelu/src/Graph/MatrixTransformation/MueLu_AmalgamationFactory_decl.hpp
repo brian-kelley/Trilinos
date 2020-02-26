@@ -72,8 +72,10 @@ namespace MueLu {
   */
 
   template<class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
            class Node = DefaultNode>
   class AmalgamationFactory : public SingleLevelFactoryBase {
 #undef MUELU_AMALGAMATIONFACTORY_SHORT
@@ -81,6 +83,10 @@ namespace MueLu {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 

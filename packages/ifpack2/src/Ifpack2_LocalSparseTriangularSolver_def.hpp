@@ -949,7 +949,12 @@ setMatrix (const Teuchos::RCP<const row_matrix_type>& A)
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_LOCALSPARSETRIANGULARSOLVER_INSTANT(S,LO,GO,N) \
   template class Ifpack2::LocalSparseTriangularSolver< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_LOCALSPARSETRIANGULARSOLVER_INSTANT(S,N) \
+  template class Ifpack2::LocalSparseTriangularSolver< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif // IFPACK2_LOCALSPARSETRIANGULARSOLVER_DEF_HPP

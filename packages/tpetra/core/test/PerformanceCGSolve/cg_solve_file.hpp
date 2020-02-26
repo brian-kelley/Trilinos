@@ -260,9 +260,15 @@ int run (int argc, char *argv[])
   typedef typename Tpetra::Map<>::local_ordinal_type    LO;
   typedef typename Tpetra::Map<>::global_ordinal_type   GO;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node>          crs_matrix_type;
   typedef Tpetra::Vector<Scalar,LO,GO,Node>             vec_type;
   typedef Tpetra::Map<LO,GO,Node>                       map_type;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node>          crs_matrix_type;
+  typedef Tpetra::Vector<Scalar,Node>             vec_type;
+  typedef Tpetra::Map<Node>                       map_type;
+#endif
 
   typedef typename vec_type::mag_type                   mag_type;
 

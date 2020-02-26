@@ -113,13 +113,23 @@ cloneAndSolveWithBelos (
 
 #ifdef HAVE_TRILINOSCOUPLINGS_MUELU
     if (M_left != Teuchos::null && prec_type == "MueLu") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP< const MueLu::TpetraOperator<ST,LO,GO,Node> > M_muelu =
         rcp_dynamic_cast<const MueLu::TpetraOperator<ST,LO,GO,Node> >(M_left);
+#else
+      RCP< const MueLu::TpetraOperator<ST,Node> > M_muelu =
+        rcp_dynamic_cast<const MueLu::TpetraOperator<ST,Node> >(M_left);
+#endif
       M_left_clone = rcp(new clone_operator_type(M_muelu));
     }
     if (M_right != Teuchos::null && prec_type == "MueLu") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP< const MueLu::TpetraOperator<ST,LO,GO,Node> > M_muelu =
         rcp_dynamic_cast<const MueLu::TpetraOperator<ST,LO,GO,Node> >(M_right);
+#else
+      RCP< const MueLu::TpetraOperator<ST,Node> > M_muelu =
+        rcp_dynamic_cast<const MueLu::TpetraOperator<ST,Node> >(M_right);
+#endif
       M_right_clone = rcp(new clone_operator_type(M_muelu));
     }
 #else

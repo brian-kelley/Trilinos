@@ -129,8 +129,10 @@ namespace MueLu {
   */
 
   template<class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
            class Node = DefaultNode>
   class CoalesceDropFactory : public SingleLevelFactoryBase {
 #undef MUELU_COALESCEDROPFACTORY_SHORT
@@ -138,6 +140,10 @@ namespace MueLu {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 
@@ -157,7 +163,11 @@ namespace MueLu {
     void DeclareInput(Level &currentLevel) const;
 
     /// set predrop function
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void SetPreDropFunction(const RCP<MueLu::PreDropFunctionBaseClass<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &predrop) { predrop_ = predrop; }
+#else
+    void SetPreDropFunction(const RCP<MueLu::PreDropFunctionBaseClass<Scalar,Node> > &predrop) { predrop_ = predrop; }
+#endif
 
     //@}
 

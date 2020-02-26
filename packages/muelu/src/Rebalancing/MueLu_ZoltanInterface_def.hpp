@@ -60,8 +60,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> ZoltanInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Scalar, class Node>
+ RCP<const ParameterList> ZoltanInterface<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >("A",           Teuchos::null, "Factory of the matrix A");
@@ -72,15 +77,25 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ZoltanInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void ZoltanInterface<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "number of partitions");
     Input(currentLevel, "Coordinates");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ZoltanInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& level) const {
+#else
+  template <class Scalar, class Node>
+  void ZoltanInterface<Scalar, Node>::Build(Level& level) const {
+#endif
     FactoryMonitor m(*this, "Build", level);
 
     RCP<Matrix>      A        = Get< RCP<Matrix> >     (level, "A");
@@ -95,19 +110,31 @@ namespace MueLu {
       rowMap = A->getRowMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType, LocalOrdinal, GlobalOrdinal, Node> double_multivector_type;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> double_multivector_type;
+#endif
     RCP<double_multivector_type> Coords   = Get< RCP<double_multivector_type> >(level, "Coordinates");
     size_t           dim      = Coords->getNumVectors();
     int numParts = Get<int>(level, "number of partitions");
 
     if (numParts == 1 || numParts == -1) {
       // Running on one processor, so decomposition is the trivial one, all zeros.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO, LO, GO, NO> > decomposition = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(rowMap, true);
+#else
+      RCP<Xpetra::Vector<GO, NO> > decomposition = Xpetra::VectorFactory<GO, NO>::Build(rowMap, true);
+#endif
       Set(level, "Partition", decomposition);
       return;
     } else if (numParts == -1) {
       // No repartitioning
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition = Teuchos::null;
+#else
+      RCP<Xpetra::Vector<GO,NO> > decomposition = Teuchos::null;
+#endif
       Set(level, "Partition", decomposition);
       return;
     }
@@ -169,9 +196,17 @@ namespace MueLu {
 
     // TODO check that A's row map is 1-1.  Zoltan requires this.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GO, LO, GO, NO> > decomposition;
+#else
+    RCP<Xpetra::Vector<GO, NO> > decomposition;
+#endif
     if (newDecomp) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       decomposition = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(rowMap, false); // Don't initialize, will be overwritten
+#else
+      decomposition = Xpetra::VectorFactory<GO, NO>::Build(rowMap, false); // Don't initialize, will be overwritten
+#endif
       ArrayRCP<GO> decompEntries = decomposition->getDataNonConst(0);
 
       int mypid = rowMap->getComm()->getRank();
@@ -200,8 +235,13 @@ namespace MueLu {
   // GetLocalNumberOfRows
   //-------------------------------------------------------------------------------------------------------------
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   int ZoltanInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetLocalNumberOfRows(void *data, int *ierr) {
+#else
+  template <class Scalar, class Node>
+  int ZoltanInterface<Scalar, Node>::GetLocalNumberOfRows(void *data, int *ierr) {
+#endif
     if (data == NULL) {
       *ierr = ZOLTAN_FATAL;
       return -1;
@@ -219,8 +259,13 @@ namespace MueLu {
   // GetLocalNumberOfNonzeros
   //-------------------------------------------------------------------------------------------------------------
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ZoltanInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ZoltanInterface<Scalar, Node>::
+#endif
   GetLocalNumberOfNonzeros(void *data, int NumGidEntries, int /* NumLidEntries */, ZOLTAN_ID_PTR gids,
                            ZOLTAN_ID_PTR /* lids */, int /* wgtDim */, float *weights, int *ierr) {
     if (data == NULL || NumGidEntries < 1) {
@@ -264,8 +309,13 @@ namespace MueLu {
   // GetProblemDimension
   //-------------------------------------------------------------------------------------------------------------
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   int ZoltanInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  int ZoltanInterface<Scalar, Node>::
+#endif
   GetProblemDimension(void *data, int *ierr)
   {
     int dim = *((int*)data);
@@ -278,8 +328,13 @@ namespace MueLu {
   // GetProblemGeometry
   //-------------------------------------------------------------------------------------------------------------
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void ZoltanInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void ZoltanInterface<Scalar, Node>::
+#endif
   GetProblemGeometry(void *data, int /* numGIDEntries */, int /* numLIDEntries */, int numObjectIDs,
                      ZOLTAN_ID_PTR /* gids */, ZOLTAN_ID_PTR /* lids */, int dim, double *coordinates, int *ierr)
   {
@@ -288,7 +343,11 @@ namespace MueLu {
       return;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> double_multivector_type;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> double_multivector_type;
+#endif
     double_multivector_type *Coords = (double_multivector_type*) data;
 
     if (dim != Teuchos::as<int>(Coords->getNumVectors())) {

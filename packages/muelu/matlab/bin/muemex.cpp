@@ -82,15 +82,29 @@ extern void _main();
 namespace MueLu {
 
 //Need subclass of Hierarchy that gives public access to list of FactoryManagers
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 class OpenHierarchy : public Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+template<typename Scalar, typename Node>
+class OpenHierarchy : public Hierarchy<Scalar, Node>
+#endif
 {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     const RCP<const FactoryManagerBase>& GetFactoryManager(const int levelID) const;
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 const RCP<const FactoryManagerBase>& OpenHierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetFactoryManager(const int levelID) const
+#else
+template<typename Scalar, typename Node>
+const RCP<const FactoryManagerBase>& OpenHierarchy<Scalar, Node>::GetFactoryManager(const int levelID) const
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION(levelID < 0 || levelID > this->GetNumLevels(), Exceptions::RuntimeError,
                             "MueLu::Hierarchy::GetFactoryManager(): invalid input parameter value: LevelID = " << levelID);

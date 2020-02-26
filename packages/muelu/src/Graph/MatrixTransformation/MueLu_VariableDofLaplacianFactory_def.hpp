@@ -54,8 +54,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> VariableDofLaplacianFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> VariableDofLaplacianFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< double >                ("Advanced Dirichlet: threshold", 1e-5, "Drop tolerance for Dirichlet detection");
@@ -68,11 +73,21 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   VariableDofLaplacianFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::VariableDofLaplacianFactory() { }
+#else
+  template <class Scalar, class Node>
+  VariableDofLaplacianFactory<Scalar, Node>::VariableDofLaplacianFactory() { }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void VariableDofLaplacianFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void VariableDofLaplacianFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "Coordinates");
 
@@ -82,8 +97,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void VariableDofLaplacianFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void VariableDofLaplacianFactory<Scalar, Node>::Build(Level &currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", currentLevel);
     typedef Teuchos::ScalarTraits<SC> STS;
 
@@ -94,15 +114,24 @@ namespace MueLu {
     Teuchos::RCP< const Teuchos::Comm< int > > comm = A->getRowMap()->getComm();
     Xpetra::UnderlyingLib lib = A->getRowMap()->lib();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> dxMV;
     RCP<dxMV> Coords = Get< RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > >(currentLevel, "Coordinates");
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> dxMV;
+    RCP<dxMV> Coords = Get< RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > >(currentLevel, "Coordinates");
+#endif
 
     int maxDofPerNode = pL.get<int>("maxDofPerNode");
     Scalar dirDropTol = Teuchos::as<Scalar>(pL.get<double>("Advanced Dirichlet: threshold")); // "ML advnaced Dirichlet: threshold"
     Scalar amalgDropTol = Teuchos::as<Scalar>(pL.get<double>("Variable DOF amalgamation: threshold")); //"variable DOF amalgamation: threshold")
 
     bool bHasZeroDiagonal = false;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::ArrayRCP<const bool> dirOrNot = MueLu::Utilities<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DetectDirichletRowsExt(*A,bHasZeroDiagonal,STS::magnitude(dirDropTol));
+#else
+    Teuchos::ArrayRCP<const bool> dirOrNot = MueLu::Utilities<Scalar, Node>::DetectDirichletRowsExt(*A,bHasZeroDiagonal,STS::magnitude(dirDropTol));
+#endif
 
     // check availability of DofPresent array
     Teuchos::ArrayRCP<LocalOrdinal> dofPresent;
@@ -291,8 +320,13 @@ namespace MueLu {
 
     Teuchos::RCP<Import> nodeImporter = ImportFactory::Build(amalgRowMap, amalgColMap);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<LOVector> nodeIdSrc    = Xpetra::VectorFactory<LocalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(amalgRowMap,true);
     RCP<LOVector> nodeIdTarget = Xpetra::VectorFactory<LocalOrdinal,LocalOrdinal,GlobalOrdinal,Node>::Build(amalgColMap,true);
+#else
+    RCP<LOVector> nodeIdSrc    = Xpetra::VectorFactory<LocalOrdinal,Node>::Build(amalgRowMap,true);
+    RCP<LOVector> nodeIdTarget = Xpetra::VectorFactory<LocalOrdinal,Node>::Build(amalgColMap,true);
+#endif
 
     Teuchos::ArrayRCP< LocalOrdinal > nodeIdSrcData = nodeIdSrc->getDataNonConst(0);
     for(decltype(amalgRowPtr.size()) i = 0; i < amalgRowPtr.size()-1; i++) {
@@ -320,7 +354,11 @@ namespace MueLu {
     Teuchos::ArrayRCP<Scalar> amalgVals;
     this->squeezeOutNnzs(amalgRowPtr,amalgCols,amalgVals,keep);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> dxMVf;
+#else
+    typedef Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> dxMVf;
+#endif
     RCP<dxMV> ghostedCoords = dxMVf::Build(amalgColMap,Coords->getNumVectors());
 
     TEUCHOS_TEST_FOR_EXCEPTION(amalgRowMap->getNodeNumElements() != Coords->getMap()->getNodeNumElements(), MueLu::Exceptions::RuntimeError, "MueLu::VariableDofLaplacianFactory: the number of Coordinates and amalgamated nodes is inconsistent.");
@@ -376,8 +414,13 @@ namespace MueLu {
     Set(currentLevel,"A",lapMat);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void VariableDofLaplacianFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::buildLaplacian(const Teuchos::ArrayRCP<size_t>& rowPtr, const Teuchos::ArrayRCP<LocalOrdinal>& cols, Teuchos::ArrayRCP<Scalar>& vals,const size_t& numdim, const RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> > & ghostedCoords) const {
+#else
+  template <class Scalar, class Node>
+  void VariableDofLaplacianFactory<Scalar, Node>::buildLaplacian(const Teuchos::ArrayRCP<size_t>& rowPtr, const Teuchos::ArrayRCP<LocalOrdinal>& cols, Teuchos::ArrayRCP<Scalar>& vals,const size_t& numdim, const RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> > & ghostedCoords) const {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(numdim != 2 && numdim !=3, MueLu::Exceptions::RuntimeError,"buildLaplacian only works for 2d or 3d examples. numdim = " << numdim);
 
     if(numdim == 2) { // 2d
@@ -431,8 +474,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void VariableDofLaplacianFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::squeezeOutNnzs(Teuchos::ArrayRCP<size_t> & rowPtr, Teuchos::ArrayRCP<LocalOrdinal> & cols, Teuchos::ArrayRCP<Scalar> & vals, const std::vector<bool>& keep) const {
+#else
+  template <class Scalar, class Node>
+  void VariableDofLaplacianFactory<Scalar, Node>::squeezeOutNnzs(Teuchos::ArrayRCP<size_t> & rowPtr, Teuchos::ArrayRCP<LocalOrdinal> & cols, Teuchos::ArrayRCP<Scalar> & vals, const std::vector<bool>& keep) const {
+#endif
     // get rid of nonzero entries that have 0's in them and properly change
     // the row ptr array to reflect this removal (either vals == NULL or vals != NULL)
     // Note, the arrays are squeezed. No memory is freed.
@@ -465,16 +513,26 @@ namespace MueLu {
     rowPtr[nRows] = count;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void VariableDofLaplacianFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::buildPaddedMap(const Teuchos::ArrayRCP<const LocalOrdinal> & dofPresent, std::vector<LocalOrdinal> & map, size_t nDofs) const {
+#else
+  template <class Scalar, class Node>
+  void VariableDofLaplacianFactory<Scalar, Node>::buildPaddedMap(const Teuchos::ArrayRCP<const LocalOrdinal> & dofPresent, std::vector<LocalOrdinal> & map, size_t nDofs) const {
+#endif
     size_t count = 0;
     for (decltype(dofPresent.size()) i = 0; i < dofPresent.size(); i++)
       if(dofPresent[i] == 1) map[count++] = Teuchos::as<LocalOrdinal>(i);
     TEUCHOS_TEST_FOR_EXCEPTION(nDofs != count, MueLu::Exceptions::RuntimeError, "VariableDofLaplacianFactory::buildPaddedMap: #dofs in dofPresent does not match the expected value (number of rows of A): " << nDofs << " vs. " << count);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void VariableDofLaplacianFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::assignGhostLocalNodeIds(const Teuchos::RCP<const Map> & rowDofMap, const Teuchos::RCP<const Map> & colDofMap, std::vector<LocalOrdinal> & myLocalNodeIds, const std::vector<LocalOrdinal> & dofMap, size_t maxDofPerNode, size_t& nLocalNodes, size_t& nLocalPlusGhostNodes, Teuchos::RCP< const Teuchos::Comm< int > > comm) const {
+#else
+  template <class Scalar, class Node>
+  void VariableDofLaplacianFactory<Scalar, Node>::assignGhostLocalNodeIds(const Teuchos::RCP<const Map> & rowDofMap, const Teuchos::RCP<const Map> & colDofMap, std::vector<LocalOrdinal> & myLocalNodeIds, const std::vector<LocalOrdinal> & dofMap, size_t maxDofPerNode, size_t& nLocalNodes, size_t& nLocalPlusGhostNodes, Teuchos::RCP< const Teuchos::Comm< int > > comm) const {
+#endif
 
     size_t nLocalDofs = rowDofMap->getNodeNumElements();
     size_t nLocalPlusGhostDofs = colDofMap->getNodeNumElements(); // TODO remove parameters

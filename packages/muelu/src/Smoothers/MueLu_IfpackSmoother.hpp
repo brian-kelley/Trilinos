@@ -73,7 +73,11 @@ namespace MueLu {
     type and ParameterList passed into the constructor. See the constructor for more information.
   */
   template <class Node = typename SmootherPrototype<double,int,int>::node_type>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class IfpackSmoother : public MueLu::SmootherPrototype<double,int,int,Node> {
+#else
+  class IfpackSmoother : public MueLu::SmootherPrototype<double,Node> {
+#endif
     typedef double Scalar;
     typedef int LocalOrdinal;
     typedef int GlobalOrdinal;
@@ -202,8 +206,13 @@ namespace MueLu {
 
   //! Non-member templated function GetIfpackSmoother() returns a new IfpackSmoother object when <Scalar, LocalOrdinal, GlobalOrdinal> == <double, int, int>. Otherwise, an exception is thrown.
   //! This function simplifies the usage of IfpackSmoother objects inside of templates as templates do not have to be specialized for <double, int, int> (see DirectSolver for an example).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<MueLu::SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+  template <class Scalar, class Node>
+  RCP<MueLu::SmootherPrototype<Scalar, Node> >
+#endif
   GetIfpackSmoother (const std::string& /* type */ = "",
                      const Teuchos::ParameterList& /* paramList */ = Teuchos::ParameterList (),
                      const LocalOrdinal& /* overlap */ = 0)
@@ -215,8 +224,13 @@ namespace MueLu {
   // Specialization for serial node (used for Epetra)
 #if defined(HAVE_MUELU_EPETRA)
   template <>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   inline RCP<MueLu::SmootherPrototype<double, int, int, Xpetra::EpetraNode> >
   GetIfpackSmoother<double, int, int, Xpetra::EpetraNode> (const std::string& type, const Teuchos::ParameterList& paramList, const int& overlap) {
+#else
+  inline RCP<MueLu::SmootherPrototype<double, Xpetra::EpetraNode> >
+  GetIfpackSmoother<double, Xpetra::EpetraNode> (const std::string& type, const Teuchos::ParameterList& paramList, const int& overlap) {
+#endif
     return rcp(new MueLu::IfpackSmoother<Xpetra::EpetraNode>(type, paramList, overlap));
   }
 #endif

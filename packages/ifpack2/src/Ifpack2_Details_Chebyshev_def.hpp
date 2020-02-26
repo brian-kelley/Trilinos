@@ -179,11 +179,23 @@ struct GlobalReciprocalThreshold<TpetraVectorType, false> {
 };
 
 // Utility function for inverting diagonal with threshold.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename S, typename L, typename G, typename N>
+#else
+template <typename S, typename N>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 reciprocal_threshold (Tpetra::Vector<S,L,G,N>& V, const S& minVal)
+#else
+reciprocal_threshold (Tpetra::Vector<S,N>& V, const S& minVal)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   GlobalReciprocalThreshold<Tpetra::Vector<S,L,G,N> >::compute (V, minVal);
+#else
+  GlobalReciprocalThreshold<Tpetra::Vector<S,N> >::compute (V, minVal);
+#endif
 }
 
 namespace { // (anonymous)
@@ -744,8 +756,10 @@ Chebyshev<ScalarType, MV>::compute ()
   // here, since we have no way to get back the original fifth
   // template parameter.
   typedef Tpetra::CrsMatrix<typename MV::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typename MV::local_ordinal_type,
     typename MV::global_ordinal_type,
+#endif
     typename MV::node_type> crs_matrix_type;
 
   TEUCHOS_TEST_FOR_EXCEPTION(
@@ -1017,8 +1031,10 @@ makeInverseDiagonal (const row_matrix_type& A, const bool useDiagOffsets) const
     // We'll make our best guess about its type here, since we have no
     // way to get back the original fifth template parameter.
     typedef Tpetra::CrsMatrix<typename MV::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typename MV::local_ordinal_type,
       typename MV::global_ordinal_type,
+#endif
       typename MV::node_type> crs_matrix_type;
     RCP<const crs_matrix_type> A_crsMat =
       rcp_dynamic_cast<const crs_matrix_type> (rcpFromRef (A));
@@ -1097,9 +1113,13 @@ makeRangeMapVectorConst (const Teuchos::RCP<const V>& D) const
 {
   using Teuchos::RCP;
   using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Export<typename MV::local_ordinal_type,
                          typename MV::global_ordinal_type,
                          typename MV::node_type> export_type;
+#else
+  typedef Tpetra::Export<typename MV::node_type> export_type;
+#endif
   // This throws logic_error instead of runtime_error, because the
   // methods that call makeRangeMapVector should all have checked
   // whether A_ is null before calling this method.
@@ -1664,7 +1684,12 @@ describe (Teuchos::FancyOStream& out,
 } // namespace Details
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_CHEBYSHEV_INSTANT(S,LO,GO,N) \
   template class Ifpack2::Details::Chebyshev< S, Tpetra::MultiVector<S, LO, GO, N> >;
+#else
+#define IFPACK2_DETAILS_CHEBYSHEV_INSTANT(S,N) \
+  template class Ifpack2::Details::Chebyshev< S, Tpetra::MultiVector<S, N> >;
+#endif
 
 #endif // IFPACK2_DETAILS_CHEBYSHEV_DEF_HPP

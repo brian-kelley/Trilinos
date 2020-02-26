@@ -47,7 +47,11 @@
 #define XPETRA_EPETRAEXPORT_FWD_HPP
 
 namespace Xpetra {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GO, class NO> class EpetraExportT;
+#else
+  template<class NO> class EpetraExportT;
+#endif
   typedef EpetraExportT<int, EpetraNode> EpetraExport;
 }
 

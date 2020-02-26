@@ -63,11 +63,21 @@
 
 namespace { // (anonymous)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 localApplyBlockNoTrans (Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node>& A,
                         Tpetra::BlockMultiVector<Scalar, LO, GO, Node>& X,
                         Tpetra::BlockMultiVector<Scalar, LO, GO, Node>& Y,
+#else
+localApplyBlockNoTrans (Tpetra::BlockCrsMatrix<Scalar, Node>& A,
+                        Tpetra::BlockMultiVector<Scalar, Node>& X,
+                        Tpetra::BlockMultiVector<Scalar, Node>& Y,
+#endif
                         const Scalar& alpha,
                         const Scalar& beta)
 {
@@ -75,7 +85,11 @@ localApplyBlockNoTrans (Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node>& A,
   using Tpetra::FILL;
   using Tpetra::GEMV;
   using Tpetra::SCAL;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node>
+#else
+  typedef Tpetra::BlockCrsMatrix<Scalar, Node>
+#endif
     block_crs_matrix_type;
   typedef typename block_crs_matrix_type::impl_scalar_type IST;
   typedef Kokkos::Details::ArithTraits<IST> KAT;
@@ -155,18 +169,33 @@ localApplyBlockNoTrans (Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node>& A,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 bool
 compareLocalMatVec (Teuchos::FancyOStream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                     Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node>& A,
                     Tpetra::MultiVector<Scalar, LO, GO, Node>& X_mv,
                     Tpetra::MultiVector<Scalar, LO, GO, Node>& Y_mv,
+#else
+                    Tpetra::BlockCrsMatrix<Scalar, Node>& A,
+                    Tpetra::MultiVector<Scalar, Node>& X_mv,
+                    Tpetra::MultiVector<Scalar, Node>& Y_mv,
+#endif
                     const Scalar& alpha = Teuchos::ScalarTraits<Scalar>::one (),
                     const Scalar& beta = Teuchos::ScalarTraits<Scalar>::zero ())
 {
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar, LO, GO, Node> MV;
   typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
+#else
+  typedef Tpetra::MultiVector<Scalar, Node> MV;
+  typedef Tpetra::BlockMultiVector<Scalar, Node> BMV;
+#endif
   typedef typename MV::mag_type mag_type;
   typedef Teuchos::ScalarTraits<Scalar> STS;
   typedef Teuchos::ScalarTraits<mag_type> STM;

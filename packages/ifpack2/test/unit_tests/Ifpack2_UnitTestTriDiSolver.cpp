@@ -59,7 +59,11 @@
 
 namespace {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(TriDiSolver, LapackComparison, ScalarType, LocalOrdinalType, GlobalOrdinalType)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(TriDiSolver, LapackComparison, ScalarType)
+#endif
 {
   using Teuchos::Array;
   using Teuchos::ArrayRCP;
@@ -345,7 +349,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(TriDiSolver, LapackComparison, ScalarType, Loc
 
 // Define the set of unit tests to instantiate in this file.
 #define UNIT_TEST_GROUP_SC_LO_GO( SC, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( TriDiSolver, LapackComparison, SC, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( TriDiSolver, LapackComparison, SC )
+#endif
 
 #include "Ifpack2_ETIHelperMacros.h"
 

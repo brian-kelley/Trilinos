@@ -91,8 +91,10 @@ namespace MueLu {
     | P       | UnsmooshFactory   | Unsmooshed prolongation operator
   */
   template<class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
            class Node = DefaultNode>
   class UnsmooshFactory : public PFactory {
 #undef MUELU_UNSMOOSHFACTORY_SHORT
@@ -100,6 +102,10 @@ namespace MueLu {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 

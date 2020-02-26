@@ -65,8 +65,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   BuildAggregates(const Teuchos::ParameterList& /* params */, const LWGraph_kokkos& graph,
                   Aggregates_kokkos& aggregates,
                   Kokkos::View<unsigned*, memory_space>& aggStat,
@@ -106,8 +111,13 @@ namespace MueLu {
   } // BuildAggregates()
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   BuildGraph(const LWGraph_kokkos& graph, RCP<IndexManager_kokkos>& geoData, const LO dofsPerNode,
              RCP<CrsGraph>& myGraph) const {
     Monitor m(*this, "BuildGraphP");
@@ -201,8 +211,13 @@ namespace MueLu {
   } // BuildGraph()
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   fillAggregatesFunctor::fillAggregatesFunctor(RCP<IndexManager_kokkos> geoData,
                                                const int myRank,
                                                Kokkos::View<unsigned*, memory_space> aggStat,
@@ -211,9 +226,17 @@ namespace MueLu {
     geoData_(*geoData), myRank_(myRank), aggStat_(aggStat),
     vertex2AggID_(vertex2AggID), procWinner_(procWinner) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   KOKKOS_INLINE_FUNCTION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  void AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   fillAggregatesFunctor::operator() (const LO nodeIdx, LO& lNumAggregatedNodes) const {
     // Compute coarse ID associated with fine LID
     LO rem, rate;
@@ -242,8 +265,13 @@ namespace MueLu {
 
   } // fillAggregatesFunctor::operator()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   computeGraphDataConstantFunctor::
   computeGraphDataConstantFunctor(RCP<IndexManager_kokkos> geoData,
                                   const LO NumGhostedNodes,
@@ -259,9 +287,17 @@ namespace MueLu {
 
   } // computeGraphDataConstantFunctor()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   KOKKOS_INLINE_FUNCTION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  void AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   computeGraphDataConstantFunctor::operator() (const LO nodeIdx) const {
     LO nodeFineTuple[3]   = {0, 0, 0};
     LO nodeCoarseTuple[3] = {0, 0, 0};
@@ -295,8 +331,13 @@ namespace MueLu {
 
   } // computeGraphDataConstantFunctor::operator()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   computeGraphRowPtrFunctor::computeGraphRowPtrFunctor(RCP<IndexManager_kokkos> geoData,
                                                        const LO dofsPerNode,
                                                        const int numInterpolationPoints,
@@ -308,9 +349,17 @@ namespace MueLu {
     numInterpolationPoints_(numInterpolationPoints), numLocalRows_(numLocalRows),
     coarseRate_(coarseRate), lFineNodesPerDir_(lFineNodesPerDir), rowPtr_(rowPtr) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   KOKKOS_INLINE_FUNCTION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  void AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   computeGraphRowPtrFunctor::operator() (const LO rowIdx, GO& update, const bool final) const {
     if (final) {
       // Kokkos uses a multipass algorithm to implement scan.
@@ -335,8 +384,13 @@ namespace MueLu {
     }
   } // computeGraphRowPtrFunctor::operator()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   computeGraphDataLinearFunctor::computeGraphDataLinearFunctor(RCP<IndexManager_kokkos> geoData,
                                                                const int numDimensions,
                                                                const LO numGhostedNodes,
@@ -356,9 +410,17 @@ namespace MueLu {
 
   } // computeGraphDataLinearFunctor()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   KOKKOS_INLINE_FUNCTION
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void AggregationStructuredAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  void AggregationStructuredAlgorithm_kokkos<Node>::
+#endif
   computeGraphDataLinearFunctor::operator() (const LO nodeIdx) const {
     LO nodeFineTuple[3]   = {0, 0, 0};
     LO nodeCoarseTuple[3] = {0, 0, 0};

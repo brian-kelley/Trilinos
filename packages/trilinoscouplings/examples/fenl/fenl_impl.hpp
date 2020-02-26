@@ -131,10 +131,17 @@ public:
 
   typedef Tpetra::Map<>::local_ordinal_type LocalOrdinalType;
   typedef Tpetra::Map<>::global_ordinal_type GlobalOrdinalType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LocalOrdinalType,GlobalOrdinalType,NodeType> MapType;
   typedef Tpetra::Vector<Scalar,LocalOrdinalType,GlobalOrdinalType,NodeType> GlobalVectorType;
   typedef Tpetra::MultiVector<Scalar,LocalOrdinalType,GlobalOrdinalType,NodeType> GlobalMultiVectorType;
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinalType,GlobalOrdinalType,NodeType> GlobalMatrixType;
+#else
+  typedef Tpetra::Map<NodeType> MapType;
+  typedef Tpetra::Vector<Scalar,NodeType> GlobalVectorType;
+  typedef Tpetra::MultiVector<Scalar,NodeType> GlobalMultiVectorType;
+  typedef Tpetra::CrsMatrix<Scalar,NodeType> GlobalMatrixType;
+#endif
   typedef typename GlobalMatrixType::local_matrix_type LocalMatrixType;
   typedef typename LocalMatrixType::StaticCrsGraphType LocalGraphType;
 
@@ -150,10 +157,14 @@ public:
   typedef Teuchos::RCP<const Teuchos::Comm<int> >            rcpCommType ;
   typedef Teuchos::RCP<Kokkos::Compat::KokkosDeviceWrapperNode<Device> > rcpNodeType ;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Import<
     typename GlobalVectorType::local_ordinal_type,
     typename GlobalVectorType::global_ordinal_type,
     typename GlobalVectorType::node_type
+#else
+  typedef Tpetra::Import<typename GlobalVectorType::node_type
+#endif
     > import_type;
 
 private:
@@ -414,7 +425,11 @@ public:
       //   Teuchos::fancyOStream(Teuchos::rcp(&std::cout,false));
       // out->setShowProcRank(true);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP< Tpetra::Operator<Scalar,LocalOrdinalType,GlobalOrdinalType,NodeType> > precOp;
+#else
+      Teuchos::RCP< Tpetra::Operator<Scalar,NodeType> > precOp;
+#endif
       for ( perf.newton_iter_count = 0 ;
             perf.newton_iter_count < newton_iteration_limit ;
             ++perf.newton_iter_count ) {

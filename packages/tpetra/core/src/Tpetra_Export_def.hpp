@@ -58,8 +58,13 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Export<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Export<Node>::
+#endif
   Export (const Teuchos::RCP<const map_type >& source,
           const Teuchos::RCP<const map_type >& target,
           const Teuchos::RCP<Teuchos::FancyOStream>& out,
@@ -100,44 +105,79 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Export<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Export<Node>::
+#endif
   Export (const Teuchos::RCP<const map_type>& source,
           const Teuchos::RCP<const map_type>& target) :
     Export (source, target, Teuchos::null, Teuchos::null)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Export<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Export<Node>::
+#endif
   Export (const Teuchos::RCP<const map_type >& source,
           const Teuchos::RCP<const map_type >& target,
           const Teuchos::RCP<Teuchos::FancyOStream>& out) :
     Export (source, target, out, Teuchos::null)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Export<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  Export<Node>::
+#endif
   Export (const Teuchos::RCP<const map_type >& source,
           const Teuchos::RCP<const map_type >& target,
           const Teuchos::RCP<Teuchos::ParameterList>& plist) :
     Export (source, target, Teuchos::null, plist)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Export<LocalOrdinal,GlobalOrdinal,Node>::
   Export (const Export<LocalOrdinal,GlobalOrdinal,Node>& rhs) :
+#else
+  template <class Node>
+  Export<Node>::
+  Export (const Export<Node>& rhs) :
+#endif
     base_type (rhs)
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   Export<LocalOrdinal,GlobalOrdinal,Node>::
   Export (const Import<LocalOrdinal,GlobalOrdinal,Node>& importer) :
+#else
+  template <class Node>
+  Export<Node>::
+  Export (const Import<Node>& importer) :
+#endif
     base_type (importer, typename base_type::reverse_tag ())
   {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Export<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Export<Node>::
+#endif
   describe (Teuchos::FancyOStream& out,
             const Teuchos::EVerbosityLevel verbLevel) const
   {
@@ -145,8 +185,13 @@ namespace Tpetra {
     this->describeImpl (out, "Tpetra::Export", verbLevel);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void Export<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  template <class Node>
+  void Export<Node>::
+#endif
   print (std::ostream& os) const
   {
     auto out = Teuchos::getFancyOStream (Teuchos::rcpFromRef (os));
@@ -154,9 +199,17 @@ namespace Tpetra {
     this->describe (*out, Teuchos::VERB_EXTREME);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Export<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Export<Node>::
+#endif
   setupSamePermuteExport (Teuchos::Array<GlobalOrdinal>& exportGIDs)
   {
     using ::Tpetra::Details::makeDualViewFromOwningHostView;
@@ -426,9 +479,17 @@ namespace Tpetra {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Export<LocalOrdinal,GlobalOrdinal,Node>::
+#else
+  Export<Node>::
+#endif
   setupRemote (Teuchos::Array<GlobalOrdinal>& exportGIDs)
   {
     using ::Tpetra::Details::view_alloc_no_init;
@@ -534,7 +595,12 @@ namespace Tpetra {
 // LO: The local ordinal type.
 // GO: The global ordinal type.
 // NODE: The Kokkos Node type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_EXPORT_INSTANT(LO, GO, NODE) \
   template class Export< LO , GO , NODE >;
+#else
+#define TPETRA_EXPORT_INSTANT(NODE) \
+  template class Export<NODE >;
+#endif
 
 #endif // TPETRA_EXPORT_DEF_HPP

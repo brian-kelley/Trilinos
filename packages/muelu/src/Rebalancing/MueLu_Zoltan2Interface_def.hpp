@@ -67,8 +67,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  Zoltan2Interface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Zoltan2Interface() {
+#else
+ template <class Scalar, class Node>
+ Zoltan2Interface<Scalar, Node>::Zoltan2Interface() {
+#endif
     defaultZoltan2Params = rcp(new ParameterList());
     defaultZoltan2Params->set("algorithm",             "multijagged");
     defaultZoltan2Params->set("partitioning_approach", "partition");
@@ -79,8 +84,13 @@ namespace MueLu {
     defaultZoltan2Params->set("mj_premigration_option", 1);
  }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> Zoltan2Interface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Scalar, class Node>
+ RCP<const ParameterList> Zoltan2Interface<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< RCP<const FactoryBase> >   ("A",             Teuchos::null, "Factory of the matrix A");
@@ -93,8 +103,13 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Zoltan2Interface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void Zoltan2Interface<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "number of partitions");
     const ParameterList& pL = GetParameterList();
@@ -116,12 +131,21 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Zoltan2Interface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& level) const {
+#else
+  template <class Scalar, class Node>
+  void Zoltan2Interface<Scalar, Node>::Build(Level& level) const {
+#endif
     FactoryMonitor m(*this, "Build", level);
 
     typedef typename Teuchos::ScalarTraits<SC>::coordinateType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef typename Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
     RCP<Matrix>    A      = Get<RCP<Matrix> >(level, "A");
     RCP<const Map> rowMap = A->getRowMap();
@@ -130,7 +154,11 @@ namespace MueLu {
     int numParts = Get<int>(level, "number of partitions");
     if (numParts == 1 || numParts == -1) {
       // Single processor, decomposition is trivial: all zeros
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(rowMap, true);
+#else
+      RCP<Xpetra::Vector<GO,NO> > decomposition = Xpetra::VectorFactory<GO, NO>::Build(rowMap, true);
+#endif
       Set(level, "Partition", decomposition);
       return;
     }/* else if (numParts == -1) {
@@ -219,7 +247,11 @@ namespace MueLu {
         problem->solve();
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition = Xpetra::VectorFactory<GO,LO,GO,NO>::Build(rowMap, false);
+#else
+      RCP<Xpetra::Vector<GO,NO> > decomposition = Xpetra::VectorFactory<GO,NO>::Build(rowMap, false);
+#endif
       ArrayRCP<GO>                      decompEntries = decomposition->getDataNonConst(0);
 
       const typename InputAdapterType::part_t * parts = problem->getSolution().getPartListView();
@@ -251,7 +283,11 @@ namespace MueLu {
         problem->solve();
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition = Xpetra::VectorFactory<GO,LO,GO,NO>::Build(rowMap, false);
+#else
+      RCP<Xpetra::Vector<GO,NO> > decomposition = Xpetra::VectorFactory<GO,NO>::Build(rowMap, false);
+#endif
       ArrayRCP<GO>                      decompEntries = decomposition->getDataNonConst(0);
 
       const typename InputAdapterType::part_t * parts = problem->getSolution().getPartListView();

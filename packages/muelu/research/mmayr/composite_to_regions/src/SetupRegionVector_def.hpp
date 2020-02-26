@@ -67,9 +67,15 @@ using Teuchos::ArrayRCP;
 using Teuchos::Array;
 
 //! Create an empty vector in the regional layout
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void createRegionalVector(Teuchos::Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& regVecs, ///< regional vector to be filled
                           const std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > > revisedRowMapPerGrp ///< regional map
+#else
+template<class Scalar, class Node>
+void createRegionalVector(Teuchos::Array<RCP<Xpetra::Vector<Scalar, Node> > >& regVecs, ///< regional vector to be filled
+                          const std::vector<RCP<Xpetra::Map<Node> > > revisedRowMapPerGrp ///< regional map
+#endif
                           )
 {
 #include "Xpetra_UseShortNames.hpp"
@@ -90,12 +96,21 @@ void createRegionalVector(Teuchos::Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal
  *  1. import it into an auxiliary vector in the quasiRegional layout
  *  2. replace the quasiRegional map of the auxiliary vector with the regional map
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void compositeToRegional(RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > compVec, ///< Vector in composite layout [in]
                          Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& quasiRegVecs, ///< Vector in quasiRegional layout [in/out]
                          Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& regVecs, ///< Vector in regional layout [in/out]
                          const std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > > revisedRowMapPerGrp, ///< revised row maps in region layout [in]
                          const std::vector<RCP<Xpetra::Import<LocalOrdinal, GlobalOrdinal, Node> > > rowImportPerGrp ///< row importer in region layout [in]
+#else
+template<class Scalar, class Node>
+void compositeToRegional(RCP<Xpetra::Vector<Scalar, Node> > compVec, ///< Vector in composite layout [in]
+                         Array<RCP<Xpetra::Vector<Scalar, Node> > >& quasiRegVecs, ///< Vector in quasiRegional layout [in/out]
+                         Array<RCP<Xpetra::Vector<Scalar, Node> > >& regVecs, ///< Vector in regional layout [in/out]
+                         const std::vector<RCP<Xpetra::Map<Node> > > revisedRowMapPerGrp, ///< revised row maps in region layout [in]
+                         const std::vector<RCP<Xpetra::Import<Node> > > rowImportPerGrp ///< row importer in region layout [in]
+#endif
                          )
 {
 #include "Xpetra_UseShortNames.hpp"
@@ -132,10 +147,17 @@ void compositeToRegional(RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal,
  *  \note We also need the capability to add processor-local values. This is not supported by
  *  available CombineMode options in Xpetra/Tpetra, so we use a manual implementation here.
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void regionalToComposite(const Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& regVec, ///< Vector in region layout [in]
                          RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > compVec, ///< Vector in composite layout [in/out]
                          const std::vector<RCP<Xpetra::Import<LocalOrdinal, GlobalOrdinal, Node> > > rowImportPerGrp ///< row importer in region layout [in]
+#else
+template<class Scalar, class Node>
+void regionalToComposite(const Array<RCP<Xpetra::Vector<Scalar, Node> > >& regVec, ///< Vector in region layout [in]
+                         RCP<Xpetra::Vector<Scalar, Node> > compVec, ///< Vector in composite layout [in/out]
+                         const std::vector<RCP<Xpetra::Import<Node> > > rowImportPerGrp ///< row importer in region layout [in]
+#endif
                          )
 {
   /* Let's fake an ADD combine mode that also adds local values by
@@ -196,10 +218,17 @@ void regionalToComposite(const Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, Gl
  *  then immediately importing it back to the regional layout. The Export() involved when going to the
  *  composite layout takes care of the summation of interface values.
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void sumInterfaceValues(Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& regVec,
                         const std::vector<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > > revisedRowMapPerGrp,///< revised row maps in region layout [in]
                         const std::vector<RCP<Xpetra::Import<LocalOrdinal, GlobalOrdinal, Node> > > rowImportPerGrp ///< row importer in region layout [in])
+#else
+template <class Scalar, class Node>
+void sumInterfaceValues(Array<RCP<Xpetra::Vector<Scalar, Node> > >& regVec,
+                        const std::vector<RCP<Xpetra::Map<Node> > > revisedRowMapPerGrp,///< revised row maps in region layout [in]
+                        const std::vector<RCP<Xpetra::Import<Node> > > rowImportPerGrp ///< row importer in region layout [in])
+#endif
                         )
 {
 #include "Xpetra_UseShortNames.hpp"
@@ -238,14 +267,25 @@ void sumInterfaceValues(Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrd
  * We often need to scale interface entries by 1/N with N being the number of adjacent regions.
  * This can be achieved by setting \c inverseScaling to \c true.
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void scaleInterfaceDOFs(Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& regVec, ///< Vector to be scaled
                         const Array<RCP<Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >& scalingFactors, ///< Vector with scaling factors
+#else
+template <class Scalar, class Node>
+void scaleInterfaceDOFs(Array<RCP<Xpetra::Vector<Scalar, Node> > >& regVec, ///< Vector to be scaled
+                        const Array<RCP<Xpetra::Vector<Scalar, Node> > >& scalingFactors, ///< Vector with scaling factors
+#endif
                         bool inverseScaling ///< Divide by scaling factors (yes/no?)
                         )
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using Vector = Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
   using VectorFactory = Xpetra::VectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+#else
+  using Vector = Xpetra::Vector<Scalar, Node>;
+  using VectorFactory = Xpetra::VectorFactory<Scalar, Node>;
+#endif
 
   const Scalar zero = Teuchos::ScalarTraits<Scalar>::zero();
   const Scalar one = Teuchos::ScalarTraits<Scalar>::one();

@@ -79,8 +79,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> RepartitionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Scalar, class Node>
+ RCP<const ParameterList> RepartitionFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -98,15 +103,25 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RepartitionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RepartitionFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "number of partitions");
     Input(currentLevel, "Partition");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RepartitionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RepartitionFactory<Scalar, Node>::Build(Level& currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", currentLevel);
 
     const Teuchos::ParameterList & pL = GetParameterList();
@@ -297,8 +312,13 @@ namespace MueLu {
     RCP<Map>    partsIOwn   = MapFactory   ::Build(lib,                                                 numProcs,  myPart(), partsIndexBase, comm);
     RCP<Export> partsExport = ExportFactory::Build(partsIHave, partsIOwn);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<GOVector> partsISend    = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(partsIHave);
     RCP<GOVector> numPartsIRecv = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(partsIOwn);
+#else
+    RCP<GOVector> partsISend    = Xpetra::VectorFactory<GO, NO>::Build(partsIHave);
+    RCP<GOVector> numPartsIRecv = Xpetra::VectorFactory<GO, NO>::Build(partsIOwn);
+#endif
     if (numSend) {
       ArrayRCP<GO> partsISendData = partsISend->getDataNonConst(0);
       for (int i = 0; i < numSend; i++)
@@ -373,7 +393,11 @@ namespace MueLu {
     // If we're running BlockedCrs we should chop up the newRowMap into a newBlockedRowMap here (and do likewise for importers)
     if(!blockedRowMap.is_null()) {
       SubFactoryMonitor m1(*this, "Blocking newRowMap and Importer", currentLevel);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const BlockedMap> blockedTargetMap = MueLu::UtilitiesBase<Scalar,LocalOrdinal,GlobalOrdinal,Node>::GeneratedBlockedTargetMap(*blockedRowMap,*rowMapImporter);
+#else
+      RCP<const BlockedMap> blockedTargetMap = MueLu::UtilitiesBase<Scalar,Node>::GeneratedBlockedTargetMap(*blockedRowMap,*rowMapImporter);
+#endif
 
       // NOTE: This code qualifies as "correct but not particularly performant"  If this needs to be sped up, we can probably read data from the existing importer to 
       // build sub-importers rather than generating new ones ex nihilo
@@ -432,8 +456,13 @@ namespace MueLu {
     return (a.v > b.v); // descending order
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RepartitionFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void RepartitionFactory<Scalar, Node>::
+#endif
   DeterminePartitionPlacement(const Matrix& A, GOVector& decomposition, GO numPartitions, bool willAcceptPartition, bool allSubdomainsAcceptPartitions) const {
     RCP<const Map> rowMap = A.getRowMap();
 

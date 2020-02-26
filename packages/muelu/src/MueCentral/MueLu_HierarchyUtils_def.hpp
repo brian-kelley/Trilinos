@@ -67,10 +67,16 @@ namespace MueLu {
 
   // Adds the following non-serializable data (A,P,R,Nullspace,Coordinates) from level-specific sublist nonSerialList,
   // calling AddNewLevel as appropriate.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void HierarchyUtils<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddNonSerializableDataToHierarchy(HierarchyManager& HM, Hierarchy& H, const ParameterList& paramList) {
     typedef typename Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,
                                          LocalOrdinal, GlobalOrdinal, Node> realvaluedmultivector_type;
+#else
+  template <class Scalar, class Node>
+  void HierarchyUtils<Scalar, Node>::AddNonSerializableDataToHierarchy(HierarchyManager& HM, Hierarchy& H, const ParameterList& paramList) {
+    typedef typename Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> realvaluedmultivector_type;
+#endif
 
     for (ParameterList::ConstIterator it = paramList.begin(); it != paramList.end(); it++) {
       const std::string& levelName = it->first;
@@ -153,9 +159,17 @@ namespace MueLu {
             else if(typeName == "multivector")
               level->Set(name, Teuchos::getValue<RCP<MultiVector> >(it2->second), NoFactory::get());
             else if(typeName == "map")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               level->Set(name, Teuchos::getValue<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >(it2->second), NoFactory::get());
+#else
+              level->Set(name, Teuchos::getValue<RCP<Xpetra::Map<Node> > >(it2->second), NoFactory::get());
+#endif
             else if(typeName == "ordinalvector")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               level->Set(name, Teuchos::getValue<RCP<Xpetra::Vector<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node> > >(it2->second), NoFactory::get());
+#else
+              level->Set(name, Teuchos::getValue<RCP<Xpetra::Vector<LocalOrdinal, Node> > >(it2->second), NoFactory::get());
+#endif
             else if(typeName == "scalar")
               level->Set(name, Teuchos::getValue<Scalar>(it2->second), NoFactory::get());
             else if(typeName == "double")
@@ -233,9 +247,17 @@ namespace MueLu {
             else if(typeName == "vector")
               level->Set(varName, Teuchos::getValue<RCP<Vector> >(it2->second), NoFactory::get());
             else if(typeName == "map")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               level->Set(varName, Teuchos::getValue<RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > >(it2->second), NoFactory::get());
+#else
+              level->Set(varName, Teuchos::getValue<RCP<Xpetra::Map<Node> > >(it2->second), NoFactory::get());
+#endif
             else if(typeName == "ordinalvector")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               level->Set(varName, Teuchos::getValue<RCP<Xpetra::Vector<LocalOrdinal, LocalOrdinal, GlobalOrdinal, Node> > >(it2->second), NoFactory::get());
+#else
+              level->Set(varName, Teuchos::getValue<RCP<Xpetra::Vector<LocalOrdinal, Node> > >(it2->second), NoFactory::get());
+#endif
             else if(typeName == "scalar")
               level->Set(varName, Teuchos::getValue<Scalar>(it2->second), NoFactory::get());
             else if(typeName == "double")

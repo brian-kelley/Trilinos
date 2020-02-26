@@ -104,7 +104,11 @@ namespace {
   {
     // Based on the FullTriDiag tests...
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef ScalarTraits<Scalar> STS;
     typedef typename STS::magnitudeType MT;
     typedef ScalarTraits<MT> STM;
@@ -118,7 +122,11 @@ namespace {
     const size_t myImageID = comm->getRank();
     if (numImages < 3) return;
     // create a Map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > map = createContigMapWithNode<LO,GO,Node>(INVALID,ONE,comm);
+#else
+    RCP<const Map<Node> > map = createContigMapWithNode<Node>(INVALID,ONE,comm);
+#endif
 
     // RCP<FancyOStream> fos = Teuchos::fancyOStream(rcp(&std::cout,false));
 
@@ -153,25 +161,46 @@ namespace {
       // we know the map is contiguous...
       const size_t NumMyElements = (comm->getRank () == 0) ?
         A.getDomainMap ()->getGlobalNumElements () : 0;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Map<LO,GO,Node> > NewMap =
         rcp (new Map<LO,GO,Node> (INVALID, NumMyElements, ZERO, comm));
       RCP<const Tpetra::Import<LO,GO,Node> > NewImport =
         rcp (new Import<LO,GO,Node> (NewMap, A.getColMap ()));
+#else
+      RCP<const Map<Node> > NewMap =
+        rcp (new Map<Node> (INVALID, NumMyElements, ZERO, comm));
+      RCP<const Tpetra::Import<Node> > NewImport =
+        rcp (new Import<Node> (NewMap, A.getColMap ()));
+#endif
 
       B.replaceDomainMapAndImporter (NewMap, NewImport);
 
       // Fill a random vector on the original map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Vector<Scalar,LO,GO,Node> AVecX(A.getDomainMap());
+#else
+      Vector<Scalar,Node> AVecX(A.getDomainMap());
+#endif
       AVecX.randomize();
 
       // Import this vector to the new domainmap
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Vector<Scalar,LO,GO,Node> BVecX(B.getDomainMap());
       Tpetra::Import<LO,GO,Node> TempImport(A.getDomainMap(),NewMap); // (source,target)
+#else
+      Vector<Scalar,Node> BVecX(B.getDomainMap());
+      Tpetra::Import<Node> TempImport(A.getDomainMap(),NewMap); // (source,target)
+#endif
       BVecX.doImport(AVecX,TempImport,Tpetra::ADD);
 
       // Now do some multiplies
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Vector<Scalar,LO,GO,Node> AVecY(A.getRangeMap());
       Vector<Scalar,LO,GO,Node> BVecY(B.getRangeMap());
+#else
+      Vector<Scalar,Node> AVecY(A.getRangeMap());
+      Vector<Scalar,Node> BVecY(B.getRangeMap());
+#endif
       A.apply(AVecX,AVecY);
       B.apply(BVecX,BVecY);
 
@@ -197,7 +226,11 @@ namespace {
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+#endif
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, ReplaceDomainMapAndImporter, LO, GO, SCALAR, NODE )
 
   TPETRA_ETI_MANGLING_TYPEDEFS()

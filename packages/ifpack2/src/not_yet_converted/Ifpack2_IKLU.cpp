@@ -297,8 +297,13 @@ int Ifpack2_IKLU::Compute()
 }
   
 //=============================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int Ifpack2_IKLU::ApplyInverse(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 			     Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const
+#else
+int Ifpack2_IKLU::ApplyInverse(const Tpetra_MultiVector<Scalar,Node>& X, 
+			     Tpetra_MultiVector<Scalar,Node>& Y) const
+#endif
 {
   if (!IsComputed())
     IFPACK2_CHK_ERR(-2); // compute preconditioner first
@@ -359,8 +364,13 @@ int Ifpack2_IKLU::ApplyInverse(const Tpetra_MultiVector<Scalar,LocalOrdinal,Glob
 }
 //=============================================================================
 // This function finds X such that LDU Y = X or U(trans) D L(trans) Y = X for multiple RHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int Ifpack2_IKLU::Apply(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 		      Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const 
+#else
+int Ifpack2_IKLU::Apply(const Tpetra_MultiVector<Scalar,Node>& X, 
+		      Tpetra_MultiVector<Scalar,Node>& Y) const 
+#endif
 {
 
   return(-98);

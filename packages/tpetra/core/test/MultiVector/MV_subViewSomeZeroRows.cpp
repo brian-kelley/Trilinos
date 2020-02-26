@@ -79,7 +79,11 @@ namespace {
   // UNIT TESTS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(MultiVector, subViewSomeZeroRows, S, LO, GO, NODE)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(MultiVector, subViewSomeZeroRows, S,NODE)
+#endif
   {
     using Teuchos::outArg;
     using Teuchos::RCP;
@@ -87,8 +91,13 @@ namespace {
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, NODE> map_type;
     typedef Tpetra::MultiVector<S, LO, GO, NODE> MV;
+#else
+    typedef Tpetra::Map<NODE> map_type;
+    typedef Tpetra::MultiVector<S, NODE> MV;
+#endif
     typedef Tpetra::global_size_t GST;
 
     out << "Tpetra::MultiVector: Test correct dimensions of result of "
@@ -190,7 +199,11 @@ namespace {
     TPETRA_MV_TEST_REPORT_GLOBAL_ERR( "numVectorsC != numVectorsD" );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(MultiVector, subViewNonConstSomeZeroRows, S, LO, GO, NODE)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(MultiVector, subViewNonConstSomeZeroRows, S,NODE)
+#endif
   {
     using Teuchos::outArg;
     using Teuchos::RCP;
@@ -198,8 +211,13 @@ namespace {
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, NODE> map_type;
     typedef Tpetra::MultiVector<S, LO, GO, NODE> MV;
+#else
+    typedef Tpetra::Map<NODE> map_type;
+    typedef Tpetra::MultiVector<S, NODE> MV;
+#endif
     typedef Tpetra::global_size_t GST;
 
     out << "Tpetra::MultiVector: Test correct dimensions of result of "
@@ -305,9 +323,15 @@ namespace {
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, subViewSomeZeroRows, SCALAR, LO, GO, NODE) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, subViewNonConstSomeZeroRows, SCALAR, LO, GO, NODE)
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, subViewSomeZeroRows, SCALAR,NODE) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( MultiVector, subViewNonConstSomeZeroRows, SCALAR,NODE)
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

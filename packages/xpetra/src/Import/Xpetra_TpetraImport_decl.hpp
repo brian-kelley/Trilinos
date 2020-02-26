@@ -58,17 +58,33 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,
             class GlobalOrdinal,
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class TpetraImport
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public Import<LocalOrdinal, GlobalOrdinal, Node>
+#else
+    : public Import<Node>
+#endif
   {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! The specialization of Map used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
 
     //! @name Constructor/Destructor Methods
     //@{
@@ -80,7 +96,11 @@ namespace Xpetra {
     TpetraImport(const Teuchos::RCP< const map_type > &source, const Teuchos::RCP< const map_type > &target, const Teuchos::RCP< Teuchos::ParameterList > &plist);
 
     //! Copy constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraImport(const Import< LocalOrdinal, GlobalOrdinal, Node > &import);
+#else
+    TpetraImport(const Import<Node > &import);
+#endif
 
     //! Destructor.
     ~TpetraImport();
@@ -121,10 +141,18 @@ namespace Xpetra {
     ArrayView< const int > getExportPIDs() const;
 
     //! The Source Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getSourceMap() const;
+#else
+    Teuchos::RCP< const Map<Node > > getSourceMap() const;
+#endif
 
     //! The Target Map used to construct this Import object.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getTargetMap() const;
+#else
+    Teuchos::RCP< const Map<Node > > getTargetMap() const;
+#endif
 
     //@}
 
@@ -140,31 +168,61 @@ namespace Xpetra {
     //@{
 
     //! TpetraImport constructor to wrap a Tpetra::Import object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraImport(const RCP<const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > &import);
+#else
+    TpetraImport(const RCP<const Tpetra::Import<Node > > &import);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > getTpetra_Import() const;
+#else
+    RCP< const Tpetra::Import<Node > > getTpetra_Import() const;
+#endif
 
     //@}
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Import< LocalOrdinal, GlobalOrdinal, Node > > import_;
+#else
+    RCP<const Tpetra::Import<Node > > import_;
+#endif
 
   }; // TpetraImport class
 
 
   // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node> & toTpetra(const Import<LocalOrdinal,GlobalOrdinal,Node> &import) {
+#else
+  template <class Node>
+  const Tpetra::Import<Node> & toTpetra(const Import<Node> &import) {
+#endif
     // TODO: throw exception
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const TpetraImport<LocalOrdinal,GlobalOrdinal,Node> & tpetraImport = dynamic_cast<const TpetraImport<LocalOrdinal,GlobalOrdinal,Node> &>(import);
+#else
+    const TpetraImport<Node> & tpetraImport = dynamic_cast<const TpetraImport<Node> &>(import);
+#endif
     return *tpetraImport.getTpetra_Import();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > toXpetra(const RCP< const Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node > >& import) {
+#else
+  template <class Node>
+  RCP<const Import<Node> > toXpetra(const RCP< const Tpetra::Import<Node > >& import) {
+#endif
     if (!import.is_null())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return rcp(new TpetraImport<LocalOrdinal,GlobalOrdinal,Node>(import));
+#else
+      return rcp(new TpetraImport<Node>(import));
+#endif
 
     return Teuchos::null;
   }

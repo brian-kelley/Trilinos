@@ -70,8 +70,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<ParameterList> VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<ParameterList> VisualizationHelpers<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< std::string >           ("visualization: output filename",                    "viz%LEVELID",                    "filename for VTK-style visualization output");
@@ -84,8 +89,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doPointCloud(std::vector<int>& vertices, std::vector<int>& geomSizes, LO /* numLocalAggs */, LO numFineNodes) {
+#else
+  template<class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::doPointCloud(std::vector<int>& vertices, std::vector<int>& geomSizes, LO /* numLocalAggs */, LO numFineNodes) {
+#endif
     vertices.reserve(numFineNodes);
     geomSizes.reserve(numFineNodes);
     for(LocalOrdinal i = 0; i < numFineNodes; i++)
@@ -95,8 +105,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doJacks(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& isRoot, const ArrayRCP<LO>& vertex2AggId) {
+#else
+  template<class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::doJacks(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& isRoot, const ArrayRCP<LO>& vertex2AggId) {
+#endif
     //For each aggregate, find the root node then connect it with the other nodes in the aggregate
     //Doesn't matter the order, as long as all edges are found.
     vertices.reserve(vertices.size() + 3 * (numFineNodes - numLocalAggs));
@@ -131,8 +146,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doConvexHulls2D(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& /* isRoot */, const ArrayRCP<LO>& vertex2AggId, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords) {
+#else
+  template<class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::doConvexHulls2D(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& /* isRoot */, const ArrayRCP<LO>& vertex2AggId, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords) {
+#endif
     for(int agg = 0; agg < numLocalAggs; agg++) {
       std::list<int> aggNodes;
       for(int i = 0; i < numFineNodes; i++) {
@@ -218,8 +238,13 @@ namespace MueLu {
   }
 
 #ifdef HAVE_MUELU_CGAL
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doCGALConvexHulls2D(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& isRoot, const ArrayRCP<LO>& vertex2AggId, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords) {
+#else
+  template<class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::doCGALConvexHulls2D(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& isRoot, const ArrayRCP<LO>& vertex2AggId, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords) {
+#endif
 
     typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
     typedef K::Point_2 Point_2;
@@ -322,8 +347,13 @@ namespace MueLu {
 
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doConvexHulls3D(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& /* isRoot */, const ArrayRCP<LO>& vertex2AggId, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& zCoords) {
+#else
+  template<class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::doConvexHulls3D(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& /* isRoot */, const ArrayRCP<LO>& vertex2AggId, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& zCoords) {
+#endif
     //Use 3D quickhull algo.
     //Vector of node indices representing triangle vertices
     //Note: Calculate the hulls first since will only include point data for points in the hulls
@@ -648,8 +678,13 @@ namespace MueLu {
   }
 
 #ifdef HAVE_MUELU_CGAL
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doCGALConvexHulls3D(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& isRoot, const ArrayRCP<LO>& vertex2AggId, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& zCoords) {
+#else
+  template<class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::doCGALConvexHulls3D(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& isRoot, const ArrayRCP<LO>& vertex2AggId, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& zCoords) {
+#endif
 
     typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
     typedef K::Point_3 Point_3;
@@ -761,8 +796,13 @@ namespace MueLu {
   }
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doGraphEdges(std::vector<int>& vertices, std::vector<int>& geomSizes, Teuchos::RCP<GraphBase>& G, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & /* fx */, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & /* fy */, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & /* fz */) {
+#else
+  template <class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::doGraphEdges(std::vector<int>& vertices, std::vector<int>& geomSizes, Teuchos::RCP<GraphBase>& G, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & /* fx */, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & /* fy */, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & /* fz */) {
+#endif
     ArrayView<const Scalar> values;
     ArrayView<const LocalOrdinal> neighbors;
 
@@ -796,83 +836,148 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   myVec3 VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::crossProduct(myVec3 v1, myVec3 v2)
+#else
+  template <class Scalar, class Node>
+  myVec3 VisualizationHelpers<Scalar, Node>::crossProduct(myVec3 v1, myVec3 v2)
+#endif
   {
     return myVec3(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   double VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dotProduct(myVec2 v1, myVec2 v2)
+#else
+  template <class Scalar, class Node>
+  double VisualizationHelpers<Scalar, Node>::dotProduct(myVec2 v1, myVec2 v2)
+#endif
   {
     return v1.x * v2.x + v1.y * v2.y;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   double VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dotProduct(myVec3 v1, myVec3 v2)
+#else
+  template <class Scalar, class Node>
+  double VisualizationHelpers<Scalar, Node>::dotProduct(myVec3 v1, myVec3 v2)
+#endif
   {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::isInFront(myVec3 point, myVec3 inPlane, myVec3 n)
+#else
+  template <class Scalar, class Node>
+  bool VisualizationHelpers<Scalar, Node>::isInFront(myVec3 point, myVec3 inPlane, myVec3 n)
+#endif
   {
     myVec3 rel(point.x - inPlane.x, point.y - inPlane.y, point.z - inPlane.z); //position of the point relative to the plane
     return dotProduct(rel, n) > 1e-12 ? true : false;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   double VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::mymagnitude(myVec2 vec)
+#else
+  template <class Scalar, class Node>
+  double VisualizationHelpers<Scalar, Node>::mymagnitude(myVec2 vec)
+#endif
   {
     return sqrt(dotProduct(vec, vec));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   double VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::mymagnitude(myVec3 vec)
+#else
+  template <class Scalar, class Node>
+  double VisualizationHelpers<Scalar, Node>::mymagnitude(myVec3 vec)
+#endif
   {
     return sqrt(dotProduct(vec, vec));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   double VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::distance(myVec2 p1, myVec2 p2)
+#else
+  template <class Scalar, class Node>
+  double VisualizationHelpers<Scalar, Node>::distance(myVec2 p1, myVec2 p2)
+#endif
   {
     return mymagnitude(vecSubtract(p1, p2));
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   double VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::distance(myVec3 p1, myVec3 p2)
+#else
+  template <class Scalar, class Node>
+  double VisualizationHelpers<Scalar, Node>::distance(myVec3 p1, myVec3 p2)
+#endif
   {
     return mymagnitude(vecSubtract(p1, p2));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   myVec2 VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::vecSubtract(myVec2 v1, myVec2 v2)
+#else
+  template <class Scalar, class Node>
+  myVec2 VisualizationHelpers<Scalar, Node>::vecSubtract(myVec2 v1, myVec2 v2)
+#endif
   {
     return myVec2(v1.x - v2.x, v1.y - v2.y);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   myVec3 VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::vecSubtract(myVec3 v1, myVec3 v2)
+#else
+  template <class Scalar, class Node>
+  myVec3 VisualizationHelpers<Scalar, Node>::vecSubtract(myVec3 v1, myVec3 v2)
+#endif
   {
     return myVec3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   myVec2 VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNorm(myVec2 v) //"normal" to a 2D vector - just rotate 90 degrees to left
+#else
+  template <class Scalar, class Node>
+  myVec2 VisualizationHelpers<Scalar, Node>::getNorm(myVec2 v) //"normal" to a 2D vector - just rotate 90 degrees to left
+#endif
   {
     return myVec2(v.y, -v.x);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   myVec3 VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getNorm(myVec3 v1, myVec3 v2, myVec3 v3) //normal to face of triangle (will be outward rel. to polyhedron) (v1, v2, v3 are in CCW order when normal is toward viewpoint)
+#else
+  template <class Scalar, class Node>
+  myVec3 VisualizationHelpers<Scalar, Node>::getNorm(myVec3 v1, myVec3 v2, myVec3 v3) //normal to face of triangle (will be outward rel. to polyhedron) (v1, v2, v3 are in CCW order when normal is toward viewpoint)
+#endif
   {
     return crossProduct(vecSubtract(v2, v1), vecSubtract(v3, v1));
   }
 
   //get minimum distance from 'point' to plane containing v1, v2, v3 (or the triangle with v1, v2, v3 as vertices)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   double VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::pointDistFromTri(myVec3 point, myVec3 v1, myVec3 v2, myVec3 v3)
+#else
+  template <class Scalar, class Node>
+  double VisualizationHelpers<Scalar, Node>::pointDistFromTri(myVec3 point, myVec3 v1, myVec3 v2, myVec3 v3)
+#endif
   {
     using namespace std;
     myVec3 norm = getNorm(v1, v2, v3);
@@ -911,8 +1016,13 @@ namespace MueLu {
     return rv;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::vector<myTriangle> VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::processTriangle(std::list<myTriangle>& tris, myTriangle tri, std::list<int>& pointsInFront, myVec3& barycenter, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& zCoords) {
+#else
+  template <class Scalar, class Node>
+  std::vector<myTriangle> VisualizationHelpers<Scalar, Node>::processTriangle(std::list<myTriangle>& tris, myTriangle tri, std::list<int>& pointsInFront, myVec3& barycenter, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& zCoords) {
+#endif
     //*tri is in the tris list, and is the triangle to process here. tris is a complete list of all triangles in the hull so far. pointsInFront is only a list of the nodes in front of tri. Need coords also.
     //precondition: each triangle is already oriented so that getNorm_(v1, v2, v3) points outward (away from interior of hull)
     //First find the point furthest from triangle.
@@ -1068,8 +1178,13 @@ namespace MueLu {
     return visible;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::vector<int> VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::giftWrap(std::vector<myVec2>& points, std::vector<int>& nodes, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & yCoords) {
+#else
+  template <class Scalar, class Node>
+  std::vector<int> VisualizationHelpers<Scalar, Node>::giftWrap(std::vector<myVec2>& points, std::vector<int>& nodes, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & yCoords) {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(points.size() < 3, Exceptions::RuntimeError,
              "CoarseningVisualization::giftWrap: Gift wrap algorithm input has to have at least 3 points!");
 
@@ -1168,8 +1283,13 @@ namespace MueLu {
     return hull;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::vector<int> VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::makeUnique(std::vector<int>& vertices) const
+#else
+  template <class Scalar, class Node>
+  std::vector<int> VisualizationHelpers<Scalar, Node>::makeUnique(std::vector<int>& vertices) const
+#endif
   {
     using namespace std;
     vector<int> uniqueNodes = vertices;
@@ -1201,8 +1321,13 @@ namespace MueLu {
     return uniqueNodes;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::replaceAll(std::string result, const std::string& replaceWhat, const std::string& replaceWithWhat) const {
+#else
+  template <class Scalar, class Node>
+  std::string VisualizationHelpers<Scalar, Node>::replaceAll(std::string result, const std::string& replaceWhat, const std::string& replaceWithWhat) const {
+#endif
     while(1) {
       const int pos = result.find(replaceWhat);
       if (pos == -1)
@@ -1212,15 +1337,25 @@ namespace MueLu {
     return result;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getFileName(int numProcs, int myRank, int level, const Teuchos::ParameterList & pL) const {
+#else
+  template <class Scalar, class Node>
+  std::string VisualizationHelpers<Scalar, Node>::getFileName(int numProcs, int myRank, int level, const Teuchos::ParameterList & pL) const {
+#endif
     std::string filenameToWrite = getBaseFileName(numProcs, level, pL);
     filenameToWrite = this->replaceAll(filenameToWrite, "%PROCID",   toString(myRank));
     return filenameToWrite;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getBaseFileName(int numProcs, int level, const Teuchos::ParameterList & pL) const {
+#else
+  template <class Scalar, class Node>
+  std::string VisualizationHelpers<Scalar, Node>::getBaseFileName(int numProcs, int level, const Teuchos::ParameterList & pL) const {
+#endif
     std::string filenameToWrite = pL.get<std::string>("visualization: output filename");
     int timeStep = pL.get<int>("visualization: output file: time step");
     int iter     = pL.get<int>("visualization: output file: iter");
@@ -1236,8 +1371,13 @@ namespace MueLu {
     return filenameToWrite;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::getPVTUFileName(int numProcs, int /* myRank */, int level, const Teuchos::ParameterList & pL) const {
+#else
+  template <class Scalar, class Node>
+  std::string VisualizationHelpers<Scalar, Node>::getPVTUFileName(int numProcs, int /* myRank */, int level, const Teuchos::ParameterList & pL) const {
+#endif
     std::string filenameToWrite = getBaseFileName(numProcs, level, pL);
     std::string masterStem = filenameToWrite.substr(0, filenameToWrite.rfind(".vtu"));
     masterStem = this->replaceAll(masterStem, "%PROCID", "");
@@ -1245,8 +1385,13 @@ namespace MueLu {
     return pvtuFilename;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFileVTKOpening(std::ofstream & fout, std::vector<int> & uniqueFine, std::vector<int> & geomSizesFine) const {
+#else
+  template <class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::writeFileVTKOpening(std::ofstream & fout, std::vector<int> & uniqueFine, std::vector<int> & geomSizesFine) const {
+#endif
     std::string styleName = "PointCloud"; // TODO adapt this
 
     std::string indent = "      ";
@@ -1257,8 +1402,13 @@ namespace MueLu {
     fout << "      <PointData Scalars=\"Node Aggregate Processor\">" << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFileVTKNodes(std::ofstream & fout, std::vector<int> & uniqueFine, Teuchos::RCP<const Map> & nodeMap) const {
+#else
+  template <class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::writeFileVTKNodes(std::ofstream & fout, std::vector<int> & uniqueFine, Teuchos::RCP<const Map> & nodeMap) const {
+#endif
     std::string indent = "      ";
     fout << "        <DataArray type=\"Int32\" Name=\"Node\" format=\"ascii\">" << std::endl;
     indent = "          ";
@@ -1278,8 +1428,13 @@ namespace MueLu {
     fout << "        </DataArray>" << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFileVTKData(std::ofstream & fout, std::vector<int> & uniqueFine, LocalOrdinal myAggOffset, ArrayRCP<LocalOrdinal> & vertex2AggId, int myRank) const {
+#else
+  template <class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::writeFileVTKData(std::ofstream & fout, std::vector<int> & uniqueFine, LocalOrdinal myAggOffset, ArrayRCP<LocalOrdinal> & vertex2AggId, int myRank) const {
+#endif
     std::string indent = "          ";
     fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">" << std::endl;
     fout << indent;
@@ -1304,8 +1459,13 @@ namespace MueLu {
     fout << "      </PointData>" << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFileVTKCoordinates(std::ofstream & fout, std::vector<int> & uniqueFine, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & fx, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & fy, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & fz, int dim) const {
+#else
+  template <class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::writeFileVTKCoordinates(std::ofstream & fout, std::vector<int> & uniqueFine, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & fx, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & fy, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & fz, int dim) const {
+#endif
     std::string indent = "      ";
     fout << "      <Points>" << std::endl;
     fout << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << std::endl;
@@ -1325,8 +1485,13 @@ namespace MueLu {
     fout << "      </Points>" << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFileVTKCells(std::ofstream & fout, std::vector<int> & /* uniqueFine */, std::vector<LocalOrdinal> & vertices, std::vector<LocalOrdinal> & geomSize) const {
+#else
+  template <class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::writeFileVTKCells(std::ofstream & fout, std::vector<int> & /* uniqueFine */, std::vector<LocalOrdinal> & vertices, std::vector<LocalOrdinal> & geomSize) const {
+#endif
     std::string indent = "      ";
     fout << "      <Cells>" << std::endl;
     fout << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << std::endl;
@@ -1377,16 +1542,26 @@ namespace MueLu {
     fout << "      </Cells>" << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFileVTKClosing(std::ofstream & fout) const {
+#else
+  template <class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::writeFileVTKClosing(std::ofstream & fout) const {
+#endif
     fout << "    </Piece>" << std::endl;
     fout << "  </UnstructuredGrid>" << std::endl;
     fout << "</VTKFile>" << std::endl;
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writePVTU(std::ofstream& pvtu, std::string baseFname, int numProcs, bool bFineEdges, bool /* bCoarseEdges */) const {
+#else
+  template <class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::writePVTU(std::ofstream& pvtu, std::string baseFname, int numProcs, bool bFineEdges, bool /* bCoarseEdges */) const {
+#endif
     //If using vtk, filenameToWrite now contains final, correct ***.vtu filename (for the current proc)
     //So the root proc will need to use its own filenameToWrite to make a list of the filenames of all other procs to put in
     //pvtu file.
@@ -1426,8 +1601,13 @@ namespace MueLu {
     pvtu.close();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::buildColormap() const {
+#else
+  template <class Scalar, class Node>
+  void VisualizationHelpers<Scalar, Node>::buildColormap() const {
+#endif
     try {
       std::ofstream color("random-colormap.xml");
       color << "<ColorMap name=\"MueLu-Random\" space=\"RGB\">" << std::endl;

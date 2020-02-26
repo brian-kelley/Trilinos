@@ -77,7 +77,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 template<typename EvalT, typename TRAITS, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_BlockedEpetra<EvalT, TRAITS, LO, GO>::
+#else
+panzer::GatherTangent_BlockedEpetra<EvalT, TRAITS>::
+#endif
 GatherTangent_BlockedEpetra(
   const std::vector<Teuchos::RCP<const GlobalIndexer>>&
     indexers,
@@ -131,7 +135,11 @@ GatherTangent_BlockedEpetra(
 ///////////////////////////////////////////////////////////////////////////////
 template<typename EvalT, typename TRAITS, typename LO, typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_BlockedEpetra<EvalT, TRAITS, LO, GO>::
+#else
+panzer::GatherTangent_BlockedEpetra<EvalT, TRAITS>::
+#endif
 postRegistrationSetup(
   typename TRAITS::SetupData /* d  */,
   PHX::FieldManager<TRAITS>& /* fm */)
@@ -161,7 +169,11 @@ postRegistrationSetup(
 ///////////////////////////////////////////////////////////////////////////////
 template<typename EvalT, typename TRAITS, typename LO, typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_BlockedEpetra<EvalT, TRAITS, LO, GO>::
+#else
+panzer::GatherTangent_BlockedEpetra<EvalT, TRAITS>::
+#endif
 preEvaluate(
   typename TRAITS::PreEvalData d)
 {
@@ -186,7 +198,11 @@ preEvaluate(
 ///////////////////////////////////////////////////////////////////////////////
 template<typename EvalT, typename TRAITS, typename LO, typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_BlockedEpetra<EvalT, TRAITS, LO, GO>::
+#else
+panzer::GatherTangent_BlockedEpetra<EvalT, TRAITS>::
+#endif
 evaluateFields(
   typename TRAITS::EvalData workset)
 {

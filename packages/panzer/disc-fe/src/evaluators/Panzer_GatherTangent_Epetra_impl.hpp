@@ -71,7 +71,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 template<typename EvalT, typename TRAITS, typename LO, typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_Epetra<EvalT, TRAITS, LO, GO>::
+#else
+panzer::GatherTangent_Epetra<EvalT, TRAITS>::
+#endif
 GatherTangent_Epetra(
   const Teuchos::RCP<const panzer::GlobalIndexer>& indexer,
   const Teuchos::ParameterList& p)
@@ -133,7 +137,11 @@ GatherTangent_Epetra(
 ///////////////////////////////////////////////////////////////////////////////
 template<typename EvalT, typename TRAITS, typename LO, typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_Epetra<EvalT, TRAITS, LO, GO>::
+#else
+panzer::GatherTangent_Epetra<EvalT, TRAITS>::
+#endif
 postRegistrationSetup(
   typename TRAITS::SetupData /* d  */,
   PHX::FieldManager<TRAITS>& /* fm */)
@@ -166,7 +174,11 @@ postRegistrationSetup(
 ///////////////////////////////////////////////////////////////////////////////
 template<typename EvalT, typename TRAITS, typename LO, typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_Epetra<EvalT, TRAITS, LO, GO>::
+#else
+panzer::GatherTangent_Epetra<EvalT, TRAITS>::
+#endif
 preEvaluate(
   typename TRAITS::PreEvalData d)
 {
@@ -188,7 +200,11 @@ preEvaluate(
 ///////////////////////////////////////////////////////////////////////////////
 template<typename EvalT, typename TRAITS, typename LO, typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 panzer::GatherTangent_Epetra<EvalT, TRAITS, LO, GO>::
+#else
+panzer::GatherTangent_Epetra<EvalT, TRAITS>::
+#endif
 evaluateFields(
   typename TRAITS::EvalData workset)
 {

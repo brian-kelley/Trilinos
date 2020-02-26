@@ -133,12 +133,20 @@ namespace MueLu {
     | Aggregates   | HybridAggregationFactory   | Container class with aggregation information. See also Aggregates.
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   class HybridAggregationFactory : public SingleLevelFactoryBase {
 #undef MUELU_HYBRIDAGGREGATIONFACTORY_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 
@@ -176,7 +184,11 @@ namespace MueLu {
 
     //! aggregation algorithms
     // will be filled in Build routine
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     mutable std::vector<RCP<MueLu::AggregationAlgorithmBase<LO, GO, Node> > > algos_;
+#else
+    mutable std::vector<RCP<MueLu::AggregationAlgorithmBase<Node> > > algos_;
+#endif
 
     //! boolean flag: definition phase
     //! if true, the aggregation algorithms still can be set and changed.

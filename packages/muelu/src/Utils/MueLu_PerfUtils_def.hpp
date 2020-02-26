@@ -105,8 +105,13 @@ namespace MueLu {
     return v1.second < v2.second;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string PerfUtils<Scalar, LocalOrdinal, GlobalOrdinal, Node>::PrintMatrixInfo(const Matrix& A, const std::string& msgTag, RCP<const ParameterList> params) {
+#else
+  template <class Scalar, class Node>
+  std::string PerfUtils<Scalar, Node>::PrintMatrixInfo(const Matrix& A, const std::string& msgTag, RCP<const ParameterList> params) {
+#endif
     if (!CheckMatrix(A))
       return "";
 
@@ -232,8 +237,13 @@ namespace MueLu {
     return outstr;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string PerfUtils<Scalar, LocalOrdinal, GlobalOrdinal, Node>::PrintImporterInfo(RCP<const Import> importer, const std::string& msgTag) {
+#else
+  template <class Scalar, class Node>
+  std::string PerfUtils<Scalar, Node>::PrintImporterInfo(RCP<const Import> importer, const std::string& msgTag) {
+#endif
 
     typedef Xpetra::global_size_t global_size_t;
 
@@ -295,8 +305,13 @@ namespace MueLu {
     return outstr;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string PerfUtils<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CommPattern(const Matrix& A, const std::string& msgTag, RCP<const ParameterList> /* params */) {
+#else
+  template <class Scalar, class Node>
+  std::string PerfUtils<Scalar, Node>::CommPattern(const Matrix& A, const std::string& msgTag, RCP<const ParameterList> /* params */) {
+#endif
     if (!CheckMatrix(A))
       return "";
 
@@ -336,8 +351,13 @@ namespace MueLu {
     return out.str();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool PerfUtils<Scalar, LocalOrdinal, GlobalOrdinal, Node>::CheckMatrix(const Matrix& A) {
+#else
+  template <class Scalar, class Node>
+  bool PerfUtils<Scalar, Node>::CheckMatrix(const Matrix& A) {
+#endif
     // We can only print statistics for matrices that have a crs graph. A
     // potential issue is regarding Xpetra::TpetraBlockCrsMatrix which has no
     // CrsGraph.  It is held as a private data member by Xpetra::CrsMatrix,

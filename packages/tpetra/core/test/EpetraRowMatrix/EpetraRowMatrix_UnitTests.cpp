@@ -107,8 +107,13 @@ namespace {
 
     // generate a tridiagonal matrix
     typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LO,GO> MAT;
     typedef Tpetra::MultiVector<Scalar,LO,GO> MV;
+#else
+    typedef Tpetra::CrsMatrix<Scalar> MAT;
+    typedef Tpetra::MultiVector<Scalar> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     typedef Teuchos::ScalarTraits<Mag> MT;
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid();

@@ -50,16 +50,28 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     SumOperator<SC,LO,GO,NO>::SumOperator(CommPtr comm) :
     SchwarzOperator<SC,LO,GO,NO> (comm)
+#else
+    template <class SC,class NO>
+    SumOperator<SC,NO>::SumOperator(CommPtr comm) :
+    SchwarzOperator<SC,NO> (comm)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(sumOperatorTime,"SumOperator::SumOperator");
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     SumOperator<SC,LO,GO,NO>::SumOperator(SchwarzOperatorPtrVecPtr operators) :
     SchwarzOperator<SC,LO,GO,NO> (operators[0]->getRangeMap()->getComm())
+#else
+    template <class SC,class NO>
+    SumOperator<SC,NO>::SumOperator(SchwarzOperatorPtrVecPtr operators) :
+    SchwarzOperator<SC,NO> (operators[0]->getRangeMap()->getComm())
+#endif
     {
         FROSCH_TIMER_START_LEVELID(sumOperatorTime,"SumOperator::SumOperator");
         FROSCH_ASSERT(operators.size()>0,"operators.size()<=0");
@@ -73,14 +85,24 @@ namespace FROSch {
         }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     SumOperator<SC,LO,GO,NO>::~SumOperator()
+#else
+    template <class SC,class NO>
+    SumOperator<SC,NO>::~SumOperator()
+#endif
     {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int SumOperator<SC,LO,GO,NO>::initialize()
+#else
+    template <class SC,class NO>
+    int SumOperator<SC,NO>::initialize()
+#endif
     {
         if (this->Verbose_) {
             FROSCH_ASSERT(false,"ERROR: Each of the Operators has to be initialized manually.");
@@ -88,8 +110,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int SumOperator<SC,LO,GO,NO>::initialize(ConstXMapPtr repeatedMap)
+#else
+    template <class SC,class NO>
+    int SumOperator<SC,NO>::initialize(ConstXMapPtr repeatedMap)
+#endif
     {
         if (this->Verbose_) {
             FROSCH_ASSERT(false,"ERROR: Each of the Operators has to be initialized manually.");
@@ -97,8 +124,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int SumOperator<SC,LO,GO,NO>::compute()
+#else
+    template <class SC,class NO>
+    int SumOperator<SC,NO>::compute()
+#endif
     {
         if (this->Verbose_) {
             FROSCH_ASSERT(false,"ERROR: Each of the Operators has to be computed manually.");
@@ -107,8 +139,13 @@ namespace FROSch {
     }
 
     // Y = alpha * A^mode * X + beta * Y
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     void SumOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
+#else
+    template <class SC,class NO>
+    void SumOperator<SC,NO>::apply(const XMultiVector &x,
+#endif
                                          XMultiVector &y,
                                          bool usePreconditionerOnly,
                                          ETransp mode,
@@ -117,7 +154,11 @@ namespace FROSch {
     {
         FROSCH_TIMER_START_LEVELID(applyTime,"SumOperator::apply");
         if (OperatorVector_.size()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
+#else
+            if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,NO>::Build(x.getMap(),x.getNumVectors());
+#endif
             *XTmp_ = x; // Das brauche ich für den Fall das x=y
             UN itmp = 0;
             for (UN i=0; i<OperatorVector_.size(); i++) {
@@ -132,27 +173,47 @@ namespace FROSch {
         }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename SumOperator<SC,LO,GO,NO>::ConstXMapPtr SumOperator<SC,LO,GO,NO>::getDomainMap() const
+#else
+    template <class SC,class NO>
+    typename SumOperator<SC,NO>::ConstXMapPtr SumOperator<SC,NO>::getDomainMap() const
+#endif
     {
         return OperatorVector_[0]->getDomainMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename SumOperator<SC,LO,GO,NO>::ConstXMapPtr SumOperator<SC,LO,GO,NO>::getRangeMap() const
+#else
+    template <class SC,class NO>
+    typename SumOperator<SC,NO>::ConstXMapPtr SumOperator<SC,NO>::getRangeMap() const
+#endif
     {
         return OperatorVector_[0]->getRangeMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     void SumOperator<SC,LO,GO,NO>::describe(FancyOStream &out,
+#else
+    template <class SC,class NO>
+    void SumOperator<SC,NO>::describe(FancyOStream &out,
+#endif
                                             const EVerbosityLevel verbLevel) const
     {
         FROSCH_ASSERT(false,"describe() has to be implemented properly...");
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     std::string SumOperator<SC,LO,GO,NO>::description() const
+#else
+    template <class SC,class NO>
+    std::string SumOperator<SC,NO>::description() const
+#endif
     {
         std::string labelString = "Sum operator: ";
 
@@ -165,18 +226,31 @@ namespace FROSch {
         return labelString;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int SumOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)
+#else
+    template <class SC,class NO>
+    int SumOperator<SC,NO>::addOperator(SchwarzOperatorPtr op)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(addOperatorTime,"SumOperator::addOperator");
         int ret = 0;
         if (OperatorVector_.size()>0) {
             if (!op->getDomainMap()->isSameAs(*OperatorVector_[0]->getDomainMap())) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 if (this->Verbose_) std::cerr << "SumOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
+#else
+                if (this->Verbose_) std::cerr << "SumOperator<SC,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
+#endif
                 ret -= 1;
             }
             if (!op->getRangeMap()->isSameAs(*OperatorVector_[0]->getRangeMap())){
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 if (this->Verbose_) std::cerr << "SumOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
+#else
+                if (this->Verbose_) std::cerr << "SumOperator<SC,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
+#endif
                 ret -= 10;
             }
             //FROSCH_ASSERT(op->OperatorDomainMap().SameAs(OperatorVector_[0]->OperatorDomainMap()),"The DomainMaps of the operators are not identical.");
@@ -187,8 +261,13 @@ namespace FROSch {
         return ret;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int SumOperator<SC,LO,GO,NO>::addOperators(SchwarzOperatorPtrVecPtr operators)
+#else
+    template <class SC,class NO>
+    int SumOperator<SC,NO>::addOperators(SchwarzOperatorPtrVecPtr operators)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(addOperatorsTime,"SumOperator::addOperators");
         int ret = 0;
@@ -198,27 +277,45 @@ namespace FROSch {
         return ret;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int SumOperator<SC,LO,GO,NO>::resetOperator(UN iD,
+#else
+    template <class SC,class NO>
+    int SumOperator<SC,NO>::resetOperator(UN iD,
+#endif
                                                 SchwarzOperatorPtr op)
     {
         FROSCH_TIMER_START_LEVELID(resetOperatorTime,"SumOperator::resetOperator");
         FROSCH_ASSERT(iD<OperatorVector_.size(),"iD exceeds the length of the OperatorVector_");
         int ret = 0;
         if (!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             if (this->Verbose_) std::cerr << "SumOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
+#else
+            if (this->Verbose_) std::cerr << "SumOperator<SC,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
+#endif
             ret -= 1;
         }
         if (!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())){
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             if (this->Verbose_) std::cerr << "SumOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
+#else
+            if (this->Verbose_) std::cerr << "SumOperator<SC,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
+#endif
             ret -= 10;
         }
         OperatorVector_[iD] = op;
         return ret;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int SumOperator<SC,LO,GO,NO>::enableOperator(UN iD,
+#else
+    template <class SC,class NO>
+    int SumOperator<SC,NO>::enableOperator(UN iD,
+#endif
                                                  bool enable)
   {
       FROSCH_TIMER_START_LEVELID(enableOperatorTime,"SumOperator::enableOperatorOperator");
@@ -226,8 +323,13 @@ namespace FROSch {
       return 0;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename SumOperator<SC,LO,GO,NO>::UN SumOperator<SC,LO,GO,NO>::getNumOperators()
+#else
+    template <class SC,class NO>
+    typename SumOperator<SC,NO>::UN SumOperator<SC,NO>::getNumOperators()
+#endif
     {
       return OperatorVector_.size();
     }

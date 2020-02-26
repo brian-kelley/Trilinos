@@ -55,15 +55,28 @@
 namespace Xpetra{
 
 	template<class Scalar					= MultiVector<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 		class LocalOrdinal   				= typename MultiVector<Scalar>::local_ordinal_type,
 		class GlobalOrdinal  				= typename MultiVector<Scalar, LocalOrdinal>::global_ordinal_type,
 		class Node           				= typename MultiVector<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
+#else
+		class Node           				= typename MultiVector<Scalar>::node_type>
+#endif
 		class Level {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 		typedef Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
 		typedef Vector<Scalar, LocalOrdinal, GlobalOrdinal> vector_type;
 		typedef MultiVector<Scalar, LocalOrdinal, GlobalOrdinal> multivector_type;
 		typedef Matrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > matrix_type;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+		typedef Map<Node> map_type;
+		typedef Vector<Scalar> vector_type;
+		typedef MultiVector<Scalar> multivector_type;
+		typedef Matrix< Scalar, Node > matrix_type;
+#endif
 
 		public: 
 

@@ -87,7 +87,11 @@ TEUCHOS_UNIT_TEST( Map, Bug5822_StartWith3Billion )
 #endif // HAVE_TPETRA_INT_LONG_LONG
   typedef Tpetra::Map<>::local_ordinal_type LO;
   typedef Tpetra::Details::DefaultTypes::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
 
   const size_t localNumElts = 5;
   const global_size_t globalNumElts = comm->getSize () * localNumElts;

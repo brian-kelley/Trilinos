@@ -71,12 +71,23 @@ namespace {
   // Test CrsMatrix::reindexColumns, with only the column Map (no
   // Import) and with sorting on.
   //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrixReindexColumns, ColMapOnlySortingOn, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrixReindexColumns, ColMapOnlySortingOn, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, Node> graph_type;
     typedef Tpetra::CrsMatrix<Scalar, LO, GO, Node> matrix_type;
     typedef Tpetra::Import<LO, GO, Node> import_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsGraph<Node> graph_type;
+    typedef Tpetra::CrsMatrix<Scalar, Node> matrix_type;
+    typedef Tpetra::Import<Node> import_type;
+    typedef Tpetra::Map<Node> map_type;
+#endif
 
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
     int gblSuccess = 0;
@@ -605,8 +616,13 @@ namespace {
 // Tests to build and run in both debug and release modes.  We will
 // instantiate them over all enabled local ordinal (LO), global
 // ordinal (GO), and Kokkos Node (NODE) types.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE )                          \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrixReindexColumns, ColMapOnlySortingOn, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE )                          \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrixReindexColumns, ColMapOnlySortingOn, SCALAR,NODE )
+#endif
 
 
   TPETRA_ETI_MANGLING_TYPEDEFS()

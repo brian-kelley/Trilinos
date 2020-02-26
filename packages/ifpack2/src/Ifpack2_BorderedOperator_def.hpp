@@ -50,9 +50,15 @@
 
 namespace Ifpack2 {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 BorderedOperator<Scalar, LocalOrdinal, GlobalOrdinal, Node >::
 BorderedOperator (const Teuchos::RCP<const Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node > >& A) : 
+#else
+template< class Scalar, class Node >
+BorderedOperator<Scalar, Node >::
+BorderedOperator (const Teuchos::RCP<const Tpetra::Operator<Scalar, Node > >& A) : 
+#endif
   A_ (A)
 { 
   TEUCHOS_TEST_FOR_EXCEPTION(
@@ -61,32 +67,62 @@ BorderedOperator (const Teuchos::RCP<const Tpetra::Operator<Scalar, LocalOrdinal
     "The input Operator A is null.");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
 BorderedOperator<Scalar, LocalOrdinal, GlobalOrdinal, Node >::getDomainMap() const
+#else
+template< class Scalar, class Node >
+Teuchos::RCP<const Tpetra::Map<Node> >
+BorderedOperator<Scalar, Node >::getDomainMap() const
+#endif
 {
   return A_->getDomainMap();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
 Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
 BorderedOperator<Scalar, LocalOrdinal, GlobalOrdinal, Node >::getRangeMap() const
+#else
+template< class Scalar, class Node >
+Teuchos::RCP<const Tpetra::Map<Node> >
+BorderedOperator<Scalar, Node >::getRangeMap() const
+#endif
 {
   return A_->getRangeMap();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
+#else
+template< class Scalar, class Node >
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BorderedOperator<Scalar, LocalOrdinal, GlobalOrdinal, Node >::hasTransposeApply() const 
+#else
+BorderedOperator<Scalar, Node >::hasTransposeApply() const 
+#endif
 {
   return A_->hasTransposeApply();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template< class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node >
+#else
+template< class Scalar, class Node >
+#endif
 void 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BorderedOperator<Scalar, LocalOrdinal, GlobalOrdinal, Node >::
 apply (const Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node >& X,
        Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node >& Y,
+#else
+BorderedOperator<Scalar, Node >::
+apply (const Tpetra::MultiVector<Scalar, Node >& X,
+       Tpetra::MultiVector<Scalar, Node >& Y,
+#endif
        Teuchos::ETransp mode, 
        Scalar coefAx, 
        Scalar coefY ) const 
@@ -101,7 +137,12 @@ apply (const Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node >& X,
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_BORDEREDOPERATOR_INSTANT(S,LO,GO,N) \
   template class Ifpack2::BorderedOperator< S, LO, GO, N >;
+#else
+#define IFPACK2_BORDEREDOPERATOR_INSTANT(S,N) \
+  template class Ifpack2::BorderedOperator< S, N >;
+#endif
 
 #endif /* IFPACK2_BorderedOperator_DEF_HPP */

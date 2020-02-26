@@ -264,17 +264,31 @@ main (int argc, char *argv[])
         else if (prec_type == "MueLu") {
 #ifdef HAVE_TRILINOSCOUPLINGS_MUELU
           // Turns a Epetra_CrsMatrix into a MueLu::Matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<Xpetra::CrsMatrix<ST, int, int, Xpetra::EpetraNode> > mueluA_ =
+#else
+          RCP<Xpetra::CrsMatrix<ST, Xpetra::EpetraNode> > mueluA_ =
+#endif
             rcp(new Xpetra::EpetraCrsMatrix(A));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<Xpetra::Matrix <ST, int, int, Xpetra::EpetraNode> > mueluA  =
             rcp(new Xpetra::CrsMatrixWrap<ST, int, int, Xpetra::EpetraNode>(mueluA_));
+#else
+          RCP<Xpetra::Matrix <ST, Xpetra::EpetraNode> > mueluA  =
+            rcp(new Xpetra::CrsMatrixWrap<ST, Xpetra::EpetraNode>(mueluA_));
+#endif
 
           // Multigrid Hierarchy
           ParameterList mueluParams;
           if (inputList.isSublist("MueLu"))
             mueluParams = inputList.sublist("MueLu");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           MueLu::ParameterListInterpreter<ST, int, int, Xpetra::EpetraNode> mueLuFactory(mueluParams);
           RCP<MueLu::Hierarchy<ST, int, int, Xpetra::EpetraNode> > H =
+#else
+          MueLu::ParameterListInterpreter<ST, Xpetra::EpetraNode> mueLuFactory(mueluParams);
+          RCP<MueLu::Hierarchy<ST, Xpetra::EpetraNode> > H =
+#endif
             mueLuFactory.CreateHierarchy();
           H->setVerbLevel(Teuchos::VERB_HIGH);
           H->GetLevel(0)->Set("A", mueluA);

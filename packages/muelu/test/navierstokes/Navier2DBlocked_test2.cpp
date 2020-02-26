@@ -250,26 +250,49 @@ int main(int argc, char *argv[]) {
     /////////////////////////////////////// transform Epetra objects to Xpetra (needed for MueLu)
 
     // build Xpetra objects from Epetra_CrsMatrix objects
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > xA11 = Teuchos::rcp(new Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node>(A11));
     Teuchos::RCP<Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > xA12 = Teuchos::rcp(new Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node>(A12));
     Teuchos::RCP<Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > xA21 = Teuchos::rcp(new Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node>(A21));
     Teuchos::RCP<Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > xA22 = Teuchos::rcp(new Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node>(A22));
+#else
+    Teuchos::RCP<Xpetra::CrsMatrix<Scalar,Node> > xA11 = Teuchos::rcp(new Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node>(A11));
+    Teuchos::RCP<Xpetra::CrsMatrix<Scalar,Node> > xA12 = Teuchos::rcp(new Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node>(A12));
+    Teuchos::RCP<Xpetra::CrsMatrix<Scalar,Node> > xA21 = Teuchos::rcp(new Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node>(A21));
+    Teuchos::RCP<Xpetra::CrsMatrix<Scalar,Node> > xA22 = Teuchos::rcp(new Xpetra::EpetraCrsMatrixT<GlobalOrdinal,Node>(A22));
+#endif
 
     /////////////////////////////////////// generate MapExtractor object
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     std::vector<Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > > xmaps;
+#else
+    std::vector<Teuchos::RCP<const Xpetra::Map<Node> > > xmaps;
+#endif
     xmaps.push_back(xstridedvelmap);
     xmaps.push_back(xstridedpremap);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::MapExtractor<Scalar,LocalOrdinal,GlobalOrdinal,Node> > map_extractor = Xpetra::MapExtractorFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build(xstridedfullmap,xmaps);
+#else
+    Teuchos::RCP<const Xpetra::MapExtractor<Scalar,Node> > map_extractor = Xpetra::MapExtractorFactory<Scalar,Node>::Build(xstridedfullmap,xmaps);
+#endif
 
     /////////////////////////////////////// build blocked transfer operator
     // using the map extractor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > bOp = Teuchos::rcp(new Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(map_extractor,map_extractor,10));
     bOp->setMatrix(0,0,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xA11)));
     bOp->setMatrix(0,1,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xA12)));
     bOp->setMatrix(1,0,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xA21)));
     bOp->setMatrix(1,1,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xA22)));
+#else
+    Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp = Teuchos::rcp(new Xpetra::BlockedCrsMatrix<Scalar,Node>(map_extractor,map_extractor,10));
+    bOp->setMatrix(0,0,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xA11)));
+    bOp->setMatrix(0,1,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xA12)));
+    bOp->setMatrix(1,0,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xA21)));
+    bOp->setMatrix(1,1,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xA22)));
+#endif
 
     bOp->fillComplete();
 
@@ -389,12 +412,20 @@ int main(int argc, char *argv[]) {
     rebAmalgFact11->SetFactory("A", rebA11Fact);
     rebAmalgFact11->setDefaultVerbLevel(Teuchos::VERB_EXTREME);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::IsorropiaInterface<LO, GO, NO> > isoInterface1 = rcp(new MueLu::IsorropiaInterface<LO, GO, NO>());
+#else
+    RCP<MueLu::IsorropiaInterface<NO> > isoInterface1 = rcp(new MueLu::IsorropiaInterface<NO>());
+#endif
     isoInterface1->SetFactory("A", rebA11Fact);
     isoInterface1->SetFactory("number of partitions", RepartitionHeuristicFact);
     isoInterface1->SetFactory("UnAmalgamationInfo", rebAmalgFact11);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::RepartitionInterface<LO, GO, NO> > repInterface1 = rcp(new MueLu::RepartitionInterface<LO, GO, NO>());
+#else
+    RCP<MueLu::RepartitionInterface<NO> > repInterface1 = rcp(new MueLu::RepartitionInterface<NO>());
+#endif
     repInterface1->SetFactory("A", rebA11Fact);
     repInterface1->SetFactory("number of partitions", RepartitionHeuristicFact);
     repInterface1->SetFactory("AmalgamatedPartition", isoInterface1);
@@ -412,7 +443,11 @@ int main(int argc, char *argv[]) {
     rebAmalgFact22->SetFactory("A", rebA22Fact);
     rebAmalgFact22->setDefaultVerbLevel(Teuchos::VERB_EXTREME);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::CloneRepartitionInterface<SC, LO, GO, NO> > repInterface2 = rcp(new MueLu::CloneRepartitionInterface<SC, LO, GO, NO>());
+#else
+    RCP<MueLu::CloneRepartitionInterface<SC, NO> > repInterface2 = rcp(new MueLu::CloneRepartitionInterface<SC, NO>());
+#endif
     repInterface2->SetFactory("A", rebA22Fact);
     repInterface2->SetFactory("number of partitions", RepartitionHeuristicFact);
     repInterface2->SetFactory("Partition", repInterface1);

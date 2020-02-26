@@ -61,7 +61,11 @@ namespace {
 // This example exercises the fix for Bug 5963.  It illustrates the
 // "Add" combine mode with overlap 0.  This example only works with
 // exactly 2 MPI processes.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(AdditiveSchwarz, AddCombineMode, ScalarType, LocalOrdinalType, GlobalOrdinalType)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(AdditiveSchwarz, AddCombineMode, ScalarType)
+#endif
 {
   using Teuchos::Array;
   using Teuchos::ArrayRCP;
@@ -225,7 +229,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(AdditiveSchwarz, AddCombineMode, ScalarType, L
 // This example exercises the fix for Bug 5963.  It illustrates the
 // "Zero" combine mode with overlap 1.  This example only works with
 // exactly 2 MPI processes.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(AdditiveSchwarz, ZeroCombineMode, ScalarType, LocalOrdinalType, GlobalOrdinalType)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(AdditiveSchwarz, ZeroCombineMode, ScalarType)
+#endif
 {
   using Teuchos::Array;
   using Teuchos::ArrayRCP;
@@ -434,7 +442,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(AdditiveSchwarz, ZeroCombineMode, ScalarType, 
 
 // Define the set of unit tests to instantiate in this file.
 #define UNIT_TEST_GROUP_SC_LO_GO( SC, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( AdditiveSchwarz, ZeroCombineMode, SC, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( AdditiveSchwarz, ZeroCombineMode, SC )
+#endif
 
 #include "Ifpack2_ETIHelperMacros.h"
 

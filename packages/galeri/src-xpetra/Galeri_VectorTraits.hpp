@@ -91,13 +91,26 @@ namespace Galeri {
 */
 
     // Specialized traits for     Map = Xpetra::Map<...>, Vector = Xpetra::MultiVector<...>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     class VectorTraits < ::Xpetra::Map<LocalOrdinal,GlobalOrdinal, Node>, ::Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal, Node> >
+#else
+    template <class Scalar, class Node>
+    class VectorTraits < ::Xpetra::Map<Node>, ::Xpetra::MultiVector<Scalar, Node> >
+#endif
     {
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static RCP< ::Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal, Node> >
       Build(const RCP<const ::Xpetra::Map<LocalOrdinal,GlobalOrdinal, Node> > &map, size_t numVectors, bool zeroOut)
       { return ::Xpetra::MultiVectorFactory<Scalar,LocalOrdinal,GlobalOrdinal, Node>::Build(map, numVectors, zeroOut);};
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      static RCP< ::Xpetra::MultiVector<Scalar, Node> >
+      Build(const RCP<const ::Xpetra::Map<Node> > &map, size_t numVectors, bool zeroOut)
+      { return ::Xpetra::MultiVectorFactory<Scalar, Node>::Build(map, numVectors, zeroOut);};
+#endif
     };
 
 #endif

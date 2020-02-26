@@ -96,16 +96,26 @@ TEUCHOS_STATIC_SETUP(){
     "Whether or not to use verbose output");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO,class NT>
 RCP<CrsMatrix<SC, LO, GO, NT> >
+#else
+template<class SC,class NT>
+RCP<CrsMatrix<SC, NT> >
+#endif
 getIdentityMatrix (Teuchos::FancyOStream& out,
                    const Tpetra::global_size_t globalNumRows,
                    const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
 {
   using Teuchos::RCP;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SC, LO, GO, NT> Matrix_t;
   typedef Tpetra::Map<LO, GO, NT> Map_t;
+#else
+  typedef Tpetra::CrsMatrix<SC, NT> Matrix_t;
+  typedef Tpetra::Map<NT> Map_t;
+#endif
 
   Teuchos::OSTab tab0 (out);
   out << "getIdentityMatrix" << endl;
@@ -113,11 +123,19 @@ getIdentityMatrix (Teuchos::FancyOStream& out,
 
   out << "Create row Map" << endl;
   RCP<const Map_t> identityRowMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createUniformContigMapWithNode<LO, GO, NT> (globalNumRows, comm);
+#else
+    Tpetra::createUniformContigMapWithNode<NT> (globalNumRows, comm);
+#endif
 
   out << "Create CrsMatrix" << endl;
   RCP<Matrix_t> identityMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC, LO, GO, NT> (identityRowMap, 1);
+#else
+    Tpetra::createCrsMatrix<SC, NT> (identityRowMap, 1);
+#endif
 
   out << "Fill CrsMatrix" << endl;
   Teuchos::ArrayView<const GO> gblRows = identityRowMap->getNodeElementList ();
@@ -134,15 +152,28 @@ getIdentityMatrix (Teuchos::FancyOStream& out,
   return identityMatrix;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO,class NT>
 RCP<CrsMatrix<SC, LO, GO, NT> >
+#else
+template<class SC,class NT>
+RCP<CrsMatrix<SC, NT> >
+#endif
 getIdentityMatrixWithMap (Teuchos::FancyOStream& out,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           Teuchos::RCP<const Tpetra::Map<LO,GO,NT> >& identityRowMap,
+#else
+                          Teuchos::RCP<const Tpetra::Map<NT> >& identityRowMap,
+#endif
                           const Teuchos::RCP<const Teuchos::Comm<int> >& comm)
 {
   using Teuchos::RCP;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SC, LO, GO, NT> Matrix_t;
+#else
+  typedef Tpetra::CrsMatrix<SC, NT> Matrix_t;
+#endif
 
   Teuchos::OSTab tab0 (out);
   out << "getIdentityMatrixWithMap" << endl;
@@ -150,7 +181,11 @@ getIdentityMatrixWithMap (Teuchos::FancyOStream& out,
 
   out << "Create CrsMatrix" << endl;
   RCP<Matrix_t> identityMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC, LO, GO, NT> (identityRowMap, 1);
+#else
+    Tpetra::createCrsMatrix<SC, NT> (identityRowMap, 1);
+#endif
 
   out << "Fill CrsMatrix" << endl;
   Teuchos::ArrayView<const GO> gblRows = identityRowMap->getNodeElementList ();
@@ -201,7 +236,11 @@ add_test_results regular_add_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Map<NT> Map_t;
+#endif
 
   add_test_results toReturn;
   toReturn.correctNorm = C->getFrobeniusNorm ();
@@ -328,7 +367,11 @@ add_test_results add_into_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Map<NT> Map_t;
+#endif
 
   add_test_results toReturn;
   toReturn.correctNorm = C->getFrobeniusNorm ();
@@ -360,8 +403,13 @@ mult_test_results multiply_test_manualfc(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
   typedef Import<LO,GO,NT> Import_t;
+#else
+  typedef Map<NT> Map_t;
+  typedef Import<NT> Import_t;
+#endif
   RCP<const Map_t> map = C->getRowMap();
 
   size_t maxNumEntriesPerRow = C->getGlobalMaxNumRowEntries();
@@ -378,7 +426,11 @@ mult_test_results multiply_test_manualfc(
 #endif
   SC one = Teuchos::ScalarTraits<SC>::one();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Matrix_t> diffMatrix = Tpetra::createCrsMatrix<SC,LO,GO,NT>(C->getRowMap(),
+#else
+  RCP<Matrix_t> diffMatrix = Tpetra::createCrsMatrix<SC,NT>(C->getRowMap(),
+#endif
                                                                   maxNumEntriesPerRow);
   Tpetra::MatrixMatrix::Add(*C, false, -one, *computedC, false, one, diffMatrix);
   diffMatrix->fillComplete(C->getDomainMap(), C->getRangeMap());
@@ -411,8 +463,13 @@ mult_test_results multiply_test_autofc(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
   typedef Import<LO,GO,NT> Import_t;
+#else
+  typedef Map<NT> Map_t;
+  typedef Import<NT> Import_t;
+#endif
   RCP<const Map_t> map = C->getRowMap();
 
   RCP<Matrix_t> computedC = rcp( new Matrix_t(map, 0));
@@ -458,7 +515,11 @@ mult_test_results multiply_test_autofc(
 
 
   RCP<Matrix_t> diffMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(C->getRowMap(), C->getGlobalMaxNumRowEntries());
+#else
+    Tpetra::createCrsMatrix<SC,NT>(C->getRowMap(), C->getGlobalMaxNumRowEntries());
+#endif
   Tpetra::MatrixMatrix::Add(*C, false, -one, *computedC, false, one, diffMatrix);
   diffMatrix->fillComplete(C->getDomainMap(), C->getRangeMap());
 
@@ -504,7 +565,11 @@ mult_test_results multiply_RAP_test_autofc(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Map<NT> Map_t;
+#endif
 
   RCP<const Map_t> map = Ac->getRowMap();
 
@@ -551,7 +616,11 @@ mult_test_results multiply_RAP_test_autofc(
 
 
   RCP<Matrix_t> diffMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(Ac->getRowMap(),
+#else
+    Tpetra::createCrsMatrix<SC,NT>(Ac->getRowMap(),
+#endif
                                          Ac->getGlobalMaxNumRowEntries());
   Tpetra::MatrixMatrix::Add(*Ac, false, -one, *computedAc, false, one, diffMatrix);
   diffMatrix->fillComplete(Ac->getDomainMap(), Ac->getRangeMap());
@@ -593,7 +662,11 @@ mult_test_results multiply_RAP_reuse_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Map<NT> Map_t;
+#endif
 
   RCP<const Map_t> map = Ac->getRowMap();
 
@@ -614,7 +687,11 @@ mult_test_results multiply_RAP_reuse_test(
 
   // Only check the second "reuse" matrix
   RCP<Matrix_t> diffMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(map, Ac->getGlobalMaxNumRowEntries());
+#else
+    Tpetra::createCrsMatrix<SC,NT>(map, Ac->getGlobalMaxNumRowEntries());
+#endif
   Tpetra::MatrixMatrix::Add(*Ac, false, -one, *computedC2, false, one, diffMatrix);
   diffMatrix->fillComplete(Ac->getDomainMap(), Ac->getRangeMap());
 
@@ -649,9 +726,15 @@ mult_test_results multiply_reuse_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT> Map_t;
   typedef Import<LO,GO,NT> Import_t;
   typedef Vector<SC,LO,GO,NT> Vector_t;
+#else
+  typedef Map<NT> Map_t;
+  typedef Import<NT> Import_t;
+  typedef Vector<SC,NT> Vector_t;
+#endif
 
   RCP<const Map_t> map = C->getRowMap();
 
@@ -699,7 +782,11 @@ mult_test_results multiply_reuse_test(
   // diffMatrix = computedC2 - computedC1
   SC one = Teuchos::ScalarTraits<SC>::one();
   RCP<Matrix_t> diffMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(C->getRowMap(),
+#else
+    Tpetra::createCrsMatrix<SC,NT>(C->getRowMap(),
+#endif
                                          computedC2->getGlobalMaxNumRowEntries());
 
   Kokkos::fence();
@@ -732,8 +819,13 @@ mult_test_results jacobi_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Vector<SC,LO,GO,NT> Vector_t;
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Vector<SC,NT> Vector_t;
+  typedef Map<NT> Map_t;
+#endif
   RCP<const Map_t> map = A->getRowMap();
   SC one = Teuchos::ScalarTraits<SC>::one();
   SC omega=Teuchos::ScalarTraits<SC>::one();
@@ -743,7 +835,11 @@ mult_test_results jacobi_test(
 
   // Jacobi version
   RCP<Matrix_t> C = rcp(new Matrix_t(B->getRowMap(),0));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::MatrixMatrix::Jacobi<SC, LO, GO, NT>(omega,Dinv,*A,*B,*C);
+#else
+  Tpetra::MatrixMatrix::Jacobi<SC, NT>(omega,Dinv,*A,*B,*C);
+#endif
 
   // Multiply + Add version
   RCP<Matrix_t> C2;
@@ -753,7 +849,11 @@ mult_test_results jacobi_test(
       Teuchos::ParameterList p;
       p.set("openmp: jacobi algorithm","MSAK");
       C2 = rcp(new Matrix_t(B->getRowMap(),0));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MatrixMatrix::Jacobi<SC, LO, GO, NT>(omega,Dinv,*A,*B,*C2,true,"jacobi_test_msak",rcp(&p,false));
+#else
+      Tpetra::MatrixMatrix::Jacobi<SC, NT>(omega,Dinv,*A,*B,*C2,true,"jacobi_test_msak",rcp(&p,false));
+#endif
       done=true;
     }
 #endif
@@ -762,7 +862,11 @@ mult_test_results jacobi_test(
       Teuchos::ParameterList p;
       p.set("cuda: jacobi algorithm","MSAK");
       C2 = rcp(new Matrix_t(B->getRowMap(),0));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MatrixMatrix::Jacobi<SC, LO, GO, NT>(omega,Dinv,*A,*B,*C2,true,"jacobi_test_msak",rcp(&p,false));
+#else
+      Tpetra::MatrixMatrix::Jacobi<SC, NT>(omega,Dinv,*A,*B,*C2,true,"jacobi_test_msak",rcp(&p,false));
+#endif
       done=true;
     }
 #endif
@@ -807,8 +911,13 @@ mult_test_results jacobi_reuse_test(
   typedef typename Matrix_t::local_ordinal_type LO;
   typedef typename Matrix_t::global_ordinal_type GO;
   typedef typename Matrix_t::node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Vector<SC,LO,GO,NT> Vector_t;
   typedef Map<LO,GO,NT> Map_t;
+#else
+  typedef Vector<SC,NT> Vector_t;
+  typedef Map<NT> Map_t;
+#endif
 
   RCP<const Map_t> map = A->getRowMap();
 
@@ -840,7 +949,11 @@ mult_test_results jacobi_reuse_test(
   // diffMatrix = computedC2 - computedC1
 
   RCP<Matrix_t> diffMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(computedC1->getRowMap(),
+#else
+    Tpetra::createCrsMatrix<SC,NT>(computedC1->getRowMap(),
+#endif
                                          computedC1->getGlobalMaxNumRowEntries());
   Tpetra::MatrixMatrix::Add(*computedC1, false, -one, *computedC2, false, one, diffMatrix);
   diffMatrix->fillComplete(computedC1->getDomainMap(), computedC1->getRangeMap());
@@ -854,13 +967,22 @@ mult_test_results jacobi_reuse_test(
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, operations_test,SC,LO, GO, NT)  {
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, operations_test,SC, NT)  {
+#endif
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
 
   // NOTE: The matrix reader doesn't read real matrices into a complex data type, so we just swap down to MT here
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType MT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT>                     map_type;
   typedef CrsMatrix<MT,LO,GO,NT> Matrix_t;
+#else
+  typedef Map<NT>                     map_type;
+  typedef CrsMatrix<MT,NT> Matrix_t;
+#endif
   const int myRank = comm->getRank ();
   //const int numProcs = comm->getSize();
 
@@ -1185,10 +1307,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, operations_test,SC,LO, GO, NT) 
  */
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, range_row_test, SC, LO, GO, NT)  {
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, range_row_test, SC, NT)  {
+#endif
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT>         Map_t;
   typedef CrsMatrix<SC,LO,GO,NT> Matrix_t;
+#else
+  typedef Map<NT>         Map_t;
+  typedef CrsMatrix<SC,NT> Matrix_t;
+#endif
 
   const int myRank = comm->getRank ();
   const int numProcs = comm->getSize();
@@ -1216,7 +1347,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, range_row_test, SC, LO, GO, NT)
   global_size_t globalNumRows = numRowsPerProc*numProcs;
 
   RCP<Matrix_t > dummy =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getIdentityMatrix<SC,LO,GO,NT> (newOut, globalNumRows, comm);
+#else
+    getIdentityMatrix<SC,NT> (newOut, globalNumRows, comm);
+#endif
 
 //Create "B"
   Array<GO> myRows = tuple<GO>(
@@ -1242,21 +1377,41 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, range_row_test, SC, LO, GO, NT)
 
   newOut << "Create row, range, and domain Maps of B" << endl;
   RCP<const Map_t > bRowMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createNonContigMapWithNode<LO,GO,NT>(myRows, comm);
+#else
+    Tpetra::createNonContigMapWithNode<NT>(myRows, comm);
+#endif
   RCP<const Map_t > bRangeMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createNonContigMapWithNode<LO,GO,NT>(rangeElements, comm);
+#else
+    Tpetra::createNonContigMapWithNode<NT>(rangeElements, comm);
+#endif
   //We divide by 2 to make the matrix tall and "skinny"
   RCP<const Map_t > bDomainMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createUniformContigMapWithNode<LO,GO,NT>(globalNumRows/2, comm);
+#else
+    Tpetra::createUniformContigMapWithNode<NT>(globalNumRows/2, comm);
+#endif
 
   newOut << "Create identityMatrix" << endl;
   RCP<Matrix_t > identityMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getIdentityMatrixWithMap<SC,LO,GO,NT> (newOut, bRowMap, comm);
+#else
+    getIdentityMatrixWithMap<SC,NT> (newOut, bRowMap, comm);
+#endif
 
 
   newOut << "Create bMatrix" << endl;
   RCP<Matrix_t > bMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(bRowMap, 1);
+#else
+    Tpetra::createCrsMatrix<SC,NT>(bRowMap, 1);
+#endif
 
   newOut << "Fill bMatrix" << endl;
   {
@@ -1294,10 +1449,18 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, range_row_test, SC, LO, GO, NT)
 
   newOut << "Create identity2" << endl;
   RCP<Matrix_t > identity2 =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getIdentityMatrix<SC,LO,GO,NT> (newOut, globalNumRows/2, comm);
+#else
+    getIdentityMatrix<SC,NT> (newOut, globalNumRows/2, comm);
+#endif
 
   RCP<const Map_t > bTransRowMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createUniformContigMapWithNode<LO,GO,NT>(globalNumRows/2,comm);
+#else
+    Tpetra::createUniformContigMapWithNode<NT>(globalNumRows/2,comm);
+#endif
 
   Array<GO> bTransRangeElements;
   if(rank == 0){
@@ -1313,13 +1476,25 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, range_row_test, SC, LO, GO, NT)
   newOut << bTransRangeElements << endl;
 
   RCP<const Map_t > bTransRangeMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createNonContigMapWithNode<LO,GO,NT>(bTransRangeElements, comm);
+#else
+    Tpetra::createNonContigMapWithNode<NT>(bTransRangeElements, comm);
+#endif
   RCP<const Map_t > bTransDomainMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createUniformContigMapWithNode<LO,GO,NT>(globalNumRows, comm);
+#else
+    Tpetra::createUniformContigMapWithNode<NT>(globalNumRows, comm);
+#endif
 
   newOut << "Create and fill bTransTest" << endl;
   RCP<Matrix_t > bTransTest =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(bTransRowMap, 2);
+#else
+    Tpetra::createCrsMatrix<SC,NT>(bTransRowMap, 2);
+#endif
 
   {
     Teuchos::ArrayView<const GO> gblRows = bRowMap->getNodeElementList ();
@@ -1335,7 +1510,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, range_row_test, SC, LO, GO, NT)
 
   newOut << "Create and fill bTrans" << endl;
   RCP<Matrix_t> bTrans =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(bTransRowMap,
+#else
+    Tpetra::createCrsMatrix<SC,NT>(bTransRowMap,
+#endif
                                          bTransTest->getGlobalMaxNumRowEntries());
 
   newOut << "Compute identity * transpose(bTrans)" << endl;
@@ -1350,8 +1529,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, range_row_test, SC, LO, GO, NT)
   newOut << "Regular I*P^T" << endl;
 
   RCP<Matrix_t > bTransDiff =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(bTransRowMap, bTransTest->getGlobalMaxNumRowEntries());
   Tpetra::MatrixMatrix::Add<SC,LO,GO,NT>(*bTransTest, false, -1.0, *bTrans, false, 1.0,bTransDiff);
+#else
+    Tpetra::createCrsMatrix<SC,NT>(bTransRowMap, bTransTest->getGlobalMaxNumRowEntries());
+  Tpetra::MatrixMatrix::Add<SC,NT>(*bTransTest, false, -1.0, *bTrans, false, 1.0,bTransDiff);
+#endif
 
   newOut << "Call fillComplete on bTransDiff" << endl;
   bTransDiff->fillComplete(bTransDomainMap, bDomainMap);
@@ -1387,10 +1571,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, range_row_test, SC, LO, GO, NT)
  * when A's rowmap and rangemap are differnt.
  * KLN 23/06/2011
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, ATI_range_row_test, SC, LO, GO, NT)  {
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, ATI_range_row_test, SC, NT)  {
+#endif
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Map<LO,GO,NT>          Map_t;
   typedef CrsMatrix<SC,LO,GO,NT> Matrix_t;
+#else
+  typedef Map<NT>          Map_t;
+  typedef CrsMatrix<SC,NT> Matrix_t;
+#endif
 
   // Create an output stream that prints immediately, rather than
   // waiting until the test finishes.  This lets us get debug output
@@ -1419,7 +1612,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, ATI_range_row_test, SC, LO, GO,
 
   newOut << "Create identity matrix" << endl;
   RCP<Matrix_t> identityMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getIdentityMatrix<SC,LO,GO,NT> (newOut, globalNumRows, comm);
+#else
+    getIdentityMatrix<SC,NT> (newOut, globalNumRows, comm);
+#endif
 
   newOut << "Create Maps for matrix aMat" << endl;
   Array<GO> aMyRows = tuple<GO>(
@@ -1428,9 +1625,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, ATI_range_row_test, SC, LO, GO,
     rank*numRowsPerProc+2,
     rank*numRowsPerProc+3);
   RCP<const Map_t> aRowMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createNonContigMapWithNode<LO,GO,NT>(aMyRows, comm);
+#else
+    Tpetra::createNonContigMapWithNode<NT>(aMyRows, comm);
+#endif
   RCP<const Map_t> aDomainMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createUniformContigMapWithNode<LO,GO,NT>(globalNumRows/2, comm);
+#else
+    Tpetra::createUniformContigMapWithNode<NT>(globalNumRows/2, comm);
+#endif
   Array<GO> aRangeElements;
   if(rank == 0){
     aRangeElements = tuple<GO>(
@@ -1446,12 +1651,21 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, ATI_range_row_test, SC, LO, GO,
       (rank-1)*numRowsPerProc,
       (rank-1)*numRowsPerProc+3);
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Map<LO,GO,NT> > aRangeMap =
     Tpetra::createNonContigMapWithNode<LO,GO,NT>(aRangeElements, comm);
+#else
+  RCP<const Map<NT> > aRangeMap =
+    Tpetra::createNonContigMapWithNode<NT>(aRangeElements, comm);
+#endif
 
   newOut << "Create matrix aMat" << endl;
   RCP<Matrix_t> aMat =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<SC,LO,GO,NT>(aRowMap, 1);
+#else
+    Tpetra::createCrsMatrix<SC,NT>(aRowMap, 1);
+#endif
 
   newOut << "Fill matrix aMat" << endl;
   {
@@ -1466,7 +1680,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, ATI_range_row_test, SC, LO, GO,
   aMat->fillComplete(aDomainMap, aRangeMap);
 
   newOut << "Create RowMatrixTransposer with aMat" << endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RowMatrixTransposer<SC,LO,GO,NT> transposer (aMat);
+#else
+  RowMatrixTransposer<SC,NT> transposer (aMat);
+#endif
 
   newOut << "Use RowMatrixTransposer to create transpose of aMat" << endl;
   RCP<Matrix_t > knownAMat = transposer.createTranspose();
@@ -1502,14 +1720,22 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, ATI_range_row_test, SC, LO, GO,
   TEST_EQUALITY_CONST( gblSuccess, 1 );
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, threaded_add_sorted, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, threaded_add_sorted, SC, NT)
+#endif
 {
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
   using Teuchos::RCP;
   //First, make two local, random, sorted Kokkos sparse matrices
   size_t nrows = 1000;
   size_t nnzPerRow = 20;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using KCRS = typename crs_matrix_type::local_matrix_type;
   using ISC = typename crs_matrix_type::impl_scalar_type;
   using ValuesType = typename KCRS::values_type::non_const_type;
@@ -1583,7 +1809,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, threaded_add_sorted, SC, LO, GO
   //now run the threaded addition on mats[0] and mats[1]
   ISC zero(0);
   ISC one(1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::MMdetails::AddKernels<SC, LO, GO, NT>::addSorted(valsCRS[0], rowptrsCRS[0], colindsCRS[0], one, valsCRS[1], rowptrsCRS[1], colindsCRS[1], one, valsCRS[2], rowptrsCRS[2], colindsCRS[2]);
+#else
+  Tpetra::MMdetails::AddKernels<SC, NT>::addSorted(valsCRS[0], rowptrsCRS[0], colindsCRS[0], one, valsCRS[1], rowptrsCRS[1], colindsCRS[1], one, valsCRS[2], rowptrsCRS[2], colindsCRS[2]);
+#endif
   //the above function is an unfenced kernel launch, and the verification below relies on UVM, so fence here.
   ExecSpace().fence();
   //now scan through C's rows and entries to check they are correct
@@ -1624,12 +1854,21 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, threaded_add_sorted, SC, LO, GO
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, add_zero_rows, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, add_zero_rows, SC, NT)
+#endif
 {
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
   using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+  using map_type = Tpetra::Map<NT>;
+#endif
   using MT = typename Teuchos::ScalarTraits<SC>::magnitudeType;
   size_t nrows = 0;
   RCP<const map_type> emptyMap = rcp(new map_type(nrows, 0, comm));
@@ -1647,14 +1886,22 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, add_zero_rows, SC, LO, GO, NT)
   TEST_EQUALITY(C2->getFrobeniusNorm(), magZero);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, threaded_add_unsorted, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, threaded_add_unsorted, SC, NT)
+#endif
 {
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
   using Teuchos::RCP;
   //First, make two local, random, unsorted Kokkos sparse matrices
   size_t nrows = 1000;
   size_t nnzPerRow = 20;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<SC, LO, GO, NT> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<SC, NT> crs_matrix_type;
+#endif
   typedef typename crs_matrix_type::local_matrix_type KCRS;
   typedef typename crs_matrix_type::impl_scalar_type ISC;
   typedef typename KCRS::values_type::non_const_type ValuesType;
@@ -1725,7 +1972,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMat, threaded_add_unsorted, SC, LO, 
   //now run the threaded addition on mats[0] and mats[1]
   ISC zero(0);
   ISC one(1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::MMdetails::AddKernels<SC, LO, GO, NT>::addUnsorted(valsCRS[0], rowptrsCRS[0], colindsCRS[0], one, valsCRS[1], rowptrsCRS[1], colindsCRS[1], one, nrows, valsCRS[2], rowptrsCRS[2], colindsCRS[2]);
+#else
+  Tpetra::MMdetails::AddKernels<SC, NT>::addUnsorted(valsCRS[0], rowptrsCRS[0], colindsCRS[0], one, valsCRS[1], rowptrsCRS[1], colindsCRS[1], one, nrows, valsCRS[2], rowptrsCRS[2], colindsCRS[2]);
+#endif
   //now scan through C's rows and entries to check they are correct
   TEST_ASSERT(rowptrsCRS[0].extent(0) == rowptrsCRS[2].extent(0));
   for(size_t i = 0; i < nrows; i++)
@@ -1858,12 +2109,22 @@ bool verifySum(const CrsMat& A, const CrsMat& B, const CrsMat& C)
   return true;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename LO, typename GO, typename NT>
 RCP<const Tpetra::Map<LO, GO, NT>> buildRandomColMap(
     RCP<const Tpetra::Map<LO, GO, NT>> domainMap,
+#else
+template<typename NT>
+RCP<const Tpetra::Map<NT>> buildRandomColMap(
+    RCP<const Tpetra::Map<NT>> domainMap,
+#endif
     GO indexBase, GO minCol, GO maxCol, int seed, double proportion)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+#endif
   using MemSpace = typename NT::memory_space;
   srand(seed * 21);
   std::vector<GO> present;
@@ -1885,17 +2146,29 @@ RCP<const Tpetra::Map<LO, GO, NT>> buildRandomColMap(
   return rcp(new map_type(zeroBased->getGlobalNumElements(), indices, indexBase, zeroBased->getComm()));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename SC, typename LO, typename GO, typename NT>
 RCP<Tpetra::CrsMatrix<SC, LO, GO, NT>> getTestMatrix(
     RCP<const Tpetra::Map<LO, GO, NT>> rowRangeMap,
     RCP<const Tpetra::Map<LO, GO, NT>> domainMap,
     RCP<const Tpetra::Map<LO, GO, NT>> colMap,
+#else
+template<typename SC, typename NT>
+RCP<Tpetra::CrsMatrix<SC, NT>> getTestMatrix(
+    RCP<const Tpetra::Map<NT>> rowRangeMap,
+    RCP<const Tpetra::Map<NT>> domainMap,
+    RCP<const Tpetra::Map<NT>> colMap,
+#endif
     int seed)
 {
   using Teuchos::Array;
   using Teuchos::ArrayView;
   const LO maxNnzPerRow = colMap->getNodeNumElements();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto mat = rcp(new Tpetra::CrsMatrix<SC, LO, GO, NT>(rowRangeMap, colMap, maxNnzPerRow));
+#else
+  auto mat = rcp(new Tpetra::CrsMatrix<SC, NT>(rowRangeMap, colMap, maxNnzPerRow));
+#endif
   //get consistent results between runs on a given machine
   srand(seed);
   LO numLocalRows = mat->getNodeNumRows();
@@ -1915,18 +2188,30 @@ RCP<Tpetra::CrsMatrix<SC, LO, GO, NT>> getTestMatrix(
   return mat;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename SC, typename LO, typename GO, typename NT>
 RCP<Tpetra::CrsMatrix<SC, LO, GO, NT>> getUnsortedTestMatrix(
     RCP<const Tpetra::Map<LO, GO, NT>> rowRangeMap,
     RCP<const Tpetra::Map<LO, GO, NT>> domainMap,
     RCP<const Tpetra::Map<LO, GO, NT>> colMap,
+#else
+template<typename SC, typename NT>
+RCP<Tpetra::CrsMatrix<SC, NT>> getUnsortedTestMatrix(
+    RCP<const Tpetra::Map<NT>> rowRangeMap,
+    RCP<const Tpetra::Map<NT>> domainMap,
+    RCP<const Tpetra::Map<NT>> colMap,
+#endif
     int seed)
 {
   using Teuchos::Array;
   using Teuchos::ArrayView;
   using Teuchos::RCP;
   using Teuchos::ParameterList;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
   using KCRS = typename crs_matrix_type::local_matrix_type;
   using size_type = typename KCRS::row_map_type::non_const_value_type;
   using lno_t =     typename KCRS::index_type::non_const_value_type;
@@ -1972,7 +2257,11 @@ RCP<Tpetra::CrsMatrix<SC, LO, GO, NT>> getUnsortedTestMatrix(
   KCRS lclMatrix(std::string("UnsortedLcl"), numLocalRows, numLocalCols, numEntries, values.data(), rowptrs.data(), colinds.data());
   auto matParams = rcp(new ParameterList);
   matParams->set("sorted", false);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto mat = rcp(new Tpetra::CrsMatrix<SC, LO, GO, NT>(rowRangeMap, colMap, lclMatrix, matParams));
+#else
+  auto mat = rcp(new Tpetra::CrsMatrix<SC, NT>(rowRangeMap, colMap, lclMatrix, matParams));
+#endif
   //mat will be returned as fill-complete
   TEUCHOS_TEST_FOR_EXCEPTION(!mat->isFillComplete(), std::logic_error,
       "Test matrix must be fill-complete");
@@ -1982,22 +2271,43 @@ RCP<Tpetra::CrsMatrix<SC, LO, GO, NT>> getUnsortedTestMatrix(
 }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, same_colmap, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, same_colmap, SC, NT)
+#endif
 {
   using namespace AddTestUtils;
   using exec_space = typename NT::execution_space;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+  using map_type = Tpetra::Map<NT>;
+#endif
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
   int rank = comm->getRank();
   GO numGlobalRows = 1000;
   GO numGlobalCols = 1000;
   RCP<const map_type> rowDomainMap = rcp(new map_type(numGlobalRows, 0, comm));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const map_type> colMap = buildRandomColMap<LO, GO, NT>(rowDomainMap, 0, 0, numGlobalCols, 234 + rank, 0.03);
+#else
+  RCP<const map_type> colMap = buildRandomColMap<NT>(rowDomainMap, 0, 0, numGlobalCols, 234 + rank, 0.03);
+#endif
   //Generate the first matrix without a given column map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<crs_matrix_type> A = getTestMatrix<SC, LO, GO, NT>(rowDomainMap, rowDomainMap, colMap, rank + 42);
+#else
+  RCP<crs_matrix_type> A = getTestMatrix<SC, NT>(rowDomainMap, rowDomainMap, colMap, rank + 42);
+#endif
   //Generate the second matrix using the first one's column map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<crs_matrix_type> B = getTestMatrix<SC, LO, GO, NT>(rowDomainMap, rowDomainMap, colMap, rank + 43);
+#else
+  RCP<crs_matrix_type> B = getTestMatrix<SC, NT>(rowDomainMap, rowDomainMap, colMap, rank + 43);
+#endif
   auto one = Teuchos::ScalarTraits<SC>::one();
   RCP<crs_matrix_type> C = Tpetra::MatrixMatrix::add(one, false, *A, one, false, *B);
   //Verify fillComplete and that local matrices are sorted
@@ -2007,11 +2317,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, same_colmap, SC, LO, GO, NT)
   TEST_ASSERT(verifySum(*A, *B, *C));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, different_col_maps, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, different_col_maps, SC, NT)
+#endif
 {
   using namespace AddTestUtils;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+  using map_type = Tpetra::Map<NT>;
+#endif
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
   int rank = comm->getRank();
   int nprocs = comm->getSize();
@@ -2027,10 +2346,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, different_col_maps, SC, LO, 
   GO colEnd = numLocalCols * (rank + 2);
   if(colEnd > numGlobalCols)
     colEnd = numGlobalCols;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto Acolmap = buildRandomColMap<LO, GO, NT>(rowDomainMap, 0, colStart, colEnd, 234 + rank, 0.03);
   auto Bcolmap = buildRandomColMap<LO, GO, NT>(rowDomainMap, 0, colStart, colEnd, 236 + rank, 0.03);
   auto A = getTestMatrix<SC, LO, GO, NT>(rowDomainMap, rowDomainMap, Acolmap, 123);
   auto B = getTestMatrix<SC, LO, GO, NT>(rowDomainMap, rowDomainMap, Bcolmap, 321);
+#else
+  auto Acolmap = buildRandomColMap<NT>(rowDomainMap, 0, colStart, colEnd, 234 + rank, 0.03);
+  auto Bcolmap = buildRandomColMap<NT>(rowDomainMap, 0, colStart, colEnd, 236 + rank, 0.03);
+  auto A = getTestMatrix<SC, NT>(rowDomainMap, rowDomainMap, Acolmap, 123);
+  auto B = getTestMatrix<SC, NT>(rowDomainMap, rowDomainMap, Bcolmap, 321);
+#endif
   auto one = Teuchos::ScalarTraits<SC>::one();
   RCP<crs_matrix_type> C = Tpetra::MatrixMatrix::add(one, false, *A, one, false, *B);
   TEST_ASSERT(C->isFillComplete());
@@ -2038,11 +2364,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, different_col_maps, SC, LO, 
   TEST_ASSERT(verifySum(*A, *B, *C));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, different_index_base, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, different_index_base, SC, NT)
+#endif
 {
   using namespace AddTestUtils;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+  using map_type = Tpetra::Map<NT>;
+#endif
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
   int rank = comm->getRank();
   int nprocs = comm->getSize();
@@ -2063,10 +2398,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, different_index_base, SC, LO
   GO BminCol = numLocalCols * (rank - 1);
   if(BminCol < 0)
     BminCol = 0;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto Acolmap = buildRandomColMap<LO, GO, NT>(domainMap, AindexBase, AminCol, ABmaxCol, 234 + rank, 0.7);
   auto Bcolmap = buildRandomColMap<LO, GO, NT>(domainMap, 0, BminCol, ABmaxCol, 236 + rank, 0.7);
   auto A = getTestMatrix<SC, LO, GO, NT>(rowMap, domainMap, Acolmap, 123);
   auto B = getTestMatrix<SC, LO, GO, NT>(rowMap, domainMap, Bcolmap, 321);
+#else
+  auto Acolmap = buildRandomColMap<NT>(domainMap, AindexBase, AminCol, ABmaxCol, 234 + rank, 0.7);
+  auto Bcolmap = buildRandomColMap<NT>(domainMap, 0, BminCol, ABmaxCol, 236 + rank, 0.7);
+  auto A = getTestMatrix<SC, NT>(rowMap, domainMap, Acolmap, 123);
+  auto B = getTestMatrix<SC, NT>(rowMap, domainMap, Bcolmap, 321);
+#endif
   auto one = Teuchos::ScalarTraits<SC>::one();
   RCP<crs_matrix_type> C = Tpetra::MatrixMatrix::add(one, false, *A, one, false, *B);
   TEST_ASSERT(C->isFillComplete());
@@ -2074,11 +2416,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, different_index_base, SC, LO
   TEST_ASSERT(verifySum(*A, *B, *C));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, transposed_b, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, transposed_b, SC, NT)
+#endif
 {
   using namespace AddTestUtils;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+  using map_type = Tpetra::Map<NT>;
+#endif
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
   int rank = comm->getRank();
   int nprocs = comm->getSize();
@@ -2088,22 +2439,41 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, transposed_b, SC, LO, GO, NT
   GO numLocalCols = numGlobalCols / nprocs;
   //This is the row, domain and range map for both A and B
   RCP<const map_type> map = rcp(new map_type(numGlobalRows, 0, comm));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto colmap = buildRandomColMap<LO, GO, NT>(map, 0, numLocalCols * rank, numLocalCols * (rank + 1), 234 + rank, 1.0);
   auto A = getTestMatrix<SC, LO, GO, NT>(map, map, colmap, 123);
   auto B = getTestMatrix<SC, LO, GO, NT>(map, map, colmap, 321);
+#else
+  auto colmap = buildRandomColMap<NT>(map, 0, numLocalCols * rank, numLocalCols * (rank + 1), 234 + rank, 1.0);
+  auto A = getTestMatrix<SC, NT>(map, map, colmap, 123);
+  auto B = getTestMatrix<SC, NT>(map, map, colmap, 321);
+#endif
   auto one = Teuchos::ScalarTraits<SC>::one();
   RCP<crs_matrix_type> C = Tpetra::MatrixMatrix::add(one, false, *A, one, true, *B);
   TEST_ASSERT(C->isFillComplete());
   TEST_ASSERT(checkLocallySorted(*C));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto Btrans = Tpetra::RowMatrixTransposer<SC, LO, GO, NT>(B).createTranspose(Teuchos::null);
+#else
+  auto Btrans = Tpetra::RowMatrixTransposer<SC, NT>(B).createTranspose(Teuchos::null);
+#endif
   TEST_ASSERT(verifySum(*A, *Btrans, *C));
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, locally_unsorted, SC, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, locally_unsorted, SC, NT)
+#endif
 {
   using namespace AddTestUtils;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+  using map_type = Tpetra::Map<NT>;
+#endif
   RCP<const Comm<int> > comm = Tpetra::getDefaultComm();
   int rank = comm->getRank();
   int nprocs = comm->getSize();
@@ -2113,10 +2483,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, locally_unsorted, SC, LO, GO
   GO numLocalCols = numGlobalCols / nprocs;
   //This is the row, domain and range map for both A and B
   RCP<const map_type> map = rcp(new map_type(numGlobalRows, 0, comm));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto colmap = buildRandomColMap<LO, GO, NT>(map, 0, numLocalCols * rank, numLocalCols * (rank + 1), 234 + rank, 1.0);
+#else
+  auto colmap = buildRandomColMap<NT>(map, 0, numLocalCols * rank, numLocalCols * (rank + 1), 234 + rank, 1.0);
+#endif
   //A and B must have the same column maps
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   auto A = getTestMatrix<SC, LO, GO, NT>(map, map, colmap, 123);
   auto B = getUnsortedTestMatrix<SC, LO, GO, NT>(map, map, colmap, 321);
+#else
+  auto A = getTestMatrix<SC, NT>(map, map, colmap, 123);
+  auto B = getUnsortedTestMatrix<SC, NT>(map, map, colmap, 321);
+#endif
   auto one = Teuchos::ScalarTraits<SC>::one();
   RCP<crs_matrix_type> C = Tpetra::MatrixMatrix::add(one, false, *A, one, false, *B);
   TEST_ASSERT(C->isFillComplete());
@@ -2166,6 +2545,7 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, locally_unsorted, SC, LO, GO
 }*/
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, LO, GO, NT )                   \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMat, operations_test,SC, LO, GO, NT) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMat, range_row_test, SC, LO, GO, NT) \
@@ -2178,6 +2558,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Tpetra_MatMatAdd, locally_unsorted, SC, LO, GO
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatAdd, locally_unsorted, SC, LO, GO, NT) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatAdd, different_col_maps, SC, LO, GO, NT) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatAdd, different_index_base, SC, LO, GO, NT)
+#else
+#define UNIT_TEST_GROUP_SC_LO_GO_NO( SC, NT )                   \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMat, operations_test,SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMat, range_row_test, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMat, ATI_range_row_test, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMat, threaded_add_sorted, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMat, threaded_add_unsorted, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMat, add_zero_rows, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatAdd, same_colmap, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatAdd, transposed_b, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatAdd, locally_unsorted, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatAdd, different_col_maps, SC, NT) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Tpetra_MatMatAdd, different_index_base, SC, NT)
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

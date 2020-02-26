@@ -122,19 +122,33 @@ namespace MueLu {
     @ingroup MueLuAdapters
   */
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class RefMaxwell : public VerboseObject, public Xpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> {
+#else
+  class RefMaxwell : public VerboseObject, public Xpetra::Operator<Scalar,Node> {
+#endif
 
 #undef MUELU_REFMAXWELL_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType magnitudeType;
     typedef typename Teuchos::ScalarTraits<Scalar>::coordinateType coordinateType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Xpetra::MultiVector<coordinateType,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef typename Xpetra::MultiVector<coordinateType,NO> RealValuedMultiVector;
+#endif
 
     //! Constructor
     RefMaxwell() :
@@ -405,7 +419,11 @@ namespace MueLu {
     Teuchos::RCP<Hierarchy> HierarchyH_, Hierarchy22_;
     Teuchos::RCP<SmootherBase> PreSmoother_, PostSmoother_;
 #if defined(MUELU_REFMAXWELL_CAN_USE_HIPTMAIR)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> > hiptmairPreSmoother_, hiptmairPostSmoother_;
+#else
+    Teuchos::RCP<Ifpack2::Preconditioner<Scalar,Node> > hiptmairPreSmoother_, hiptmairPostSmoother_;
+#endif
 #endif
     bool useHiptmairSmoothing_;
     //! Various matrices

@@ -145,8 +145,13 @@ int main(int argc,char * argv[])
    b0_tp->randomize();
    b1_tp->randomize();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Thyra::TpetraVectorSpace<ST,LO,GO,NT> > domain = Thyra::tpetraVectorSpace<ST>(Mat->getDomainMap());
    RCP<const Thyra::TpetraVectorSpace<ST,LO,GO,NT> > range = Thyra::tpetraVectorSpace<ST>(Mat->getRangeMap());
+#else
+   RCP<const Thyra::TpetraVectorSpace<ST,NT> > domain = Thyra::tpetraVectorSpace<ST>(Mat->getDomainMap());
+   RCP<const Thyra::TpetraVectorSpace<ST,NT> > range = Thyra::tpetraVectorSpace<ST>(Mat->getRangeMap());
+#endif
 
    // Build Teko compatible matrices and vectors
    /////////////////////////////////////////////////////////

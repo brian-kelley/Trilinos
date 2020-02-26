@@ -62,8 +62,10 @@ namespace Details {
 template<class MatrixType>
 class RowMatrix :
     public Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                              typename MatrixType::local_ordinal_type,
                              typename MatrixType::global_ordinal_type,
+#endif
                              typename MatrixType::node_type> {
 public:
   //! \name Typedefs

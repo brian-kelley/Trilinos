@@ -53,7 +53,11 @@ void addDiscreteCurlToRequestHandler(
   typedef int LocalOrdinal;
   typedef panzer::GlobalOrdinal GlobalOrdinal;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename panzer::BlockedTpetraLinearObjFactory<panzer::Traits,Scalar,LocalOrdinal,GlobalOrdinal> tpetraBlockedLinObjFactory;
+#else
+  typedef typename panzer::BlockedTpetraLinearObjFactory<panzer::Traits,Scalar> tpetraBlockedLinObjFactory;
+#endif
   typedef typename panzer::BlockedEpetraLinearObjFactory<panzer::Traits,LocalOrdinal> epetraBlockedLinObjFactory;
   typedef panzer::GlobalIndexer UGI;
   typedef PHX::Device DeviceSpace;
@@ -68,8 +72,13 @@ void addDiscreteCurlToRequestHandler(
   RCP<const tpetraBlockedLinObjFactory > tblof  = rcp_dynamic_cast<const tpetraBlockedLinObjFactory >(linObjFactory);
   RCP<const epetraBlockedLinObjFactory > eblof  = rcp_dynamic_cast<const epetraBlockedLinObjFactory >(linObjFactory);
   if (tblof != Teuchos::null) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename panzer::BlockedTpetraLinearObjContainer<Scalar,LocalOrdinal,GlobalOrdinal> linObjContainer;
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal> matrix;
+#else
+    typedef typename panzer::BlockedTpetraLinearObjContainer<Scalar> linObjContainer;
+    typedef Tpetra::CrsMatrix<Scalar> matrix;
+#endif
     typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal> map;
 
     RCP<const panzer::BlockedDOFManager> blockedDOFMngr = tblof->getGlobalIndexer();
@@ -263,8 +272,13 @@ void addDiscreteCurlToRequestHandler(
     }//end element block loop
     curl_matrix->fillComplete(domainmap,rangemap);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Thyra::LinearOpBase<Scalar> > thyra_curl = Thyra::tpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,typename matrix::node_type>(Thyra::createVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal>(rangemap),
                                                                                                                                        Thyra::createVectorSpace<Scalar,LocalOrdinal,GlobalOrdinal>(domainmap),
+#else
+    RCP<Thyra::LinearOpBase<Scalar> > thyra_curl = Thyra::tpetraLinearOp<Scalar,typename matrix::node_type>(Thyra::createVectorSpace<Scalar>(rangemap),
+                                                                                                                                       Thyra::createVectorSpace<Scalar>(domainmap),
+#endif
                                                                                                                                        curl_matrix);
 
     // add curl callback to request handler

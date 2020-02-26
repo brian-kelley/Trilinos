@@ -21,8 +21,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> RepartitionInterface<LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Node>
+ RCP<const ParameterList> RepartitionInterface<Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
     validParamList->set< RCP<const FactoryBase> >("A",                    Teuchos::null, "Factory of the matrix A");
     validParamList->set< RCP<const FactoryBase> >("number of partitions", Teuchos::null, "Instance of RepartitionHeuristicFactory.");
@@ -32,19 +37,33 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void RepartitionInterface<LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level & currentLevel) const {
+#else
+  template <class Node>
+  void RepartitionInterface<Node>::DeclareInput(Level & currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "number of partitions");
     Input(currentLevel, "AmalgamatedPartition");
   } //DeclareInput()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void RepartitionInterface<LocalOrdinal, GlobalOrdinal, Node>::Build(Level &level) const {
+#else
+  template <class Node>
+  void RepartitionInterface<Node>::Build(Level &level) const {
+#endif
     FactoryMonitor m(*this, "Build", level);
 
     RCP<Matrix>      A                                  = Get< RCP<Matrix> >     (level, "A");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GO, LO, GO, NO> > amalgPartition = Get< RCP<Xpetra::Vector<GO, LO, GO, NO> > >(level, "AmalgamatedPartition");
+#else
+    RCP<Xpetra::Vector<GO, NO> > amalgPartition = Get< RCP<Xpetra::Vector<GO, NO> > >(level, "AmalgamatedPartition");
+#endif
     int numParts                                        = Get<int>(level, "number of partitions");
 
     RCP<const Map> rowMap        = A->getRowMap();
@@ -55,7 +74,11 @@ namespace MueLu {
     // Short cut: if we only need one partition, then create a dummy partition vector
     if (numParts == 1 || numParts == -1) {
       // Single processor, decomposition is trivial: all zeros
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(rowMap, true);
+#else
+      RCP<Xpetra::Vector<GO,NO> > decomposition = Xpetra::VectorFactory<GO, NO>::Build(rowMap, true);
+#endif
       Set(level, "Partition", decomposition);
       return;
     }/* else if (numParts == -1) {
@@ -98,7 +121,11 @@ namespace MueLu {
     } else GetOStream(Statistics0, -1) << "RepartitionInterface::Build(): no striding information available. Use blockdim=1 with offset=0" << std::endl;
 
     // vector which stores final (unamalgamated) repartitioning
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GO, LO, GO, NO> > decomposition = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(rowMap, false);
+#else
+    RCP<Xpetra::Vector<GO, NO> > decomposition = Xpetra::VectorFactory<GO, NO>::Build(rowMap, false);
+#endif
     ArrayRCP<GO> decompEntries = decomposition->getDataNonConst(0);
 
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::as<int>(nodeMap->getNodeNumElements())*stridedblocksize != Teuchos::as<int>(rowMap->getNodeNumElements()), Exceptions::RuntimeError, "Inconsistency between nodeMap and dofMap: we are supporting block maps only. No support for general strided maps, yet!");

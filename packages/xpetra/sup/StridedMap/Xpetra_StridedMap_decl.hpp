@@ -85,16 +85,25 @@ namespace Xpetra {
 
   @note: there's no support for global offset, yet.
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, 
          class GlobalOrdinal, 
          class Node = KokkosClassic::DefaultNode::DefaultNodeType>
 class StridedMap : public virtual Map<LocalOrdinal, GlobalOrdinal, Node>
+#else
+template<class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+class StridedMap : public virtual Map<Node>
+#endif
 {
 
 
   public:
 
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef LocalOrdinal  local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node          node_type;
@@ -251,12 +260,20 @@ class StridedMap : public virtual Map<LocalOrdinal, GlobalOrdinal, Node>
     //@{
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>> getMap() const;
+#else
+    RCP<const Xpetra::Map<Node>> getMap() const;
+#endif
 
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
     #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using local_map_type = typename Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>::local_map_type;
+#else
+        using local_map_type = typename Xpetra::Map<Node>::local_map_type;
+#endif
 
         /// \brief Get the local Map for Kokkos kernels.
         local_map_type getLocalMap() const 
@@ -318,7 +335,11 @@ class StridedMap : public virtual Map<LocalOrdinal, GlobalOrdinal, Node>
   private:
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>> map_;
+#else
+    RCP<const Xpetra::Map<Node>> map_;
+#endif
 
     std::vector<size_t> stridingInfo_;        //!< vector with size of strided blocks (dofs)
     LocalOrdinal        stridedBlockId_;      //!< member variable denoting which dofs are stored in map

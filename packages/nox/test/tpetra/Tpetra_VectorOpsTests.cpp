@@ -16,8 +16,13 @@ typedef Tpetra::Vector<>::global_ordinal_type GO;
 typedef Tpetra::Vector<>::node_type Node;
 
 typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::Map<LO,GO,Node> Map;
 typedef Tpetra::Vector<Scalar,LO,GO,Node> TV;
+#else
+typedef Tpetra::Map<Node> Map;
+typedef Tpetra::Vector<Scalar,Node> TV;
+#endif
 typedef Thyra::VectorBase<Scalar> TVB;
 typedef NOX::Thyra::Vector NTV;
 typedef typename TV::mag_type mag_type;
@@ -75,7 +80,11 @@ TEUCHOS_UNIT_TEST(Tpetra_VectorOps, CopyConstructor)
   Teuchos::RCP<NTV> y = Teuchos::rcp(new NTV(*x_thyra));
 
   // Check for correct answer
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Thyra::TpetraOperatorVectorExtraction<Scalar, LO, GO, Node> TOVE;
+#else
+  typedef Thyra::TpetraOperatorVectorExtraction<Scalar, Node> TOVE;
+#endif
   mag_type ans = static_cast<mag_type>(ST::squareroot(numGlobalElements));
   success = checkVectors(x, TOVE::getTpetraVector(y->getThyraRCPVector()), ans, out);
 }

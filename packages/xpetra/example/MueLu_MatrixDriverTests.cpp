@@ -110,7 +110,11 @@ int main(int argc, char* argv[])
   // Tpetra::CrsMatrix
   {
     RCP<const Tpetra::Map<LO,GO> > map = rcp( new Tpetra::Map<LO,GO> (numGlobalElements, indexBase, comm) );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::CrsMatrix<SC,LO,GO> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Tpetra::Map<LO,GO>, Tpetra::CrsMatrix<SC,LO,GO> > (matrixType,map,matrixList);
+#else
+    RCP<Tpetra::CrsMatrix<SC> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Tpetra::Map<LO,GO>, Tpetra::CrsMatrix<SC> > (matrixType,map,matrixList);
+#endif
     A->describe(*out, Teuchos::VERB_EXTREME);
   }
 #endif
@@ -119,7 +123,11 @@ int main(int argc, char* argv[])
   // Xpetra::TpetraCrsMatrix
   {
     RCP<const Xpetra::TpetraMap<LO,GO> > map = rcp( new Xpetra::TpetraMap<LO,GO> (numGlobalElements, indexBase, comm) );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::TpetraCrsMatrix<SC,LO,GO> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::TpetraMap<LO,GO>, Xpetra::TpetraCrsMatrix<SC,LO,GO> > (matrixType,map,matrixList);
+#else
+    RCP<Xpetra::TpetraCrsMatrix<SC> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::TpetraMap<LO,GO>, Xpetra::TpetraCrsMatrix<SC> > (matrixType,map,matrixList);
+#endif
     A->describe(*out, Teuchos::VERB_EXTREME);
   }
 #endif
@@ -137,7 +145,11 @@ int main(int argc, char* argv[])
   // Xpetra::CrsMatrix (Tpetra)
   {
     RCP<const Xpetra::Map<LO,GO> > map = rcp( new Xpetra::TpetraMap<LO,GO> (numGlobalElements, indexBase, comm) );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<SC,LO,GO> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::Map<LO,GO>, Xpetra::CrsMatrix<SC,LO,GO> >  (matrixType,map,matrixList);
+#else
+    RCP<Xpetra::CrsMatrix<SC> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::Map<LO,GO>, Xpetra::CrsMatrix<SC> >  (matrixType,map,matrixList);
+#endif
     A->describe(*out, Teuchos::VERB_EXTREME);
   }
 #endif
@@ -146,7 +158,11 @@ int main(int argc, char* argv[])
   // Xpetra::CrsMatrix (Epetra)
   {
     RCP<const Xpetra::Map<LO,GO> > map = rcp( new Xpetra::EpetraMap (numGlobalElements, indexBase, comm) );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<SC,LO,GO> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::Map<LO,GO>, Xpetra::CrsMatrix<SC,LO,GO> >  (matrixType,map,matrixList);
+#else
+    RCP<Xpetra::CrsMatrix<SC> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::Map<LO,GO>, Xpetra::CrsMatrix<SC> >  (matrixType,map,matrixList);
+#endif
     A->describe(*out, Teuchos::VERB_EXTREME);
   }
 #endif
@@ -155,7 +171,11 @@ int main(int argc, char* argv[])
   // Xpetra::Matrix (Tpetra)
   {
     RCP<const Xpetra::Map<LO,GO> > map = rcp( new Xpetra::TpetraMap<LO,GO> (numGlobalElements, indexBase, comm) );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<SC,LO,GO> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::Map<LO,GO>, Xpetra::Matrix<SC,LO,GO> >  (matrixType,map,matrixList);
+#else
+    RCP<Xpetra::Matrix<SC> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::Map<LO,GO>, Xpetra::Matrix<SC> >  (matrixType,map,matrixList);
+#endif
     A->describe(*out, Teuchos::VERB_EXTREME);
   }
 #endif
@@ -164,7 +184,11 @@ int main(int argc, char* argv[])
   // Xpetra::Matrix (Epetra)
   {
     RCP<const Xpetra::Map<LO,GO> > map = rcp( new Xpetra::EpetraMap (numGlobalElements, indexBase, comm) );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<SC,LO,GO> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::Map<LO,GO>, Xpetra::Matrix<SC,LO,GO> >  (matrixType,map,matrixList);
+#else
+    RCP<Xpetra::Matrix<SC> > A = MueLu::Gallery::CreateCrsMatrix<SC,LO,GO, Xpetra::Map<LO,GO>, Xpetra::Matrix<SC> >  (matrixType,map,matrixList);
+#endif
     A->describe(*out, Teuchos::VERB_EXTREME);
   }
 #endif

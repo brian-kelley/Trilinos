@@ -75,7 +75,11 @@
 #include <BelosMueLuAdapter.hpp>      // => This header defines Belos::MueLuOp
 #endif
 //- -- --------------------------------------------------------
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp,  Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -160,7 +164,11 @@ int main_(Teuchos::CommandLineProcessor &clp,  Xpetra::UnderlyingLib& lib, int a
       RCP<Matrix> Aprecond = matrices[i];
       if (Aprecond.is_null()) {
         out << "[" << i << "] Loading matrix \"" << matrixFileName << "\"... ";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Aprecond = Xpetra::IO<SC,LO,GO,Node>::Read(std::string(matrixFileName), xpetraParameters.GetLib(), comm, binary);
+#else
+        Aprecond = Xpetra::IO<SC,Node>::Read(std::string(matrixFileName), xpetraParameters.GetLib(), comm, binary);
+#endif
         out << "done" << std::endl;
 
         Aprecond->SetFixedBlockSize(numPDEs);
@@ -201,7 +209,11 @@ int main_(Teuchos::CommandLineProcessor &clp,  Xpetra::UnderlyingLib& lib, int a
       setup_times[i-first_matrix][i-first_matrix] = timer->stop();
       timer = Teuchos::null;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, LO, GO, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#else
+      Teuchos::RCP<OP> belosPrec = Teuchos::rcp(new Belos::MueLuOp<SC, NO>(H));  // Turns a MueLu::Hierarchy object into a Belos operator
+#endif
       tm = Teuchos::null;
 
       // Loop over all future matrices
@@ -217,7 +229,11 @@ int main_(Teuchos::CommandLineProcessor &clp,  Xpetra::UnderlyingLib& lib, int a
           if (Amatvec.is_null()) {
             // Load the matrix
             out << "[" << j << "]<-[" << i << "] Loading matrix \"" << matrixFileName << "\"... ";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             Amatvec = Xpetra::IO<SC,LO,GO,Node>::Read(std::string(matrixFileName), xpetraParameters.GetLib(), comm, binary);
+#else
+            Amatvec = Xpetra::IO<SC,Node>::Read(std::string(matrixFileName), xpetraParameters.GetLib(), comm, binary);
+#endif
             out << "done" << std::endl;
 
             Amatvec->SetFixedBlockSize(numPDEs);
@@ -256,7 +272,11 @@ int main_(Teuchos::CommandLineProcessor &clp,  Xpetra::UnderlyingLib& lib, int a
         RCP<MultiVector> rhs = rhss[j];
         if (rhs.is_null()) {
           out << "[" << j << "] Loading rhs " << rhsFileName << "\"... ";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           rhs = Xpetra::IO<SC,LO,GO,Node>::ReadMultiVector(std::string(rhsFileName), Amatvec->getRowMap());
+#else
+          rhs = Xpetra::IO<SC,Node>::ReadMultiVector(std::string(rhsFileName), Amatvec->getRowMap());
+#endif
           out << "done" << std::endl;
 
           if (inMemory)
@@ -268,7 +288,11 @@ int main_(Teuchos::CommandLineProcessor &clp,  Xpetra::UnderlyingLib& lib, int a
         X->putScalar(0.0);
 
         // Define Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<OP> belosOp = Teuchos::rcp(new Belos::XpetraOp<SC, LO, GO, NO>(Amatvec)); // Turns a Xpetra::Matrix object into a Belos operator
+#else
+        Teuchos::RCP<OP> belosOp = Teuchos::rcp(new Belos::XpetraOp<SC, NO>(Amatvec)); // Turns a Xpetra::Matrix object into a Belos operator
+#endif
 
         // Construct a Belos LinearProblem object
         RCP< Belos::LinearProblem<SC, MV, OP> > belosProblem = rcp(new Belos::LinearProblem<SC, MV, OP>(belosOp, X, rhs));

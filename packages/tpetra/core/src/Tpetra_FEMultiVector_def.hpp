@@ -53,8 +53,13 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+FEMultiVector<Scalar, Node>::
+#endif
 FEMultiVector (const Teuchos::RCP<const map_type>& map,
                const Teuchos::RCP<const Import<local_ordinal_type, global_ordinal_type, node_type>>& importer,
                const size_t numVecs,
@@ -98,9 +103,17 @@ FEMultiVector (const Teuchos::RCP<const map_type>& map,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+FEMultiVector<Scalar, Node>::
+#endif
 beginFill ()
 {
   // The FEMultiVector is in owned+shared mode on construction, so we
@@ -110,9 +123,17 @@ beginFill ()
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+FEMultiVector<Scalar, Node>::
+#endif
 endFill ()
 {
   const char tfecfFuncName[] = "endFill: ";
@@ -128,17 +149,33 @@ endFill ()
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+FEMultiVector<Scalar, Node>::
+#endif
 globalAssemble ()
 {
   endFill ();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+FEMultiVector<Scalar, Node>::
+#endif
 replaceMap (const Teuchos::RCP<const map_type>& /* newMap */)
 {
   const char tfecfFuncName[] = "replaceMap: ";
@@ -147,9 +184,17 @@ replaceMap (const Teuchos::RCP<const map_type>& /* newMap */)
     (true, std::runtime_error, "This method is not implemented.");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+FEMultiVector<Scalar, Node>::
+#endif
 doOwnedPlusSharedToOwned (const CombineMode CM)
 {
   if (! importer_.is_null () &&
@@ -158,9 +203,17 @@ doOwnedPlusSharedToOwned (const CombineMode CM)
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+FEMultiVector<Scalar, Node>::
+#endif
 doOwnedToOwnedPlusShared (const CombineMode CM)
 {
   if (! importer_.is_null () &&
@@ -169,9 +222,17 @@ doOwnedToOwnedPlusShared (const CombineMode CM)
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 FEMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+FEMultiVector<Scalar, Node>::
+#endif
 switchActiveMultiVector ()
 {
   if (*activeMultiVector_ == FE_ACTIVE_OWNED_PLUS_SHARED) {
@@ -197,7 +258,12 @@ switchActiveMultiVector ()
 // Must be expanded from within the Tpetra namespace!
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_FEMULTIVECTOR_INSTANT(SCALAR,LO,GO,NODE) \
   template class FEMultiVector< SCALAR , LO , GO , NODE >;
+#else
+#define TPETRA_FEMULTIVECTOR_INSTANT(SCALAR,NODE) \
+  template class FEMultiVector< SCALAR , NODE >;
+#endif
 
 #endif // TPETRA_FEMULTIVECTOR_DEF_HPP

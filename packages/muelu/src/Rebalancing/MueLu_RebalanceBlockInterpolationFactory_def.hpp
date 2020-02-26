@@ -71,8 +71,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const ParameterList> RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+template <class Scalar, class Node>
+RCP<const ParameterList> RebalanceBlockInterpolationFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
   RCP<ParameterList> validParamList = rcp(new ParameterList());
 
   validParamList->set< RCP<const FactoryBase> >("P",              Teuchos::null, "Factory of the prolongation operator that need to be rebalanced (only used if type=Interpolation)");
@@ -93,13 +98,23 @@ RCP<const ParameterList> RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal
   return validParamList;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
 void RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager) {
+#else
+template <class Scalar, class Node>
+void RebalanceBlockInterpolationFactory<Scalar, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager) {
+#endif
   FactManager_.push_back(FactManager);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+template <class Scalar, class Node>
+void RebalanceBlockInterpolationFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
   Input(coarseLevel, "P");
   Input(coarseLevel, "A"); // we request the non-rebalanced coarse level A since we have to make sure it is calculated before rebalancing starts!
 
@@ -125,11 +140,21 @@ void RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Nod
 
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#else
+template <class Scalar, class Node>
+void RebalanceBlockInterpolationFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#endif
   FactoryMonitor m(*this, "Build", coarseLevel);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType, LO, GO, NO> xdMV;
   typedef Xpetra::BlockedMultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> xdBV;
+#else
+  typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> xdMV;
+  typedef Xpetra::BlockedMultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> xdBV;
+#endif
 
   bool UseSingleSource = FactManager_.size() == 0;
   //RCP<Teuchos::FancyOStream> out = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
@@ -139,8 +164,13 @@ void RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Nod
   Teuchos::RCP<Matrix> originalTransferOp = Teuchos::null;
   originalTransferOp = Get< RCP<Matrix> >(coarseLevel, "P");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > bOriginalTransferOp =
     Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > (originalTransferOp);
+#else
+  RCP<Xpetra::BlockedCrsMatrix<Scalar, Node> > bOriginalTransferOp =
+    Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar, Node> > (originalTransferOp);
+#endif
   TEUCHOS_TEST_FOR_EXCEPTION(bOriginalTransferOp==Teuchos::null, Exceptions::BadCast, "MueLu::RebalanceBlockTransferFactory::Build: input matrix P or R is not of type BlockedCrsMatrix! error.");
 
   RCP<const MapExtractor> rangeMapExtractor = bOriginalTransferOp->getRangeMapExtractor();
@@ -240,7 +270,11 @@ void RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Nod
 	// FIXME: This should be extended to work with blocking
 	RCP<const Import> coordImporter = rebalanceImporter;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	RCP<xdMV> permutedLocalCoords  = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(coordImporter->getTargetMap(), localCoords->getNumVectors());
+#else
+	RCP<xdMV> permutedLocalCoords  = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(coordImporter->getTargetMap(), localCoords->getNumVectors());
+#endif
         permutedLocalCoords->doImport(*localCoords, *coordImporter, Xpetra::INSERT);
 
 	newCoordinates[curBlockId] = permutedLocalCoords;
@@ -285,7 +319,11 @@ void RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Nod
           coordImporter = ImportFactory::Build(origMap, targetMap);
         }
       
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<xdMV> permutedCoords  = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(coordImporter->getTargetMap(), coords->getNumVectors());
+#else
+        RCP<xdMV> permutedCoords  = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(coordImporter->getTargetMap(), coords->getNumVectors());
+#endif
         permutedCoords->doImport(*coords, *coordImporter, Xpetra::INSERT);
 
         const ParameterList& pL = GetParameterList();
@@ -379,7 +417,11 @@ void RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Nod
   GO rangeIndexBase = originalTransferOp->getRangeMap()->getIndexBase();
   GO domainIndexBase= originalTransferOp->getDomainMap()->getIndexBase();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node> > rangePMapExtractor = bOriginalTransferOp->getRangeMapExtractor(); // original map extractor
+#else
+  RCP<const Xpetra::MapExtractor<Scalar, Node> > rangePMapExtractor = bOriginalTransferOp->getRangeMapExtractor(); // original map extractor
+#endif
   Teuchos::ArrayView<GO> fullRangeMapGIDs(fullRangeMapVector.size() ? &fullRangeMapVector[0] : 0,fullRangeMapVector.size());
   Teuchos::RCP<const StridedMap> stridedRgFullMap = Teuchos::rcp_dynamic_cast<const StridedMap>(rangePMapExtractor->getFullMap());
   Teuchos::RCP<const Map > fullRangeMap = Teuchos::null;
@@ -405,7 +447,11 @@ void RebalanceBlockInterpolationFactory<Scalar, LocalOrdinal, GlobalOrdinal, Nod
             originalTransferOp->getRangeMap()->getComm());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node> > domainAMapExtractor = bOriginalTransferOp->getDomainMapExtractor();
+#else
+  RCP<const Xpetra::MapExtractor<Scalar, Node> > domainAMapExtractor = bOriginalTransferOp->getDomainMapExtractor();
+#endif
   Teuchos::ArrayView<GO> fullDomainMapGIDs(fullDomainMapVector.size() ? &fullDomainMapVector[0] : 0,fullDomainMapVector.size());
   Teuchos::RCP<const StridedMap> stridedDoFullMap = Teuchos::rcp_dynamic_cast<const StridedMap>(domainAMapExtractor->getFullMap());
   Teuchos::RCP<const Map > fullDomainMap = Teuchos::null;

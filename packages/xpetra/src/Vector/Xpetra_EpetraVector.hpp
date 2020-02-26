@@ -63,11 +63,21 @@
 namespace Xpetra {
 
 // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class GlobalOrdinal, class Node>
 Epetra_Vector & toEpetra(Vector<double, int, GlobalOrdinal, Node> &);
+#else
+template<class Node>
+Epetra_Vector & toEpetra(Vector<double, Node> &);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class GlobalOrdinal, class Node>
 const Epetra_Vector & toEpetra(const Vector<double, int, GlobalOrdinal, Node> &);
+#else
+template<class Node>
+const Epetra_Vector & toEpetra(const Vector<double, Node> &);
+#endif
 //
 
 template<class EpetraGlobalOrdinal, class Node>
@@ -106,13 +116,21 @@ public:
   void sumIntoLocalValue(LocalOrdinal myRow, size_t vectorIndex, const Scalar &value) {  }
 
   //! Compute the dot product of each corresponding pair of vectors (columns) in A and B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void dot(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, const Teuchos::ArrayView< Scalar > &dots) const {  }
+#else
+  void dot(const MultiVector< Scalar, Node > &A, const Teuchos::ArrayView< Scalar > &dots) const {  }
+#endif
 
   //! @name Constructor/Destructor Methods
   //@{
 
   //! Sets all vector entries to zero.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   explicit EpetraVectorT(const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map, bool zeroOut=true) : EpetraMultiVectorT<GlobalOrdinal, Node>(map,1,zeroOut) {};
+#else
+  explicit EpetraVectorT(const RCP< const Map<Node > > &map, bool zeroOut=true) : EpetraMultiVectorT<GlobalOrdinal, Node>(map,1,zeroOut) {};
+#endif
 
   // Commenting out since no definition provided in cpp.
   //! Vector copy constructor.
@@ -144,7 +162,11 @@ public:
   //@{
 
   //! Computes dot product of this Vector against input Vector x.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Scalar dot(const Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &a) const { return Teuchos::ScalarTraits<Scalar>::zero(); };
+#else
+  Scalar dot(const Vector< Scalar, Node > &a) const { return Teuchos::ScalarTraits<Scalar>::zero(); };
+#endif
 
   //! Return 1-norm of this Vector.
   Teuchos::ScalarTraits< Scalar >::magnitudeType norm1() const { return Teuchos::ScalarTraits<Scalar>::magnitude(Teuchos::ScalarTraits<Scalar>::zero());};
@@ -193,7 +215,11 @@ public:
   EpetraVectorT(const RCP<Epetra_MultiVector> &mv, size_t j) : EpetraMultiVectorT<GlobalOrdinal, Node>(mv) {};
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type dual_view_type;
+#else
+  typedef typename Xpetra::MultiVector<Scalar, Node>::dual_view_type dual_view_type;
+#endif
 
   typename dual_view_type::t_host_um getHostLocalView () const {
     return this->EpetraMultiVectorT<GlobalOrdinal,Node>::getHostLocalView();
@@ -225,7 +251,11 @@ public:
   typename dual_view_type::t_dev_um,
   typename dual_view_type::t_host_um>::type
   getLocalView () const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return this->MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::template getLocalView<TargetDeviceType>();
+#else
+    return this->MultiVector< Scalar, Node >::template getLocalView<TargetDeviceType>();
+#endif
   }
 #endif
 
@@ -268,7 +298,11 @@ public:
   //@{
 
   //! Sets all vector entries to zero.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   explicit EpetraVectorT(const Teuchos::RCP<const Map<int,GlobalOrdinal,Node> > &map, bool zeroOut=true) : EpetraMultiVectorT<GlobalOrdinal, Node>(map,1,zeroOut) { }
+#else
+  explicit EpetraVectorT(const Teuchos::RCP<const Map<Node> > &map, bool zeroOut=true) : EpetraMultiVectorT<GlobalOrdinal, Node>(map,1,zeroOut) { }
+#endif
 
   // Commenting out since no definition provided in cpp.
   //! Vector copy constructor.
@@ -300,7 +334,11 @@ public:
   //@{
 
   //! Computes dot product of this Vector against input Vector x.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Scalar dot(const Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &a) const {
+#else
+  Scalar dot(const Vector< Scalar, Node > &a) const {
+#endif
     XPETRA_MONITOR("EpetraVectorT::dot");
 
     XPETRA_DYNAMIC_CAST(const EpetraVectorT, a, tA, "This Xpetra::EpetraVectorT method only accept Xpetra::EpetraVectorT as input arguments.");
@@ -381,7 +419,11 @@ public:
     }
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type dual_view_type;
+#else
+  typedef typename Xpetra::MultiVector<Scalar, Node>::dual_view_type dual_view_type;
+#endif
 
   typename dual_view_type::t_host_um getHostLocalView () const {
     return this->EpetraMultiVectorT<GlobalOrdinal,Node>::getHostLocalView();
@@ -413,7 +455,11 @@ public:
   typename dual_view_type::t_dev_um,
   typename dual_view_type::t_host_um>::type
   getLocalView () const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return this->MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::template getLocalView<TargetDeviceType>();
+#else
+    return this->MultiVector< Scalar, Node >::template getLocalView<TargetDeviceType>();
+#endif
   }
 #endif
 
@@ -453,7 +499,11 @@ public:
   //@{
 
   //! Sets all vector entries to zero.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   explicit EpetraVectorT(const Teuchos::RCP<const Map<int,GlobalOrdinal,Node> > &map, bool zeroOut=true) : EpetraMultiVectorT<GlobalOrdinal, Node>(map,1,zeroOut) { }
+#else
+  explicit EpetraVectorT(const Teuchos::RCP<const Map<Node> > &map, bool zeroOut=true) : EpetraMultiVectorT<GlobalOrdinal, Node>(map,1,zeroOut) { }
+#endif
 
   // Commenting out since no definition provided in cpp.
   //! Vector copy constructor.
@@ -485,7 +535,11 @@ public:
   //@{
 
   //! Computes dot product of this Vector against input Vector x.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Scalar dot(const Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &a) const {
+#else
+  Scalar dot(const Vector< Scalar, Node > &a) const {
+#endif
     XPETRA_MONITOR("EpetraVectorT::dot");
 
     XPETRA_DYNAMIC_CAST(const EpetraVectorT, a, tA, "This Xpetra::EpetraVectorT method only accept Xpetra::EpetraVectorT as input arguments.");
@@ -566,7 +620,11 @@ public:
     }
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type dual_view_type;
+#else
+  typedef typename Xpetra::MultiVector<Scalar, Node>::dual_view_type dual_view_type;
+#endif
 
   typename dual_view_type::t_host_um getHostLocalView () const {
     return this->EpetraMultiVectorT<GlobalOrdinal,Node>::getHostLocalView();
@@ -598,7 +656,11 @@ public:
   typename dual_view_type::t_dev_um,
   typename dual_view_type::t_host_um>::type
   getLocalView () const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return this->MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node >::template getLocalView<TargetDeviceType>();
+#else
+    return this->MultiVector< Scalar, Node >::template getLocalView<TargetDeviceType>();
+#endif
   }
 #endif
 

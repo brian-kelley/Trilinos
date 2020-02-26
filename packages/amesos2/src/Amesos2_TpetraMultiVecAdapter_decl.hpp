@@ -69,19 +69,29 @@ namespace Amesos2 {
    * \ingroup amesos2_multivec_adapters
    */
   template< typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             typename LocalOrdinal,
             typename GlobalOrdinal,
+#endif
             class    Node >
   class MultiVecAdapter<Tpetra::MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                             LocalOrdinal,
                                             GlobalOrdinal,
+#endif
                                             Node> >
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     // public type definitions
     typedef Tpetra::MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                 LocalOrdinal,
                                 GlobalOrdinal,
+#endif
                                 Node>       multivec_t;
     typedef Scalar                          scalar_t;
     typedef LocalOrdinal                    local_ordinal_t;

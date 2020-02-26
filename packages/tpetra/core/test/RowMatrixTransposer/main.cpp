@@ -203,11 +203,19 @@ main (int argc, char* argv[])
   A.fillComplete();
   AT.fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::RowMatrixTransposer<Scalar, LO, GO> transposer (Teuchos::rcpFromRef (A));
+#else
+  Tpetra::RowMatrixTransposer<Scalar> transposer (Teuchos::rcpFromRef (A));
+#endif
   TestMatrix = transposer.createTranspose(); //, TestMatrix/*, tMap*/);
 
   RCP<crs_matrix_type > diffMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::createCrsMatrix<Scalar, LO, GO> (TestMatrix->getRowMap (),
+#else
+    Tpetra::createCrsMatrix<Scalar> (TestMatrix->getRowMap (),
+#endif
                                              AT.getGlobalMaxNumRowEntries());
 
   // Apparently there is a problem with ADD because while these two matrices are

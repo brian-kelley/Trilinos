@@ -75,38 +75,56 @@ namespace Amesos2 {
    * \ingroup amesos2_matrix_adapters
    */
   template <typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             typename LocalOrdinal,
             typename GlobalOrdinal,
+#endif
             typename Node>
   class ConcreteMatrixAdapter<Tpetra::CrsMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                 LocalOrdinal,
                                                 GlobalOrdinal,
+#endif
                                                 Node> >
     : public AbstractConcreteMatrixAdapter<Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                              LocalOrdinal,
                                                              GlobalOrdinal,
+#endif
                                                              Node>,
                                            Tpetra::CrsMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                              LocalOrdinal,
                                                              GlobalOrdinal,
+#endif
                                                              Node> >
   {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     // Give our matrix adapter class access to our private
     // implementation functions
     friend class MatrixAdapter<Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                  LocalOrdinal,
                                                  GlobalOrdinal,
+#endif
                                                  Node> >;
   public:
     typedef Tpetra::CrsMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                               LocalOrdinal,
                               GlobalOrdinal,
+#endif
                               Node>                    matrix_t;
   private:
     typedef AbstractConcreteMatrixAdapter<
       Tpetra::RowMatrix<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         LocalOrdinal,
                         GlobalOrdinal,
+#endif
                         Node>, matrix_t>                super_t;
   public:
     // 'import' superclass types

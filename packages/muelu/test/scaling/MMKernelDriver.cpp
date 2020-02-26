@@ -78,7 +78,11 @@
 namespace Teuchos { class ParameterList; }  // lines 92-92
 namespace Teuchos { class TimeMonitor; }  // lines 93-93
 namespace Teuchos { template <typename Ordinal> class Comm; }  // lines 94-94
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 namespace Xpetra { template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node> class Matrix; }  // lines 95-95
+#else
+namespace Xpetra { template <class Scalar, class Node> class Matrix; }  // lines 95-95
+#endif
 
 #ifdef HAVE_VTUNE
 #include "ittnotify.h"
@@ -246,8 +250,13 @@ static inline std::string to_string (const Experiments& experiment_id) {
 #include "viennacl/linalg/prod.hpp"
 #include "viennacl/linalg/host_based/common.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void Multiply_ViennaCL(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,  const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B,  Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &C) {
+#else
+template<class Scalar, class Node>
+void Multiply_ViennaCL(const Xpetra::Matrix<Scalar,Node> &A,  const Xpetra::Matrix<Scalar,Node> &B,  Xpetra::Matrix<Scalar,Node> &C) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -260,7 +269,11 @@ void Multiply_ViennaCL(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,No
 
   if (lib == Xpetra::UseTpetra) {
 #if defined(HAVE_MUELU_TPETRA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+#endif
     typedef typename crs_matrix_type::local_matrix_type    KCRS;
     typedef typename KCRS::StaticCrsGraphType              graph_t;
     typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -417,8 +430,13 @@ if (mkl_rc != SPARSE_STATUS_SUCCESS) { \
 })
 
   // mkl_sparse_spmm
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void Multiply_MKL_SPMM(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,  const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B, Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &C) {
+#else
+template<class Scalar, class Node>
+void Multiply_MKL_SPMM(const Xpetra::Matrix<Scalar,Node> &A,  const Xpetra::Matrix<Scalar,Node> &B, Xpetra::Matrix<Scalar,Node> &C) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -428,7 +446,11 @@ void Multiply_MKL_SPMM(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,No
 
   RCP<TimeMonitor> tm;
 #if defined(HAVE_MUELU_TPETRA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+#endif
     typedef typename crs_matrix_type::local_matrix_type    KCRS;
     typedef typename KCRS::StaticCrsGraphType              graph_t;
     typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -608,8 +630,13 @@ void Multiply_MKL_SPMM(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,No
 // =========================================================================
 // Kokkos Kernels Testing
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void Multiply_KokkosKernels(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,  const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B,  Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &C, std::string algorithm_name, int team_work_size) {
+#else
+template<class Scalar, class Node>
+void Multiply_KokkosKernels(const Xpetra::Matrix<Scalar,Node> &A,  const Xpetra::Matrix<Scalar,Node> &B,  Xpetra::Matrix<Scalar,Node> &C, std::string algorithm_name, int team_work_size) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -621,7 +648,11 @@ void Multiply_KokkosKernels(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdin
 
   if (lib == Xpetra::UseTpetra) {
 #if defined(HAVE_MUELU_TPETRA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+#endif
     typedef typename crs_matrix_type::local_matrix_type    KCRS;
     typedef typename KCRS::StaticCrsGraphType              graph_t;
     typedef typename graph_t::row_map_type::non_const_type lno_view_t;
@@ -791,25 +822,54 @@ void Multiply_KokkosKernels(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdin
 
 //The LTG kernel is only defined for the Kokkos OpenMP node, so
 //its test must only be enabled for OpenMP
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 struct LTG_Tests
 {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   static void Multiply_LTG(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>&,
       const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>&,
       Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>&)
+#else
+      const Xpetra::Matrix<Scalar,Node>&,
+      const Xpetra::Matrix<Scalar,Node>&,
+      Xpetra::Matrix<Scalar,Node>&)
+#endif
   {}
 };
 
 #ifdef HAVE_TPETRA_INST_OPENMP
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal>
 struct LTG_Tests<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpenMPWrapperNode>
+#else
+template<class Scalar,>
+struct LTG_Tests<Scalar, Kokkos::Compat::KokkosOpenMPWrapperNode>
+#endif
 {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   typedef Kokkos::Compat::KokkosOpenMPWrapperNode Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static void Multiply_LTG(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &A,
                   const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B,
                         Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &C) {
+#else
+  static void Multiply_LTG(const Xpetra::Matrix<Scalar,Node> &A,
+                  const Xpetra::Matrix<Scalar,Node> &B,
+                        Xpetra::Matrix<Scalar,Node> &C) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -819,8 +879,13 @@ struct LTG_Tests<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpen
 
   if (lib == Xpetra::UseTpetra) {
 #if defined(HAVE_MUELU_TPETRA)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> crs_matrix_type;
     typedef Tpetra::Import<LocalOrdinal,GlobalOrdinal,Node>          import_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+    typedef Tpetra::Import<Node>          import_type;
+#endif
     typedef typename crs_matrix_type::local_matrix_type    KCRS;
     typedef typename KCRS::device_type device_t;
     typedef typename KCRS::StaticCrsGraphType graph_t;
@@ -828,7 +893,11 @@ struct LTG_Tests<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpen
     typedef typename graph_t::entries_type::non_const_type lno_nnz_view_t;
     typedef typename KCRS::values_type::non_const_type scalar_view_t;
     typedef Kokkos::View<LO*, typename lno_view_t::array_layout, typename lno_view_t::device_type> lo_view_t;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO,GO,NO>                                     map_type;
+#else
+    typedef Tpetra::Map<NO>                                     map_type;
+#endif
     typedef typename map_type::local_map_type                         local_map_type;
     typedef typename Node::execution_space execution_space;
     typedef Kokkos::RangePolicy<execution_space, size_t> range_type;
@@ -844,7 +913,11 @@ struct LTG_Tests<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpen
     // **********************************
     // Copy in the data for LTG
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrixStruct<Scalar, LocalOrdinal, GlobalOrdinal, Node> Aview, Bview;
+#else
+    Tpetra::CrsMatrixStruct<Scalar, Node> Aview, Bview;
+#endif
     Aview.origMatrix   = Au;
     Aview.origRowMap   = Au->getRowMap();
     Aview.rowMap       = Au->getRowMap();
@@ -937,14 +1010,26 @@ struct LTG_Tests<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosOpen
 };
 #endif //HAVE OPENMP
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void dump_matrix (const std::string& prefix,
                   const std::string& kernel_name,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                   const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> &C)
+#else
+                  const Xpetra::Matrix<Scalar,Node> &C)
+#endif
 {
   std::ostringstream ss;
   ss << prefix << "_" << kernel_name << ".mtx";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::IO<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Write (ss.str(), C);
+#else
+  Xpetra::IO<Scalar,Node>::Write (ss.str(), C);
+#endif
 }
 
 inline bool file_exists (const std::string& name) {
@@ -1024,7 +1109,11 @@ void print_desc_stats (const std::string& csvFile, const bool writeCSV, std::ost
 // =========================================================================
 // =========================================================================
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
@@ -1248,7 +1337,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
 
     comm->barrier();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = Xpetra::IO<SC,LO,GO,Node>::Read(std::string(matrixFileNameA), lib, comm);
+#else
+    RCP<Matrix> A = Xpetra::IO<SC,Node>::Read(std::string(matrixFileNameA), lib, comm);
+#endif
     RCP<Matrix> B;
 
 
@@ -1262,7 +1355,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
       if (verbose) out << "Aliasing A" << endl;
     }
     else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       B = Xpetra::IO<SC,LO,GO,Node>::Read(std::string(matrixFileNameB), lib, comm);
+#else
+      B = Xpetra::IO<SC,Node>::Read(std::string(matrixFileNameB), lib, comm);
+#endif
     }
 
     globalTimeMonitor = Teuchos::null;
@@ -1321,7 +1418,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
         // ViennaCL
         case Experiments::ViennaCL:
           #ifdef HAVE_MUELU_VIENNACL
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM ViennaCL: Total"));
             DescriptiveTime(Multiply_ViennaCL(*A,*B,*C));
@@ -1331,7 +1432,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
         // MKL_SPMM
         case Experiments::MKL_SPMM:
           #ifdef HAVE_MUELU_MKL
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM MKL: Total"));
             DescriptiveTime(Multiply_MKL_SPMM(*A,*B,*C));
@@ -1340,7 +1445,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // KK Algorithms (KK Memory)
         case Experiments::KK_MEM:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM SPGEMM_KK_MEMORY: Total"));
             DescriptiveTime(Multiply_KokkosKernels(*A,*B,*C,std::string("SPGEMM_KK_MEMORY"),kk_team_work_size));
@@ -1348,7 +1457,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // KK Algorithms (KK Dense)
         case Experiments::KK_DENSE:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM SPGEMM_KK_DENSE: Total"));
             DescriptiveTime(Multiply_KokkosKernels(*A,*B,*C,std::string("SPGEMM_KK_DENSE"),kk_team_work_size));
@@ -1356,7 +1469,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // KK Algorithms (KK Default)
         case Experiments::KK_DEFAULT:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM SPGEMM_KK: Total"));
             DescriptiveTime(Multiply_KokkosKernels(*A,*B,*C,std::string("SPGEMM_KK"),kk_team_work_size));
@@ -1364,10 +1481,18 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
           break;
         // LTG
         case Experiments::LTG:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           C = Xpetra::MatrixFactory<SC,LO,GO,Node>::Build(A->getRowMap(),0);
+#else
+          C = Xpetra::MatrixFactory<SC,Node>::Build(A->getRowMap(),0);
+#endif
           {
             TimeMonitor t(*TimeMonitor::getNewTimer("MM LTG: Total"));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             using ltg_tester=LTG_Tests<SC,LO,GO,Node>;
+#else
+            using ltg_tester=LTG_Tests<SC,Node>;
+#endif
             DescriptiveTime(ltg_tester::Multiply_LTG(*A,*B,*C));
           }
           break;

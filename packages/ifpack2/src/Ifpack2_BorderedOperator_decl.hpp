@@ -82,14 +82,30 @@ the bordered operator.
 */
 
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LocalOrdinal = typename Tpetra::Operator<Scalar>::local_ordinal_type,
          class GlobalOrdinal = typename Tpetra::Operator<Scalar, LocalOrdinal>::global_ordinal_type,
          class Node = typename Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
+#else
+         class Node = typename Tpetra::Operator<Scalar>::node_type>
+#endif
 class BorderedOperator :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual public Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node > {
+#else
+    virtual public Tpetra::Operator<Scalar, Node > {
+#endif
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   //! Constructor with Tpetra::Operator input.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BorderedOperator (const Teuchos::RCP<const Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& A);
+#else
+  BorderedOperator (const Teuchos::RCP<const Tpetra::Operator<Scalar, Node> >& A);
+#endif
 
   //! Destructor.
   virtual ~BorderedOperator() {}
@@ -98,18 +114,31 @@ public:
   //@{
 
   //! The domain Map of this operator.  It must be compatible with X.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getDomainMap() const;
+#endif
 
   //! The range Map of this operator.  It must be compatible with Y.getMap().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getRangeMap() const;
+#endif
 
   //! Whether this operator can apply the transpose or conjugate transpose.
   bool hasTransposeApply() const;
 
   //! Apply the bordered operator.
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   apply (const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
          Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+  apply (const Tpetra::MultiVector<Scalar,Node> &X,
+         Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
          Teuchos::ETransp mode = Teuchos::NO_TRANS,
          Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
          Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const;
@@ -117,7 +146,11 @@ public:
 
 private:
   //! The Operator with which this instance was constructed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > A_;
+#else
+  Teuchos::RCP<const Tpetra::Operator<Scalar,Node> > A_;
+#endif
 };
 
 }//namespace Ifpack2

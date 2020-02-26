@@ -214,8 +214,13 @@ public:
 private:
 
   RCP<const User> matrix_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::Map<lno_t, gno_t, node_t> > rowMap_;
   RCP<const Tpetra::Map<lno_t, gno_t, node_t> > colMap_;
+#else
+  RCP<const Tpetra::Map<node_t> > rowMap_;
+  RCP<const Tpetra::Map<node_t> > colMap_;
+#endif
   ArrayRCP<offset_t> offset_;
   ArrayRCP<gno_t> columnIds_;  // TODO:  KDD Is it necessary to copy and store
   ArrayRCP<scalar_t> values_;  // TODO:  the matrix here?  Would prefer views.
@@ -402,8 +407,13 @@ RCP<User> TpetraRowMatrixAdapter<User,UserCoord>::doMigration(
   const gno_t *myNewRows
 ) const
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<lno_t, gno_t, node_t> map_t;
   typedef Tpetra::CrsMatrix<scalar_t, lno_t, gno_t, node_t> tcrsmatrix_t;
+#else
+  typedef Tpetra::Map<node_t> map_t;
+  typedef Tpetra::CrsMatrix<scalar_t, node_t> tcrsmatrix_t;
+#endif
 
   // We cannot create a Tpetra::RowMatrix, unless the underlying type is
   // something we know (like Tpetra::CrsMatrix).
@@ -435,7 +445,11 @@ RCP<User> TpetraRowMatrixAdapter<User,UserCoord>::doMigration(
   RCP<const map_t> tmap = rcp(new map_t(numGlobalRows, rowList, base, comm));
 
   // importer
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::Import<lno_t, gno_t, node_t> importer(smap, tmap);
+#else
+  Tpetra::Import<node_t> importer(smap, tmap);
+#endif
 
   // target matrix
   // Chris Siefert proposed using the following to make migration
@@ -459,7 +473,11 @@ RCP<User> TpetraRowMatrixAdapter<User,UserCoord>::doMigration(
   int newNumElts = numLocalRows;
 
   // number of non zeros in my new rows
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<scalar_t, lno_t, gno_t, node_t> vector_t;
+#else
+  typedef Tpetra::Vector<scalar_t, node_t> vector_t;
+#endif
   vector_t numOld(smap);  // TODO These vectors should have scalar=size_t,
   vector_t numNew(tmap);  // but ETI does not yet support that.
   for (int lid=0; lid < oldNumElts; lid++){

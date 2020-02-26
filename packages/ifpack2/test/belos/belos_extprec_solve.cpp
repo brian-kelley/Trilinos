@@ -104,7 +104,11 @@ int main(int argc, char*argv[])
   //Note that build_problem calls build_precond and sets a preconditioner on the
   //linear-problem, if a preconditioner is specified.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<BLinProb> problem = build_problem<Scalar,LO,GO,Node>(test_params, comm);
+#else
+  Teuchos::RCP<BLinProb> problem = build_problem<Scalar,Node>(test_params, comm);
+#endif
 
   //The build_solver function is located in build_solver.hpp:
 

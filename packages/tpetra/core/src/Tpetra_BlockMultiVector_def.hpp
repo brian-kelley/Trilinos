@@ -85,10 +85,17 @@ namespace { // anonymous
   ///   refactor," circa 2014/5) versions of Tpetra::MultiVector.  It
   ///   also makes the Tpetra::BlockMultiVector
   ///   implementation below a bit easier to read.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class S, class LO, class GO, class N>
   typename Tpetra::MultiVector<S, LO, GO, N>::impl_scalar_type*
   getRawHostPtrFromMultiVector (Tpetra::MultiVector<S, LO, GO, N>& X) {
     typedef Tpetra::MultiVector<S, LO, GO, N> MV;
+#else
+  template<class S, class N>
+  typename Tpetra::MultiVector<S, N>::impl_scalar_type*
+  getRawHostPtrFromMultiVector (Tpetra::MultiVector<S, N>& X) {
+    typedef Tpetra::MultiVector<S, N> MV;
+#endif
     return RawHostPtrFromMultiVector<MV>::getRawPtr (X);
   }
 
@@ -96,20 +103,36 @@ namespace { // anonymous
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 typename BlockMultiVector<Scalar, LO, GO, Node>::mv_type
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+typename BlockMultiVector<Scalar, Node>::mv_type
+BlockMultiVector<Scalar, Node>::
+#endif
 getMultiVectorView () const
 {
   return mv_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 Teuchos::RCP<const BlockMultiVector<Scalar, LO, GO, Node> >
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const BlockMultiVector<Scalar, Node> >
+BlockMultiVector<Scalar, Node>::
+#endif
 getBlockMultiVectorFromSrcDistObject (const Tpetra::SrcDistObject& src)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef BlockMultiVector<Scalar, LO, GO, Node> BMV;
+#else
+  typedef BlockMultiVector<Scalar, Node> BMV;
+#endif
   const BMV* src_bmv = dynamic_cast<const BMV*> (&src);
   TEUCHOS_TEST_FOR_EXCEPTION(
     src_bmv == nullptr, std::invalid_argument, "Tpetra::"
@@ -118,9 +141,15 @@ getBlockMultiVectorFromSrcDistObject (const Tpetra::SrcDistObject& src)
   return Teuchos::rcp (src_bmv, false); // nonowning RCP
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 BlockMultiVector<Scalar, LO, GO, Node>::
 BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>& in,
+#else
+template<class Scalar, class Node>
+BlockMultiVector<Scalar, Node>::
+BlockMultiVector (const BlockMultiVector<Scalar, Node>& in,
+#endif
                   const Teuchos::DataAccess copyOrView) :
   dist_object_type (in),
   meshMap_ (in.meshMap_),
@@ -130,8 +159,13 @@ BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>& in,
   blockSize_ (in.blockSize_)
 {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+BlockMultiVector<Scalar, Node>::
+#endif
 BlockMultiVector (const map_type& meshMap,
                   const LO blockSize,
                   const LO numVecs) :
@@ -143,8 +177,13 @@ BlockMultiVector (const map_type& meshMap,
   blockSize_ (blockSize)
 {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+BlockMultiVector<Scalar, Node>::
+#endif
 BlockMultiVector (const map_type& meshMap,
                   const map_type& pointMap,
                   const LO blockSize,
@@ -157,8 +196,13 @@ BlockMultiVector (const map_type& meshMap,
   blockSize_ (blockSize)
 {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+BlockMultiVector<Scalar, Node>::
+#endif
 BlockMultiVector (const mv_type& X_mv,
                   const map_type& meshMap,
                   const LO blockSize) :
@@ -215,9 +259,15 @@ BlockMultiVector (const mv_type& X_mv,
   mvData_ = getRawHostPtrFromMultiVector (mv_);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 BlockMultiVector<Scalar, LO, GO, Node>::
 BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>& X,
+#else
+template<class Scalar, class Node>
+BlockMultiVector<Scalar, Node>::
+BlockMultiVector (const BlockMultiVector<Scalar, Node>& X,
+#endif
                   const map_type& newMeshMap,
                   const map_type& newPointMap,
                   const size_t offset) :
@@ -229,9 +279,15 @@ BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>& X,
   blockSize_ (X.getBlockSize ())
 {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 BlockMultiVector<Scalar, LO, GO, Node>::
 BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>& X,
+#else
+template<class Scalar, class Node>
+BlockMultiVector<Scalar, Node>::
+BlockMultiVector (const BlockMultiVector<Scalar, Node>& X,
+#endif
                   const map_type& newMeshMap,
                   const size_t offset) :
   dist_object_type (Teuchos::rcp (new map_type (newMeshMap))), // shallow copy
@@ -242,17 +298,28 @@ BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>& X,
   blockSize_ (X.getBlockSize ())
 {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+BlockMultiVector<Scalar, Node>::
+#endif
 BlockMultiVector () :
   dist_object_type (Teuchos::null),
   mvData_ (nullptr),
   blockSize_ (0)
 {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 typename BlockMultiVector<Scalar, LO, GO, Node>::map_type
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+typename BlockMultiVector<Scalar, Node>::map_type
+BlockMultiVector<Scalar, Node>::
+#endif
 makePointMap (const map_type& meshMap, const LO blockSize)
 {
   typedef Tpetra::global_size_t GST;
@@ -295,9 +362,17 @@ makePointMap (const map_type& meshMap, const LO blockSize)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+BlockMultiVector<Scalar, Node>::
+#endif
 replaceLocalValuesImpl (const LO localRowIndex,
                         const LO colIndex,
                         const Scalar vals[]) const
@@ -309,9 +384,17 @@ replaceLocalValuesImpl (const LO localRowIndex,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+BlockMultiVector<Scalar, Node>::
+#endif
 replaceLocalValues (const LO localRowIndex,
                     const LO colIndex,
                     const Scalar vals[]) const
@@ -324,9 +407,17 @@ replaceLocalValues (const LO localRowIndex,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+BlockMultiVector<Scalar, Node>::
+#endif
 replaceGlobalValues (const GO globalRowIndex,
                      const LO colIndex,
                      const Scalar vals[]) const
@@ -340,9 +431,17 @@ replaceGlobalValues (const GO globalRowIndex,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+BlockMultiVector<Scalar, Node>::
+#endif
 sumIntoLocalValuesImpl (const LO localRowIndex,
                         const LO colIndex,
                         const Scalar vals[]) const
@@ -353,9 +452,17 @@ sumIntoLocalValuesImpl (const LO localRowIndex,
   AXPY (static_cast<impl_scalar_type> (STS::one ()), X_src, X_dst);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+BlockMultiVector<Scalar, Node>::
+#endif
 sumIntoLocalValues (const LO localRowIndex,
                     const LO colIndex,
                     const Scalar vals[]) const
@@ -368,9 +475,17 @@ sumIntoLocalValues (const LO localRowIndex,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+BlockMultiVector<Scalar, Node>::
+#endif
 sumIntoGlobalValues (const GO globalRowIndex,
                      const LO colIndex,
                      const Scalar vals[]) const
@@ -384,9 +499,17 @@ sumIntoGlobalValues (const GO globalRowIndex,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+BlockMultiVector<Scalar, Node>::
+#endif
 getLocalRowView (const LO localRowIndex, const LO colIndex, Scalar*& vals) const
 {
   if (! meshMap_.isNodeLocalElement (localRowIndex)) {
@@ -398,9 +521,17 @@ getLocalRowView (const LO localRowIndex, const LO colIndex, Scalar*& vals) const
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+BlockMultiVector<Scalar, Node>::
+#endif
 getGlobalRowView (const GO globalRowIndex, const LO colIndex, Scalar*& vals) const
 {
   const LO localRowIndex = meshMap_.getLocalElement (globalRowIndex);
@@ -413,9 +544,15 @@ getGlobalRowView (const GO globalRowIndex, const LO colIndex, Scalar*& vals) con
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 typename BlockMultiVector<Scalar, LO, GO, Node>::little_vec_type::HostMirror
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+typename BlockMultiVector<Scalar, Node>::little_vec_type::HostMirror
+BlockMultiVector<Scalar, Node>::
+#endif
 getLocalBlock (const LO localRowIndex,
                const LO colIndex) const
 {
@@ -442,9 +579,15 @@ getLocalBlock (const LO localRowIndex,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 Teuchos::RCP<const typename BlockMultiVector<Scalar, LO, GO, Node>::mv_type>
 BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const typename BlockMultiVector<Scalar, Node>::mv_type>
+BlockMultiVector<Scalar, Node>::
+#endif
 getMultiVectorFromSrcDistObject (const Tpetra::SrcDistObject& src)
 {
   using Teuchos::rcp;
@@ -454,7 +597,11 @@ getMultiVectorFromSrcDistObject (const Tpetra::SrcDistObject& src)
   // BlockMultiVector or MultiVector (a Vector is a MultiVector).  Try
   // them in that order; one must succeed.  Note that the target of
   // the Import or Export calls checkSizes in DistObject's doTransfer.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef BlockMultiVector<Scalar, LO, GO, Node> this_type;
+#else
+  typedef BlockMultiVector<Scalar, Node> this_type;
+#endif
   const this_type* srcBlkVec = dynamic_cast<const this_type*> (&src);
   if (srcBlkVec == nullptr) {
     const mv_type* srcMultiVec = dynamic_cast<const mv_type*> (&src);
@@ -471,15 +618,25 @@ getMultiVectorFromSrcDistObject (const Tpetra::SrcDistObject& src)
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 bool BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+bool BlockMultiVector<Scalar, Node>::
+#endif
 checkSizes (const Tpetra::SrcDistObject& src)
 {
   return ! getMultiVectorFromSrcDistObject (src).is_null ();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void BlockMultiVector<Scalar, Node>::
+#endif
 copyAndPermute
 (const SrcDistObject& src,
  const size_t numSameIDs,
@@ -494,8 +651,13 @@ copyAndPermute
      "instead, create a point importer using makePointMap function.");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void BlockMultiVector<Scalar, Node>::
+#endif
 packAndPrepare
 (const SrcDistObject& src,
  const Kokkos::DualView<const local_ordinal_type*,
@@ -513,8 +675,13 @@ packAndPrepare
      "instead, create a point importer using makePointMap function.");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void BlockMultiVector<Scalar, Node>::
+#endif
 unpackAndCombine
 (const Kokkos::DualView<const local_ordinal_type*,
  buffer_device_type>& importLIDs,
@@ -532,32 +699,56 @@ unpackAndCombine
      "instead, create a point importer using makePointMap function.");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 bool BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+bool BlockMultiVector<Scalar, Node>::
+#endif
 isValidLocalMeshIndex (const LO meshLocalIndex) const
 {
   return meshLocalIndex != Teuchos::OrdinalTraits<LO>::invalid () &&
     meshMap_.isNodeLocalElement (meshLocalIndex);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void BlockMultiVector<Scalar, Node>::
+#endif
 putScalar (const Scalar& val)
 {
   mv_.putScalar (val);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void BlockMultiVector<Scalar, Node>::
+#endif
 scale (const Scalar& val)
 {
   mv_.scale (val);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void BlockMultiVector<Scalar, Node>::
+#endif
 update (const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const BlockMultiVector<Scalar, LO, GO, Node>& X,
+#else
+        const BlockMultiVector<Scalar, Node>& X,
+#endif
         const Scalar& beta)
 {
   mv_.update (alpha, X.mv_, beta);
@@ -747,12 +938,21 @@ blockJacobiUpdate (const ViewY& Y,
 
 } // namespace Impl
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void BlockMultiVector<Scalar, Node>::
+#endif
 blockWiseMultiply (const Scalar& alpha,
                    const Kokkos::View<const impl_scalar_type***,
                      device_type, Kokkos::MemoryUnmanaged>& D,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    const BlockMultiVector<Scalar, LO, GO, Node>& X)
+#else
+                   const BlockMultiVector<Scalar, Node>& X)
+#endif
 {
   using Kokkos::ALL;
   typedef typename device_type::execution_space execution_space;
@@ -779,13 +979,23 @@ blockWiseMultiply (const Scalar& alpha,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 void BlockMultiVector<Scalar, LO, GO, Node>::
+#else
+template<class Scalar, class Node>
+void BlockMultiVector<Scalar, Node>::
+#endif
 blockJacobiUpdate (const Scalar& alpha,
                    const Kokkos::View<const impl_scalar_type***,
                      device_type, Kokkos::MemoryUnmanaged>& D,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                    const BlockMultiVector<Scalar, LO, GO, Node>& X,
                    BlockMultiVector<Scalar, LO, GO, Node>& Z,
+#else
+                   const BlockMultiVector<Scalar, Node>& X,
+                   BlockMultiVector<Scalar, Node>& Z,
+#endif
                    const Scalar& beta)
 {
   using Kokkos::ALL;
@@ -822,7 +1032,12 @@ blockJacobiUpdate (const Scalar& alpha,
 //
 // Must be expanded from within the Tpetra namespace!
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_BLOCKMULTIVECTOR_INSTANT(S,LO,GO,NODE) \
   template class BlockMultiVector< S, LO, GO, NODE >;
+#else
+#define TPETRA_BLOCKMULTIVECTOR_INSTANT(S,NODE) \
+  template class BlockMultiVector< S, NODE >;
+#endif
 
 #endif // TPETRA_BLOCKMULTIVECTOR_DEF_HPP

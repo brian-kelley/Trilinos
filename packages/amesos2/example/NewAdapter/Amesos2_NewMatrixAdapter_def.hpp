@@ -138,7 +138,11 @@ size_t MatrixAdapter<NewMatrix>::getMaxNNZ() const
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
 MatrixAdapter<NewMatrix>::getRowMap() const
 {
   // TODO: implement!
@@ -147,7 +151,11 @@ MatrixAdapter<NewMatrix>::getRowMap() const
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
 MatrixAdapter<NewMatrix>::getColMap() const
 {
   // TODO: implement!

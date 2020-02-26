@@ -962,8 +962,14 @@ std::string RBILUK<MatrixType>::description () const
 // MatrixType = Tpetra::RowMatrix.  Conversions to BlockCrsMatrix are
 // handled internally via dynamic cast.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_EXPERIMENTAL_RBILUK_INSTANT(S,LO,GO,N)                            \
   template class Ifpack2::Experimental::RBILUK< Tpetra::BlockCrsMatrix<S, LO, GO, N> >; \
   template class Ifpack2::Experimental::RBILUK< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_EXPERIMENTAL_RBILUK_INSTANT(S,N)                            \
+  template class Ifpack2::Experimental::RBILUK< Tpetra::BlockCrsMatrix<S, N> >; \
+  template class Ifpack2::Experimental::RBILUK< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif

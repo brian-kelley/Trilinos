@@ -50,8 +50,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     GDSWInterfacePartitionOfUnity<SC,LO,GO,NO>::GDSWInterfacePartitionOfUnity(CommPtr mpiComm,
+#else
+    template <class SC,class NO>
+    GDSWInterfacePartitionOfUnity<SC,NO>::GDSWInterfacePartitionOfUnity(CommPtr mpiComm,
+#endif
                                                                               CommPtr serialComm,
                                                                               UN dimension,
                                                                               UN dofsPerNode,
@@ -60,7 +65,11 @@ namespace FROSch {
                                                                               ParameterListPtr parameterList,
                                                                               Verbosity verbosity,
                                                                               UN levelID) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     InterfacePartitionOfUnity<SC,LO,GO,NO> (mpiComm,serialComm,dimension,dofsPerNode,nodesMap,dofsMaps,parameterList,verbosity,levelID)
+#else
+    InterfacePartitionOfUnity<SC,NO> (mpiComm,serialComm,dimension,dofsPerNode,nodesMap,dofsMaps,parameterList,verbosity,levelID)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(gDSWInterfacePartitionOfUnityTime,"GDSWInterfacePartitionOfUnity::GDSWInterfacePartitionOfUnity");
         if (!this->ParameterList_->get("Type","Full").compare("Full")) {
@@ -120,14 +129,24 @@ namespace FROSch {
         this->PartitionOfUnityMaps_ = XMapPtrVecPtr(5);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     GDSWInterfacePartitionOfUnity<SC,LO,GO,NO>::~GDSWInterfacePartitionOfUnity()
+#else
+    template <class SC,class NO>
+    GDSWInterfacePartitionOfUnity<SC,NO>::~GDSWInterfacePartitionOfUnity()
+#endif
     {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int GDSWInterfacePartitionOfUnity<SC,LO,GO,NO>::removeDirichletNodes(GOVecView dirichletBoundaryDofs,
+#else
+    template <class SC,class NO>
+    int GDSWInterfacePartitionOfUnity<SC,NO>::removeDirichletNodes(GOVecView dirichletBoundaryDofs,
+#endif
                                                                          ConstXMultiVectorPtr nodeList)
     {
         FROSCH_TIMER_START_LEVELID(removeDirichletNodesTime,"GDSWInterfacePartitionOfUnity::removeDirichletNodes");
@@ -140,8 +159,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int GDSWInterfacePartitionOfUnity<SC,LO,GO,NO>::sortInterface(ConstXMatrixPtr matrix,
+#else
+    template <class SC,class NO>
+    int GDSWInterfacePartitionOfUnity<SC,NO>::sortInterface(ConstXMatrixPtr matrix,
+#endif
                                                                   ConstXMultiVectorPtr nodeList)
     {
         FROSCH_TIMER_START_LEVELID(sortInterfaceTime,"GDSWInterfacePartitionOfUnity::sortInterface");
@@ -155,8 +179,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int GDSWInterfacePartitionOfUnity<SC,LO,GO,NO>::computePartitionOfUnity(ConstXMultiVectorPtr nodeList)
+#else
+    template <class SC,class NO>
+    int GDSWInterfacePartitionOfUnity<SC,NO>::computePartitionOfUnity(ConstXMultiVectorPtr nodeList)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(computePartitionOfUnityTime,"GDSWInterfacePartitionOfUnity::computePartitionOfUnity");
         // Interface
@@ -211,10 +240,18 @@ namespace FROSch {
         }
 
         // Build Partition Of Unity Vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         XMapPtr serialInterfaceMap = MapFactory<LO,GO,NO>::Build(this->DDInterface_->getNodesMap()->lib(),numInterfaceDofs,0,this->SerialComm_);
+#else
+        XMapPtr serialInterfaceMap = MapFactory<NO>::Build(this->DDInterface_->getNodesMap()->lib(),numInterfaceDofs,0,this->SerialComm_);
+#endif
 
         if (UseVertices_ && Vertices_->getNumEntities()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XMultiVectorPtr tmpVector = MultiVectorFactory<SC,LO,GO,NO>::Build(serialInterfaceMap,Vertices_->getNumEntities());
+#else
+            XMultiVectorPtr tmpVector = MultiVectorFactory<SC,NO>::Build(serialInterfaceMap,Vertices_->getNumEntities());
+#endif
 
             for (UN i=0; i<Vertices_->getNumEntities(); i++) {
                 for (UN j=0; j<Vertices_->getEntity(i)->getNumNodes(); j++) {
@@ -228,7 +265,11 @@ namespace FROSch {
         }
 
         if (UseShortEdges_ && ShortEdges_->getNumEntities()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XMultiVectorPtr tmpVector = MultiVectorFactory<SC,LO,GO,NO>::Build(serialInterfaceMap,ShortEdges_->getNumEntities());
+#else
+            XMultiVectorPtr tmpVector = MultiVectorFactory<SC,NO>::Build(serialInterfaceMap,ShortEdges_->getNumEntities());
+#endif
 
             for (UN i=0; i<ShortEdges_->getNumEntities(); i++) {
                 for (UN j=0; j<ShortEdges_->getEntity(i)->getNumNodes(); j++) {
@@ -242,7 +283,11 @@ namespace FROSch {
         }
 
         if (UseStraightEdges_ && StraightEdges_->getNumEntities()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XMultiVectorPtr tmpVector = MultiVectorFactory<SC,LO,GO,NO>::Build(serialInterfaceMap,StraightEdges_->getNumEntities());
+#else
+            XMultiVectorPtr tmpVector = MultiVectorFactory<SC,NO>::Build(serialInterfaceMap,StraightEdges_->getNumEntities());
+#endif
 
             for (UN i=0; i<StraightEdges_->getNumEntities(); i++) {
                 for (UN j=0; j<StraightEdges_->getEntity(i)->getNumNodes(); j++) {
@@ -255,7 +300,11 @@ namespace FROSch {
         }
 
         if (UseEdges_ && Edges_->getNumEntities()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XMultiVectorPtr tmpVector = MultiVectorFactory<SC,LO,GO,NO>::Build(serialInterfaceMap,Edges_->getNumEntities());
+#else
+            XMultiVectorPtr tmpVector = MultiVectorFactory<SC,NO>::Build(serialInterfaceMap,Edges_->getNumEntities());
+#endif
 
             for (UN i=0; i<Edges_->getNumEntities(); i++) {
                 for (UN j=0; j<Edges_->getEntity(i)->getNumNodes(); j++) {
@@ -269,7 +318,11 @@ namespace FROSch {
         }
 
         if (UseFaces_ && Faces_->getNumEntities()>0) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             XMultiVectorPtr tmpVector = MultiVectorFactory<SC,LO,GO,NO>::Build(serialInterfaceMap,Faces_->getNumEntities());
+#else
+            XMultiVectorPtr tmpVector = MultiVectorFactory<SC,NO>::Build(serialInterfaceMap,Faces_->getNumEntities());
+#endif
 
             for (UN i=0; i<Faces_->getNumEntities(); i++) {
                 for (UN j=0; j<Faces_->getEntity(i)->getNumNodes(); j++) {

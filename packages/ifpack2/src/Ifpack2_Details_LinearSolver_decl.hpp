@@ -101,17 +101,35 @@ namespace Details {
 /// "CUSTOM", we assume that the Ifpack2::Preconditioner comes from
 /// the user (via e.g., AdditiveSchwarz::setInnerPreconditioner), and
 /// that Ifpack2::Factory might not know how to create it.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 class LinearSolver :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public Trilinos::Details::LinearSolver<Tpetra::MultiVector<SC, LO, GO, NT>,
                                            Tpetra::Operator<SC, LO, GO, NT>,
                                            typename Tpetra::MultiVector<SC, LO, GO, NT>::mag_type>,
+#else
+    public Trilinos::Details::LinearSolver<Tpetra::MultiVector<SC, NT>,
+                                           Tpetra::Operator<SC, NT>,
+                                           typename Tpetra::MultiVector<SC, NT>::mag_type>,
+#endif
     virtual public Teuchos::Describable
 {
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Ifpack2::Preconditioner<SC, LO, GO, NT> prec_type;
   typedef Tpetra::Operator<SC, LO, GO, NT> OP;
   typedef Tpetra::MultiVector<SC, LO, GO, NT> MV;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Ifpack2::Preconditioner<SC, NT> prec_type;
+  typedef Tpetra::Operator<SC, NT> OP;
+  typedef Tpetra::MultiVector<SC, NT> MV;
+#endif
 
   /// \brief Constructor
   ///

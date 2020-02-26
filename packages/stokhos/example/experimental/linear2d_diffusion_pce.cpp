@@ -182,8 +182,13 @@ void returnScalarAsDenseMatrix(Sacado::PCE::OrthogPoly<value_type,Storage> const
     }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Xpetra_Matrix;
 typedef Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> Xpetra_Map;
+#else
+typedef Xpetra::Matrix<Scalar, Node> Xpetra_Matrix;
+typedef Xpetra::Map<Node> Xpetra_Map;
+#endif
 
 template<typename ordinal_type,typename value_type>
 void PrintMatrix(Teuchos::FancyOStream &fos, Teuchos::RCP<Xpetra_Matrix> const &A,
@@ -488,7 +493,11 @@ int main(int argc, char *argv[]) {
 #endif
 
     // Create application
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef twoD_diffusion_problem<Scalar,MeshScalar,BasisScalar,LocalOrdinal,GlobalOrdinal,Node> problem_type;
+#else
+    typedef twoD_diffusion_problem<Scalar,MeshScalar,BasisScalar,Node> problem_type;
+#endif
     RCP<problem_type> model = 
       rcp(new problem_type(teuchos_app_comm, n, num_KL, s, mu, 
                nonlinear_expansion, symmetric));
@@ -498,18 +507,35 @@ int main(int argc, char *argv[]) {
     typedef problem_type::Tpetra_CrsMatrix Tpetra_CrsMatrix;
     typedef Tpetra::MatrixMarket::Writer<Tpetra_CrsMatrix> Writer;
     //Xpetra matrices
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Xpetra_CrsMatrix;
     typedef Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> Xpetra_MultiVector;
     typedef Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> Xpetra_MultiVectorFactory;
     typedef Xpetra::TpetraCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Xpetra_TpetraCrsMatrix;
     typedef Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node> Xpetra_CrsMatrixWrap;
     typedef Belos::MueLuOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> Belos_MueLuOperator;
+#else
+    typedef Xpetra::CrsMatrix<Scalar, Node> Xpetra_CrsMatrix;
+    typedef Xpetra::MultiVector<Scalar, Node> Xpetra_MultiVector;
+    typedef Xpetra::MultiVectorFactory<Scalar, Node> Xpetra_MultiVectorFactory;
+    typedef Xpetra::TpetraCrsMatrix<Scalar, Node> Xpetra_TpetraCrsMatrix;
+    typedef Xpetra::CrsMatrixWrap<Scalar, Node> Xpetra_CrsMatrixWrap;
+    typedef Belos::MueLuOp<Scalar, Node> Belos_MueLuOperator;
+#endif
     //MueLu typedefs
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MueLu::Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node> MueLu_Hierarchy;
     typedef MueLu::SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node> SmootherPrototype;
     typedef MueLu::TrilinosSmoother<Scalar,LocalOrdinal,GlobalOrdinal,Node> TrilinosSmoother;
     typedef MueLu::SmootherFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node> SmootherFactory;
     typedef MueLu::FactoryManager<Scalar,LocalOrdinal,GlobalOrdinal,Node> FactoryManager;
+#else
+    typedef MueLu::Hierarchy<Scalar, Node> MueLu_Hierarchy;
+    typedef MueLu::SmootherPrototype<Scalar,Node> SmootherPrototype;
+    typedef MueLu::TrilinosSmoother<Scalar,Node> TrilinosSmoother;
+    typedef MueLu::SmootherFactory<Scalar,Node> SmootherFactory;
+    typedef MueLu::FactoryManager<Scalar,Node> FactoryManager;
+#endif
   
     //feenableexcept(FE_ALL_EXCEPT);
     //feenableexcept(FE_INVALID | FE_DIVBYZERO);
@@ -541,7 +567,11 @@ int main(int argc, char *argv[]) {
     }
 
     // Create preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Ifpack2::Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> Tprec;
+#else
+    typedef Ifpack2::Preconditioner<Scalar,Node> Tprec;
+#endif
     RCP<Belos_MueLuOperator> M;
     RCP<MueLu_Hierarchy> H;
     RCP<Xpetra_CrsMatrix> xcrsJ = rcp(new Xpetra_TpetraCrsMatrix(J));
@@ -648,14 +678,22 @@ int main(int argc, char *argv[]) {
       //fm->SetFactory("CoarseSolver", smooFact);
 
       //allow for larger aggregates
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef MueLu::CoupledAggregationFactory<LocalOrdinal,GlobalOrdinal,Node>
+#else
+      typedef MueLu::CoupledAggregationFactory<Node>
+#endif
       MueLu_CoupledAggregationFactory;
       RCP<MueLu_CoupledAggregationFactory> aggFact = rcp(new MueLu_CoupledAggregationFactory());
       aggFact->SetMinNodesPerAggregate(minAggSize);
       fm->SetFactory("Aggregates", aggFact);
 
       //turn off damping
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef MueLu::SaPFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node> MueLu_SaPFactory;
+#else
+      typedef MueLu::SaPFactory<Scalar,Node> MueLu_SaPFactory;
+#endif
       if (plainAgg) {
         RCP<MueLu_SaPFactory> sapFactory = rcp(new MueLu_SaPFactory);
         sapFactory->SetDampingFactor( (Scalar) 0.0 );
@@ -686,13 +724,22 @@ int main(int argc, char *argv[]) {
     belosParams->set("Verbosity", 33);
     belosParams->set("Output Style", 1);
     belosParams->set("Output Frequency", 1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
     typedef Belos::OperatorT<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > OP;
+#else
+    typedef Tpetra::MultiVector<Scalar,Node> MV;
+    typedef Belos::OperatorT<Tpetra::MultiVector<Scalar,Node> > OP;
+#endif
     typedef Belos::OperatorTraits<Scalar,MV,OP> BOPT;
     typedef Belos::MultiVecTraits<Scalar,MV> BMVT;
     typedef Belos::MultiVecTraits<double,MV> BTMVT;
     typedef Belos::LinearProblem<double,MV,OP> BLinProb;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Belos::XpetraOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> BXpetraOp;
+#else
+    typedef Belos::XpetraOp<Scalar, Node> BXpetraOp;
+#endif
     RCP<OP> belosJ = rcp(new BXpetraOp(xopJ)); // Turns an Xpetra::Matrix object into a Belos operator
     RCP< BLinProb > problem = rcp(new BLinProb(belosJ, dx, f));
     if (prec_method != NONE)

@@ -172,8 +172,10 @@ SupportGraph<MatrixType>::getComm () const {
 
 template <class MatrixType>
 Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                      typename MatrixType::local_ordinal_type,
                                      typename MatrixType::global_ordinal_type,
+#endif
                                      typename MatrixType::node_type> >
 SupportGraph<MatrixType>::getMatrix () const {
   return A_;
@@ -181,9 +183,13 @@ SupportGraph<MatrixType>::getMatrix () const {
 
 
 template <class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SupportGraph<MatrixType>::getDomainMap () const {
   TEUCHOS_TEST_FOR_EXCEPTION(
     A_.is_null(), std::runtime_error, "Ifpack2::ILUT::getDomainMap: "
@@ -194,9 +200,13 @@ SupportGraph<MatrixType>::getDomainMap () const {
 
 
 template <class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 SupportGraph<MatrixType>::getRangeMap () const {
   TEUCHOS_TEST_FOR_EXCEPTION(
     A_.is_null (), std::runtime_error, "Ifpack2::ILUT::getRangeMap: "

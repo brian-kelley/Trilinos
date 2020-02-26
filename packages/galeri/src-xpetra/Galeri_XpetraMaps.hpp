@@ -94,8 +94,13 @@ namespace Galeri {
 
 #ifdef HAVE_GALERI_XPETRA
     //! Map creation function (for Xpetra::Map with an UnderlyingLib parameter)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP< ::Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(::Xpetra::UnderlyingLib lib, const std::string & mapType, const Teuchos::RCP<const Teuchos::Comm<int> >& comm, Teuchos::ParameterList & list);
+#else
+    template <class Node>
+    RCP< ::Xpetra::Map<Node> > CreateMap(::Xpetra::UnderlyingLib lib, const std::string & mapType, const Teuchos::RCP<const Teuchos::Comm<int> >& comm, Teuchos::ParameterList & list);
+#endif
 #endif
 
   } // namespace Xpetra
@@ -139,11 +144,20 @@ namespace Galeri {
 
 #ifdef HAVE_GALERI_XPETRA
     //! Map creation function (for Xpetra::Map with UnderlyingLib parameter)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LocalOrdinal, class GlobalOrdinal, class Node>
     RCP< ::Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(::Xpetra::UnderlyingLib lib, const std::string & mapType, const Teuchos::RCP<const Teuchos::Comm<int> > & comm, Teuchos::ParameterList & list) {
+#else
+    template <class Node>
+    RCP< ::Xpetra::Map<Node> > CreateMap(::Xpetra::UnderlyingLib lib, const std::string & mapType, const Teuchos::RCP<const Teuchos::Comm<int> > & comm, Teuchos::ParameterList & list) {
+#endif
 #ifdef HAVE_XPETRA_TPETRA
       if (lib == ::Xpetra::UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return CreateMap<LocalOrdinal, GlobalOrdinal, ::Xpetra::TpetraMap<LocalOrdinal, GlobalOrdinal, Node> >(mapType, comm, list);
+#else
+        return CreateMap<LocalOrdinal, GlobalOrdinal, ::Xpetra::TpetraMap<Node> >(mapType, comm, list);
+#endif
 #endif
 #ifdef HAVE_XPETRA_EPETRA
       if (lib == ::Xpetra::UseEpetra) {
@@ -163,7 +177,11 @@ namespace Galeri {
 
 #ifdef HAVE_XPETRA_TPETRA
       if (lib == ::Xpetra::UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return CreateMap<int, GlobalOrdinal, ::Xpetra::TpetraMap<LocalOrdinal, GlobalOrdinal, Node> >(mapType, comm, list);
+#else
+        return CreateMap<int, GlobalOrdinal, ::Xpetra::TpetraMap<Node> >(mapType, comm, list);
+#endif
 #endif
 #ifdef HAVE_XPETRA_EPETRA
       if (lib == ::Xpetra::UseEpetra)
@@ -183,7 +201,11 @@ namespace Galeri {
 
 #ifdef HAVE_XPETRA_TPETRA
       if (lib == ::Xpetra::UseTpetra)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         return CreateMap<int, GlobalOrdinal, ::Xpetra::TpetraMap<LocalOrdinal, GlobalOrdinal, Node> >(mapType, comm, list);
+#else
+        return CreateMap<int, GlobalOrdinal, ::Xpetra::TpetraMap<Node> >(mapType, comm, list);
+#endif
 #endif
 #ifdef HAVE_XPETRA_EPETRA
       if (lib == ::Xpetra::UseEpetra)

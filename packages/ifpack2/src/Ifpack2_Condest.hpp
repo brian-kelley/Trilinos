@@ -89,20 +89,37 @@ namespace Ifpack2 {
 /// where \f$y = A*[1, \dots, 1]^T\f$.  That is, if the input matrix
 /// is \f$A\f$, we multiply it on the right by a vector of ones, and
 /// return the infinity norm (maximum absolute value) of the result.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 typename Teuchos::ScalarTraits<Scalar>::magnitudeType
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Condest (const Ifpack2::Preconditioner<Scalar, LocalOrdinal, GlobalOrdinal, Node>& TIFP,
+#else
+Condest (const Ifpack2::Preconditioner<Scalar, Node>& TIFP,
+#endif
          const Ifpack2::CondestType CT,
          const int MaxIters = 1550,
          const typename Teuchos::ScalarTraits<Scalar>::magnitudeType& Tol = Teuchos::as<Scalar> (1e-9),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const Teuchos::Ptr<const Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& matrix_in = Teuchos::null)
+#else
+         const Teuchos::Ptr<const Tpetra::RowMatrix<Scalar, Node> >& matrix_in = Teuchos::null)
+#endif
 {
   using Teuchos::Ptr;
   typedef Teuchos::ScalarTraits<Scalar> STS;
   typedef typename STS::magnitudeType MT;
   typedef Teuchos::ScalarTraits<MT> STM;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> row_matrix_type;
   typedef Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> vec_type;
+#else
+  typedef Tpetra::RowMatrix<Scalar, Node> row_matrix_type;
+  typedef Tpetra::Vector<Scalar, Node> vec_type;
+#endif
 
   MT condNumEst = -STS::magnitude( STS::one() );
 

@@ -58,8 +58,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> TogglePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> TogglePFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -70,8 +75,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TogglePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void TogglePFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     // request/release "P" and coarse level "Nullspace"
     for (std::vector<RCP<const FactoryBase> >::const_iterator it = prolongatorFacts_.begin(); it != prolongatorFacts_.end(); ++it) {
       coarseLevel.DeclareInput("P", (*it).get(), this); // request/release "P" (dependencies are not affected)
@@ -99,8 +109,13 @@ namespace MueLu {
     hasDeclaredInput_ = true;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TogglePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void TogglePFactory<Scalar, Node>::Build(Level& fineLevel, Level &coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Prolongator toggle", coarseLevel);
     std::ostringstream levelstr;
     levelstr << coarseLevel.GetLevelID();
@@ -158,8 +173,13 @@ namespace MueLu {
     Set(coarseLevel, "Chosen P", nProlongatorFactory);
   } //Build()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TogglePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddProlongatorFactory(const RCP<const FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void TogglePFactory<Scalar, Node>::AddProlongatorFactory(const RCP<const FactoryBase>& factory) {
+#endif
     // check if it's a TwoLevelFactoryBase based transfer factory
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::rcp_dynamic_cast<const TwoLevelFactoryBase>(factory) == Teuchos::null, Exceptions::BadCast,
                                "MueLu::TogglePFactory::AddProlongatorFactory: Transfer factory is not derived from TwoLevelFactoryBase. "
@@ -168,8 +188,13 @@ namespace MueLu {
     prolongatorFacts_.push_back(factory);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TogglePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddPtentFactory(const RCP<const FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void TogglePFactory<Scalar, Node>::AddPtentFactory(const RCP<const FactoryBase>& factory) {
+#endif
     // check if it's a TwoLevelFactoryBase based transfer factory
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::rcp_dynamic_cast<const TwoLevelFactoryBase>(factory) == Teuchos::null, Exceptions::BadCast,
                                "MueLu::TogglePFactory::AddPtentFactory: Transfer factory is not derived from TwoLevelFactoryBase. "
@@ -178,8 +203,13 @@ namespace MueLu {
     ptentFacts_.push_back(factory);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TogglePFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddCoarseNullspaceFactory(const RCP<const FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void TogglePFactory<Scalar, Node>::AddCoarseNullspaceFactory(const RCP<const FactoryBase>& factory) {
+#endif
     // check if it's a TwoLevelFactoryBase based transfer factory
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::rcp_dynamic_cast<const TwoLevelFactoryBase>(factory) == Teuchos::null, Exceptions::BadCast,
                                "MueLu::TogglePFactory::AddCoarseNullspaceFactory: Transfer factory is not derived from TwoLevelFactoryBase. Make sure you provide the factory which generates the coarse level nullspace information. Usually this is a prolongator factory."

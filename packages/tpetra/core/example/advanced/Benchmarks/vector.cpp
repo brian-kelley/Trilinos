@@ -106,8 +106,13 @@ benchmarkTpetra (RCP<const Comm<int> > comm,
                  const int numVecNormTrials,
                  const int numVecDotTrials)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
   typedef Tpetra::Vector<ST, LO, GO, NT> vector_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+  typedef Tpetra::Vector<ST, NT> vector_type;
+#endif
   typedef typename vector_type::dot_type dot_type;
   typedef typename vector_type::mag_type mag_type;
   typedef Teuchos::ScalarTraits<ST> STS;

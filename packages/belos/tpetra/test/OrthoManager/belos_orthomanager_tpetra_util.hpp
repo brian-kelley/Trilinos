@@ -107,8 +107,13 @@ namespace Belos {
     /// distribution of the sparse matrix: we distribute in a way such
     /// that the domain, range, and row maps are the same) and a
     /// sparse_matrix_type (the sparse matrix itself).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NodeType>
     std::pair<Teuchos::RCP<Tpetra::Map<LO, GO, NodeType> >, Teuchos::RCP<Tpetra::CrsMatrix<double, LO, GO, NodeType> > >
+#else
+    template<class NodeType>
+    std::pair<Teuchos::RCP<Tpetra::Map<NodeType> >, Teuchos::RCP<Tpetra::CrsMatrix<double, NodeType> > >
+#endif
     loadSparseMatrix (const Teuchos::RCP< const Teuchos::Comm<int> > pComm,
                       const std::string& filename,
                       int& numRows,

@@ -63,7 +63,11 @@ namespace MueLuTests {
   // this namespace already has:  #include "MueLu_UseShortNames.hpp"
   using namespace TestHelpers::Smoothers;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, NotSetup, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, NotSetup, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -77,7 +81,11 @@ namespace MueLuTests {
   }
 
   // Tests interface to Ifpack2's Gauss-Seidel preconditioner.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, HardCodedResult_GaussSeidel, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, HardCodedResult_GaussSeidel, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -113,7 +121,11 @@ namespace MueLuTests {
   } // GaussSeidel
 
   // Tests interface to Ifpack2's Gauss-Seidel preconditioner.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, HardCodedResult_GaussSeidel2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, HardCodedResult_GaussSeidel2, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -153,7 +165,11 @@ namespace MueLuTests {
   } // GaussSeidel
 
   // Tests interface to Ifpack2's Chebyshev preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, HardCodedResult_Chebyshev, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, HardCodedResult_Chebyshev, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -184,7 +200,11 @@ namespace MueLuTests {
   } // Chebyshev
 
   // Tests interface to Ifpack2's ILU(0) preconditioner.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, HardCodedResult_ILU, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, HardCodedResult_ILU, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -210,7 +230,11 @@ namespace MueLuTests {
   } // ILU
 
   // Tests two sweeps of ILUT in Ifpack2
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, ILU_TwoSweeps, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, ILU_TwoSweeps, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -224,8 +248,13 @@ namespace MueLuTests {
       Ifpack2Smoother smoother("ILUT",paramList);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(125);
       Level level; TestHelpers::TestFactory<SC,LO,GO,NO>::createSingleLevelHierarchy(level);
+#else
+      Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(125);
+      Level level; TestHelpers::TestFactory<SC,NO>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
       smoother.Setup(level);
 
@@ -284,7 +313,11 @@ namespace MueLuTests {
   } // ILU
 
   // Make sure Ifpack2's Banded relaxation actually gets called
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, BandedRelaxation, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, BandedRelaxation, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -297,8 +330,13 @@ namespace MueLuTests {
       Ifpack2Smoother smoother("BANDED RELAXATION",paramList);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(125);
       Level level; TestHelpers::TestFactory<SC,LO,GO,NO>::createSingleLevelHierarchy(level);
+#else
+      Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(125);
+      Level level; TestHelpers::TestFactory<SC,NO>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
       smoother.Setup(level);
 
@@ -357,7 +395,11 @@ namespace MueLuTests {
   } // banded
 
   // Make sure Ifpack2's Banded relaxation actually gets called
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, TriDiRelaxation, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Ifpack2Smoother, TriDiRelaxation, Scalar, Node)
+#endif
   {
 #   include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -369,8 +411,13 @@ namespace MueLuTests {
       Ifpack2Smoother smoother("TRIDI RELAXATION",paramList);
 
       //I don't use the testApply infrastructure because it has no provision for an initial guess.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(125);
       Level level; TestHelpers::TestFactory<SC,LO,GO,NO>::createSingleLevelHierarchy(level);
+#else
+      Teuchos::RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(125);
+      Level level; TestHelpers::TestFactory<SC,NO>::createSingleLevelHierarchy(level);
+#endif
       level.Set("A", A);
       smoother.Setup(level);
 
@@ -428,6 +475,7 @@ namespace MueLuTests {
     }
   } // tridi
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,NotSetup,SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,HardCodedResult_GaussSeidel,SC,LO,GO,NO) \
@@ -437,6 +485,17 @@ namespace MueLuTests {
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,ILU_TwoSweeps,SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,BandedRelaxation,SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,TriDiRelaxation,SC,LO,GO,NO)
+#else
+#define MUELU_ETI_GROUP(SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,NotSetup,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,HardCodedResult_GaussSeidel,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,HardCodedResult_GaussSeidel2,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,HardCodedResult_Chebyshev,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,HardCodedResult_ILU,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,ILU_TwoSweeps,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,BandedRelaxation,SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(Ifpack2Smoother,TriDiRelaxation,SC,NO)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

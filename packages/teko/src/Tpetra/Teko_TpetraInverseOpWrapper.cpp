@@ -51,10 +51,18 @@ using namespace Teuchos;
 namespace Teko {
 namespace TpetraHelpers {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraInverseOpWrapper::apply(const Tpetra::MultiVector<ST,LO,GO,NT>& X, Tpetra::MultiVector<ST,LO,GO,NT>& Y,Teuchos::ETransp mode,ST alpha, ST beta) const
+#else
+void TpetraInverseOpWrapper::apply(const Tpetra::MultiVector<ST,NT>& X, Tpetra::MultiVector<ST,NT>& Y,Teuchos::ETransp mode,ST alpha, ST beta) const
+#endif
 { TpetraOperatorWrapper::apply(X,Y,mode,alpha,beta);}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraInverseOpWrapper::applyInverse(const Tpetra::MultiVector<ST,LO,GO,NT>& X, Tpetra::MultiVector<ST,LO,GO,NT>& Y,Teuchos::ETransp mode,ST alpha, ST beta) const
+#else
+void TpetraInverseOpWrapper::applyInverse(const Tpetra::MultiVector<ST,NT>& X, Tpetra::MultiVector<ST,NT>& Y,Teuchos::ETransp mode,ST alpha, ST beta) const
+#endif
 { TpetraOperatorWrapper::apply(X,Y,mode,alpha,beta);}
 
 } // end namespace Epetra

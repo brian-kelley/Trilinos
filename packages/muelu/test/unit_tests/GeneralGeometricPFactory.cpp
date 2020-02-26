@@ -71,11 +71,19 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar = double, class LocalOrdinal = int, class GlobalOrdinal = LocalOrdinal, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Scalar = double, class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class GeneralGeometricPFactoryTester {
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 
@@ -92,17 +100,31 @@ namespace MueLuTests {
                                                std::vector<double>& stencil)
       const{
       // Call the method to be tested.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLu::GeneralGeometricPFactory<SC,LO,GO,Node> myGGPFactory;
+#else
+      MueLu::GeneralGeometricPFactory<SC,Node> myGGPFactory;
+#endif
       myGGPFactory.ComputeLinearInterpolationStencil(numDimension, coord, stencil);
     };
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void GGGetProblemData(RCP<const Teuchos::Comm<int> >& comm, const Xpetra::UnderlyingLib lib,
                         const LocalOrdinal numDimensions, const std::string mode,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& Op,
                         RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> >&Coordinates,
                         RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> >& map,
+#else
+                        RCP<Xpetra::Matrix<Scalar, Node> >& Op,
+                        RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> >&Coordinates,
+                        RCP<Xpetra::Map<Node> >& map,
+#endif
                         Array<GlobalOrdinal>& gNodesPerDim, Array<LocalOrdinal>& lNodesPerDim) {
 #include "MueLu_UseShortNames.hpp"
 
@@ -232,7 +254,11 @@ namespace MueLuTests {
 
     // Create the map and store coordinates using the above array views
     map         = MapFactory::Build(lib, gNumPoints, myGIDs(), 0, comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(map, myCoordinates(),
+#else
+    Coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(map, myCoordinates(),
+#endif
                                                                      numDimensions);
 
     // small parameter list for Galeri
@@ -266,8 +292,12 @@ namespace MueLuTests {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, Constructor, Scalar, LocalOrdinal,
                                     GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, Constructor, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -280,8 +310,12 @@ namespace MueLuTests {
 
   } //Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, LinearInterpolation, Scalar,
                                     LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, LinearInterpolation, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -289,8 +323,13 @@ namespace MueLuTests {
 
     out << "version: " << MueLu::Version() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MueLu::GeneralGeometricPFactory<SC,LO,GO,Node> ggPFact;
     GeneralGeometricPFactoryTester<SC,LO,GO,Node> factTester;
+#else
+    MueLu::GeneralGeometricPFactory<SC,Node> ggPFact;
+    GeneralGeometricPFactoryTester<SC,Node> factTester;
+#endif
 
     LO numDimension = 3;
     Array<Array<typename Teuchos::ScalarTraits<Scalar>::magnitudeType> > coord(9);
@@ -320,8 +359,12 @@ namespace MueLuTests {
 
   } // LinearInterpolation
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, LinearExtrapolation, Scalar,
                                     LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, LinearExtrapolation, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -329,8 +372,13 @@ namespace MueLuTests {
 
     out << "version: " << MueLu::Version() << std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MueLu::GeneralGeometricPFactory<SC,LO,GO,Node> ggPFact;
     GeneralGeometricPFactoryTester<SC,LO,GO,Node> factTester;
+#else
+    MueLu::GeneralGeometricPFactory<SC,Node> ggPFact;
+    GeneralGeometricPFactoryTester<SC,Node> factTester;
+#endif
 
     LO numDimension = 3;
     Array<Array<typename Teuchos::ScalarTraits<Scalar>::magnitudeType> > coord(9);
@@ -359,8 +407,12 @@ namespace MueLuTests {
 
   } // LinearExtrapolation
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, PoissonOnCubeLinear, Scalar,
                                     LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, PoissonOnCubeLinear, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -426,8 +478,13 @@ namespace MueLuTests {
     global_size_t numGlobalElements = numPoints;
     size_t numLocalElements = (comm->getRank() == 0 ? numPoints : 0);
     RCP<const Map> exportMap = MapFactory::Build(lib, numGlobalElements, numLocalElements, 0, comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > source_coordinates
       = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(exportMap, 3);
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > source_coordinates
+      = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(exportMap, 3);
+#endif
     if (comm->getRank() == 0) {
       for(LO k = 0; k < gNodesPerDim[2]; ++k) {
         for(LO j = 0; j < gNodesPerDim[1]; ++j) {
@@ -442,8 +499,13 @@ namespace MueLuTests {
         }
       }
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(map,3);
     RCP<Xpetra::Export<LO,GO,Node> > coords_exporter = Xpetra::ExportFactory<LO,GO,Node>::Build(exportMap, map);
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(map,3);
+    RCP<Xpetra::Export<Node> > coords_exporter = Xpetra::ExportFactory<Node>::Build(exportMap, map);
+#endif
     coordinates->doExport(*source_coordinates, *coords_exporter, Xpetra::INSERT);
 
     // fill hierarchy
@@ -513,14 +575,25 @@ namespace MueLuTests {
 
     // Extract the prolongator operator
     RCP<Level> lvl1 = H->GetLevel(1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<SC,LO,GO,Node> > P = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#else
+    RCP<Xpetra::Matrix<SC,Node> > P = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#endif
     RCP<CrsMatrix> PCrs = rcp_dynamic_cast<CrsMatrixWrap>(P)->getCrsMatrix();
 
     // Construct vectors to check that a linear vector remains linear after projection
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector0
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(PCrs->getRangeMap(),1);
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector1
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(PCrs->getDomainMap(),1);
+#else
+    RCP<Xpetra::MultiVector<SC,NO> > vector0
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(PCrs->getRangeMap(),1);
+    RCP<Xpetra::MultiVector<SC,NO> > vector1
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(PCrs->getDomainMap(),1);
+#endif
     ArrayRCP<SC> coarse_data = vector1->getDataNonConst(0);
     if(comm->getRank() == 0) {
       for(LO i = 0; i < 3; ++i) {
@@ -566,8 +639,12 @@ namespace MueLuTests {
 
   } // PoissonOnCubeLinear
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, PoissonOnCubeConstant, Scalar,
                                     LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, PoissonOnCubeConstant, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -633,7 +710,11 @@ namespace MueLuTests {
     global_size_t numGlobalElements = numPoints;
     size_t numLocalElements = (comm->getRank() == 0 ? numPoints : 0);
     RCP<const Map> exportMap = MapFactory::Build(lib, numGlobalElements, numLocalElements, 0, comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > source_coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(exportMap, 3);
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > source_coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(exportMap, 3);
+#endif
     if (comm->getRank() == 0) {
       for(LO k = 0; k < gNodesPerDim[2]; ++k) {
         for(LO j = 0; j < gNodesPerDim[1]; ++j) {
@@ -648,10 +729,17 @@ namespace MueLuTests {
         }
       }
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates
       = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(map,3);
     RCP<Xpetra::Export<LO,GO,Node> > coords_exporter
       = Xpetra::ExportFactory<LO,GO,Node>::Build(exportMap, map);
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates
+      = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(map,3);
+    RCP<Xpetra::Export<Node> > coords_exporter
+      = Xpetra::ExportFactory<Node>::Build(exportMap, map);
+#endif
     coordinates->doExport(*source_coordinates, *coords_exporter, Xpetra::INSERT);
 
     // fill hierarchy
@@ -721,14 +809,25 @@ namespace MueLuTests {
 
     // Extract the prolongator operator
     RCP<Level> lvl1 = H->GetLevel(1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<SC,LO,GO,Node> > P = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#else
+    RCP<Xpetra::Matrix<SC,Node> > P = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#endif
     RCP<CrsMatrix> PCrs = rcp_dynamic_cast<CrsMatrixWrap>(P)->getCrsMatrix();
 
     // Construct vectors to check that a linear vector remains linear after projection
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector0
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(PCrs->getRangeMap(),1);
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector1
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(PCrs->getDomainMap(),1);
+#else
+    RCP<Xpetra::MultiVector<SC,NO> > vector0
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(PCrs->getRangeMap(),1);
+    RCP<Xpetra::MultiVector<SC,NO> > vector1
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(PCrs->getDomainMap(),1);
+#endif
     ArrayRCP<SC> coarse_data = vector1->getDataNonConst(0);
     if(comm->getRank() == 0) {
       for(LO i = 0; i < 3; ++i) {
@@ -772,8 +871,12 @@ namespace MueLuTests {
 
   } // PoissonOnCubeConstant
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, LocalLexicographicLinear, Scalar,
                                     LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, LocalLexicographicLinear, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -791,11 +894,19 @@ namespace MueLuTests {
     LO numDimensions = 3;
 
     RCP<Matrix> Op;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates;
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates;
+#endif
     RCP<Map> map;
     Array<GO> gNodesPerDim(3);
     Array<LO> lNodesPerDim(3);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     GGGetProblemData<SC,LO,GO,NO>(comm, lib, numDimensions, "Local Lexicographic", Op,
+#else
+    GGGetProblemData<SC,NO>(comm, lib, numDimensions, "Local Lexicographic", Op,
+#endif
                                   coordinates, map, gNodesPerDim, lNodesPerDim);
 
     TEST_EQUALITY(Op != Teuchos::null, true);
@@ -929,14 +1040,25 @@ namespace MueLuTests {
 
     // Extract the prolongator operator
     RCP<Level> lvl1 = H->GetLevel(1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<SC,LO,GO,Node> > P1 = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#else
+    RCP<Xpetra::Matrix<SC,Node> > P1 = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#endif
     RCP<CrsMatrix> P1Crs = rcp_dynamic_cast<CrsMatrixWrap>(P1)->getCrsMatrix();
 
     // Construct vectors to check that a linear vector remains linear after projection
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector0
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(P1Crs->getRangeMap(),1);
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector1
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(P1Crs->getDomainMap(),1);
+#else
+    RCP<Xpetra::MultiVector<SC,NO> > vector0
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(P1Crs->getRangeMap(),1);
+    RCP<Xpetra::MultiVector<SC,NO> > vector1
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(P1Crs->getDomainMap(),1);
+#endif
     ArrayRCP<SC> coarse_data = vector1->getDataNonConst(0);
     std::vector<LO> coarse_inds(8);
     if(comm->getSize() == 1) {
@@ -1007,14 +1129,25 @@ namespace MueLuTests {
 
     // Extract the prolongator operator
     RCP<Level> lvl2 = H->GetLevel(2);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<SC,LO,GO,Node> > P2 = lvl2->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#else
+    RCP<Xpetra::Matrix<SC,Node> > P2 = lvl2->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#endif
     RCP<CrsMatrix> P2Crs = rcp_dynamic_cast<CrsMatrixWrap>(P2)->getCrsMatrix();
 
     // Construct vectors to check that a linear vector remains linear after projection
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector2
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(P2Crs->getRangeMap(),1);
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector3
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(P2Crs->getDomainMap(),1);
+#else
+    RCP<Xpetra::MultiVector<SC,NO> > vector2
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(P2Crs->getRangeMap(),1);
+    RCP<Xpetra::MultiVector<SC,NO> > vector3
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(P2Crs->getDomainMap(),1);
+#endif
     coarse_data = vector3->getDataNonConst(0);
     if(comm->getSize() == 1) {
       coarse_inds[0] =  0;
@@ -1092,8 +1225,12 @@ namespace MueLuTests {
 
   } // End LocalLexicographicLinear
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, LocalLexicographicConstant, Scalar,
       LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GeneralGeometricPFactory, LocalLexicographicConstant, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -1185,7 +1322,11 @@ namespace MueLuTests {
     global_size_t numGlobalElements = numPoints;
     size_t numLocalElements = (comm->getRank() == 0 ? numPoints : 0);
     RCP<const Map> exportMap = MapFactory::Build(lib, numGlobalElements, numLocalElements, 0, comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > source_coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(exportMap, 3);
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > source_coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(exportMap, 3);
+#endif
     if (comm->getRank() == 0) {
       for(LO k = 0; k < gNodesPerDim[2]; ++k) {
         for(LO j = 0; j < gNodesPerDim[1]; ++j) {
@@ -1200,10 +1341,17 @@ namespace MueLuTests {
         }
       }
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates
       = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(map,3);
     RCP<Xpetra::Export<LO,GO,Node> > coords_exporter
       = Xpetra::ExportFactory<LO,GO,Node>::Build(exportMap, map);
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates
+      = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(map,3);
+    RCP<Xpetra::Export<Node> > coords_exporter
+      = Xpetra::ExportFactory<Node>::Build(exportMap, map);
+#endif
     coordinates->doExport(*source_coordinates, *coords_exporter, Xpetra::INSERT);
 
     // fill hierarchy
@@ -1275,14 +1423,25 @@ namespace MueLuTests {
 
     // Extract the prolongator operator
     RCP<Level> lvl1 = H->GetLevel(1);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Matrix<SC,LO,GO,Node> > P = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#else
+    RCP<Xpetra::Matrix<SC,Node> > P = lvl1->Get<RCP<Matrix> >("P", MueLu::NoFactory::get());
+#endif
     RCP<CrsMatrix> PCrs = rcp_dynamic_cast<CrsMatrixWrap>(P)->getCrsMatrix();
 
     // Construct vectors to check that a linear vector remains linear after projection
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector0
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(PCrs->getRangeMap(),1);
     RCP<Xpetra::MultiVector<SC,LO,GO,NO> > vector1
       = Xpetra::MultiVectorFactory<SC,LO,GO,NO>::Build(PCrs->getDomainMap(),1);
+#else
+    RCP<Xpetra::MultiVector<SC,NO> > vector0
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(PCrs->getRangeMap(),1);
+    RCP<Xpetra::MultiVector<SC,NO> > vector1
+      = Xpetra::MultiVectorFactory<SC,NO>::Build(PCrs->getDomainMap(),1);
+#endif
     ArrayRCP<SC> coarse_data = vector1->getDataNonConst(0);
     if(comm->getRank() == 0) {
       for(LO i = 0; i < 3; ++i) {
@@ -1327,6 +1486,7 @@ namespace MueLuTests {
   } // LocalLexicographicConstant
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(Scalar, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,Constructor,Scalar,LO,GO,Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,LinearInterpolation,Scalar,LO,GO,Node) \
@@ -1335,6 +1495,16 @@ namespace MueLuTests {
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,PoissonOnCubeConstant,Scalar,LO,GO,Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,LocalLexicographicLinear,Scalar,LO,GO,Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,LocalLexicographicConstant,Scalar,LO,GO,Node)
+#else
+#  define MUELU_ETI_GROUP(Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,Constructor,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,LinearInterpolation,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,LinearExtrapolation,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,PoissonOnCubeLinear,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,PoissonOnCubeConstant,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,LocalLexicographicLinear,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GeneralGeometricPFactory,LocalLexicographicConstant,Scalar,Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

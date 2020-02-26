@@ -63,6 +63,7 @@
 int main(int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<SC,LO,GO,NO>              TVEC;
   typedef Tpetra::MultiVector<SC,LO,GO,NO>         TMV;
   typedef Tpetra::CrsMatrix<SC,LO,GO,NO>           TCRS;
@@ -70,8 +71,21 @@ int main(int argc, char *argv[]) {
   typedef Xpetra::TpetraCrsMatrix<SC,LO,GO,NO>     XTCRS;
   typedef Xpetra::Matrix<SC,LO,GO,NO>              XMAT;
   typedef Xpetra::CrsMatrixWrap<SC,LO,GO,NO>       XWRAP;
+#else
+  typedef Tpetra::Vector<SC,NO>              TVEC;
+  typedef Tpetra::MultiVector<SC,NO>         TMV;
+  typedef Tpetra::CrsMatrix<SC,NO>           TCRS;
+  typedef Xpetra::CrsMatrix<SC,NO>           XCRS;
+  typedef Xpetra::TpetraCrsMatrix<SC,NO>     XTCRS;
+  typedef Xpetra::Matrix<SC,NO>              XMAT;
+  typedef Xpetra::CrsMatrixWrap<SC,NO>       XWRAP;
+#endif
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   using Teuchos::RCP;
   using Teuchos::rcp;
@@ -141,10 +155,18 @@ int main(int argc, char *argv[]) {
     galeriList.set("nz", pl.get("nz", nz));
     RCP<const Map> map;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#else
+    map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#endif
     coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC, LO, GO, Map, RealValuedMultiVector>("2D", map, matrixParameters_aux.GetParameterList());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Map<LO, GO, NO> > tmap = Xpetra::toTpetra(map);
+#else
+    RCP<const Tpetra::Map<NO> > tmap = Xpetra::toTpetra(map);
+#endif
 
     Teuchos::ParameterList matrixParams_aux       = matrixParameters_aux.GetParameterList();
 
@@ -209,8 +231,13 @@ int main(int argc, char *argv[]) {
       SLSolver -> setupSlowRAP();
 
       // solve for RHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<TMV> X = Tpetra::createMultiVector<SC,LO,GO,NO>(tmap,1);
       RCP<TMV> B = Tpetra::createMultiVector<SC,LO,GO,NO>(tmap,1);
+#else
+      RCP<TMV> X = Tpetra::createMultiVector<SC,NO>(tmap,1);
+      RCP<TMV> B = Tpetra::createMultiVector<SC,NO>(tmap,1);
+#endif
       X->putScalar((SC) 0.0);
       B->putScalar((SC) 0.0);
       int pointsourceid=nx*ny/2+nx/2;

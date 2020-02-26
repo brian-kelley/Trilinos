@@ -146,9 +146,13 @@ ReorderFilter<MatrixType>::getRangeMap() const
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::local_ordinal_type,
                                     typename MatrixType::global_ordinal_type,
                                     typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::node_type> >
+#endif
 ReorderFilter<MatrixType>::getGraph() const
 {
   throw std::runtime_error("Ifpack2::ReorderFilter: does not support getGraph.");
@@ -595,7 +599,12 @@ permuteReorderedToOriginalTempl (const Tpetra::MultiVector<DomainScalar,local_or
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_REORDERFILTER_INSTANT(S,LO,GO,N)                        \
   template class Ifpack2::ReorderFilter< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_REORDERFILTER_INSTANT(S,N)                        \
+  template class Ifpack2::ReorderFilter< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif

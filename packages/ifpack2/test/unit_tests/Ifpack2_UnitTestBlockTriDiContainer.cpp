@@ -170,13 +170,22 @@ private:
 #ifdef HAVE_IFPACK2_EXPERIMENTAL_KOKKOSKERNELS_FEATURES
 // Configure with Ifpack2_ENABLE_BlockTriDiContainer_Timers:BOOL=ON to get timer
 // output for each piece of the computation.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar,
           typename LO = Tpetra::Map<>::local_ordinal_type,
           typename GO = Tpetra::Map<>::global_ordinal_type>
+#else
+template <typename Scalar,>
+#endif
 static void run_performance_test (const Input& in) {
   typedef LO Int;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef tif_utest::BlockCrsMatrixMaker<Scalar, LO, GO> bcmm;
   typedef tif_utest::BlockTriDiContainerTester<Scalar, LO, GO> btdct;
+#else
+  typedef tif_utest::BlockCrsMatrixMaker<Scalar> bcmm;
+  typedef tif_utest::BlockTriDiContainerTester<Scalar> btdct;
+#endif
 
   // Performance test. Use BlockTriDiContainer directly.
   typename bcmm::StructuredBlock sb(in.ni, in.nj, in.nk, in.contiguous);
@@ -235,11 +244,20 @@ static void run_performance_test (const Input& in) {
     if ( ! TEUCHOS_TEST_result) success = false;                \
   } while (0)
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LO, typename GO>
+#else
+template <typename Scalar,>
+#endif
 static LO run_teuchos_tests (const Input& in, Teuchos::FancyOStream& out, bool& success) {
   typedef LO Int;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef tif_utest::BlockCrsMatrixMaker<Scalar, LO, GO> bcmm;
   typedef tif_utest::BlockTriDiContainerTester<Scalar, LO, GO> btdct;
+#else
+  typedef tif_utest::BlockCrsMatrixMaker<Scalar> bcmm;
+  typedef tif_utest::BlockTriDiContainerTester<Scalar> btdct;
+#endif
 
   success = true;
   Int nerr = 0;
@@ -308,15 +326,27 @@ static LO run_teuchos_tests (const Input& in, Teuchos::FancyOStream& out, bool& 
 }
 #endif // HAVE_IFPACK2_EXPERIMENTAL_KOKKOSKERNELS_FEATURES
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2BlockTriDi, Unit, Scalar, LO, GO) {
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2BlockTriDi, Unit, Scalar) {
+#endif
 #ifdef HAVE_IFPACK2_EXPERIMENTAL_KOKKOSKERNELS_FEATURES
   Input in(Tpetra::getDefaultComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   run_teuchos_tests<Scalar, LO, GO>(in, out, success);
+#else
+  run_teuchos_tests<Scalar>(in, out, success);
+#endif
 #endif // HAVE_IFPACK2_EXPERIMENTAL_KOKKOSKERNELS_FEATURES
 }
 
 #define UNIT_TEST_GROUP_SC_LO_GO( SC, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(Ifpack2BlockTriDi, Unit, SC, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT(Ifpack2BlockTriDi, Unit, SC )
+#endif
 #include "Ifpack2_ETIHelperMacros.h"
 IFPACK2_ETI_MANGLING_TYPEDEFS()
 IFPACK2_INSTANTIATE_SLG(UNIT_TEST_GROUP_SC_LO_GO)

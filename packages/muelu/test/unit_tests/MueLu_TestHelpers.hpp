@@ -90,8 +90,13 @@ namespace Galeri {
     RCP<Map> CreateMap(const std::string & mapType, const Teuchos::RCP<const Teuchos::Comm<int> >& comm, Teuchos::ParameterList & list);
 
 #ifdef HAVE_GALERI_XPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LocalOrdinal, class GlobalOrdinal, class Node>
     Teuchos::RCP< ::Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > CreateMap(::Xpetra::UnderlyingLib lib, const std::string & mapType, const Teuchos::RCP<const Teuchos::Comm<int> >& comm, Teuchos::ParameterList & list);
+#else
+    template <class Node>
+    Teuchos::RCP< ::Xpetra::Map<Node> > CreateMap(::Xpetra::UnderlyingLib lib, const std::string & mapType, const Teuchos::RCP<const Teuchos::Comm<int> >& comm, Teuchos::ParameterList & list);
+#endif
 #endif
   }
 }
@@ -148,18 +153,31 @@ namespace MueLuTests {
       }
     };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     class TestFactory {
 #include "MueLu_UseShortNames.hpp"
 
     private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       TestFactory() {} // static class
 
     public:
 
       typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
       typedef Xpetra::MultiVectorFactory<real_type,LO,GO,NO> RealValuedMultiVectorFactory;
+#else
+      typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+      typedef Xpetra::MultiVectorFactory<real_type,NO> RealValuedMultiVectorFactory;
+#endif
 
       //
       // Method that creates a map containing a specified number of local elements per process.
@@ -217,7 +235,11 @@ namespace MueLuTests {
 
         RCP<const Teuchos::Comm<int> > comm = Parameters::getDefaultComm();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<Matrix> mtx = Xpetra::MatrixFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(dofMap, 3);
+#else
+        Teuchos::RCP<Matrix> mtx = Xpetra::MatrixFactory<Scalar, Node>::Build(dofMap, 3);
+#endif
 
         LocalOrdinal NumMyElements = dofMap->getNodeNumElements();
         Teuchos::ArrayView<const GlobalOrdinal> MyGlobalElements = dofMap->getNodeElementList();
@@ -564,14 +586,22 @@ namespace MueLuTests {
         GlobalOrdinal gcount;
         Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, count, Teuchos::outArg(gcount));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > map =
+#else
+        Teuchos::RCP<Xpetra::Map<Node> > map =
+#endif
             MapFactory::Build(lib,gcount,mapvec(),0,comm);
         mapvec.clear();
         return map;
       }
 
       // Xpetra version of SplitMap
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > SplitMap(Xpetra::UnderlyingLib lib, const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> & Amap, const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> & Agiven) {
+#else
+      static Teuchos::RCP<Xpetra::Map<Node> > SplitMap(Xpetra::UnderlyingLib lib, const Xpetra::Map<Node> & Amap, const Xpetra::Map<Node> & Agiven) {
+#endif
         Teuchos::RCP<const Teuchos::Comm<int> > comm = Amap.getComm();
 
         GlobalOrdinal count=0;
@@ -588,7 +618,11 @@ namespace MueLuTests {
         return MapFactory::Build(lib,gcount,myaugids(),0,comm);
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlockDiagonalExampleMatrix(Xpetra::UnderlyingLib lib, int noBlocks, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
+#else
+      static Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlockDiagonalExampleMatrix(Xpetra::UnderlyingLib lib, int noBlocks, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
+#endif
         GlobalOrdinal nOverallDOFGidsPerProc = Teuchos::as<GlobalOrdinal>(Teuchos::ScalarTraits<GlobalOrdinal>::pow(2,noBlocks-2)) * 10;
 
         GlobalOrdinal procOffset = comm->getRank() * nOverallDOFGidsPerProc;
@@ -597,7 +631,11 @@ namespace MueLuTests {
         for(GlobalOrdinal i = 0; i < nOverallDOFGidsPerProc; i++)
           myDOFGids.insert(i + procOffset);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<Map> fullmap = TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::BuildMap(lib, myDOFGids, comm);
+#else
+        Teuchos::RCP<Map> fullmap = TestFactory<Scalar,Node>::BuildMap(lib, myDOFGids, comm);
+#endif
 
         std::vector<Teuchos::RCP<const Map> > maps(noBlocks, Teuchos::null);
         GlobalOrdinal nPartGIDs = nOverallDOFGidsPerProc;
@@ -613,9 +651,17 @@ namespace MueLuTests {
           for(GlobalOrdinal j = 0; j < nPartGIDs; j++)
             myHalfGIDs.insert(j + procOffset);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Teuchos::RCP<Map> halfmap = TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::BuildMap(lib, myHalfGIDs, comm);
+#else
+          Teuchos::RCP<Map> halfmap = TestFactory<Scalar,Node>::BuildMap(lib, myHalfGIDs, comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           Teuchos::RCP<Map> secondmap = TestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::SplitMap(lib,*remainingpartmap, *halfmap);
+#else
+          Teuchos::RCP<Map> secondmap = TestFactory<Scalar,Node>::SplitMap(lib,*remainingpartmap, *halfmap);
+#endif
           remainingpartmap = halfmap;
 
           maps[noBlocks - 1 - it]  = secondmap;
@@ -652,7 +698,11 @@ namespace MueLuTests {
         return bop;
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlockDiagonalExampleMatrixThyra(Xpetra::UnderlyingLib lib, int noBlocks, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
+#else
+      static Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlockDiagonalExampleMatrixThyra(Xpetra::UnderlyingLib lib, int noBlocks, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
+#endif
 
         std::vector<Teuchos::RCP<const Map> > maps(noBlocks, Teuchos::null);
 
@@ -696,9 +746,14 @@ namespace MueLuTests {
         return bop;
       }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > CreateBlocked3x3MatrixThyra(const Teuchos::Comm<int>& comm, Xpetra::UnderlyingLib lib) {
+#else
+      static Teuchos::RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > CreateBlocked3x3MatrixThyra(const Teuchos::Comm<int>& comm, Xpetra::UnderlyingLib lib) {
+#endif
 
         std::vector<RCP<const Map> > maps = std::vector<RCP<const Map> >(3, Teuchos::null);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         maps[0] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
         maps[1] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
         maps[2] = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMap(100);
@@ -709,6 +764,18 @@ namespace MueLuTests {
         RCP<Matrix> A12 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
         RCP<Matrix> A21 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[2], -1.0, 0.0, 0.0, lib);
         RCP<Matrix> A22 = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildTridiag(maps[2], 4.0, -1.0, -1.0, lib);
+#else
+        maps[0] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+        maps[1] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+        maps[2] = TestHelpers::TestFactory<Scalar, Node>::BuildMap(100);
+        RCP<Matrix> A00 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[0], 4.0, -1.0, -1.0, lib);
+        RCP<Matrix> A01 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[0], -1.0, 0.0, 0.0, lib);
+        RCP<Matrix> A10 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
+        RCP<Matrix> A11 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], 4.0, -1.0, -1.0, lib);
+        RCP<Matrix> A12 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[1], -1.0, 0.0, 0.0, lib);
+        RCP<Matrix> A21 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[2], -1.0, 0.0, 0.0, lib);
+        RCP<Matrix> A22 = TestHelpers::TestFactory<Scalar, Node>::BuildTridiag(maps[2], 4.0, -1.0, -1.0, lib);
+#endif
 
         // create map extractor
         // To generate the Thyra style map extractor we do not need a full map but only the
@@ -828,11 +895,19 @@ namespace MueLuTests {
     // GO=int/long long and/or Node=Serial/OpenMP. We need partial specializations
     // with an empty BuildBlockMatrix routine for all instantiations Teptra is not
     // enabled for, but are existing in Xpetra due to Epetra enabled.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+    template <class Scalar, class Node>
+#endif
     class TpetraTestFactory {
 #include "MueLu_UseShortNames.hpp"
     public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       // Create a matrix as specified by parameter list options
       static RCP<Matrix> BuildBlockMatrix(Teuchos::ParameterList &matrixList, Xpetra::UnderlyingLib lib) {
         RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
@@ -848,16 +923,34 @@ namespace MueLuTests {
          // Thanks for the code, Travis!
 
          // Make the graph
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > FirstMatrix = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMatrix(matrixList,lib);
          RCP<const Xpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node> > Graph = FirstMatrix->getCrsGraph();
+#else
+         RCP<Xpetra::Matrix<Scalar, Node> > FirstMatrix = TestHelpers::TestFactory<Scalar, Node>::BuildMatrix(matrixList,lib);
+         RCP<const Xpetra::CrsGraph<Node> > Graph = FirstMatrix->getCrsGraph();
+#endif
 
          int blocksize = 3;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<const Xpetra::TpetraCrsGraph<LocalOrdinal, GlobalOrdinal, Node> > TGraph = rcp_dynamic_cast<const Xpetra::TpetraCrsGraph<LocalOrdinal, GlobalOrdinal, Node> >(Graph);
          RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > TTGraph = TGraph->getTpetra_CrsGraph();
+#else
+         RCP<const Xpetra::TpetraCrsGraph<Node> > TGraph = rcp_dynamic_cast<const Xpetra::TpetraCrsGraph<Node> >(Graph);
+         RCP<const Tpetra::CrsGraph<Node> > TTGraph = TGraph->getTpetra_CrsGraph();
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<Tpetra::BlockCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > bcrsmatrix = rcp(new Tpetra::BlockCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> (*TTGraph, blocksize));
+#else
+         RCP<Tpetra::BlockCrsMatrix<Scalar, Node> > bcrsmatrix = rcp(new Tpetra::BlockCrsMatrix<Scalar, Node> (*TTGraph, blocksize));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& meshRowMap = *bcrsmatrix->getRowMap();
+#else
+         const Tpetra::Map<Node>& meshRowMap = *bcrsmatrix->getRowMap();
+#endif
          const Scalar zero   = Teuchos::ScalarTraits<Scalar>::zero();
          const Scalar one   = Teuchos::ScalarTraits<Scalar>::one();
          const Scalar two   = one+one;
@@ -876,8 +969,13 @@ namespace MueLuTests {
            bcrsmatrix->replaceLocalValues(lclRowInd, lclColInds.getRawPtr(), &basematrix[0], 1);
          }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > temp = rcp(new Xpetra::TpetraBlockCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(bcrsmatrix));
          Op = rcp(new Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node>(temp));
+#else
+         RCP<Xpetra::CrsMatrix<Scalar, Node> > temp = rcp(new Xpetra::TpetraBlockCrsMatrix<Scalar, Node>(bcrsmatrix));
+         Op = rcp(new Xpetra::CrsMatrixWrap<Scalar, Node>(temp));
+#endif
 #endif
          return Op;
       } // BuildBlockMatrix()
@@ -893,7 +991,11 @@ namespace MueLuTests {
     // partial specializations (GO=int not enabled with Tpetra)
 #if !defined(HAVE_TPETRA_INST_INT_INT)
     template <class Scalar, class LocalOrdinal, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class TpetraTestFactory<Scalar, LocalOrdinal, int, Node> {
+#else
+    class TpetraTestFactory<Scalar, Node> {
+#endif
       typedef int GlobalOrdinal;
 #include "MueLu_UseShortNames.hpp"
     public:
@@ -906,7 +1008,11 @@ namespace MueLuTests {
     // partial specializations (GO=long long not enabled with Tpetra)
 #if !defined(HAVE_TPETRA_INST_INT_LONG_LONG)
     template <class Scalar, class LocalOrdinal, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class TpetraTestFactory<Scalar, LocalOrdinal, long long, Node> {
+#else
+    class TpetraTestFactory<Scalar, Node> {
+#endif
       typedef long long GlobalOrdinal;
 #include "MueLu_UseShortNames.hpp"
     public:
@@ -920,8 +1026,15 @@ namespace MueLuTests {
 #if ((defined(EPETRA_HAVE_OMP) && !(defined(HAVE_TPETRA_INST_OPENMP))) || \
     (!defined(EPETRA_HAVE_OMP) && !(defined(HAVE_TPETRA_INST_SERIAL))))
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal>
     class TpetraTestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Xpetra::EpetraNode> {
+#else
+    template <class Scalar,>
+    class TpetraTestFactory<Scalar, Xpetra::EpetraNode> {
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
       typedef Xpetra::EpetraNode Node;
 #include "MueLu_UseShortNames.hpp"
     public:

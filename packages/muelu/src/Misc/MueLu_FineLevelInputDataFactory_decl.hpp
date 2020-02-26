@@ -64,7 +64,11 @@
 #include "MueLu_LWGraph_fwd.hpp"
 
 namespace MueLuTests {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class FineLevelInputDataFactoryTester;
 }
 
@@ -76,11 +80,19 @@ namespace MueLu {
   */
 
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class FineLevelInputDataFactory : public SingleLevelFactoryBase {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     friend class MueLuTests::FineLevelInputDataFactoryTester<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    friend class MueLuTests::FineLevelInputDataFactoryTester<Scalar, Node>;
+#endif
 #undef MUELU_FINELEVELINPUTDATAFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 

@@ -174,7 +174,11 @@ struct ExtremeValueResponse_Builder : public ResponseMESupportBuilderBase {
 
   template <typename T>
   Teuchos::RCP<panzer::ResponseEvaluatorFactoryBase> build() const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ResponseEvaluatorFactory_ExtremeValue<T,LO,GO>(comm,cubatureDegree,requiresCellExtreme,useMax,quadPointField,
+#else
+  { return Teuchos::rcp(new ResponseEvaluatorFactory_ExtremeValue<T>(comm,cubatureDegree,requiresCellExtreme,useMax,quadPointField,
+#endif
                                                                          linearObjFactory,globalIndexer,applyDirichletToDerivative,prefix)); }
 
   virtual Teuchos::RCP<panzer::ResponseEvaluatorFactoryBase> buildValueFactory() const

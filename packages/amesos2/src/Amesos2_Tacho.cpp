@@ -131,9 +131,15 @@ namespace Amesos2 {
 #include "Kokkos_DefaultNode.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define AMESOS2_TACHO_LOCAL_INSTANT(S,LO,GO,N)                        \
   template class Amesos2::TachoSolver<Tpetra::CrsMatrix<S, LO, GO, N>,      \
                                       Tpetra::MultiVector<S, LO, GO,  N> >;
+#else
+#define AMESOS2_TACHO_LOCAL_INSTANT(S,N)                        \
+  template class Amesos2::TachoSolver<Tpetra::CrsMatrix<S, N>,      \
+                                      Tpetra::MultiVector<S,  N> >;
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 
@@ -141,30 +147,62 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 #define NODETYPE Kokkos_Compat_KokkosSerialWrapperNode
 #ifdef HAVE_TPETRA_INST_FLOAT
   #ifdef HAVE_TPETRA_INST_INT_INT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, int, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, long, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_LONG_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, long long, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_UNSIGNED
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, unsigned int, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
 #endif
 #ifdef HAVE_TPETRA_INST_DOUBLE
     #ifdef HAVE_TPETRA_INST_INT_INT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, int, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, long, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_LONG_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, long long, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_UNSIGNED
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, unsigned int, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
 #endif
 #ifdef HAVE_TPETRA_INST_COMPLEX_FLOAT
@@ -202,30 +240,62 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 #define NODETYPE Kokkos_Compat_KokkosThreadsWrapperNode
 #ifdef HAVE_TPETRA_INST_FLOAT
   #ifdef HAVE_TPETRA_INST_INT_INT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, int, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, long, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_LONG_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, long long, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_UNSIGNED
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, unsigned int, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
 #endif
 #ifdef HAVE_TPETRA_INST_DOUBLE
     #ifdef HAVE_TPETRA_INST_INT_INT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, int, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, long, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_LONG_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, long long, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_UNSIGNED
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, unsigned int, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
 #endif
 #ifdef HAVE_TPETRA_INST_COMPLEX_FLOAT
@@ -263,30 +333,62 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 #define NODETYPE Kokkos_Compat_KokkosOpenMPWrapperNode
 #ifdef HAVE_TPETRA_INST_FLOAT
   #ifdef HAVE_TPETRA_INST_INT_INT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, int, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, long, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_LONG_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, long long, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_UNSIGNED
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, unsigned int, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
 #endif
 #ifdef HAVE_TPETRA_INST_DOUBLE
     #ifdef HAVE_TPETRA_INST_INT_INT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, int, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, long, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_LONG_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, long long, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_UNSIGNED
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, unsigned int, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
 #endif
 #ifdef HAVE_TPETRA_INST_COMPLEX_FLOAT
@@ -324,30 +426,62 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 #define NODETYPE Kokkos_Compat_KokkosCudaWrapperNode
 #ifdef HAVE_TPETRA_INST_FLOAT
   #ifdef HAVE_TPETRA_INST_INT_INT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, int, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, long, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_LONG_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, long long, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
   #ifdef HAVE_TPETRA_INST_INT_UNSIGNED
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     AMESOS2_TACHO_LOCAL_INSTANT(float, int, unsigned int, NODETYPE)
+#else
+    AMESOS2_TACHO_LOCAL_INSTANT(float, NODETYPE)
+#endif
   #endif
 #endif
 #ifdef HAVE_TPETRA_INST_DOUBLE
     #ifdef HAVE_TPETRA_INST_INT_INT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, int, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, long, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_LONG_LONG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, long long, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
     #ifdef HAVE_TPETRA_INST_INT_UNSIGNED
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       AMESOS2_TACHO_LOCAL_INSTANT(double, int, unsigned int, NODETYPE)
+#else
+      AMESOS2_TACHO_LOCAL_INSTANT(double, NODETYPE)
+#endif
     #endif
 #endif
 #ifdef HAVE_TPETRA_INST_COMPLEX_FLOAT

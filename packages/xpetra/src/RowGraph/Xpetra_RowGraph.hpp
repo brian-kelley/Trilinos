@@ -57,13 +57,21 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal,
            class GlobalOrdinal,
            class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template<class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class RowGraph
     : virtual public Teuchos::Describable
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node node_type;
@@ -84,22 +92,46 @@ namespace Xpetra {
 
 
     //! Returns the Map that describes the row distribution in this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getRowMap() const = 0;
+#else
+    virtual const Teuchos::RCP< const Map<Node > >  getRowMap() const = 0;
+#endif
 
     //! Returns the Map that describes the column distribution in this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getColMap() const = 0;
+#else
+    virtual const Teuchos::RCP< const Map<Node > >  getColMap() const = 0;
+#endif
 
     //! Returns the Map associated with the domain of this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getDomainMap() const = 0;
+#else
+    virtual const Teuchos::RCP< const Map<Node > >  getDomainMap() const = 0;
+#endif
 
     //! Returns the Map associated with the domain of this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getRangeMap() const = 0;
+#else
+    virtual const Teuchos::RCP< const Map<Node > >  getRangeMap() const = 0;
+#endif
 
     //! Returns the importer associated with this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP< const Import< LocalOrdinal, GlobalOrdinal, Node > > getImporter() const = 0;
+#else
+    virtual Teuchos::RCP< const Import<Node > > getImporter() const = 0;
+#endif
 
     //! Returns the exporter associated with this graph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP< const Export< LocalOrdinal, GlobalOrdinal, Node > > getExporter() const = 0;
+#else
+    virtual Teuchos::RCP< const Export<Node > > getExporter() const = 0;
+#endif
 
     //! Returns the number of global rows in the graph.
     virtual global_size_t getGlobalNumRows() const = 0;

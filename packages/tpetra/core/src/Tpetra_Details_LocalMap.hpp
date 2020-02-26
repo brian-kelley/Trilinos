@@ -67,9 +67,17 @@ namespace Details {
 /// By "local," we mean that the object performs no MPI communication,
 /// and can only access information that would never need MPI
 /// communication, no matter what kind of Map this is.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class DeviceType>
+#else
+template<class DeviceType>
+#endif
 class LocalMap {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   typedef LocalOrdinal local_ordinal_type;
   typedef GlobalOrdinal global_ordinal_type;
   typedef DeviceType device_type;

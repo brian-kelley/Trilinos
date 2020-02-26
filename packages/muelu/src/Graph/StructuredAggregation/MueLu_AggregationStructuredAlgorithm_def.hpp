@@ -65,8 +65,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationStructuredAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationStructuredAlgorithm<Node>::
+#endif
   BuildAggregates(const Teuchos::ParameterList& /* params */, const GraphBase& graph,
                   Aggregates& aggregates, std::vector<unsigned>& aggStat,
                   LO& numNonAggregatedNodes) const {
@@ -127,8 +132,13 @@ namespace MueLu {
   } // BuildAggregates()
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationStructuredAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationStructuredAlgorithm<Node>::
+#endif
   BuildGraph(const GraphBase& graph, RCP<IndexManager>& geoData, const LO dofsPerNode,
              RCP<CrsGraph>& myGraph, RCP<const Map>& coarseCoordinatesFineMap,
              RCP<const Map>& coarseCoordinatesMap) const {
@@ -259,8 +269,13 @@ namespace MueLu {
   } // BuildGraph()
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationStructuredAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationStructuredAlgorithm<Node>::
+#endif
   ComputeGraphDataConstant(const GraphBase& graph, RCP<IndexManager>& geoData,
                            const LO dofsPerNode, const int /* numInterpolationPoints */,
                            ArrayRCP<size_t>& nnzOnRow, Array<size_t>& rowPtr,
@@ -315,8 +330,13 @@ namespace MueLu {
   } // ComputeGraphDataConstant()
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationStructuredAlgorithm<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void AggregationStructuredAlgorithm<Node>::
+#endif
   ComputeGraphDataLinear(const GraphBase& /* graph */, RCP<IndexManager>& geoData,
                          const LO dofsPerNode, const int numInterpolationPoints,
                          ArrayRCP<size_t>& nnzOnRow, Array<size_t>& rowPtr,

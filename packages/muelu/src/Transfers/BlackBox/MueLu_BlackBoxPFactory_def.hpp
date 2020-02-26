@@ -73,8 +73,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> BlackBoxPFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     // Coarsen can come in two forms, either a single char that will be interpreted as an integer
@@ -94,8 +99,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& fineLevel,
+#else
+  template <class Scalar, class Node>
+  void BlackBoxPFactory<Scalar, Node>::DeclareInput(Level& fineLevel,
+#endif
                                                                                  Level& /* coarseLevel */)
     const {
     Input(fineLevel, "A");
@@ -128,15 +138,25 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel,
+#else
+  template <class Scalar, class Node>
+  void BlackBoxPFactory<Scalar, Node>::Build(Level& fineLevel,
+#endif
                                                                           Level& coarseLevel) const{
     return BuildP(fineLevel, coarseLevel);
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildP(Level& fineLevel,
+#else
+  template <class Scalar, class Node>
+  void BlackBoxPFactory<Scalar, Node>::BuildP(Level& fineLevel,
+#endif
                                                                            Level& coarseLevel)const{
     FactoryMonitor m(*this, "Build", coarseLevel);
 
@@ -146,8 +166,13 @@ namespace MueLu {
     // obtain general variables
     RCP<Matrix>      A             = Get< RCP<Matrix> >      (fineLevel, "A");
     RCP<MultiVector> fineNullspace = Get< RCP<MultiVector> > (fineLevel, "Nullspace");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates =
       Get< RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > >(fineLevel, "Coordinates");
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates =
+      Get< RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > >(fineLevel, "Coordinates");
+#endif
     LO numDimensions  = coordinates->getNumVectors();
     LO BlkSize = A->GetFixedBlockSize();
 
@@ -260,8 +285,13 @@ namespace MueLu {
     for(LO dim = 0; dim < numDimensions; ++dim) {
       coarseCoords[dim] = coarseNodes[dim]();
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coarseCoordinates =
       Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(coarseCoordsMap, coarseCoords(),
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coarseCoordinates =
+      Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(coarseCoordsMap, coarseCoords(),
+#endif
                                                          numDimensions);
 
     // Now create a new matrix: Aghost that contains all the data
@@ -370,19 +400,35 @@ namespace MueLu {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> ghostedRowMap = Xpetra::MapFactory<LO,GO,NO>::Build(A->getRowMap()->lib(),
+#else
+    RCP<const Map> ghostedRowMap = Xpetra::MapFactory<NO>::Build(A->getRowMap()->lib(),
+#endif
                                            Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),
                                            ghostRowGIDs(),
                                            A->getRowMap()->getIndexBase(),
                                            A->getRowMap()->getComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> ghostedColMap = Xpetra::MapFactory<LO,GO,NO>::Build(A->getRowMap()->lib(),
+#else
+    RCP<const Map> ghostedColMap = Xpetra::MapFactory<NO>::Build(A->getRowMap()->lib(),
+#endif
                                            Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),
                                            ghostColGIDs(),
                                            A->getRowMap()->getIndexBase(),
                                            A->getRowMap()->getComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Import> ghostImporter = Xpetra::ImportFactory<LO,GO,NO>::Build(A->getRowMap(),
+#else
+    RCP<const Import> ghostImporter = Xpetra::ImportFactory<NO>::Build(A->getRowMap(),
+#endif
                                                                              ghostedRowMap);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Matrix> Aghost        = Xpetra::MatrixFactory<SC,LO,GO,NO>::Build(A, *ghostImporter,
+#else
+    RCP<const Matrix> Aghost        = Xpetra::MatrixFactory<SC,NO>::Build(A, *ghostImporter,
+#endif
                                                                                 ghostedRowMap,
                                                                                 ghostedRowMap);
 
@@ -428,12 +474,20 @@ namespace MueLu {
           colGIDs[BlkSize*ind + dof] = BlkSize*colMapOrdering[ind].GID + dof;
         }
       }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       domainMapP = Xpetra::MapFactory<LO,GO,NO>::Build(rowMapP->lib(),
+#else
+      domainMapP = Xpetra::MapFactory<NO>::Build(rowMapP->lib(),
+#endif
                                                        BlkSize*gNumCoarseNodes,
                                                        colGIDs.view(0,BlkSize*lNumCoarseNodes),
                                                        rowMapP->getIndexBase(),
                                                        rowMapP->getComm());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       colMapP = Xpetra::MapFactory<LO,GO,NO>::Build(rowMapP->lib(),
+#else
+      colMapP = Xpetra::MapFactory<NO>::Build(rowMapP->lib(),
+#endif
                                                     Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid(),
                                                     colGIDs.view(0, colGIDs.size()),
                                                     rowMapP->getIndexBase(),
@@ -442,7 +496,11 @@ namespace MueLu {
 
     std::vector<size_t> strideInfo(1);
     strideInfo[0] = BlkSize;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> stridedDomainMapP = Xpetra::StridedMapFactory<LO,GO,NO>::Build(domainMapP,
+#else
+    RCP<const Map> stridedDomainMapP = Xpetra::StridedMapFactory<NO>::Build(domainMapP,
+#endif
                                                                                   strideInfo);
 
     GO gnnzP = 0;
@@ -733,7 +791,11 @@ namespace MueLu {
     }
 
     // Sort all row's column indicies and entries by LID
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Xpetra::CrsMatrixUtils<SC,LO,GO,NO>::sortCrsEntries(ia, ja, val, rowMapP->lib());
+#else
+    Xpetra::CrsMatrixUtils<SC,NO>::sortCrsEntries(ia, ja, val, rowMapP->lib());
+#endif
 
     // Set the values of the prolongation operators into the CrsMatrix P and call FillComplete
     PCrs->setAllValues(iaP, jaP, valP);
@@ -754,9 +816,15 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   GetGeometricData(RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> >& coordinates,
+#else
+  template <class Scalar, class Node>
+  void BlackBoxPFactory<Scalar, Node>::
+  GetGeometricData(RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> >& coordinates,
+#endif
                    const Array<LO> coarseRate, const Array<GO> gFineNodesPerDir,
                    const Array<LO> lFineNodesPerDir, const LO BlkSize, Array<GO>& gIndices,
                    Array<LO>& myOffset, Array<bool>& ghostInterface, Array<LO>& endRate,
@@ -1355,8 +1423,13 @@ namespace MueLu {
 
   } // GetGeometricData()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void BlackBoxPFactory<Scalar, Node>::
+#endif
   ComputeLocalEntries(const RCP<const Matrix>& Aghost, const Array<LO> coarseRate,
                       const Array<LO> /* endRate */, const LO BlkSize, const Array<LO> elemInds,
                       const Array<LO> /* lCoarseElementsPerDir */, const LO numDimensions,
@@ -1668,8 +1741,13 @@ namespace MueLu {
 
   } // ComputeLocalEntries()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void BlackBoxPFactory<Scalar, Node>::
+#endif
   CollapseStencil(const int type, const int orientation, const int /* collapseFlags */[3],
                   Array<SC>& stencil) const {
 
@@ -1748,8 +1826,13 @@ namespace MueLu {
     }
   } // CollapseStencil
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Scalar, class Node>
+  void BlackBoxPFactory<Scalar, Node>::
+#endif
   FormatStencil(const LO BlkSize, const Array<bool> /* ghostInterface */, const LO /* ie */, const LO /* je */,
                 const LO /* ke */, const ArrayView<const SC> rowValues,const Array<LO> /* elementNodesPerDir */,
                 const int collapseFlags[3], const std::string stencilType, Array<SC>& stencil)
@@ -1863,8 +1946,13 @@ namespace MueLu {
     } // stencilTpye
   } // FormatStencil()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetNodeInfo(
+#else
+  template <class Scalar, class Node>
+  void BlackBoxPFactory<Scalar, Node>::GetNodeInfo(
+#endif
                         const LO ie, const LO je, const LO ke,
                         const Array<LO> elementNodesPerDir,
                         int* type, LO& ind, int* orientation) const {
@@ -1940,8 +2028,13 @@ namespace MueLu {
     }
   } // GetNodeInfo()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void BlackBoxPFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::sh_sort_permute(
+#else
+  template <class Scalar, class Node>
+  void BlackBoxPFactory<Scalar, Node>::sh_sort_permute(
+#endif
                 const typename Teuchos::Array<LocalOrdinal>::iterator& first1,
                 const typename Teuchos::Array<LocalOrdinal>::iterator& last1,
                 const typename Teuchos::Array<LocalOrdinal>::iterator& first2,

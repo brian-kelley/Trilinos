@@ -62,13 +62,23 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   OnePtAggregationAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::OnePtAggregationAlgorithm_kokkos(RCP<const FactoryBase> const &/* graphFact */)
+#else
+  template <class Node>
+  OnePtAggregationAlgorithm_kokkos<Node>::OnePtAggregationAlgorithm_kokkos(RCP<const FactoryBase> const &/* graphFact */)
+#endif
   {
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void OnePtAggregationAlgorithm_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void OnePtAggregationAlgorithm_kokkos<Node>::
+#endif
   BuildAggregates(Teuchos::ParameterList const & /* params */,
                   LWGraph_kokkos const & graph,
                   Aggregates_kokkos & aggregates,

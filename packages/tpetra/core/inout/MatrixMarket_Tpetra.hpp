@@ -315,7 +315,11 @@ namespace Tpetra {
         if (numRows == numCols) {
           return pRangeMap;
         } else {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           return createUniformContigMapWithNode<LO,GO,NT> (numCols,
+#else
+          return createUniformContigMapWithNode<NT> (numCols,
+#endif
                                                            pRangeMap->getComm ());
         }
       }
@@ -4145,7 +4149,11 @@ namespace Tpetra {
         typedef Teuchos::ScalarTraits<ST> STS;
         typedef typename STS::magnitudeType MT;
         typedef Teuchos::ScalarTraits<MT> STM;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Tpetra::MultiVector<ST, LO, GO, NT> MV;
+#else
+        typedef Tpetra::MultiVector<ST, NT> MV;
+#endif
 
         // Rank 0 is the only (MPI) process allowed to read from the
         // input stream.
@@ -4357,10 +4365,18 @@ namespace Tpetra {
           // The user didn't supply a Map.  Make a contiguous
           // distributed Map for them, using the read-in multivector
           // dimensions.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           map = createUniformContigMapWithNode<LO, GO, NT> (numRows, comm);
+#else
+          map = createUniformContigMapWithNode<NT> (numRows, comm);
+#endif
           const size_t localNumRows = (myRank == 0) ? numRows : 0;
           // At this point, map exists and has a nonnull node.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           proc0Map = createContigMapWithNode<LO, GO, NT> (numRows, localNumRows,
+#else
+          proc0Map = createContigMapWithNode<NT> (numRows, localNumRows,
+#endif
                                                           comm);
         }
         else { // The user supplied a Map.
@@ -4368,7 +4384,11 @@ namespace Tpetra {
         }
 
         // Make a multivector X owned entirely by Proc 0.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MV> X = createMultiVector<ST, LO, GO, NT> (proc0Map, numCols);
+#else
+        RCP<MV> X = createMultiVector<ST, NT> (proc0Map, numCols);
+#endif
 
         //
         // On Proc 0, read the Matrix Market data from the input
@@ -4592,7 +4612,11 @@ namespace Tpetra {
         }
 
         // Make a multivector Y with the distributed map pMap.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MV> Y = createMultiVector<ST, LO, GO, NT> (map, numCols);
+#else
+        RCP<MV> Y = createMultiVector<ST, NT> (map, numCols);
+#endif
 
         if (debug) {
           *err << myRank << ": readDenseImpl: Creating Export" << endl;
@@ -4601,7 +4625,11 @@ namespace Tpetra {
         // Make an Export object that will export X to Y.  First
         // argument is the source map, second argument is the target
         // map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Export<LO, GO, NT> exporter (proc0Map, map, err);
+#else
+        Export<NT> exporter (proc0Map, map, err);
+#endif
 
         if (debug) {
           *err << myRank << ": readDenseImpl: Exporting" << endl;
@@ -4651,7 +4679,11 @@ namespace Tpetra {
         typedef Teuchos::ScalarTraits<ST> STS;
         typedef typename STS::magnitudeType MT;
         typedef Teuchos::ScalarTraits<MT> STM;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Tpetra::Vector<ST, LO, GO, NT> MV;
+#else
+        typedef Tpetra::Vector<ST, NT> MV;
+#endif
 
         // Rank 0 is the only (MPI) process allowed to read from the
         // input stream.
@@ -4870,10 +4902,18 @@ namespace Tpetra {
           // The user didn't supply a Map.  Make a contiguous
           // distributed Map for them, using the read-in multivector
           // dimensions.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           map = createUniformContigMapWithNode<LO, GO, NT> (numRows, comm);
+#else
+          map = createUniformContigMapWithNode<NT> (numRows, comm);
+#endif
           const size_t localNumRows = (myRank == 0) ? numRows : 0;
           // At this point, map exists and has a nonnull node.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           proc0Map = createContigMapWithNode<LO, GO, NT> (numRows, localNumRows,
+#else
+          proc0Map = createContigMapWithNode<NT> (numRows, localNumRows,
+#endif
                                                           comm);
         }
         else { // The user supplied a Map.
@@ -4881,7 +4921,11 @@ namespace Tpetra {
         }
 
         // Make a multivector X owned entirely by Proc 0.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MV> X = createVector<ST, LO, GO, NT> (proc0Map);
+#else
+        RCP<MV> X = createVector<ST, NT> (proc0Map);
+#endif
 
         //
         // On Proc 0, read the Matrix Market data from the input
@@ -5105,7 +5149,11 @@ namespace Tpetra {
         }
 
         // Make a multivector Y with the distributed map pMap.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MV> Y = createVector<ST, LO, GO, NT> (map);
+#else
+        RCP<MV> Y = createVector<ST, NT> (map);
+#endif
 
         if (debug) {
           *err << myRank << ": readVectorImpl: Creating Export" << endl;
@@ -5114,7 +5162,11 @@ namespace Tpetra {
         // Make an Export object that will export X to Y.  First
         // argument is the source map, second argument is the target
         // map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Export<LO, GO, NT> exporter (proc0Map, map, err);
+#else
+        Export<NT> exporter (proc0Map, map, err);
+#endif
 
         if (debug) {
           *err << myRank << ": readVectorImpl: Exporting" << endl;
@@ -5224,7 +5276,11 @@ namespace Tpetra {
         typedef local_ordinal_type LO;
         typedef global_ordinal_type GO;
         typedef node_type NT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Tpetra::MultiVector<GO, LO, GO, NT> MV;
+#else
+        typedef Tpetra::MultiVector<GO, NT> MV;
+#endif
 
         const int numProcs = comm->getSize ();
         const int myRank = comm->getRank ();
@@ -5870,7 +5926,11 @@ namespace Tpetra {
           Details::computeGatherMap (colMap, err, debug);
 
         // Current map is the source map, gather map is the target map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Import<LO, GO, node_type> import_type;
+#else
+        typedef Import<node_type> import_type;
+#endif
         import_type importer (rowMap, gatherRowMap);
 
         // Create a new CrsMatrix to hold the result of the import.
@@ -6172,7 +6232,11 @@ namespace Tpetra {
         auto gatherColMap = Details::computeGatherMap (colMap, err, debug);
 
         // Current map is the source map, gather map is the target map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Import<LO, GO, node_type> importer (rowMap, gatherRowMap);
+#else
+        Import<node_type> importer (rowMap, gatherRowMap);
+#endif
 
         // Create a new CrsGraph to hold the result of the import.
         // The constructor needs a column map as well as a row map,
@@ -8261,8 +8325,13 @@ namespace Tpetra {
         typedef scalar_type                        Scalar;
         typedef Teuchos::OrdinalTraits<LO>         TLOT;
         typedef Teuchos::OrdinalTraits<GO>         TGOT;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         typedef Tpetra::Import<LO, GO, node_type>  import_type;
         typedef Tpetra::MultiVector<GO, LO, GO, node_type> mv_type_go;
+#else
+        typedef Tpetra::Import<node_type>  import_type;
+        typedef Tpetra::MultiVector<GO, node_type> mv_type_go;
+#endif
 
         const map_type&                domainMap = *(A.getDomainMap());
         RCP<const map_type>            rangeMap = A.getRangeMap();

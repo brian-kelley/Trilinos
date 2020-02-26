@@ -57,8 +57,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> PatternFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> PatternFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -71,8 +76,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PatternFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void PatternFactory<Scalar, Node>::DeclareInput(Level& fineLevel, Level& coarseLevel) const {
+#endif
     Input(coarseLevel, "P");
 
     const ParameterList& pL = GetParameterList();
@@ -80,8 +90,13 @@ namespace MueLu {
       Input(fineLevel, "A");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void PatternFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void PatternFactory<Scalar, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Ppattern", coarseLevel);
 
     RCP<Matrix> P = Get< RCP<Matrix> >(coarseLevel, "P");
@@ -97,7 +112,11 @@ namespace MueLu {
       bool optimizeStorage = true;
 
       for (int i = 0; i < k; i++) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         AP = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *P, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#else
+        AP = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *P, false, GetOStream(Statistics2), doFillComplete, optimizeStorage);
+#endif
         P.swap(AP);
       }
     }

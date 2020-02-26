@@ -68,7 +68,11 @@ namespace Thyra {
  *
  * \ingroup Tpetra_Thyra_Op_Vec_adapters_grp
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal=LocalOrdinal,
+#else
+template <class Scalar,
+#endif
   class Node=KokkosClassic::DefaultNode::DefaultNodeType>
 class TpetraLinearOp
   : virtual public Thyra::LinearOpDefaultBase<Scalar>,
@@ -80,6 +84,10 @@ class TpetraLinearOp
 {
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   /** \name Constructors/initializers. */
   //@{
 
@@ -90,22 +98,38 @@ public:
   void initialize(
     const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
     const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraOperator
+#else
+    const RCP<Tpetra::Operator<Scalar,Node> > &tpetraOperator
+#endif
     );
 
   /** \brief Initialize. */
   void constInitialize(
     const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
     const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<const Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraOperator
+#else
+    const RCP<const Tpetra::Operator<Scalar,Node> > &tpetraOperator
+#endif
     );
 
   /** \brief Get embedded non-const Tpetra::Operator. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  RCP<Tpetra::Operator<Scalar,Node> >
+#endif
   getTpetraOperator();
 
   /** \brief Get embedded const Tpetra::Operator. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  RCP<const Tpetra::Operator<Scalar,Node> >
+#endif
   getConstTpetraOperator() const;
 
   //@}
@@ -203,7 +227,11 @@ private:
   RCP<const VectorSpaceBase<Scalar> >
   domainSpace_;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::ConstNonconstObjectContainer<Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::ConstNonconstObjectContainer<Tpetra::Operator<Scalar,Node> >
+#endif
   tpetraOperator_;
 
 #ifdef HAVE_THYRA_TPETRA_EPETRA
@@ -224,16 +252,30 @@ private:
  *
  * \relates TpetraLinearOp
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<TpetraLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+template <class Scalar, class Node>
+RCP<TpetraLinearOp<Scalar, Node> >
+#endif
 tpetraLinearOp(
   const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
   const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraOperator
+#else
+  const RCP<Tpetra::Operator<Scalar,Node> > &tpetraOperator
+#endif
   )
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<TpetraLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> > op =
     Teuchos::rcp(new TpetraLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node>);
+#else
+  const RCP<TpetraLinearOp<Scalar, Node> > op =
+    Teuchos::rcp(new TpetraLinearOp<Scalar, Node>);
+#endif
   op->initialize(rangeSpace, domainSpace, tpetraOperator);
   return op;
 }
@@ -243,16 +285,30 @@ tpetraLinearOp(
  *
  * \relates TpetraLinearOp
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const TpetraLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+template <class Scalar, class Node>
+RCP<const TpetraLinearOp<Scalar, Node> >
+#endif
 constTpetraLinearOp(
   const RCP<const VectorSpaceBase<Scalar> > &rangeSpace,
   const RCP<const VectorSpaceBase<Scalar> > &domainSpace,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<const Tpetra::Operator<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &tpetraOperator
+#else
+  const RCP<const Tpetra::Operator<Scalar,Node> > &tpetraOperator
+#endif
   )
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const RCP<TpetraLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> > op =
     Teuchos::rcp(new TpetraLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node>);
+#else
+  const RCP<TpetraLinearOp<Scalar, Node> > op =
+    Teuchos::rcp(new TpetraLinearOp<Scalar, Node>);
+#endif
   op->constInitialize(rangeSpace, domainSpace, tpetraOperator);
   return op;
 }

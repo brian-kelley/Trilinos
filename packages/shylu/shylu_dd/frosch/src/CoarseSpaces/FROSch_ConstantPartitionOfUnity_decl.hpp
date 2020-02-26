@@ -51,38 +51,92 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class ConstantPartitionOfUnity : public PartitionOfUnity<SC,LO,GO,NO> {
+#else
+    class ConstantPartitionOfUnity : public PartitionOfUnity<SC,NO> {
+#endif
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using CommPtr                       = typename PartitionOfUnity<SC,LO,GO,NO>::CommPtr;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using CommPtr                       = typename PartitionOfUnity<SC,NO>::CommPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMapPtr                       = typename PartitionOfUnity<SC,LO,GO,NO>::XMapPtr;
         using ConstXMapPtr                  = typename PartitionOfUnity<SC,LO,GO,NO>::ConstXMapPtr;
         using XMapPtrVecPtr                 = typename PartitionOfUnity<SC,LO,GO,NO>::XMapPtrVecPtr;
         using ConstXMapPtrVecPtr            = typename PartitionOfUnity<SC,LO,GO,NO>::ConstXMapPtrVecPtr;
+#else
+        using XMapPtr                       = typename PartitionOfUnity<SC,NO>::XMapPtr;
+        using ConstXMapPtr                  = typename PartitionOfUnity<SC,NO>::ConstXMapPtr;
+        using XMapPtrVecPtr                 = typename PartitionOfUnity<SC,NO>::XMapPtrVecPtr;
+        using ConstXMapPtrVecPtr            = typename PartitionOfUnity<SC,NO>::ConstXMapPtrVecPtr;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVectorPtr               = typename PartitionOfUnity<SC,LO,GO,NO>::XMultiVectorPtr;
         using ConstXMultiVectorPtr          = typename PartitionOfUnity<SC,LO,GO,NO>::ConstXMultiVectorPtr;
         using XMultiVectorPtrVecPtr         = typename PartitionOfUnity<SC,LO,GO,NO>::XMultiVectorPtrVecPtr;
+#else
+        using XMultiVectorPtr               = typename PartitionOfUnity<SC,NO>::XMultiVectorPtr;
+        using ConstXMultiVectorPtr          = typename PartitionOfUnity<SC,NO>::ConstXMultiVectorPtr;
+        using XMultiVectorPtrVecPtr         = typename PartitionOfUnity<SC,NO>::XMultiVectorPtrVecPtr;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using ParameterListPtr              = typename PartitionOfUnity<SC,LO,GO,NO>::ParameterListPtr;
+#else
+        using ParameterListPtr              = typename PartitionOfUnity<SC,NO>::ParameterListPtr;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using DDInterfacePtr                = typename PartitionOfUnity<SC,LO,GO,NO>::DDInterfacePtr;
+#else
+        using DDInterfacePtr                = typename PartitionOfUnity<SC,NO>::DDInterfacePtr;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using EntitySetPtr                  = typename PartitionOfUnity<SC,LO,GO,NO>::EntitySetPtr;
+#else
+        using EntitySetPtr                  = typename PartitionOfUnity<SC,NO>::EntitySetPtr;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using UN                            = typename PartitionOfUnity<SC,LO,GO,NO>::UN;
+#else
+        using UN                            = typename PartitionOfUnity<SC,NO>::UN;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using LOVec                         = typename PartitionOfUnity<SC,LO,GO,NO>::LOVec;
+#else
+        using LOVec                         = typename PartitionOfUnity<SC,NO>::LOVec;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using GOVec                         = typename PartitionOfUnity<SC,LO,GO,NO>::GOVec;
         using GOVecView                     = typename PartitionOfUnity<SC,LO,GO,NO>::GOVecView;
+#else
+        using GOVec                         = typename PartitionOfUnity<SC,NO>::GOVec;
+        using GOVecView                     = typename PartitionOfUnity<SC,NO>::GOVecView;
+#endif
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using SCVec                         = typename PartitionOfUnity<SC,LO,GO,NO>::SCVec;
+#else
+        using SCVec                         = typename PartitionOfUnity<SC,NO>::SCVec;
+#endif
 
     public:
 

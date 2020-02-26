@@ -51,26 +51,44 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
     class PartitionOfUnity {
 
     protected:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
         using CommPtr                       = RCP<const Comm<int> >;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMap                          = Map<LO,GO,NO>;
+#else
+        using XMap                          = Map<NO>;
+#endif
         using XMapPtr                       = RCP<XMap>;
         using ConstXMapPtr                  = RCP<const XMap>;
         using XMapPtrVecPtr                 = ArrayRCP<XMapPtr>;
         using ConstXMapPtrVecPtr            = ArrayRCP<ConstXMapPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrix                       = Matrix<SC,LO,GO,NO>;
+#else
+        using XMatrix                       = Matrix<SC,NO>;
+#endif
         using XMatrixPtr                    = RCP<XMatrix>;
         using ConstXMatrixPtr               = RCP<const XMatrix>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector                  = MultiVector<SC,LO,GO,NO>;
+#else
+        using XMultiVector                  = MultiVector<SC,NO>;
+#endif
         using ConstXMultiVectorPtr          = RCP<const XMultiVector>;
         using XMultiVectorPtr               = RCP<XMultiVector>;
         using XMultiVectorPtrVecPtr         = ArrayRCP<XMultiVectorPtr>;
@@ -78,13 +96,26 @@ namespace FROSch {
 
         using ParameterListPtr              = RCP<ParameterList>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using DDInterfacePtr                = RCP<DDInterface<SC,LO,GO,NO> >;
         using ConstDDInterfacePtr           = RCP<const DDInterface<SC,LO,GO,NO> >;
+#else
+        using DDInterfacePtr                = RCP<DDInterface<SC,NO> >;
+        using ConstDDInterfacePtr           = RCP<const DDInterface<SC,NO> >;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using EntitySetPtr                  = RCP<EntitySet<SC,LO,GO,NO> >;
+#else
+        using EntitySetPtr                  = RCP<EntitySet<SC,NO> >;
+#endif
         using EntitySetPtrVecPtr            = ArrayRCP<EntitySetPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using InterfaceEntityPtr            = RCP<InterfaceEntity<SC,LO,GO,NO> >;
+#else
+        using InterfaceEntityPtr            = RCP<InterfaceEntity<SC,NO> >;
+#endif
 
         using UN                            = unsigned;
         using ConstUN                       = const UN;

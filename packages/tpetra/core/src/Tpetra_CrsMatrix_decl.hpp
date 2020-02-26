@@ -69,7 +69,11 @@
 namespace Tpetra {
 
   // Forward declaration for CrsMatrix::swap() test
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node> class crsMatrix_Swap_Tester;
+#else
+  template<class Scalar, class Node> class crsMatrix_Swap_Tester;
+#endif
 
   /// \brief Nonmember CrsMatrix constructor that fuses Import and fillComplete().
   /// \relatesalso CrsMatrix
@@ -125,6 +129,7 @@ namespace Tpetra {
   template<class CrsMatrixType>
   Teuchos::RCP<CrsMatrixType>
   importAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   const Import<typename CrsMatrixType::local_ordinal_type,
                                                typename CrsMatrixType::global_ordinal_type,
                                                typename CrsMatrixType::node_type>& importer,
@@ -134,6 +139,11 @@ namespace Tpetra {
                                   const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                typename CrsMatrixType::global_ordinal_type,
                                                                typename CrsMatrixType::node_type> >& rangeMap = Teuchos::null,
+#else
+                                  const Import<typename CrsMatrixType::node_type>& importer,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap = Teuchos::null,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap = Teuchos::null,
+#endif
                                   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
   /// \brief Nonmember CrsMatrix constructor that fuses Import and fillComplete().
@@ -192,6 +202,7 @@ namespace Tpetra {
   template<class CrsMatrixType>
   Teuchos::RCP<CrsMatrixType>
   importAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   const Import<typename CrsMatrixType::local_ordinal_type,
                                                typename CrsMatrixType::global_ordinal_type,
                                                typename CrsMatrixType::node_type>& rowImporter,
@@ -204,6 +215,12 @@ namespace Tpetra {
                                   const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                typename CrsMatrixType::global_ordinal_type,
                                                                typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                  const Import<typename CrsMatrixType::node_type>& rowImporter,
+                                  const Import<typename CrsMatrixType::node_type>& domainImporter,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                   const Teuchos::RCP<Teuchos::ParameterList>& params);
 
   /// \brief Nonmember CrsMatrix constructor that fuses Export and fillComplete().
@@ -242,6 +259,7 @@ namespace Tpetra {
   template<class CrsMatrixType>
   Teuchos::RCP<CrsMatrixType>
   exportAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   const Export<typename CrsMatrixType::local_ordinal_type,
                                                typename CrsMatrixType::global_ordinal_type,
                                                typename CrsMatrixType::node_type>& exporter,
@@ -251,6 +269,11 @@ namespace Tpetra {
                                   const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                typename CrsMatrixType::global_ordinal_type,
                                                                typename CrsMatrixType::node_type> >& rangeMap = Teuchos::null,
+#else
+                                  const Export<typename CrsMatrixType::node_type>& exporter,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap = Teuchos::null,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap = Teuchos::null,
+#endif
                                   const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null);
 
   /// \brief Nonmember CrsMatrix constructor that fuses Export and fillComplete().
@@ -289,6 +312,7 @@ namespace Tpetra {
   template<class CrsMatrixType>
   Teuchos::RCP<CrsMatrixType>
   exportAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   const Export<typename CrsMatrixType::local_ordinal_type,
                                                typename CrsMatrixType::global_ordinal_type,
                                                typename CrsMatrixType::node_type>& rowExporter,
@@ -301,16 +325,30 @@ namespace Tpetra {
                                   const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                typename CrsMatrixType::global_ordinal_type,
                                                                typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                  const Export<typename CrsMatrixType::node_type>& rowExporter,
+                                  const Export<typename CrsMatrixType::node_type>& domainExporter,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                   const Teuchos::RCP<Teuchos::ParameterList>& params);
 
   /// \brief Nonmember function that computes a residual
   /// Computes R = B - A * X
   namespace Details {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC, class LO, class GO, class NO>
     void residual(const Operator<SC,LO,GO,NO> &   A,
                   const MultiVector<SC,LO,GO,NO> & X,
                   const MultiVector<SC,LO,GO,NO> & B,
                   MultiVector<SC,LO,GO,NO> & R);
+#else
+    template<class SC, class NO>
+    void residual(const Operator<SC,NO> &   A,
+                  const MultiVector<SC,NO> & X,
+                  const MultiVector<SC,NO> & B,
+                  MultiVector<SC,NO> & R);
+#endif
   }
 
   /// \class CrsMatrix
@@ -427,14 +465,25 @@ namespace Tpetra {
   /// has a different communication plan.  We have not yet implemented
   /// this optimization.
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   class CrsMatrix :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>,
     public DistObject<char, LocalOrdinal, GlobalOrdinal, Node>
+#else
+    public RowMatrix<Scalar, Node>,
+    public DistObject<char,Node>
+#endif
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Typedefs
     //@{
 
@@ -473,16 +522,32 @@ namespace Tpetra {
     using mag_type = typename Kokkos::ArithTraits<impl_scalar_type>::mag_type;
 
     //! The Map specialization suitable for this CrsMatrix specialization.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Map<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using map_type = Map<Node>;
+#endif
 
     //! The Import specialization suitable for this CrsMatrix specialization.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using import_type = Import<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using import_type = Import<Node>;
+#endif
 
     //! The Export specialization suitable for this CrsMatrix specialization.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using export_type = Export<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using export_type = Export<Node>;
+#endif
 
     //! The CrsGraph specialization suitable for this CrsMatrix specialization.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using crs_graph_type = CrsGraph<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using crs_graph_type = CrsGraph<Node>;
+#endif
 
     //! The part of the sparse matrix's graph on each MPI process.
     using local_graph_type = typename crs_graph_type::local_graph_type;
@@ -502,22 +567,38 @@ namespace Tpetra {
     //@{
 
     //! Copy constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     CrsMatrix (const CrsMatrix<Scalar, LocalOrdinal,
                                GlobalOrdinal, Node>&) = default;
+#else
+    CrsMatrix (const CrsMatrix<Scalar, Node>&) = default;
+#endif
 
     //! Move constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     CrsMatrix (CrsMatrix<Scalar, LocalOrdinal,
                          GlobalOrdinal, Node>&&) = default;
+#else
+    CrsMatrix (CrsMatrix<Scalar, Node>&&) = default;
+#endif
 
     //! Copy assignment.
     CrsMatrix&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     operator= (const CrsMatrix<Scalar, LocalOrdinal,
                                GlobalOrdinal, Node>&) = default;
+#else
+    operator= (const CrsMatrix<Scalar, Node>&) = default;
+#endif
 
     //! Move assignment.
     CrsMatrix&
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     operator= (CrsMatrix<Scalar, LocalOrdinal,
                          GlobalOrdinal, Node>&&) = default;
+#else
+    operator= (CrsMatrix<Scalar, Node>&&) = default;
+#endif
 
     /// \brief Constructor specifying fixed number of entries for each row.
     ///
@@ -828,7 +909,11 @@ namespace Tpetra {
     /// \brief Copy constructor, with option to do deep or shallow copy.
     // This function in 'Copy' mode is only guaranteed to work correctly for matrices
     // which are fillComplete.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     CrsMatrix (const CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& source,
+#else
+    CrsMatrix (const CrsMatrix<Scalar, Node>& source,
+#endif
                const Teuchos::DataAccess copyOrView);
 
     /// \brief Destructor (virtual for memory safety of derived classes).
@@ -2273,7 +2358,11 @@ namespace Tpetra {
     Teuchos::RCP<const map_type> getColMap () const override;
 
     //! This matrix's graph, as a RowGraph.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const RowGraph<LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<const RowGraph<Node> >
+#endif
     getGraph () const override;
 
     //! This matrix's graph, as a CrsGraph.
@@ -2715,7 +2804,11 @@ namespace Tpetra {
     /// entries owned by the calling process. If the matrix has an empty
     /// row, the diagonal entry contains a zero.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getLocalDiagCopy (Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& diag) const override;
+#else
+    getLocalDiagCopy (Vector<Scalar, Node>& diag) const override;
+#endif
 
     /// \brief Get offsets of the diagonal entries in the matrix.
     ///
@@ -2784,7 +2877,11 @@ namespace Tpetra {
     /// is fill complete, then the offsets array remains valid through
     /// calls to fillComplete() and resumeFill().
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getLocalDiagCopy (Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& diag,
+#else
+    getLocalDiagCopy (Vector<Scalar, Node>& diag,
+#endif
                       const Kokkos::View<const size_t*, device_type,
                         Kokkos::MemoryUnmanaged>& offsets) const;
 
@@ -2811,7 +2908,11 @@ namespace Tpetra {
     /// is fill complete, then the offsets array remains valid through
     /// calls to fillComplete() and resumeFill().
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getLocalDiagCopy (Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& diag,
+#else
+    getLocalDiagCopy (Vector<Scalar, Node>& diag,
+#endif
                       const Teuchos::ArrayView<const size_t>& offsets) const;
 
     /// \brief Scale the matrix on the left with the given Vector.
@@ -2819,14 +2920,22 @@ namespace Tpetra {
     /// On return, for all entries i,j in the matrix,
     /// \f$A(i,j) = x(i)*A(i,j)\f$.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     leftScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) override;
+#else
+    leftScale (const Vector<Scalar, Node>& x) override;
+#endif
 
     /// \brief Scale the matrix on the right with the given Vector.
     ///
     /// On return, for all entries i,j in the matrix,
     /// \f$A(i,j) = x(j)*A(i,j)\f$.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     rightScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) override;
+#else
+    rightScale (const Vector<Scalar, Node>& x) override;
+#endif
 
     //@}
     //! @name Local apply and Gauss-Seidel
@@ -2894,8 +3003,13 @@ namespace Tpetra {
     /// and X, even if they contain <tt>Inf</tt> or <tt>NaN</tt>
     /// floating-point entries.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     localApply (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& X,
                 MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&Y,
+#else
+    localApply (const MultiVector<Scalar, Node>& X,
+                MultiVector<Scalar, Node>&Y,
+#endif
                 const Teuchos::ETransp mode = Teuchos::NO_TRANS,
                 const Scalar& alpha = Teuchos::ScalarTraits<Scalar>::one (),
                 const Scalar& beta = Teuchos::ScalarTraits<Scalar>::zero ()) const;
@@ -2926,16 +3040,27 @@ namespace Tpetra {
     ///   local kernel.)
     template <class DomainScalar, class RangeScalar>
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     localGaussSeidel (const MultiVector<DomainScalar, LocalOrdinal, GlobalOrdinal, Node> &B,
                       MultiVector<RangeScalar, LocalOrdinal, GlobalOrdinal, Node> &X,
                       const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &D,
+#else
+    localGaussSeidel (const MultiVector<DomainScalar, Node> &B,
+                      MultiVector<RangeScalar, Node> &X,
+                      const MultiVector<Scalar, Node> &D,
+#endif
                       const RangeScalar& dampingFactor,
                       const ESweepDirection direction) const
     {
       typedef LocalOrdinal LO;
       typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::MultiVector<DomainScalar, LO, GO, Node> DMV;
       typedef Tpetra::MultiVector<Scalar, LO, GO, Node> MMV;
+#else
+      typedef Tpetra::MultiVector<DomainScalar, Node> DMV;
+      typedef Tpetra::MultiVector<Scalar, Node> MMV;
+#endif
       typedef typename Node::device_type::memory_space dev_mem_space;
       typedef typename MMV::dual_view_type::t_host::device_type host_mem_space;
       typedef typename Graph::local_graph_type k_local_graph_type;
@@ -3029,17 +3154,28 @@ namespace Tpetra {
     ///   local kernel.)
     template <class DomainScalar, class RangeScalar>
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     reorderedLocalGaussSeidel (const MultiVector<DomainScalar, LocalOrdinal, GlobalOrdinal, Node>& B,
                                MultiVector<RangeScalar, LocalOrdinal, GlobalOrdinal, Node>& X,
                                const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& D,
+#else
+    reorderedLocalGaussSeidel (const MultiVector<DomainScalar, Node>& B,
+                               MultiVector<RangeScalar, Node>& X,
+                               const MultiVector<Scalar, Node>& D,
+#endif
                                const Teuchos::ArrayView<LocalOrdinal>& rowIndices,
                                const RangeScalar& dampingFactor,
                                const ESweepDirection direction) const
     {
       typedef LocalOrdinal LO;
       typedef GlobalOrdinal GO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::MultiVector<DomainScalar, LO, GO, Node> DMV;
       typedef Tpetra::MultiVector<Scalar, LO, GO, Node> MMV;
+#else
+      typedef Tpetra::MultiVector<DomainScalar, Node> DMV;
+      typedef Tpetra::MultiVector<Scalar, Node> MMV;
+#endif
       typedef typename Node::device_type::memory_space dev_mem_space;
       typedef typename MMV::dual_view_type::t_host::device_type host_mem_space;
       typedef typename Graph::local_graph_type k_local_graph_type;
@@ -3116,7 +3252,11 @@ namespace Tpetra {
     /// \brief Return another CrsMatrix with the same entries, but
     ///   converted to a different Scalar type \c T.
     template <class T>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<CrsMatrix<T, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<CrsMatrix<T,Node> >
+#endif
     convert () const;
 
     //@}
@@ -3134,8 +3274,13 @@ namespace Tpetra {
     /// overwritten with the result of the multiplication, even if it
     /// contains <tt>NaN</tt> (not-a-number) floating-point entries.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     apply (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& X,
            MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&Y,
+#else
+    apply (const MultiVector<Scalar, Node>& X,
+           MultiVector<Scalar, Node>&Y,
+#endif
            Teuchos::ETransp mode = Teuchos::NO_TRANS,
            Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
            Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const override;
@@ -3229,9 +3374,15 @@ namespace Tpetra {
     /// elements.  Shared ownership of off-diagonal elements would
     /// produce different results.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     gaussSeidel (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &B,
                  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &X,
                  const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &D,
+#else
+    gaussSeidel (const MultiVector<Scalar, Node> &B,
+                 MultiVector<Scalar, Node> &X,
+                 const MultiVector<Scalar, Node> &D,
+#endif
                  const Scalar& dampingFactor,
                  const ESweepDirection direction,
                  const int numSweeps) const;
@@ -3303,9 +3454,15 @@ namespace Tpetra {
     /// elements.  Shared ownership of off-diagonal elements would
     /// produce different results.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     reorderedGaussSeidel (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
                           MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& X,
                           const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& D,
+#else
+    reorderedGaussSeidel (const MultiVector<Scalar, Node>& B,
+                          MultiVector<Scalar, Node>& X,
+                          const MultiVector<Scalar, Node>& D,
+#endif
                           const Teuchos::ArrayView<LocalOrdinal>& rowIndices,
                           const Scalar& dampingFactor,
                           const ESweepDirection direction,
@@ -3340,9 +3497,15 @@ namespace Tpetra {
     /// \pre Domain, range, and row Maps of the sparse matrix are all the same.
     /// \pre No other argument aliases X.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     gaussSeidelCopy (MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &X,
                      const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &B,
                      const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &D,
+#else
+    gaussSeidelCopy (MultiVector<Scalar, Node> &X,
+                     const MultiVector<Scalar, Node> &B,
+                     const MultiVector<Scalar, Node> &D,
+#endif
                      const Scalar& dampingFactor,
                      const ESweepDirection direction,
                      const int numSweeps,
@@ -3378,9 +3541,15 @@ namespace Tpetra {
     /// \pre Domain, range, and row Maps of the sparse matrix are all the same.
     /// \pre No other argument aliases X.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     reorderedGaussSeidelCopy (MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& X,
                               const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
                               const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& D,
+#else
+    reorderedGaussSeidelCopy (MultiVector<Scalar, Node>& X,
+                              const MultiVector<Scalar, Node>& B,
+                              const MultiVector<Scalar, Node>& D,
+#endif
                               const Teuchos::ArrayView<LocalOrdinal>& rowIndices,
                               const Scalar& dampingFactor,
                               const ESweepDirection direction,
@@ -3397,12 +3566,25 @@ namespace Tpetra {
     /// necessarily be a CrsMatrix or a CrsMatrix of the same type as
     /// <tt>*this</tt>, though this method may be able to optimize
     /// further in that case.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    virtual Teuchos::RCP<RowMatrix<Scalar, Node> >
+#endif
     add (const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+         const RowMatrix<Scalar, Node>& A,
+#endif
          const Scalar& beta,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& domainMap,
          const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& rangeMap,
+#else
+         const Teuchos::RCP<const Map<Node> >& domainMap,
+         const Teuchos::RCP<const Map<Node> >& rangeMap,
+#endif
          const Teuchos::RCP<Teuchos::ParameterList>& params) const override;
 
     //@}
@@ -3427,7 +3609,11 @@ namespace Tpetra {
     /// \brief Kokkos::Device specialization for communication buffers.
     ///
     /// See #1088 for why this is not just <tt>device_type::device_type</tt>.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename DistObject<Scalar, LocalOrdinal, GlobalOrdinal,
+#else
+    typedef typename DistObject<Scalar,
+#endif
                                 Node>::buffer_device_type buffer_device_type;
 
     virtual bool
@@ -3441,7 +3627,11 @@ namespace Tpetra {
   private:
     void
     copyAndPermuteStaticGraph(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& source,
+#else
+      const RowMatrix<Scalar, Node>& source,
+#endif
       const size_t numSameIDs,
       const LocalOrdinal permuteToLIDs[],
       const LocalOrdinal permuteFromLIDs[],
@@ -3449,7 +3639,11 @@ namespace Tpetra {
 
     void
     copyAndPermuteNonStaticGraph(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& source,
+#else
+      const RowMatrix<Scalar, Node>& source,
+#endif
       const size_t numSameIDs,
       const Kokkos::DualView<const local_ordinal_type*, buffer_device_type>& permuteToLIDs_dv,
       const Kokkos::DualView<const local_ordinal_type*, buffer_device_type>& permuteFromLIDs_dv,
@@ -3778,6 +3972,7 @@ namespace Tpetra {
     template<class CrsMatrixType>
     friend Teuchos::RCP<CrsMatrixType>
     Tpetra::importAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                     const Import<typename CrsMatrixType::local_ordinal_type,
                                                  typename CrsMatrixType::global_ordinal_type,
                                                  typename CrsMatrixType::node_type>& importer,
@@ -3787,12 +3982,18 @@ namespace Tpetra {
                                     const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                  typename CrsMatrixType::global_ordinal_type,
                                                                  typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                    const Import<typename CrsMatrixType::node_type>& importer,
+                                    const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                    const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                     const Teuchos::RCP<Teuchos::ParameterList>& params);
 
     // Friend declaration for nonmember function.
     template<class CrsMatrixType>
     friend Teuchos::RCP<CrsMatrixType>
     Tpetra::importAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                     const Import<typename CrsMatrixType::local_ordinal_type,
                                                  typename CrsMatrixType::global_ordinal_type,
                                                  typename CrsMatrixType::node_type>& rowImporter,
@@ -3805,6 +4006,12 @@ namespace Tpetra {
                                     const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                  typename CrsMatrixType::global_ordinal_type,
                                                                  typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                    const Import<typename CrsMatrixType::node_type>& rowImporter,
+                                   const Import<typename CrsMatrixType::node_type>& domainImporter,
+                                    const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                    const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                     const Teuchos::RCP<Teuchos::ParameterList>& params);
 
 
@@ -3812,6 +4019,7 @@ namespace Tpetra {
     template<class CrsMatrixType>
     friend Teuchos::RCP<CrsMatrixType>
     Tpetra::exportAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                     const Export<typename CrsMatrixType::local_ordinal_type,
                                                  typename CrsMatrixType::global_ordinal_type,
                                                  typename CrsMatrixType::node_type>& exporter,
@@ -3821,12 +4029,18 @@ namespace Tpetra {
                                     const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                  typename CrsMatrixType::global_ordinal_type,
                                                                  typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                    const Export<typename CrsMatrixType::node_type>& exporter,
+                                    const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                    const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                     const Teuchos::RCP<Teuchos::ParameterList>& params);
 
     // Friend declaration for nonmember function.
     template<class CrsMatrixType>
     friend Teuchos::RCP<CrsMatrixType>
     Tpetra::exportAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                     const Export<typename CrsMatrixType::local_ordinal_type,
                                                  typename CrsMatrixType::global_ordinal_type,
                                                  typename CrsMatrixType::node_type>& rowExporter,
@@ -3839,6 +4053,12 @@ namespace Tpetra {
                                     const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                  typename CrsMatrixType::global_ordinal_type,
                                                                  typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                    const Export<typename CrsMatrixType::node_type>& rowExporter,
+                                    const Export<typename CrsMatrixType::node_type>& domainExporter,
+                                    const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                    const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                     const Teuchos::RCP<Teuchos::ParameterList>& params);
 
   public:
@@ -3858,7 +4078,11 @@ namespace Tpetra {
     /// \warning This method is intended for expert developer use
     ///   only, and should never be called by user code.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     importAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& destMatrix,
+#else
+    importAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, Node> >& destMatrix,
+#endif
                            const import_type& importer,
                            const Teuchos::RCP<const map_type>& domainMap,
                            const Teuchos::RCP<const map_type>& rangeMap,
@@ -3880,7 +4104,11 @@ namespace Tpetra {
     /// \warning This method is intended for expert developer use
     ///   only, and should never be called by user code.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     importAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& destMatrix,
+#else
+    importAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, Node> >& destMatrix,
+#endif
                            const import_type& rowImporter,
                            const import_type& domainImporter,
                            const Teuchos::RCP<const map_type>& domainMap,
@@ -3904,7 +4132,11 @@ namespace Tpetra {
     /// \warning This method is intended for expert developer use
     ///   only, and should never be called by user code.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     exportAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& destMatrix,
+#else
+    exportAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, Node> >& destMatrix,
+#endif
                            const export_type& exporter,
                            const Teuchos::RCP<const map_type>& domainMap = Teuchos::null,
                            const Teuchos::RCP<const map_type>& rangeMap = Teuchos::null,
@@ -3926,7 +4158,11 @@ namespace Tpetra {
     /// \warning This method is intended for expert developer use
     ///   only, and should never be called by user code.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     exportAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& destMatrix,
+#else
+    exportAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, Node> >& destMatrix,
+#endif
                            const export_type& rowExporter,
                            const export_type& domainExporter,
                            const Teuchos::RCP<const map_type>& domainMap,
@@ -3956,9 +4192,15 @@ namespace Tpetra {
     ///
     /// Fusing these tasks can avoid some communication and work.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     transferAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& destMatrix,
                              const ::Tpetra::Details::Transfer<LocalOrdinal, GlobalOrdinal, Node>& rowTransfer,
                              const Teuchos::RCP<const ::Tpetra::Details::Transfer<LocalOrdinal, GlobalOrdinal, Node> > & domainTransfer,
+#else
+    transferAndFillComplete (Teuchos::RCP<CrsMatrix<Scalar, Node> >& destMatrix,
+                             const ::Tpetra::Details::Transfer<Node>& rowTransfer,
+                             const Teuchos::RCP<const ::Tpetra::Details::Transfer<Node> > & domainTransfer,
+#endif
                              const Teuchos::RCP<const map_type>& domainMap = Teuchos::null,
                              const Teuchos::RCP<const map_type>& rangeMap = Teuchos::null,
                              const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null) const;
@@ -4158,15 +4400,24 @@ namespace Tpetra {
                             const ELocalGlobal I);
 
     //! Type of the DistObject specialization from which this class inherits.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef DistObject<char, LocalOrdinal, GlobalOrdinal, Node> dist_object_type;
+#else
+    typedef DistObject<char,Node> dist_object_type;
+#endif
 
   protected:
     // useful typedefs
     typedef Teuchos::OrdinalTraits<LocalOrdinal> OTL;
     typedef Kokkos::Details::ArithTraits<impl_scalar_type> STS;
     typedef Kokkos::Details::ArithTraits<mag_type> STM;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> MV;
     typedef Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>      V;
+#else
+    typedef MultiVector<Scalar, Node> MV;
+    typedef Vector<Scalar, Node>      V;
+#endif
     typedef crs_graph_type Graph;
 
     // Enums
@@ -4441,12 +4692,20 @@ namespace Tpetra {
   protected:
 
     // Friend the tester for CrsMatrix::swap
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     friend class Tpetra::crsMatrix_Swap_Tester<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    friend class Tpetra::crsMatrix_Swap_Tester<Scalar, Node>;
+#endif
 
     /// \brief Swaps the data from *this with the data and maps from crsMatrix
     ///
     /// \param matrix [in/out] a crsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void swap(CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> & matrix);
+#else
+    void swap(CrsMatrix<Scalar, Node> & matrix);
+#endif
 
 
   protected:
@@ -4590,13 +4849,23 @@ namespace Tpetra {
 
       \relatesalso CrsMatrix
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   createCrsMatrix (const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& map,
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<CrsMatrix<Scalar, Node> >
+  createCrsMatrix (const Teuchos::RCP<const Map<Node> >& map,
+#endif
                    size_t maxNumEntriesPerRow = 0,
                    const Teuchos::RCP<Teuchos::ParameterList>& params = Teuchos::null)
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> matrix_type;
+#else
+    typedef CrsMatrix<Scalar, Node> matrix_type;
+#endif
     const ProfileType pftype = TPETRA_DEFAULT_PROFILE_TYPE;
     return Teuchos::rcp (new matrix_type (map, maxNumEntriesPerRow, pftype, params));
   }
@@ -4604,6 +4873,7 @@ namespace Tpetra {
   template<class CrsMatrixType>
   Teuchos::RCP<CrsMatrixType>
   importAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   const Import<typename CrsMatrixType::local_ordinal_type,
                                                typename CrsMatrixType::global_ordinal_type,
                                                typename CrsMatrixType::node_type>& importer,
@@ -4613,6 +4883,11 @@ namespace Tpetra {
                                   const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                typename CrsMatrixType::global_ordinal_type,
                                                                typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                  const Import<typename CrsMatrixType::node_type>& importer,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                   const Teuchos::RCP<Teuchos::ParameterList>& params)
   {
     Teuchos::RCP<CrsMatrixType> destMatrix;
@@ -4623,6 +4898,7 @@ namespace Tpetra {
   template<class CrsMatrixType>
   Teuchos::RCP<CrsMatrixType>
   importAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   const Import<typename CrsMatrixType::local_ordinal_type,
                                                typename CrsMatrixType::global_ordinal_type,
                                                typename CrsMatrixType::node_type>& rowImporter,
@@ -4635,6 +4911,12 @@ namespace Tpetra {
                                   const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                typename CrsMatrixType::global_ordinal_type,
                                                                typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                  const Import<typename CrsMatrixType::node_type>& rowImporter,
+                                  const Import<typename CrsMatrixType::node_type>& domainImporter,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                   const Teuchos::RCP<Teuchos::ParameterList>& params)
   {
     Teuchos::RCP<CrsMatrixType> destMatrix;
@@ -4645,6 +4927,7 @@ namespace Tpetra {
   template<class CrsMatrixType>
   Teuchos::RCP<CrsMatrixType>
   exportAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   const Export<typename CrsMatrixType::local_ordinal_type,
                                                typename CrsMatrixType::global_ordinal_type,
                                                typename CrsMatrixType::node_type>& exporter,
@@ -4654,6 +4937,11 @@ namespace Tpetra {
                                   const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                typename CrsMatrixType::global_ordinal_type,
                                                                typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                  const Export<typename CrsMatrixType::node_type>& exporter,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                   const Teuchos::RCP<Teuchos::ParameterList>& params)
   {
     Teuchos::RCP<CrsMatrixType> destMatrix;
@@ -4664,6 +4952,7 @@ namespace Tpetra {
   template<class CrsMatrixType>
   Teuchos::RCP<CrsMatrixType>
   exportAndFillCompleteCrsMatrix (const Teuchos::RCP<const CrsMatrixType>& sourceMatrix,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                   const Export<typename CrsMatrixType::local_ordinal_type,
                                                typename CrsMatrixType::global_ordinal_type,
                                                typename CrsMatrixType::node_type>& rowExporter,
@@ -4676,6 +4965,12 @@ namespace Tpetra {
                                   const Teuchos::RCP<const Map<typename CrsMatrixType::local_ordinal_type,
                                                                typename CrsMatrixType::global_ordinal_type,
                                                                typename CrsMatrixType::node_type> >& rangeMap,
+#else
+                                  const Export<typename CrsMatrixType::node_type>& rowExporter,
+                                  const Export<typename CrsMatrixType::node_type>& domainExporter,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& domainMap,
+                                  const Teuchos::RCP<const Map<typename CrsMatrixType::node_type> >& rangeMap,
+#endif
                                   const Teuchos::RCP<Teuchos::ParameterList>& params)
   {
     Teuchos::RCP<CrsMatrixType> destMatrix;

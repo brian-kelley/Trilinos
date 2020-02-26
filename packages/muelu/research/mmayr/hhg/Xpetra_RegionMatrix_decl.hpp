@@ -38,6 +38,7 @@ template <class SC = MueLu::DefaultScalar,
           Xpetra::ESplittingMethodHHG splitMethod = region_split> // lbv: what should be the default value here?
 class RegionMatrix //: public Matrix<SC, LO, GO, NO> {
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::CrsMatrix<SC,LO,GO,NO> CrsMatrix;
   typedef Xpetra::CrsMatrixWrap<SC,LO,GO,NO> CrsMatrixWrap;
   typedef Xpetra::Map<LO,GO,NO> Map;
@@ -45,6 +46,15 @@ class RegionMatrix //: public Matrix<SC, LO, GO, NO> {
   typedef Xpetra::RegionManager<SC,LO,GO,NO> RegionManager;
   typedef Tpetra::CrsMatrix<SC,LO,GO,NO> TpetraCrsMatrix;
   typedef Tpetra::RowMatrix<SC,LO,GO,NO> TpetraRowMatrix;
+#else
+  typedef Xpetra::CrsMatrix<SC,NO> CrsMatrix;
+  typedef Xpetra::CrsMatrixWrap<SC,NO> CrsMatrixWrap;
+  typedef Xpetra::Map<NO> Map;
+  typedef Xpetra::Matrix<SC,NO> Matrix;
+  typedef Xpetra::RegionManager<SC,NO> RegionManager;
+  typedef Tpetra::CrsMatrix<SC,NO> TpetraCrsMatrix;
+  typedef Tpetra::RowMatrix<SC,NO> TpetraRowMatrix;
+#endif
 
   public:
 

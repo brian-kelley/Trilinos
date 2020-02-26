@@ -59,16 +59,26 @@ namespace MueLu {
    *
    */
   template<class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
            class Node = DefaultNode>
   class PreDropFunctionConstVal :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public MueLu::PreDropFunctionBaseClass<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+    public MueLu::PreDropFunctionBaseClass<Scalar, Node> {
+#endif
 #undef MUELU_PREDROPFUNCTIONCONSTVAL_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Constructor
     explicit PreDropFunctionConstVal(const Scalar threshold = 0.0);
 

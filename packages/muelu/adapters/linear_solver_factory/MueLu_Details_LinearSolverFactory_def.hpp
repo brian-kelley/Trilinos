@@ -269,18 +269,33 @@ private:
 #endif // HAVE_MUELU_EPETRA
 
 #ifdef HAVE_MUELU_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
 class LinearSolver<Tpetra::MultiVector<Scalar,LO,GO,Node>, 
                    Tpetra::Operator<Scalar,LO,GO,Node>,
+#else
+template<class Scalar, class Node>
+class LinearSolver<Tpetra::MultiVector<Scalar,Node>, 
+                   Tpetra::Operator<Scalar,Node>,
+#endif
                    typename Teuchos::ScalarTraits<Scalar>::magnitudeType> :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public Trilinos::Details::LinearSolver<Tpetra::MultiVector<Scalar,LO,GO,Node>, 
                                            Tpetra::Operator<Scalar,LO,GO,Node>, 
+#else
+    public Trilinos::Details::LinearSolver<Tpetra::MultiVector<Scalar,Node>, 
+                                           Tpetra::Operator<Scalar,Node>, 
+#endif
                                            typename Teuchos::ScalarTraits<Scalar>::magnitudeType>,
     virtual public Teuchos::Describable
 {
 
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   /// \brief Constructor.
   LinearSolver () :
     changedA_(false),
@@ -294,7 +309,11 @@ public:
   ///
   /// \param A [in] Pointer to the matrix A in the linear system(s)
   ///   AX=B to solve.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void setMatrix (const Teuchos::RCP<const Tpetra::Operator<Scalar,LO,GO,Node> >& A)
+#else
+  void setMatrix (const Teuchos::RCP<const Tpetra::Operator<Scalar,Node> >& A)
+#endif
   {
     if(A != A_)
     {
@@ -306,12 +325,20 @@ public:
   }
 
   //! Get a pointer to this Solver's matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Operator<Scalar,LO,GO,Node> > getMatrix () const {
+#else
+  Teuchos::RCP<const Tpetra::Operator<Scalar,Node> > getMatrix () const {
+#endif
     return A_;
   }
 
   //! Solve the linear system(s) AX=B.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void solve (Tpetra::MultiVector<Scalar,LO,GO,Node>& X, const Tpetra::MultiVector<Scalar,LO,GO,Node>& B)
+#else
+  void solve (Tpetra::MultiVector<Scalar,Node>& X, const Tpetra::MultiVector<Scalar,Node>& B)
+#endif
   {
     // TODO amk: Do we assume the user has called numeric before solve, or should we call it for them?
     const char prefix[] = "MueLu::Details::LinearSolver::solve: ";
@@ -358,9 +385,17 @@ public:
       // TODO: We should not have to cast away the constness here
       // TODO: See bug 6462
       if(params_ != Teuchos::null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         solver_ = CreateTpetraPreconditioner(rcp_const_cast<Tpetra::Operator<Scalar,LO,GO,Node> >(A_), *params_);
+#else
+        solver_ = CreateTpetraPreconditioner(rcp_const_cast<Tpetra::Operator<Scalar,Node> >(A_), *params_);
+#endif
       else
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         solver_ = CreateTpetraPreconditioner(rcp_const_cast<Tpetra::Operator<Scalar,LO,GO,Node> >(A_));
+#else
+        solver_ = CreateTpetraPreconditioner(rcp_const_cast<Tpetra::Operator<Scalar,Node> >(A_));
+#endif
     }
     else if(changedA_)
     {
@@ -371,13 +406,22 @@ public:
       
       // TODO: We should not have to cast away the constness here
       // TODO: See bug 6462
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Tpetra::CrsMatrix<Scalar,LO,GO,Node> > helperMat;
       helperMat = rcp_dynamic_cast<const Tpetra::CrsMatrix<Scalar,LO,GO,Node> >(A_);
+#else
+      RCP<const Tpetra::CrsMatrix<Scalar,Node> > helperMat;
+      helperMat = rcp_dynamic_cast<const Tpetra::CrsMatrix<Scalar,Node> >(A_);
+#endif
       TEUCHOS_TEST_FOR_EXCEPTION
         (helperMat.is_null(), std::runtime_error, prefix << "MueLu requires "
          "a Tpetra::CrsMatrix, but the matrix you provided is of a "
          "different type.  Please provide a Tpetra::CrsMatrix instead.");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ReuseTpetraPreconditioner(rcp_const_cast<Tpetra::CrsMatrix<Scalar,LO,GO,Node> >(helperMat), *solver_);
+#else
+      ReuseTpetraPreconditioner(rcp_const_cast<Tpetra::CrsMatrix<Scalar,Node> >(helperMat), *solver_);
+#endif
     }
     
     changedA_ = false;
@@ -391,8 +435,13 @@ public:
     if (solver_.is_null()) {
       std::ostringstream os;
       os << "\"MueLu::Details::LinearSolver\": {"
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          << "MV: " << TypeNameTraits<Tpetra::MultiVector<Scalar,LO,GO,Node> >::name()
          << "OP: " << TypeNameTraits<Tpetra::Operator<Scalar,LO,GO,Node> >::name()
+#else
+         << "MV: " << TypeNameTraits<Tpetra::MultiVector<Scalar,Node> >::name()
+         << "OP: " << TypeNameTraits<Tpetra::Operator<Scalar,Node> >::name()
+#endif
          << "NormType: " << TypeNameTraits<typename Teuchos::ScalarTraits<Scalar>::magnitudeType>::name()
          << "}";
       return os.str ();
@@ -415,8 +464,13 @@ public:
         Teuchos::OSTab tab0 (out);
         out << "\"MueLu::Details::LinearSolver\":" << endl;
         Teuchos::OSTab tab1 (out);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         out << "MV: " << TypeNameTraits<Tpetra::MultiVector<Scalar,LO,GO,Node> >::name() << endl
             << "OP: " << TypeNameTraits<Tpetra::Operator<Scalar,LO,GO,Node> >::name() << endl
+#else
+        out << "MV: " << TypeNameTraits<Tpetra::MultiVector<Scalar,Node> >::name() << endl
+            << "OP: " << TypeNameTraits<Tpetra::Operator<Scalar,Node> >::name() << endl
+#endif
             << "NormType: " << TypeNameTraits<typename Teuchos::ScalarTraits<Scalar>::magnitudeType>::name() << endl;
       }
     }
@@ -426,9 +480,17 @@ public:
   }
 
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Operator<Scalar,LO,GO,Node> > A_;
+#else
+  Teuchos::RCP<const Tpetra::Operator<Scalar,Node> > A_;
+#endif
   Teuchos::RCP<Teuchos::ParameterList> params_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<TpetraOperator<Scalar,LO,GO,Node> > solver_;
+#else
+  Teuchos::RCP<TpetraOperator<Scalar,Node> > solver_;
+#endif
   bool changedA_;
   bool changedParams_;
 };
@@ -470,9 +532,16 @@ registerLinearSolverFactory ()
 //
 // We don't have to protect use of Tpetra objects here, or include
 // any header files for them, because this is a macro definition.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_DETAILS_LINEARSOLVERFACTORY_INSTANT(SC, LO, GO, NT) \
   template class MueLu::Details::LinearSolverFactory<Tpetra::MultiVector<SC, LO, GO, NT>, \
                                                      Tpetra::Operator<SC, LO, GO, NT>, \
                                                      typename Tpetra::MultiVector<SC, LO, GO, NT>::mag_type>;
+#else
+#define MUELU_DETAILS_LINEARSOLVERFACTORY_INSTANT(SC, NT) \
+  template class MueLu::Details::LinearSolverFactory<Tpetra::MultiVector<SC, NT>, \
+                                                     Tpetra::Operator<SC, NT>, \
+                                                     typename Tpetra::MultiVector<SC, NT>::mag_type>;
+#endif
 
 #endif // MUELU_DETAILS_LINEARSOLVERFACTORY_DEF_HPP

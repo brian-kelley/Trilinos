@@ -63,11 +63,23 @@
 namespace Tpetra {
 namespace Details {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 int
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 makeColMapImpl(Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& colMap,
+#else
+makeColMapImpl(Teuchos::RCP<const Tpetra::Map<NT>>& colMap,
+#endif
             Teuchos::Array<int>& remotePIDs,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& domMap,
+#else
+            const Teuchos::RCP<const Tpetra::Map<NT>>& domMap,
+#endif
             size_t numLocalColGIDs,
             size_t numRemoteColGIDs,
             std::set<GO>& RemoteGIDSet,
@@ -82,7 +94,11 @@ makeColMapImpl(Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& colMap,
   using std::endl;
   int errCode = 0;
   const char prefix[] = "Tpetra::Details::makeColMapImpl: ";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef ::Tpetra::Map<NT> map_type;
+#endif
   // Possible short-circuit for serial scenario:
   //
   // If all domain GIDs are present as column indices, then set
@@ -322,12 +338,25 @@ makeColMapImpl(Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& colMap,
   return errCode;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 int
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& colMap,
+#else
+makeColMap (Teuchos::RCP<const Tpetra::Map<NT> >& colMap,
+#endif
             Teuchos::Array<int>& remotePIDs,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& domMap,
             const RowGraph<LO, GO, NT>& graph,
+#else
+            const Teuchos::RCP<const Tpetra::Map<NT> >& domMap,
+            const RowGraph<NT>& graph,
+#endif
             const bool sortEachProcsGids,
             std::ostream* errStrm)
 {
@@ -335,7 +364,11 @@ makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& colMap,
   using Teuchos::ArrayView;
   using Teuchos::rcp;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef ::Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef ::Tpetra::Map<NT> map_type;
+#endif
   const char prefix[] = "Tpetra::Details::makeColMap: ";
   int errCode = 0;
 
@@ -430,7 +463,11 @@ makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& colMap,
     std::vector<GO> RemoteGIDUnorderedVector;
 
     if (! graph.getRowMap ().is_null ()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::Map<LO, GO, NT>& rowMap = * (graph.getRowMap ());
+#else
+      const Tpetra::Map<NT>& rowMap = * (graph.getRowMap ());
+#endif
       const LO lclNumRows = rowMap.getNodeNumElements ();
       for (LO lclRow = 0; lclRow < lclNumRows; ++lclRow) {
         const GO gblRow = rowMap.getGlobalElement (lclRow);
@@ -469,7 +506,11 @@ makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >& colMap,
       } // for each locally owned row r
     } // if the graph has a nonnull row Map
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return makeColMapImpl<LO, GO, NT>(
+#else
+    return makeColMapImpl<NT>(
+#endif
         colMap, remotePIDs,
         domMap,
         numLocalColGIDs, numRemoteColGIDs,
@@ -577,10 +618,19 @@ struct MinMaxReduceFunctor
   const GOView gids;
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LO, class GO, class NT>
+#else
+template <class NT>
+#endif
 int
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& colMap,
             const Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& domMap,
+#else
+makeColMap (Teuchos::RCP<const Tpetra::Map<NT>>& colMap,
+            const Teuchos::RCP<const Tpetra::Map<NT>>& domMap,
+#endif
             Kokkos::View<GO*, typename NT::memory_space> gids,
             std::ostream* errStrm)
 {
@@ -594,7 +644,11 @@ makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& colMap,
   using const_bitset_t = Kokkos::ConstBitset<device_t>;
   using GOView = Kokkos::View<GO*, memory_space>;
   using SingleView = Kokkos::View<GO, memory_space>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, NT>;
+#else
+  using map_type = Tpetra::Map<NT>;
+#endif
   using LocalMap = typename map_type::local_map_type;
   GO nentries = gids.extent(0);
   GO minGID = Teuchos::OrdinalTraits<GO>::max();
@@ -655,7 +709,11 @@ makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& colMap,
   //remotePIDs will be discarded in this version of makeColMap
   Array<int> remotePIDs;
   //Find the min and max GID
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return makeColMapImpl<LO, GO, NT>(
+#else
+  return makeColMapImpl<NT>(
+#endif
             colMap,
             remotePIDs,
             domMap,
@@ -676,18 +734,36 @@ makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT>>& colMap,
 //
 // Must be expanded from within the Tpetra namespace!
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DETAILS_MAKECOLMAP_INSTANT(LO,GO,NT) \
+#else
+#define TPETRA_DETAILS_MAKECOLMAP_INSTANT(NT) \
+#endif
   namespace Details { \
     template int \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >&, \
+#else
+    makeColMap (Teuchos::RCP<const Tpetra::Map<NT> >&, \
+#endif
                 Teuchos::Array<int>&, \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >&, \
                 const RowGraph<LO, GO, NT>&, \
+#else
+                const Teuchos::RCP<const Tpetra::Map<NT> >&, \
+                const RowGraph<NT>&, \
+#endif
                 const bool, \
                 std::ostream*); \
     template int \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     makeColMap (Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >&, \
                 const Teuchos::RCP<const Tpetra::Map<LO, GO, NT> >&, \
+#else
+    makeColMap (Teuchos::RCP<const Tpetra::Map<NT> >&, \
+                const Teuchos::RCP<const Tpetra::Map<NT> >&, \
+#endif
                 Kokkos::View<GO*, typename NT::memory_space>, \
                 std::ostream*); \
   }

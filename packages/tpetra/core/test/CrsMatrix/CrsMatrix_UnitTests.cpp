@@ -98,10 +98,19 @@ namespace { // (anonymous)
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, BadCalls, LO, GO, Scalar, Node )
   {
     typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar,LO,GO,Node> MV;
     typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef Tpetra::MultiVector<Scalar,Node> MV;
+    typedef Tpetra::CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef typename ST::magnitudeType Mag;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef RCP<const Tpetra::Map<LO,GO,Node> > RCPMap;
+#else
+    typedef RCP<const Tpetra::Map<Node> > RCPMap;
+#endif
     typedef Teuchos::ScalarTraits<Mag> MT;
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid();
     // get a comm
@@ -109,9 +118,17 @@ namespace { // (anonymous)
     // create a Map
     const size_t numLocal = 10;
     // create the zero matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::CrsMatrix<Scalar,LO,GO,Node> > zero;
+#else
+    RCP<Tpetra::CrsMatrix<Scalar,Node> > zero;
+#endif
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCPMap map  = createContigMapWithNode<LO,GO,Node>(INVALID,numLocal,comm);
+#else
+      RCPMap map  = createContigMapWithNode<Node>(INVALID,numLocal,comm);
+#endif
       MV mv(map,1);
       zero = rcp( new MAT(map,0,TPETRA_DEFAULT_PROFILE_TYPE) );
       TEST_THROW(zero->apply(mv,mv), std::runtime_error);
@@ -133,7 +150,11 @@ namespace { // (anonymous)
     }
     // test that our assumptions on the maps are correct:
     // that is, that badmap is not equal to the range, domain, row or colum map of the matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCPMap badmap = createContigMapWithNode<LO,GO,Node>(INVALID,1,comm);
+#else
+    const RCPMap badmap = createContigMapWithNode<Node>(INVALID,1,comm);
+#endif
     TEST_EQUALITY_CONST( badmap != zero->getRowMap(), true );
     TEST_EQUALITY_CONST( badmap != zero->getColMap(), true );
     TEST_EQUALITY_CONST( badmap != zero->getDomainMap(), true );
@@ -163,8 +184,13 @@ namespace { // (anonymous)
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, TheEyeOfTruth, LO, GO, Scalar, Node )
   {
     typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> MAT;
     typedef Tpetra::MultiVector<Scalar,LO,GO,Node> MV;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> MAT;
+    typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     typedef Teuchos::ScalarTraits<Mag> MT;
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid();
@@ -175,13 +201,22 @@ namespace { // (anonymous)
     // create a Map
     const size_t numLocal = 10;
     const size_t numVecs  = 5;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Map<LO,GO,Node> > map =
       createContigMapWithNode<LO,GO,Node>(INVALID,numLocal,comm);
+#else
+    RCP<const Tpetra::Map<Node> > map =
+      createContigMapWithNode<Node>(INVALID,numLocal,comm);
+#endif
     MV mvrand(map,numVecs,false), mvres(map,numVecs,false);
     mvrand.randomize();
     // create the identity matrix
     GO base = numLocal*myImageID;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::RowMatrix<Scalar,LO,GO,Node> > eye;
+#else
+    RCP<Tpetra::RowMatrix<Scalar,Node> > eye;
+#endif
     {
       RCP<MAT> eye_crs = rcp(new MAT(map,numLocal,TPETRA_DEFAULT_PROFILE_TYPE));
       for (size_t i=0; i<numLocal; ++i) {
@@ -221,9 +256,17 @@ namespace { // (anonymous)
   ////
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, SimpleEigTest, LO, GO, Scalar, Node )
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar,LO,GO,Node> MV;
+#else
+    typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     typedef Teuchos::ScalarTraits<Mag> MT;
     const size_t ONE = Teuchos::OrdinalTraits<size_t>::one();
@@ -234,8 +277,13 @@ namespace { // (anonymous)
     const size_t myImageID = comm->getRank();
     if (numImages < 2) return;
     // create a Map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Map<LO,GO,Node> > map =
       createContigMapWithNode<LO,GO,Node>(INVALID,ONE,comm);
+#else
+    RCP<const Tpetra::Map<Node> > map =
+      createContigMapWithNode<Node>(INVALID,ONE,comm);
+#endif
     // create a multivector ones(n,1)
     MV ones(map,ONE,false), threes(map,ONE,false);
     ones.putScalar(ST::one());
@@ -302,9 +350,17 @@ namespace { // (anonymous)
   ////
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, ZeroMatrix, LO, GO, Scalar, Node )
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> MAT;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> MAT;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar,LO,GO,Node> MV;
+#else
+    typedef Tpetra::MultiVector<Scalar,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     typedef Teuchos::ScalarTraits<Mag> MT;
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid();
@@ -313,8 +369,13 @@ namespace { // (anonymous)
     // create a Map
     const size_t numLocal = 10;
     const size_t numVecs  = 5;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Tpetra::Map<LO,GO,Node> > map =
       createContigMapWithNode<LO,GO,Node>(INVALID,numLocal,comm);
+#else
+    RCP<const Tpetra::Map<Node> > map =
+      createContigMapWithNode<Node>(INVALID,numLocal,comm);
+#endif
     // create the zero matrix
     MAT zero(map,0);
     zero.fillComplete();
@@ -336,7 +397,11 @@ namespace { // (anonymous)
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+#endif
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, TheEyeOfTruth,  LO, GO, SCALAR, NODE ) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, ZeroMatrix,     LO, GO, SCALAR, NODE ) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, BadCalls,       LO, GO, SCALAR, NODE ) \

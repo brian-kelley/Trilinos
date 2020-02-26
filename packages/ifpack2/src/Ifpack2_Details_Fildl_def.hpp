@@ -55,34 +55,63 @@ namespace Ifpack2
 namespace Details
 {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 Fildl<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+Fildl<Scalar, Node>::
+#endif
 Fildl(Teuchos::RCP<const TRowMatrix> A) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   FastILU_Base<Scalar, LocalOrdinal, GlobalOrdinal, Node>(A) {}
+#else
+  FastILU_Base<Scalar, Node>(A) {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 int Fildl<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+int Fildl<Scalar, Node>::
+#endif
 getSweeps() const
 {
   return localPrec_->getNFact();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 int Fildl<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+int Fildl<Scalar, Node>::
+#endif
 getNTrisol() const
 {
   return localPrec_->getNTrisol();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Fildl<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+void Fildl<Scalar, Node>::
+#endif
 checkLocalIC() const
 {
   localPrec_->checkIC();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Fildl<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+void Fildl<Scalar, Node>::
+#endif
 initLocalPrec()
 {
   auto nRows = this->mat_->getNodeNumRows();
@@ -94,8 +123,13 @@ initLocalPrec()
   this->initTime_ = localPrec_->getInitializeTime();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Fildl<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+void Fildl<Scalar, Node>::
+#endif
 computeLocalPrec()
 {
   //update values in local prec (until compute(), values aren't needed)
@@ -104,8 +138,13 @@ computeLocalPrec()
   this->computeTime_ = localPrec_->getComputeTime();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 void Fildl<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+void Fildl<Scalar, Node>::
+#endif
 applyLocalPrec(ScalarArray x, ScalarArray y) const
 {
   localPrec_->apply(x, y);
@@ -113,15 +152,25 @@ applyLocalPrec(ScalarArray x, ScalarArray y) const
   this->applyTime_ += localPrec_->getApplyTime();
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<typename Scalar, typename LocalOrdinal, typename GlobalOrdinal, typename Node>
 std::string Fildl<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<typename Scalar, typename Node>
+std::string Fildl<Scalar, Node>::
+#endif
 getName() const
 {
   return "Fildl";
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_FILDL_INSTANT(S, L, G, N) \
 template class Ifpack2::Details::Fildl<S, L, G, N>;
+#else
+#define IFPACK2_DETAILS_FILDL_INSTANT(S, N) \
+template class Ifpack2::Details::Fildl<S, N>;
+#endif
 
 } //namespace Details
 } //namespace Ifpack2

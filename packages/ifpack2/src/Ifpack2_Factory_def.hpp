@@ -45,6 +45,10 @@
 
 // mfh 26 Jul 2015: We don't need to do ETI for Ifpack2::Factory
 // anymore, since Ifpack2::Details::Factory takes care of it.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_FACTORY_INSTANT(S,LO,GO,N)
+#else
+#define IFPACK2_FACTORY_INSTANT(S,N)
+#endif
 
 #endif // IFPACK2_FACTORY_DEF_HPP

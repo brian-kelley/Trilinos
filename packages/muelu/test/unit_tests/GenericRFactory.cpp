@@ -74,7 +74,11 @@
 namespace MueLuTests {
 
   //this macro declares the unit-test-class:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GenericRFactory, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GenericRFactory, Constructor, Scalar, Node)
+#endif
   {
     #include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -84,7 +88,11 @@ namespace MueLuTests {
     //TEST_EQUALITY(needs != Teuchos::null, true);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GenericRFactory, SymmetricProblem, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GenericRFactory, SymmetricProblem, Scalar, Node)
+#endif
   {
     #include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -189,8 +197,13 @@ namespace MueLuTests {
     // note: the Epetra matrix-matrix multiplication using implicit transpose is buggy in parallel case
     //       (for multiplication of a square matrix with a rectangular matrix)
     //       however it seems to work for two rectangular matrices
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Matrix<Scalar,LO,GO,Node> > RP = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::Multiply(*R1,false,*P1,false,out);
     Teuchos::RCP<Xpetra::Matrix<Scalar,LO,GO,Node> > PtP = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::Multiply(*P1,true,*P1,false,out);
+#else
+    Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > RP = Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*R1,false,*P1,false,out);
+    Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > PtP = Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*P1,true,*P1,false,out);
+#endif
 
     RCP<Vector> x = VectorFactory::Build(RP->getDomainMap());
     RCP<Vector> bRP  = VectorFactory::Build(RP->getRangeMap());
@@ -202,8 +215,13 @@ namespace MueLuTests {
 
     TEST_EQUALITY(bRP->norm1() - bPtP->norm1() < 1e-12, true);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Matrix<Scalar,LO,GO,Node> > RP2 = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::Multiply(*R2,false,*P2,false,out);
     Teuchos::RCP<Xpetra::Matrix<Scalar,LO,GO,Node> > PtP2 = Xpetra::MatrixMatrix<Scalar,LO,GO,Node>::Multiply(*P2,true,*P2,false,out);
+#else
+    Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > RP2 = Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*R2,false,*P2,false,out);
+    Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > PtP2 = Xpetra::MatrixMatrix<Scalar,Node>::Multiply(*P2,true,*P2,false,out);
+#endif
 
     x = VectorFactory::Build(RP2->getDomainMap());
     bRP  = VectorFactory::Build(RP2->getRangeMap());
@@ -220,7 +238,11 @@ namespace MueLuTests {
   }
 
   // check Hierarchy::Setup routine with GenericRFactory as restriction factory
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GenericRFactory, GenericRSetup, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(GenericRFactory, GenericRSetup, Scalar, Node)
+#endif
   {
     #include <MueLu_UseShortNames.hpp>
     MUELU_TESTING_SET_OSTREAM;
@@ -238,7 +260,11 @@ namespace MueLuTests {
     for (int i=1; i<5; i++) {
       // generate problem
       RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(50*i*comm->getSize());
+#else
+      RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(50*i*comm->getSize());
+#endif
 
       // Multigrid Hierarchy
       Hierarchy H(A);
@@ -352,10 +378,17 @@ namespace MueLuTests {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(Scalar, LO, GO, Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GenericRFactory, Constructor, Scalar, LO, GO, Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GenericRFactory, SymmetricProblem, Scalar, LO, GO, Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GenericRFactory, GenericRSetup, Scalar, LO, GO, Node)
+#else
+#define MUELU_ETI_GROUP(Scalar, Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GenericRFactory, Constructor, Scalar, Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GenericRFactory, SymmetricProblem, Scalar, Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(GenericRFactory, GenericRSetup, Scalar, Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

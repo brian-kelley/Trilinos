@@ -75,7 +75,11 @@ namespace TpetraHelpers {
        * \param[in]     epetraX Vector to be copied into the Thyra object
        * \param[in,out] thyraX  Destination Thyra object
        */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,GO,NT>& tpetraX,
+#else
+     virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,NT>& tpetraX,
+#endif
                                       const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyraX) const = 0;
                                       // const TpetraOperatorWrapper & eow) const = 0;
 
@@ -88,14 +92,26 @@ namespace TpetraHelpers {
        * \param[in,out] epetraX Destination Epetra object
        */
      virtual void copyThyraIntoTpetra(const RCP<const Thyra::MultiVectorBase<ST> > & thyraX,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                       Tpetra::MultiVector<ST,LO,GO,NT>& tpetraX) const = 0;
+#else
+                                      Tpetra::MultiVector<ST,NT>& tpetraX) const = 0;
+#endif
                                       // const TpetraOperatorWrapper & eow) const = 0;
 
      /** \brief Domain map for this strategy */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      virtual const RCP<const Tpetra::Map<LO,GO,NT> > domainMap() const = 0;
+#else
+     virtual const RCP<const Tpetra::Map<NT> > domainMap() const = 0;
+#endif
 
      /** \brief Range map for this strategy */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      virtual const RCP<const Tpetra::Map<LO,GO,NT> > rangeMap() const = 0;
+#else
+     virtual const RCP<const Tpetra::Map<NT> > rangeMap() const = 0;
+#endif
 
      /** \brief Identifier string */
      virtual std::string toString() const = 0;
@@ -113,22 +129,38 @@ namespace TpetraHelpers {
 
      virtual ~InverseMappingStrategy() {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,GO,NT>& tpetraX,
+#else
+     virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,NT>& tpetraX,
+#endif
                                       const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyraX) const
                                       // const TpetraOperatorWrapper & eow) const
      { forwardStrategy_->copyTpetraIntoThyra(tpetraX,thyraX); }
 
      virtual void copyThyraIntoTpetra(const RCP<const Thyra::MultiVectorBase<ST> > & thyraX,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                       Tpetra::MultiVector<ST,LO,GO,NT>& tpetraX) const
+#else
+                                      Tpetra::MultiVector<ST,NT>& tpetraX) const
+#endif
                                       // const TpetraOperatorWrapper & eow) const
      { forwardStrategy_->copyThyraIntoTpetra(thyraX,tpetraX); }
 
      /** \brief Domain map for this strategy */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      virtual const RCP<const Tpetra::Map<LO,GO,NT> > domainMap() const
+#else
+     virtual const RCP<const Tpetra::Map<NT> > domainMap() const
+#endif
      { return forwardStrategy_->rangeMap(); }
 
      /** \brief Range map for this strategy */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      virtual const RCP<const Tpetra::Map<LO,GO,NT> > rangeMap() const
+#else
+     virtual const RCP<const Tpetra::Map<NT> > rangeMap() const
+#endif
      { return forwardStrategy_->domainMap(); }
 
      /** \brief Identifier string */
@@ -159,7 +191,11 @@ namespace TpetraHelpers {
        * \param[in]     epetraX Vector to be copied into the Thyra object
        * \param[in,out] thyraX  Destination Thyra object
        */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,GO,NT>& tpetraX,
+#else
+     virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,NT>& tpetraX,
+#endif
                                       const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyraX) const;
                                       // const TpetraOperatorWrapper & eow) const;
 
@@ -172,14 +208,26 @@ namespace TpetraHelpers {
        * \param[in,out] epetraX Destination Epetra object
        */
      virtual void copyThyraIntoTpetra(const RCP<const Thyra::MultiVectorBase<ST> > & thyraX,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                       Tpetra::MultiVector<ST,LO,GO,NT>& tpetraX) const;
+#else
+                                      Tpetra::MultiVector<ST,NT>& tpetraX) const;
+#endif
                                       // const TpetraOperatorWrapper & eow) const;
 
      /** \brief Domain map for this strategy */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      virtual const RCP<const Tpetra::Map<LO,GO,NT> > domainMap() const { return domainMap_; }
+#else
+     virtual const RCP<const Tpetra::Map<NT> > domainMap() const { return domainMap_; }
+#endif
 
      /** \brief Range map for this strategy */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      virtual const RCP<const Tpetra::Map<LO,GO,NT> > rangeMap() const { return rangeMap_; }
+#else
+     virtual const RCP<const Tpetra::Map<NT> > rangeMap() const { return rangeMap_; }
+#endif
 
      /** \brief Identifier string */
      virtual std::string toString() const
@@ -189,8 +237,13 @@ namespace TpetraHelpers {
      RCP<const Thyra::VectorSpaceBase<ST> > domainSpace_; ///< Domain space object
      RCP<const Thyra::VectorSpaceBase<ST> > rangeSpace_; ///< Range space object
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
      RCP<const Tpetra::Map<LO,GO,NT> > domainMap_; ///< Pointer to the constructed domain map
      RCP<const Tpetra::Map<LO,GO,NT> > rangeMap_; ///< Pointer to the constructed range map
+#else
+     RCP<const Tpetra::Map<NT> > domainMap_; ///< Pointer to the constructed domain map
+     RCP<const Tpetra::Map<NT> > rangeMap_; ///< Pointer to the constructed range map
+#endif
   };
 
   /** \brief
@@ -199,7 +252,11 @@ namespace TpetraHelpers {
    * operators, without being rendered into concrete Epetra matrices. This is my own
    * modified version that was originally in Thyra.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class TpetraOperatorWrapper : public Tpetra::Operator<ST,LO,GO,NT>
+#else
+  class TpetraOperatorWrapper : public Tpetra::Operator<ST,NT>
+#endif
   {
   public:
     /** */
@@ -218,10 +275,18 @@ namespace TpetraHelpers {
     }
 
     /** */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void apply(const Tpetra::MultiVector<ST,LO,GO,NT>& X, Tpetra::MultiVector<ST,LO,GO,NT>& Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, ST alpha=Teuchos::ScalarTraits< ST >::one(), ST beta=Teuchos::ScalarTraits< ST >::zero()) const ;
+#else
+    void apply(const Tpetra::MultiVector<ST,NT>& X, Tpetra::MultiVector<ST,NT>& Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, ST alpha=Teuchos::ScalarTraits< ST >::one(), ST beta=Teuchos::ScalarTraits< ST >::zero()) const ;
+#endif
 
     /** */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void applyInverse(const Tpetra::MultiVector<ST,LO,GO,NT>& X, Tpetra::MultiVector<ST,LO,GO,NT>& Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, ST alpha=Teuchos::ScalarTraits< ST >::one(), ST beta=Teuchos::ScalarTraits< ST >::zero()) const ;
+#else
+    void applyInverse(const Tpetra::MultiVector<ST,NT>& X, Tpetra::MultiVector<ST,NT>& Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, ST alpha=Teuchos::ScalarTraits< ST >::one(), ST beta=Teuchos::ScalarTraits< ST >::zero()) const ;
+#endif
 
     /** */
     double NormInf() const ;
@@ -239,10 +304,18 @@ namespace TpetraHelpers {
     const Teuchos::RCP<const Teuchos::Comm<Thyra::Ordinal> > & Comm() const {return comm_;}
 
     /** */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > getDomainMap() const {return mapStrategy_->domainMap();}
+#else
+    Teuchos::RCP<const Tpetra::Map<NT> > getDomainMap() const {return mapStrategy_->domainMap();}
+#endif
 
     /** */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > getRangeMap() const {return mapStrategy_->rangeMap();}
+#else
+    Teuchos::RCP<const Tpetra::Map<NT> > getRangeMap() const {return mapStrategy_->rangeMap();}
+#endif
 
     //! Return the thyra operator associated with this wrapper
     const RCP<const Thyra::LinearOpBase<ST> > getThyraOp() const
@@ -259,7 +332,11 @@ namespace TpetraHelpers {
     virtual int GetBlockColCount();
 
     //! Grab the i,j block
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > GetBlock(int i,int j) const;
+#else
+    Teuchos::RCP<const Tpetra::Operator<ST,NT> > GetBlock(int i,int j) const;
+#endif
 
   protected:
     /** */

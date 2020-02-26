@@ -183,35 +183,72 @@ int main(int argc, char *argv[])
         GaleriList.set("my", GO(N));
         GaleriList.set("mz", GO(N));
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Map<LO,GO,NO> > UniqueNodeMap;
         RCP<const Map<LO,GO,NO> > UniqueMap;
         RCP<MultiVector<SC,LO,GO,NO> > Coordinates;
         RCP<Matrix<SC,LO,GO,NO> > K;
+#else
+        RCP<const Map<NO> > UniqueNodeMap;
+        RCP<const Map<NO> > UniqueMap;
+        RCP<MultiVector<SC,NO> > Coordinates;
+        RCP<Matrix<SC,NO> > K;
+#endif
         if (Dimension==2) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             UniqueNodeMap = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian2D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
             UniqueMap = Xpetra::MapFactory<LO,GO,NO>::Build(UniqueNodeMap,2);
             Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("2D",UniqueMap,GaleriList);
             RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Elasticity2D",UniqueMap,GaleriList);
+#else
+            UniqueNodeMap = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian2D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+            UniqueMap = Xpetra::MapFactory<NO>::Build(UniqueNodeMap,2);
+            Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("2D",UniqueMap,GaleriList);
+            RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Elasticity2D",UniqueMap,GaleriList);
+#endif
             K = Problem->BuildMatrix();
         } else if (Dimension==3) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             UniqueNodeMap = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian3D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
             UniqueMap = Xpetra::MapFactory<LO,GO,NO>::Build(UniqueNodeMap,3);
             Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("3D",UniqueMap,GaleriList);
             RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Elasticity3D",UniqueMap,GaleriList);
+#else
+            UniqueNodeMap = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian3D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+            UniqueMap = Xpetra::MapFactory<NO>::Build(UniqueNodeMap,3);
+            Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("3D",UniqueMap,GaleriList);
+            RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Elasticity3D",UniqueMap,GaleriList);
+#endif
             K = Problem->BuildMatrix();
         }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Map<LO,GO,NO> > RepeatedMap = BuildRepeatedMapNonConst<LO,GO,NO>(K->getCrsGraph());
+#else
+        RCP<Map<NO> > RepeatedMap = BuildRepeatedMapNonConst<NO>(K->getCrsGraph());
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MultiVector<SC,LO,GO,NO> > xSolution = MultiVectorFactory<SC,LO,GO,NO>::Build(UniqueMap,1);
         RCP<MultiVector<SC,LO,GO,NO> > xRightHandSide = MultiVectorFactory<SC,LO,GO,NO>::Build(UniqueMap,1);
+#else
+        RCP<MultiVector<SC,NO> > xSolution = MultiVectorFactory<SC,NO>::Build(UniqueMap,1);
+        RCP<MultiVector<SC,NO> > xRightHandSide = MultiVectorFactory<SC,NO>::Build(UniqueMap,1);
+#endif
 
         xSolution->putScalar(ScalarTraits<SC>::zero());
         xRightHandSide->putScalar(ScalarTraits<SC>::one());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         CrsMatrixWrap<SC,LO,GO,NO>& crsWrapK = dynamic_cast<CrsMatrixWrap<SC,LO,GO,NO>&>(*K);
         RCP<const LinearOpBase<SC> > K_thyra = ThyraUtils<SC,LO,GO,NO>::toThyra(crsWrapK.getCrsMatrix());
         RCP<MultiVectorBase<SC> >thyraX = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xSolution));
         RCP<const MultiVectorBase<SC> >thyraB = ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSide);
+#else
+        CrsMatrixWrap<SC,NO>& crsWrapK = dynamic_cast<CrsMatrixWrap<SC,NO>&>(*K);
+        RCP<const LinearOpBase<SC> > K_thyra = ThyraUtils<SC,NO>::toThyra(crsWrapK.getCrsMatrix());
+        RCP<MultiVectorBase<SC> >thyraX = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,NO>::toThyraMultiVector(xSolution));
+        RCP<const MultiVectorBase<SC> >thyraB = ThyraUtils<SC,NO>::toThyraMultiVector(xRightHandSide);
+#endif
 
         //-----------Set Coordinates and RepMap in ParameterList--------------------------
         RCP<ParameterList> plList =  sublist(parameterList,"Preconditioner Types");
@@ -232,7 +269,11 @@ int main(int argc, char *argv[])
         
         Comm->barrier(); if (Comm->getRank()==0) cout << "###################################\n# Stratimikos LinearSolverBuilder #\n###################################\n" << endl;
         Stratimikos::DefaultLinearSolverBuilder linearSolverBuilder;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Stratimikos::enableFROSch<LO,GO,NO>(linearSolverBuilder);
+#else
+        Stratimikos::enableFROSch<NO>(linearSolverBuilder);
+#endif
         linearSolverBuilder.setParameterList(parameterList);
         
         Comm->barrier(); if (Comm->getRank()==0) cout << "######################\n# Thyra PrepForSolve #\n######################\n" << endl;

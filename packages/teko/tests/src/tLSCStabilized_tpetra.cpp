@@ -192,10 +192,19 @@ bool tLSCStabilized_tpetra::test_diagonal(int verbosity,std::ostream & os)
    // build linear operator
    RCP<const Thyra::LinearOpBase<ST> > precOp = prec->getUnspecifiedPrecOp(); 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(2,0,comm));
+#else
+   const RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(2,0,comm));
+#endif
    // construct a couple of vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT> ea(map),eb(map);
    Tpetra::Vector<ST,LO,GO,NT> ef(map),eg(map);
+#else
+   Tpetra::Vector<ST,NT> ea(map),eb(map);
+   Tpetra::Vector<ST,NT> ef(map),eg(map);
+#endif
    const RCP<const Thyra::MultiVectorBase<ST> > x = BlockVector(ea,eb,A->domain());
    const RCP<const Thyra::MultiVectorBase<ST> > z = BlockVector(ef,eg,A->domain());
    const RCP<Thyra::MultiVectorBase<ST> > y = Thyra::createMembers(A->range(),1); 
@@ -335,10 +344,19 @@ bool tLSCStabilized_tpetra::test_diagonalNotSym(int verbosity,std::ostream & os)
    // build linear operator
    RCP<const Thyra::LinearOpBase<ST> > precOp = prec->getUnspecifiedPrecOp(); 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(2,0,comm));
+#else
+   const RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(2,0,comm));
+#endif
    // construct a couple of vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT> ea(map),eb(map);
    Tpetra::Vector<ST,LO,GO,NT> ef(map),eg(map);
+#else
+   Tpetra::Vector<ST,NT> ea(map),eb(map);
+   Tpetra::Vector<ST,NT> ef(map),eg(map);
+#endif
    const RCP<const Thyra::MultiVectorBase<ST> > x = BlockVector(ea,eb,A->domain());
    const RCP<const Thyra::MultiVectorBase<ST> > z = BlockVector(ef,eg,A->domain());
    const RCP<Thyra::MultiVectorBase<ST> > y = Thyra::createMembers(A->range(),1); 
@@ -467,9 +485,17 @@ bool tLSCStabilized_tpetra::test_strategy(int verbosity,std::ostream & os)
    LinearOp A = Thyra::block2x2(F,G,D,C);
 
    comm = GetComm_tpetra();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(sz,0,comm));
+#else
+   const RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(sz,0,comm));
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<ST,LO,GO,NT> ea(map),eb(map);
+#else
+   Tpetra::Vector<ST,NT> ea(map),eb(map);
+#endif
    const RCP<const Thyra::MultiVectorBase<ST> > x = BlockVector(ea,eb,A->domain());
    const RCP<Thyra::MultiVectorBase<ST> > y = Thyra::createMembers(A->range(),1); 
 

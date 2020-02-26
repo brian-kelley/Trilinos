@@ -58,9 +58,15 @@ typedef double RealT;
 typedef Tpetra::Map<>::local_ordinal_type         LO;
 typedef Tpetra::Map<>::global_ordinal_type        GO;
 typedef Tpetra::Map<>::node_type                  Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::Map<LO, GO, Node>                 Map;
 typedef Tpetra::MultiVector<RealT, LO, GO, Node>  MV;
 typedef ROL::TpetraMultiVector<RealT,LO,GO,Node>  V;
+#else
+typedef Tpetra::Map<Node>                 Map;
+typedef Tpetra::MultiVector<RealT,Node>  MV;
+typedef ROL::TpetraMultiVector<RealT,Node>  V;
+#endif
 
 
 // Unary function

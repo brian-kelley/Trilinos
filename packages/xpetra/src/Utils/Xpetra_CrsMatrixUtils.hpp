@@ -69,14 +69,20 @@ namespace Xpetra {
 
   */
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class CrsMatrixUtils {
 #undef XPETRA_CRSMATRIXUTILS_SHORT
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
 /// \brief Sort the entries of the (raw CSR) matrix by column index
 ///   within each row.
     static void sortCrsEntries(const Teuchos::ArrayView<size_t>& CRS_rowptr,

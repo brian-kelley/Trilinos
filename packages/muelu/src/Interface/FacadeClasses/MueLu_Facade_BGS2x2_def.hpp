@@ -57,13 +57,23 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   FacadeBGS2x2<Scalar, LocalOrdinal, GlobalOrdinal, Node>::FacadeBGS2x2() {
+#else
+  template <class Scalar, class Node>
+  FacadeBGS2x2<Scalar, Node>::FacadeBGS2x2() {
+#endif
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<Teuchos::ParameterList> FacadeBGS2x2<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetParameterList(const ParameterList& paramList) {
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<Teuchos::ParameterList> FacadeBGS2x2<Scalar, Node>::SetParameterList(const ParameterList& paramList) {
+#endif
 
     // obtain ParameterList with default input parameters for this facade class
     // Note all parameters are of type string (we use it for string replacement)

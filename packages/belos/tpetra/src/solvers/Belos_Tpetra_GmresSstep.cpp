@@ -51,12 +51,21 @@
 namespace BelosTpetra {
 namespace Impl {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 void register_GmresSstep_tmpl (const bool verbose)
 {
   using ::Belos::Impl::registerSolverSubclassForTypes;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
   using OP = ::Tpetra::Operator<SC, LO, GO, NT>;
+#else
+  using MV = ::Tpetra::MultiVector<SC, NT>;
+  using OP = ::Tpetra::Operator<SC, NT>;
+#endif
   using solver_type = GmresSstepSolverManager<SC, MV, OP>;
 
   if (verbose) {
@@ -78,7 +87,11 @@ void register_GmresSstep (const bool verbose)
 #ifdef BELOS_TPETRA_REGISTER_GMRES_S_STEP
 #  undef BELOS_TPETRA_REGISTER_GMRES_S_STEP
 #endif // BELOS_TPETRA_REGISTER_GMRES_S_STEP
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define BELOS_TPETRA_REGISTER_GMRES_S_STEP( SC, LO, GO, NT ) register_GmresSstep_tmpl<SC, LO, GO, NT> (verbose);
+#else
+#define BELOS_TPETRA_REGISTER_GMRES_S_STEP( SC, NT ) register_GmresSstep_tmpl<SC, NT> (verbose);
+#endif
 
   TPETRA_INSTANTIATE_SLGN_NO_ORDINAL_SCALAR( BELOS_TPETRA_REGISTER_GMRES_S_STEP )
 

@@ -72,7 +72,11 @@ namespace TpetraHelpers {
 //       map  - original Tpetra::Map<LO,GO,NT>  to be broken up
 //       comm - Teuchos::Comm<int> object related to the map
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraStridedMappingStrategy::TpetraStridedMappingStrategy(const std::vector<int> & vars,const RCP<const Tpetra::Map<LO,GO,NT> > & map,
+#else
+TpetraStridedMappingStrategy::TpetraStridedMappingStrategy(const std::vector<int> & vars,const RCP<const Tpetra::Map<NT> > & map,
+#endif
                                                const Teuchos::Comm<int> & comm)
 {
    rangeMap_ = map;
@@ -88,12 +92,20 @@ TpetraStridedMappingStrategy::TpetraStridedMappingStrategy(const std::vector<int
 //      X       - source Tpetra::MultiVector<ST,LO,GO,NT>
 //      thyra_X - destination Thyra::MultiVectorBase
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraStridedMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,GO,NT>& X,
+#else
+void TpetraStridedMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector<ST,NT>& X,
+#endif
                                                  const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyra_X) const 
 {
    int count = X.getNumVectors(); 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > subX;
+#else
+   std::vector<RCP<Tpetra::MultiVector<ST,NT> > > subX;
+#endif
 
    // allocate vectors to copy into
    Strided::buildSubVectors(blockMaps_,subX,count);
@@ -105,7 +117,11 @@ void TpetraStridedMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector
    Teuchos::Ptr<Thyra::ProductMultiVectorBase<ST> > prod_X
          = Teuchos::ptr_dynamic_cast<Thyra::ProductMultiVectorBase<ST> >(thyra_X);
    for(unsigned int i=0;i<blockMaps_.size();i++) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Thyra::TpetraMultiVector<ST,LO,GO,NT> > vec = rcp_dynamic_cast<Thyra::TpetraMultiVector<ST,LO,GO,NT> >(prod_X->getNonconstMultiVectorBlock(i),true);
+#else
+      RCP<Thyra::TpetraMultiVector<ST,NT> > vec = rcp_dynamic_cast<Thyra::TpetraMultiVector<ST,NT> >(prod_X->getNonconstMultiVectorBlock(i),true);
+#endif
 
       fillDefaultSpmdMultiVector(vec,subX[i]);
    }
@@ -120,15 +136,27 @@ void TpetraStridedMappingStrategy::copyTpetraIntoThyra(const Tpetra::MultiVector
 //      Y       - destination Tpetra::MultiVector<ST,LO,GO,NT>
 //
 void TpetraStridedMappingStrategy::copyThyraIntoTpetra(const RCP<const Thyra::MultiVectorBase<ST> > & thyra_Y,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                  Tpetra::MultiVector<ST,LO,GO,NT>& Y) const
+#else
+                                                 Tpetra::MultiVector<ST,NT>& Y) const
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > > subY;
+#else
+   std::vector<RCP<const Tpetra::MultiVector<ST,NT> > > subY;
+#endif
    RCP<const Thyra::DefaultProductMultiVector<ST> > prod_Y 
          = rcp_dynamic_cast<const Thyra::DefaultProductMultiVector<ST> >(thyra_Y);
 
    // convert thyra product vector to subY
    for(unsigned int i=0;i<blockMaps_.size();i++){
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Thyra::TpetraMultiVector<ST,LO,GO,NT> > tmv = rcp_dynamic_cast<const Thyra::TpetraMultiVector<ST,LO,GO,NT> >(prod_Y->getMultiVectorBlock(i),true);
+#else
+      RCP<const Thyra::TpetraMultiVector<ST,NT> > tmv = rcp_dynamic_cast<const Thyra::TpetraMultiVector<ST,NT> >(prod_Y->getMultiVectorBlock(i),true);
+#endif
       subY.push_back(tmv->getConstTpetraMultiVector());
    }
 
@@ -151,7 +179,11 @@ void TpetraStridedMappingStrategy::copyThyraIntoTpetra(const RCP<const Thyra::Mu
 //       baseMap - basic map to use in the transfers
 //       comm    - Teuchos::Comm<int> object
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraStridedMappingStrategy::buildBlockTransferData(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > & baseMap, const Teuchos::Comm<int> & comm)
+#else
+void TpetraStridedMappingStrategy::buildBlockTransferData(const std::vector<int> & vars,const Teuchos::RCP<const Tpetra::Map<NT> > & baseMap, const Teuchos::Comm<int> & comm)
+#endif
 {
    // build maps and exporters/importers
    Strided::buildSubMaps(*baseMap,vars,comm,blockMaps_);
@@ -169,7 +201,11 @@ void TpetraStridedMappingStrategy::buildBlockTransferData(const std::vector<int>
 //             defined by this mapping strategy
 //
 const Teuchos::RCP<Thyra::BlockedLinearOpBase<ST> > 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TpetraStridedMappingStrategy::buildBlockedThyraOp(const RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > & crsContent,const std::string & label) const
+#else
+TpetraStridedMappingStrategy::buildBlockedThyraOp(const RCP<const Tpetra::CrsMatrix<ST,NT> > & crsContent,const std::string & label) const
+#endif
 {
    int dim = blockMaps_.size();
 
@@ -183,8 +219,13 @@ TpetraStridedMappingStrategy::buildBlockedThyraOp(const RCP<const Tpetra::CrsMat
          ss << label << "_" << i << "," << j;
 
          // build the blocks and place it the right location
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > Aij = Strided::buildSubBlock(i,j,crsContent,blockMaps_);
          A->setNonconstBlock(i,j,Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(Aij->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(Aij->getDomainMap()),Aij));
+#else
+         RCP<Tpetra::CrsMatrix<ST,NT> > Aij = Strided::buildSubBlock(i,j,crsContent,blockMaps_);
+         A->setNonconstBlock(i,j,Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(Aij->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(Aij->getDomainMap()),Aij));
+#endif
       }
    } // end for i
    A->endBlockFill();
@@ -202,7 +243,11 @@ TpetraStridedMappingStrategy::buildBlockedThyraOp(const RCP<const Tpetra::CrsMat
 //       A - Destination block linear op composed of blocks of
 //           Tpetra::CrsMatrix<ST,LO,GO,NT>  at all relevant locations
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void TpetraStridedMappingStrategy::rebuildBlockedThyraOp(const RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > & crsContent,
+#else
+void TpetraStridedMappingStrategy::rebuildBlockedThyraOp(const RCP<const Tpetra::CrsMatrix<ST,NT> > & crsContent,
+#endif
                                                    const RCP<Thyra::BlockedLinearOpBase<ST> > & A) const
 {
    int dim = blockMaps_.size();
@@ -211,8 +256,13 @@ void TpetraStridedMappingStrategy::rebuildBlockedThyraOp(const RCP<const Tpetra:
       for(int j=0;j<dim;j++) {
          // get Tpetra version of desired block
          RCP<Thyra::LinearOpBase<ST> > Aij = A->getNonconstBlock(i,j);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<Thyra::TpetraLinearOp<ST,LO,GO,NT> > tAij = rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,LO,GO,NT> >(Aij,true);
          RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > eAij = rcp_dynamic_cast<Tpetra::CrsMatrix<ST,LO,GO,NT> >(tAij->getTpetraOperator(),true);
+#else
+         RCP<Thyra::TpetraLinearOp<ST,NT> > tAij = rcp_dynamic_cast<Thyra::TpetraLinearOp<ST,NT> >(Aij,true);
+         RCP<Tpetra::CrsMatrix<ST,NT> > eAij = rcp_dynamic_cast<Tpetra::CrsMatrix<ST,NT> >(tAij->getTpetraOperator(),true);
+#endif
 
          // rebuild the blocks and place it the right location
          Strided::rebuildSubBlock(i,j,crsContent,blockMaps_,*eAij);

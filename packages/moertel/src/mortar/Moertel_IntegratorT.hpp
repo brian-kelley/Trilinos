@@ -93,8 +93,10 @@ namespace MoertelT
 
 // forward declarations
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 class InterfaceT;
 class Segment;
@@ -112,12 +114,18 @@ class Node;
 
 */
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 class IntegratorT
 {
 public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   
   // @{ \name Constructors and destructors
 
@@ -201,8 +209,13 @@ public:
   \param M : global sparse matrix 'M'
   \param Mdense : local dense matrix from integration of overlap between sseg and mseg
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool Assemble(MoertelT::InterfaceT<ST, LO, GO, N>& inter, MOERTEL::Segment& sseg, 
                 Tpetra::CrsMatrix<ST, LO, GO, N>& D, Teuchos::SerialDenseMatrix<LO, ST>& Ddense);
+#else
+  bool Assemble(MoertelT::InterfaceT<ST, N>& inter, MOERTEL::Segment& sseg, 
+                Tpetra::CrsMatrix<ST, N>& D, Teuchos::SerialDenseMatrix<LO, ST>& Ddense);
+#endif
 
   /*!
   \brief Integrate mass matrix 'D' on a 1D slave segment overlap
@@ -224,9 +237,17 @@ public:
   \param D : global sparse matrix 'D'
   \param Ddense : local dense matrix from integration of overlap between sseg and mseg
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool Assemble(MoertelT::InterfaceT<ST, LO, GO, N>& inter, 
+#else
+  bool Assemble(MoertelT::InterfaceT<ST, N>& inter, 
+#endif
                 MOERTEL::Segment& sseg,  MOERTEL::Segment& mseg,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                 Tpetra::CrsMatrix<ST, LO, GO, N>& D, Teuchos::SerialDenseMatrix<LO, ST>& Ddense);
+#else
+                Tpetra::CrsMatrix<ST, N>& D, Teuchos::SerialDenseMatrix<LO, ST>& Ddense);
+#endif
 
 
   /*!
@@ -260,7 +281,11 @@ public:
   bool Assemble_2D_Mod(MoertelT::Interface& inter, MOERTEL::Segment& sseg, MOERTEL::Segment& mseg, 
                        Tpetra_CrsMatrix& M, Teuchos::SerialDenseMatrix<LocalOrdinal, Scalar>& Mmod);
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool Assemble_2D_Mod(MoertelT::InterfaceT<ST, LO, GO, N>& inter, MOERTEL::Segment& sseg, MOERTEL::Segment& mseg, 
+#else
+  bool Assemble_2D_Mod(MoertelT::InterfaceT<ST, N>& inter, MOERTEL::Segment& sseg, MOERTEL::Segment& mseg, 
+#endif
                        Teuchos::SerialDenseMatrix<LO, ST>& Mmod);
 
 
@@ -283,7 +308,11 @@ public:
                  MOERTEL::Segment& mseg,
                  Teuchos::SerialDenseMatrix<LO, ST>** Ddense, 
                  Teuchos::SerialDenseMatrix<LO, ST>** Mdense, 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                  MOERTEL::Overlap<MoertelT::InterfaceT<ST, LO, GO, N> >& overlap, double eps,
+#else
+                 MOERTEL::Overlap<MoertelT::InterfaceT<ST, N> >& overlap, double eps,
+#endif
                  bool exactvalues);
 
   /*!
@@ -293,7 +322,11 @@ public:
   \param sseg : Slave Segment
   \param Ddense : local dense matrix from integration of overlap
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool Assemble(MoertelT::InterfaceT<ST, LO, GO, N>& inter,
+#else
+  bool Assemble(MoertelT::InterfaceT<ST, N>& inter,
+#endif
      MOERTEL::Segment& sseg,Teuchos::SerialDenseMatrix<LO, ST>& Ddense);
 
   /*!
@@ -304,16 +337,28 @@ public:
   \param mseg : Mortar Segment
   \param Mdense : local dense matrix from integration of overlap
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   bool Assemble(MoertelT::InterfaceT<ST, LO, GO, N>& inter,MOERTEL::Segment& sseg,MOERTEL::Segment& mseg,
+#else
+  bool Assemble(MoertelT::InterfaceT<ST, N>& inter,MOERTEL::Segment& sseg,MOERTEL::Segment& mseg,
+#endif
                 Teuchos::SerialDenseMatrix<LO, ST>& Mdense);
 
   //@}
 
 private:  
   // don't want = operator
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   IntegratorT operator = (const IntegratorT<ST, LO, GO, N>& old);
+#else
+  IntegratorT operator = (const IntegratorT<ST, N>& old);
+#endif
   // don't want copy-ctor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   IntegratorT(MoertelT::IntegratorT<ST, LO, GO, N>& old);
+#else
+  IntegratorT(MoertelT::IntegratorT<ST, N>& old);
+#endif
 
 private:
 

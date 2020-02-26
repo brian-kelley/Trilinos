@@ -56,8 +56,13 @@
 #include "MueLu_FacadeClassBase_decl.hpp"
 
 namespace MueLu {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   FacadeClassBase<Scalar, LocalOrdinal, GlobalOrdinal, Node>::FacadeClassBase() {
+#else
+  template <class Scalar, class Node>
+  FacadeClassBase<Scalar, Node>::FacadeClassBase() {
+#endif
   }
 }
 

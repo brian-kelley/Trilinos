@@ -54,9 +54,17 @@ namespace Thyra {
  *
  * \ingroup Tpetra_Thyra_Op_Vec_adapters_grp
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 class TpetraEuclideanScalarProd : public EuclideanScalarProd<Scalar> {
 protected:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   
   /** @name Overridden from EuclideanScalarProd */
   //@{
@@ -76,7 +84,11 @@ protected:
 private:
 
   /** /brief . */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP<const Tpetra::MultiVector<Scalar,Node> >
+#endif
   getConstTpetraMultiVector(const RCP<const MultiVectorBase<Scalar> >& mv) const;
 
 };
@@ -86,12 +98,24 @@ private:
  *
  * \relates TpetraEuclideanScalarProd
  */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template <class Scalar, class Node>
+#endif
 inline
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 RCP<const TpetraEuclideanScalarProd<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
+#else
+RCP<const TpetraEuclideanScalarProd<Scalar,Node> >
+#endif
 tpetraEuclideanScalarProd()
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return  Teuchos::rcp(new TpetraEuclideanScalarProd<Scalar,LocalOrdinal,GlobalOrdinal,Node>);
+#else
+  return  Teuchos::rcp(new TpetraEuclideanScalarProd<Scalar,Node>);
+#endif
 }
 
 

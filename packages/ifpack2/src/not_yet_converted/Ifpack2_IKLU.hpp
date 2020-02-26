@@ -138,9 +138,17 @@ public:
     
     \return Integer error code, set to 0 if successful.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   int ApplyInverse(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const;
+#else
+  int ApplyInverse(const Tpetra_MultiVector<Scalar,Node>& X, Tpetra_MultiVector<Scalar,Node>& Y) const;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   int Apply(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const;
+#else
+  int Apply(const Tpetra_MultiVector<Scalar,Node>& X, Tpetra_MultiVector<Scalar,Node>& Y) const;
+#endif
 
   //! Computed the estimated condition number and returns the value.
   double Condest(const Ifpack2_CondestType CT = Ifpack2_Cheap, 

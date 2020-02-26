@@ -59,8 +59,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  Teuchos::RCP<const ParameterList> CloneRepartitionInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Scalar, class Node>
+ Teuchos::RCP<const ParameterList> CloneRepartitionInterface<Scalar, Node>::GetValidParameterList() const {
+#endif
     Teuchos::RCP<ParameterList> validParamList = rcp(new ParameterList());
     validParamList->set< Teuchos::RCP<const FactoryBase> >("A",         Teuchos::null, "Factory of the matrix A");
     validParamList->set< Teuchos::RCP<const FactoryBase> >("number of partitions", Teuchos::null, "Instance of RepartitionHeuristicFactory.");
@@ -70,14 +75,24 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void CloneRepartitionInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level & currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void CloneRepartitionInterface<Scalar, Node>::DeclareInput(Level & currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "Partition");
   } //DeclareInput()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void CloneRepartitionInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void CloneRepartitionInterface<Scalar, Node>::Build(Level &currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", currentLevel);
     currentLevel.print(GetOStream(Statistics0,0));
     // extract blocked operator A from current level
@@ -106,7 +121,11 @@ namespace MueLu {
     }
 
     // create new decomposition vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<GOVector> ret = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(A->getRowMap(), false);
+#else
+    Teuchos::RCP<GOVector> ret = Xpetra::VectorFactory<GO, NO>::Build(A->getRowMap(), false);
+#endif
     ArrayRCP<GO> retDecompEntries = ret->getDataNonConst(0);
 
     // block size of output vector

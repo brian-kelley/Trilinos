@@ -62,14 +62,20 @@ void sortingPermutation(const std::vector<Scalar> & values, std::vector<LocalOrd
     */
 
   template <class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
   class AlgebraicPermutationStrategy : public BaseClass {
 #undef MUELU_ALGEBRAICPERMUTATIONSTRATEGY_SHORT
 #include "MueLu_UseShortNames.hpp"
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   /*!
     @class AlgebraicPermutationStrategy class.
     @brief Class which defines local permutations of matrix columns.

@@ -61,9 +61,13 @@ namespace Details {
 /// e.g., GitHub Issue #2630.
 template<class GraphType>
 class RowGraph :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual public Tpetra::RowGraph<typename GraphType::local_ordinal_type,
                                     typename GraphType::global_ordinal_type,
                                     typename GraphType::node_type> {
+#else
+    virtual public Tpetra::RowGraph<typename GraphType::node_type> {
+#endif
 public:
   //! \name Typedefs
   //@{

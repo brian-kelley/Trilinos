@@ -83,7 +83,11 @@ namespace {
 
   // Test getVector() / getVectorNonConst()
   // More specifically, this test verifies that the newly created vector will remain valid after the disappearance of the references to the multivector in user code.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( MultiVector, XpetraSpecific_GetVector, M, MV, V, Scalar, LocalOrdinal, GlobalOrdinal, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( MultiVector, XpetraSpecific_GetVector, M, MV, V, Scalar, Node )
+#endif
   {
     using Teuchos::RCP;
     using Teuchos::rcp;
@@ -95,8 +99,13 @@ namespace {
 
     const size_t numLocal = 4;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > map = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::createContigMap(mylib, INVALID, numLocal, comm);
     RCP< Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > mv = Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(map, 3, false);
+#else
+    RCP<const Xpetra::Map<Node> > map = Xpetra::MapFactory<Node>::createContigMap(mylib, INVALID, numLocal, comm);
+    RCP< Xpetra::MultiVector<Scalar, Node> > mv = Xpetra::MultiVectorFactory<Scalar, Node>::Build(map, 3, false);
+#endif
     for(size_t k=0; k < 3; k++) {
       Teuchos::ArrayRCP<Scalar> mvData = mv->getDataNonConst(k);
 
@@ -105,8 +114,13 @@ namespace {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > v         = mv->getVector(1);         // second vector
     Teuchos::RCP<       Xpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > vNonConst = mv->getVectorNonConst(2); // third vector
+#else
+    Teuchos::RCP< const Xpetra::Vector<Scalar, Node> > v         = mv->getVector(1);         // second vector
+    Teuchos::RCP<       Xpetra::Vector<Scalar, Node> > vNonConst = mv->getVectorNonConst(2); // third vector
+#endif
 
     mv = Teuchos::null;
 
@@ -125,7 +139,11 @@ namespace {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( MultiVector, XpetraSpecific_GetHostLocalView, M, MV, V, Scalar, LocalOrdinal, GlobalOrdinal, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_7_DECL( MultiVector, XpetraSpecific_GetHostLocalView, M, MV, V, Scalar, Node )
+#endif
   {
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
     using Teuchos::RCP;
@@ -134,16 +152,28 @@ namespace {
     RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
     EXTRACT_LIB(comm,M) // returns mylib
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Xpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> mv_type;
+#else
+    typedef typename Xpetra::MultiVector<Scalar, Node> mv_type;
+#endif
     typedef typename mv_type::dual_view_type dual_view_type;
 
     const Xpetra::global_size_t INVALID = Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid();
     const size_t numLocal = 4;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > map = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::createContigMap(mylib, INVALID, numLocal, comm);
+#else
+    RCP<const Xpetra::Map<Node> > map = Xpetra::MapFactory<Node>::createContigMap(mylib, INVALID, numLocal, comm);
+#endif
 
     // create new vector and fill it with data
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< mv_type > mv = Xpetra::MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(map, 3, false);
+#else
+    RCP< mv_type > mv = Xpetra::MultiVectorFactory<Scalar, Node>::Build(map, 3, false);
+#endif
     for(size_t k=0; k < 3; k++) {
       Teuchos::ArrayRCP<Scalar> mvData = mv->getDataNonConst(k);
 
@@ -207,16 +237,27 @@ namespace {
   //
   #ifdef HAVE_XPETRA_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     #define XPETRA_TPETRA_TYPES( S, LO, GO, N) \
       typedef typename Xpetra::TpetraMap<LO,GO,N> M##LO##GO##N; \
       typedef typename Xpetra::TpetraMultiVector<S,LO,GO,N> MV##S##LO##GO##N; \
       typedef typename Xpetra::TpetraVector<S,LO,GO,N> V##S##LO##GO##N;       \
+#else
+    #define XPETRA_TPETRA_TYPES( S, N) \
+      typedef typename Xpetra::TpetraMap<N> M##LO##GO##N; \
+      typedef typename Xpetra::TpetraMultiVector<S,N> MV##S##LO##GO##N; \
+      typedef typename Xpetra::TpetraVector<S,N> V##S##LO##GO##N;       \
+#endif
 
   #endif
 
   #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     #define XPETRA_EPETRA_TYPES( S, LO, GO, N) \
+#else
+    #define XPETRA_EPETRA_TYPES( S, N) \
+#endif
       typedef typename Xpetra::EpetraMapT<GO,N> M##LO##GO##N; \
       typedef typename Xpetra::EpetraMultiVectorT<GO,N> MV##S##LO##GO##N; \
       typedef typename Xpetra::EpetraVectorT<GO,N> V##S##LO##GO##N;       \
@@ -224,9 +265,15 @@ namespace {
   #endif
 
   // List of tests which run only with Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XP_MULTIVECTOR_INSTANT(S,LO,GO,N) \
         TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( MultiVector, XpetraSpecific_GetHostLocalView , M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S, LO, GO, N ) \
         TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( MultiVector, XpetraSpecific_GetVector        , M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S, LO, GO, N ) \
+#else
+  #define XP_MULTIVECTOR_INSTANT(S,N) \
+        TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( MultiVector, XpetraSpecific_GetHostLocalView , M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S,N ) \
+        TEUCHOS_UNIT_TEST_TEMPLATE_7_INSTANT( MultiVector, XpetraSpecific_GetVector        , M##LO##GO##N , MV##S##LO##GO##N , V##S##LO##GO##N , S,N ) \
+#endif
 
 #if defined(HAVE_XPETRA_TPETRA)
 

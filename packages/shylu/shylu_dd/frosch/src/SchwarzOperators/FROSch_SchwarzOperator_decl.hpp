@@ -71,16 +71,30 @@ namespace FROSch {
     class Solver;
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class SchwarzOperator : public Operator<SC,LO,GO,NO> {
+#else
+    class SchwarzOperator : public Operator<SC,NO> {
+#endif
 
     protected:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
         using CommPtr                           = RCP<const Comm<int> >;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMap                              = Map<LO,GO,NO>;
+#else
+        using XMap                              = Map<NO>;
+#endif
         using XMapPtr                           = RCP<XMap>;
         using ConstXMapPtr                      = RCP<const XMap>;
         using XMapPtrVecPtr                     = ArrayRCP<XMapPtr>;
@@ -88,52 +102,105 @@ namespace FROSch {
         using XMapPtrVecPtr2D                   = ArrayRCP<XMapPtrVecPtr>;
         using ConstXMapPtrVecPtr2D              = ArrayRCP<ConstXMapPtrVecPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrix                           = Matrix<SC,LO,GO,NO>;
+#else
+        using XMatrix                           = Matrix<SC,NO>;
+#endif
         using XMatrixPtr                        = RCP<XMatrix>;
         using ConstXMatrixPtr                   = RCP<const XMatrix>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XCrsGraph                         = CrsGraph<LO,GO,NO>;
+#else
+        using XCrsGraph                         = CrsGraph<NO>;
+#endif
         using GraphPtr                          = RCP<XCrsGraph>;
         using ConstXCrsGraphPtr                 = RCP<const XCrsGraph>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector                      = MultiVector<SC,LO,GO,NO>;
+#else
+        using XMultiVector                      = MultiVector<SC,NO>;
+#endif
         using XMultiVectorPtr                   = RCP<XMultiVector>;
         using ConstXMultiVectorPtr              = RCP<const XMultiVector>;
         using XMultiVectorPtrVecPtr             = ArrayRCP<XMultiVectorPtr>;
         using ConstXMultiVectorPtrVecPtr        = ArrayRCP<ConstXMultiVectorPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XImport                           = Import<LO,GO,NO>;
+#else
+        using XImport                           = Import<NO>;
+#endif
         using XImportPtr                        = RCP<XImport>;
         using XImportPtrVecPtr                  = ArrayRCP<XImportPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XExport                           = Export<LO,GO,NO>;
+#else
+        using XExport                           = Export<NO>;
+#endif
         using XExportPtr                        = RCP<XExport>;
         using XExportPtrVecPtr                  = ArrayRCP<XExportPtr>;
 
         using ParameterListPtr                  = RCP<ParameterList>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using DDInterfacePtr                    = RCP<DDInterface<SC,LO,GO,NO> >;
+#else
+        using DDInterfacePtr                    = RCP<DDInterface<SC,NO> >;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using EntitySetPtr                      = RCP<EntitySet<SC,LO,GO,NO> >;
+#else
+        using EntitySetPtr                      = RCP<EntitySet<SC,NO> >;
+#endif
         using EntitySetConstPtr                 = const EntitySetPtr;
         using EntitySetPtrVecPtr                = ArrayRCP<EntitySetPtr>;
         using EntitySetPtrConstVecPtr           = const EntitySetPtrVecPtr;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using CoarseSpacePtr                    = RCP<CoarseSpace<SC,LO,GO,NO> >;
+#else
+        using CoarseSpacePtr                    = RCP<CoarseSpace<SC,NO> >;
+#endif
         using CoarseSpacePtrVecPtr              = ArrayRCP<CoarseSpacePtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using InterfaceEntityPtr                = RCP<InterfaceEntity<SC,LO,GO,NO> >;
+#else
+        using InterfaceEntityPtr                = RCP<InterfaceEntity<SC,NO> >;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using PartitionOfUnityPtr               = RCP<PartitionOfUnity<SC,LO,GO,NO> >;
         using InterfacePartitionOfUnityPtr      = RCP<InterfacePartitionOfUnity<SC,LO,GO,NO> >;
+#else
+        using PartitionOfUnityPtr               = RCP<PartitionOfUnity<SC,NO> >;
+        using InterfacePartitionOfUnityPtr      = RCP<InterfacePartitionOfUnity<SC,NO> >;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using LocalPartitionOfUnityBasisPtr     = RCP<LocalPartitionOfUnityBasis<SC,LO,GO,NO> >;
+#else
+        using LocalPartitionOfUnityBasisPtr     = RCP<LocalPartitionOfUnityBasis<SC,NO> >;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using SchwarzOperatorPtr                = RCP<SchwarzOperator<SC,LO,GO,NO> >;
+#else
+        using SchwarzOperatorPtr                = RCP<SchwarzOperator<SC,NO> >;
+#endif
         using SchwarzOperatorPtrVec             = Array<SchwarzOperatorPtr>;
         using SchwarzOperatorPtrVecPtr          = ArrayRCP<SchwarzOperatorPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using SubdomainSolverPtr                = RCP<SubdomainSolver<SC,LO,GO,NO> >;
+#else
+        using SubdomainSolverPtr                = RCP<SubdomainSolver<SC,NO> >;
+#endif
 
         using DofOrderingVecPtr                 = ArrayRCP<DofOrdering>;
 

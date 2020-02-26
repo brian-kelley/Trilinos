@@ -62,8 +62,13 @@ namespace MueLu {
 
   // Try to stick unaggregated nodes into a neighboring aggregate if they are
   // not already too big. Otherwise, make a new aggregate
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationPhase3Algorithm<LocalOrdinal, GlobalOrdinal, Node>::BuildAggregates(const ParameterList& params, const GraphBase& graph, Aggregates& aggregates, std::vector<unsigned>& aggStat, LO& numNonAggregatedNodes) const {
+#else
+  template <class Node>
+  void AggregationPhase3Algorithm<Node>::BuildAggregates(const ParameterList& params, const GraphBase& graph, Aggregates& aggregates, std::vector<unsigned>& aggStat, LO& numNonAggregatedNodes) const {
+#endif
     Monitor m(*this, "BuildAggregates");
 
     bool makeNonAdjAggs = false;

@@ -413,8 +413,13 @@ int Ifpack2_ICT::Compute()
 }
 
 //=============================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int Ifpack2_ICT::ApplyInverse(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 			     Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const
+#else
+int Ifpack2_ICT::ApplyInverse(const Tpetra_MultiVector<Scalar,Node>& X, 
+			     Tpetra_MultiVector<Scalar,Node>& Y) const
+#endif
 {
 
   if (!IsComputed())
@@ -450,8 +455,13 @@ int Ifpack2_ICT::ApplyInverse(const Tpetra_MultiVector<Scalar,LocalOrdinal,Globa
 }
 //=============================================================================
 // This function finds X such that LDU Y = X or U(trans) D L(trans) Y = X for multiple RHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int Ifpack2_ICT::Apply(const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 		      Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const 
+#else
+int Ifpack2_ICT::Apply(const Tpetra_MultiVector<Scalar,Node>& X, 
+		      Tpetra_MultiVector<Scalar,Node>& Y) const 
+#endif
 {
 
   IFPACK2_CHK_ERR(-98);

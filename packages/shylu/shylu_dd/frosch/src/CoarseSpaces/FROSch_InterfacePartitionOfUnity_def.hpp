@@ -50,8 +50,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     InterfacePartitionOfUnity<SC,LO,GO,NO>::InterfacePartitionOfUnity(CommPtr mpiComm,
+#else
+    template <class SC,class NO>
+    InterfacePartitionOfUnity<SC,NO>::InterfacePartitionOfUnity(CommPtr mpiComm,
+#endif
                                                                       CommPtr serialComm,
                                                                       UN dimension,
                                                                       UN dofsPerNode,
@@ -60,7 +65,11 @@ namespace FROSch {
                                                                       ParameterListPtr parameterList,
                                                                       Verbosity verbosity,
                                                                       UN levelID) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PartitionOfUnity<SC,LO,GO,NO> (mpiComm,serialComm,dofsPerNode,nodesMap,dofsMaps,parameterList,verbosity,levelID)
+#else
+    PartitionOfUnity<SC,NO> (mpiComm,serialComm,dofsPerNode,nodesMap,dofsMaps,parameterList,verbosity,levelID)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(interfacePartitionOfUnityTime,"InterfacePartitionOfUnity::InterfacePartitionOfUnity");
         CommunicationStrategy communicationStrategy = CreateOneToOneMap;
@@ -74,24 +83,43 @@ namespace FROSch {
             FROSCH_ASSERT(false,"FROSch::InterfacePartitionOfUnity : ERROR: Specify a valid communication strategy for the identification of the interface components.");
         }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         DDInterface_.reset(new DDInterface<SC,LO,GO,NO>(dimension,dofsPerNode,nodesMap.getConst(),this->Verbosity_,this->LevelID_,communicationStrategy));
+#else
+        DDInterface_.reset(new DDInterface<SC,NO>(dimension,dofsPerNode,nodesMap.getConst(),this->Verbosity_,this->LevelID_,communicationStrategy));
+#endif
         DDInterface_->resetGlobalDofs(dofsMaps);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     InterfacePartitionOfUnity<SC,LO,GO,NO>::~InterfacePartitionOfUnity()
+#else
+    template <class SC,class NO>
+    InterfacePartitionOfUnity<SC,NO>::~InterfacePartitionOfUnity()
+#endif
     {
 
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename InterfacePartitionOfUnity<SC,LO,GO,NO>::ConstDDInterfacePtr InterfacePartitionOfUnity<SC,LO,GO,NO>::getDDInterface() const
+#else
+    template <class SC,class NO>
+    typename InterfacePartitionOfUnity<SC,NO>::ConstDDInterfacePtr InterfacePartitionOfUnity<SC,NO>::getDDInterface() const
+#endif
     {
         return DDInterface_.getConst();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     typename InterfacePartitionOfUnity<SC,LO,GO,NO>::DDInterfacePtr InterfacePartitionOfUnity<SC,LO,GO,NO>::getDDInterfaceNonConst() const
+#else
+    template <class SC,class NO>
+    typename InterfacePartitionOfUnity<SC,NO>::DDInterfacePtr InterfacePartitionOfUnity<SC,NO>::getDDInterfaceNonConst() const
+#endif
     {
         return DDInterface_;
     }

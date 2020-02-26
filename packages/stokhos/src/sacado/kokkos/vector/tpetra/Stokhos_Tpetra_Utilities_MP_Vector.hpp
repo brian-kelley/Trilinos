@@ -52,9 +52,15 @@ namespace Stokhos {
 
   // Create a flattened map for a map representing a distribution for an
   // embedded scalar type
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
   Teuchos::RCP< Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
   create_flat_map(const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>& map,
+#else
+  template <typename Node>
+  Teuchos::RCP< Tpetra::Map<Node> >
+  create_flat_map(const Tpetra::Map<Node>& map,
+#endif
                   const LocalOrdinal block_size) {
     using Tpetra::global_size_t;
     using Teuchos::ArrayView;
@@ -62,7 +68,11 @@ namespace Stokhos {
     using Teuchos::RCP;
     using Teuchos::rcp;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
+#else
+    typedef Tpetra::Map<Node> Map;
+#endif
 
     // Get map info
     const global_size_t num_global_entries = map.getGlobalNumElements();
@@ -92,19 +102,35 @@ namespace Stokhos {
   // MP::Vector scalar type (each block is an identity matrix)
   // If flat_domain_map and/or flat_range_map are null, they will be computed,
   // otherwise they will be used as-is.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename LocalOrdinal, typename GlobalOrdinal, typename Node>
   Teuchos::RCP< Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  template <typename Node>
+  Teuchos::RCP< Tpetra::CrsGraph<Node> >
+#endif
   create_flat_mp_graph(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node>& graph,
     Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_domain_map,
     Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_range_map,
+#else
+    const Tpetra::CrsGraph<Node>& graph,
+    Teuchos::RCP<const Tpetra::Map<Node> >& flat_domain_map,
+    Teuchos::RCP<const Tpetra::Map<Node> >& flat_range_map,
+#endif
     const LocalOrdinal block_size) {
     using Teuchos::ArrayRCP;
     using Teuchos::RCP;
     using Teuchos::rcp;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> Graph;
+#else
+    typedef Tpetra::Map<Node> Map;
+    typedef Tpetra::CrsGraph<Node> Graph;
+#endif
 
     // Build domain map if necessary
     if (flat_domain_map == Teuchos::null)
@@ -179,8 +205,13 @@ namespace Stokhos {
     using Teuchos::rcp;
 
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> Graph;
+#else
+    typedef Tpetra::Map<Node> Map;
+    typedef Tpetra::CrsGraph<Node> Graph;
+#endif
     typedef typename Graph::local_graph_type::row_map_type::non_const_type RowPtrs;
     typedef typename Graph::local_graph_type::entries_type::non_const_type LocalIndices;
 
@@ -244,20 +275,34 @@ namespace Stokhos {
   // returned vector is a view of the original
   template <typename Storage, typename LocalOrdinal, typename GlobalOrdinal,
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< const Tpetra::MultiVector<typename Storage::value_type,
                                           LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP< const Tpetra::MultiVector<typename Storage::value_type,Node> >
+#endif
   create_flat_vector_view(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Tpetra::MultiVector<Sacado::MP::Vector<Storage>,
                               LocalOrdinal,GlobalOrdinal,Node>& vec_const,
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_map) {
+#else
+    const Tpetra::MultiVector<Sacado::MP::Vector<Storage>,Node>& vec_const,
+    const Teuchos::RCP< const Tpetra::Map<Node> >& flat_map) {
+#endif
     using Teuchos::ArrayRCP;
     using Teuchos::RCP;
     using Teuchos::rcp;
 
     typedef Sacado::MP::Vector<Storage> Scalar;
     typedef typename Storage::value_type BaseScalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> Vector;
     typedef Tpetra::MultiVector<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatVector;
+#else
+    typedef Tpetra::MultiVector<Scalar,Node> Vector;
+    typedef Tpetra::MultiVector<BaseScalar,Node> FlatVector;
+#endif
 
     // MP size
     const LocalOrdinal mp_size = Storage::static_size;
@@ -291,17 +336,30 @@ namespace Stokhos {
   // map if necessary
   template <typename Storage, typename LocalOrdinal, typename GlobalOrdinal,
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< const Tpetra::MultiVector<typename Storage::value_type,
                                           LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP< const Tpetra::MultiVector<typename Storage::value_type,Node> >
+#endif
   create_flat_vector_view(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Tpetra::MultiVector<Sacado::MP::Vector<Storage>,
                               LocalOrdinal,GlobalOrdinal,Node>& vec,
     Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_map) {
+#else
+    const Tpetra::MultiVector<Sacado::MP::Vector<Storage>,Node>& vec,
+    Teuchos::RCP< const Tpetra::Map<Node> >& flat_map) {
+#endif
     if (flat_map == Teuchos::null) {
       const LocalOrdinal mp_size = Storage::static_size;
       flat_map = create_flat_map(*(vec.getMap()), mp_size);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > const_flat_map = flat_map;
+#else
+    const Teuchos::RCP< const Tpetra::Map<Node> > const_flat_map = flat_map;
+#endif
     return create_flat_vector_view(vec, const_flat_map);
   }
 
@@ -309,19 +367,32 @@ namespace Stokhos {
   // returned vector is a view of the original
   template <typename Storage, typename LocalOrdinal, typename GlobalOrdinal,
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,
                                     LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,Node> >
+#endif
   create_flat_vector_view(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::MultiVector<Sacado::MP::Vector<Storage>,
                         LocalOrdinal,GlobalOrdinal,Node>& vec,
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_map) {
+#else
+    Tpetra::MultiVector<Sacado::MP::Vector<Storage>,Node>& vec,
+    const Teuchos::RCP< const Tpetra::Map<Node> >& flat_map) {
+#endif
     using Teuchos::ArrayRCP;
     using Teuchos::RCP;
     using Teuchos::rcp;
 
     typedef Sacado::MP::Vector<Storage> Scalar;
     typedef typename Storage::value_type BaseScalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatVector;
+#else
+    typedef Tpetra::MultiVector<BaseScalar,Node> FlatVector;
+#endif
 
     // MP size
     const LocalOrdinal mp_size = Storage::static_size;
@@ -351,17 +422,30 @@ namespace Stokhos {
   // map if necessary
   template <typename Storage, typename LocalOrdinal, typename GlobalOrdinal,
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,
                                     LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,Node> >
+#endif
   create_flat_vector_view(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::MultiVector<Sacado::MP::Vector<Storage>,
                         LocalOrdinal,GlobalOrdinal,Node>& vec,
     Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_map) {
+#else
+    Tpetra::MultiVector<Sacado::MP::Vector<Storage>,Node>& vec,
+    Teuchos::RCP< const Tpetra::Map<Node> >& flat_map) {
+#endif
     if (flat_map == Teuchos::null) {
       const LocalOrdinal mp_size = Storage::static_size;
       flat_map = create_flat_map(*(vec.getMap()), mp_size);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > const_flat_map = flat_map;
+#else
+    const Teuchos::RCP< const Tpetra::Map<Node> > const_flat_map = flat_map;
+#endif
     return create_flat_vector_view(vec, const_flat_map);
   }
 
@@ -369,14 +453,25 @@ namespace Stokhos {
   // returned vector is a view of the original
   template <typename Storage, typename LocalOrdinal, typename GlobalOrdinal,
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< const Tpetra::Vector<typename Storage::value_type,
                                      LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP< const Tpetra::Vector<typename Storage::value_type,Node> >
+#endif
   create_flat_vector_view(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Tpetra::Vector<Sacado::MP::Vector<Storage>,
                          LocalOrdinal,GlobalOrdinal,Node>& vec_const,
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_map) {
     const Tpetra::MultiVector<Sacado::MP::Vector<Storage>,LocalOrdinal,GlobalOrdinal,Node>& mv = vec_const;
     Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,LocalOrdinal,GlobalOrdinal,Node> > flat_mv = create_flat_vector_view(mv, flat_map);
+#else
+    const Tpetra::Vector<Sacado::MP::Vector<Storage>,Node>& vec_const,
+    const Teuchos::RCP< const Tpetra::Map<Node> >& flat_map) {
+    const Tpetra::MultiVector<Sacado::MP::Vector<Storage>,Node>& mv = vec_const;
+    Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,Node> > flat_mv = create_flat_vector_view(mv, flat_map);
+#endif
     return flat_mv->getVector(0);
   }
 
@@ -385,17 +480,30 @@ namespace Stokhos {
   // map if necessary
   template <typename Storage, typename LocalOrdinal, typename GlobalOrdinal,
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< const Tpetra::Vector<typename Storage::value_type,
                                      LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP< const Tpetra::Vector<typename Storage::value_type,Node> >
+#endif
   create_flat_vector_view(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Tpetra::Vector<Sacado::MP::Vector<Storage>,
                          LocalOrdinal,GlobalOrdinal,Node>& vec,
     Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_map) {
+#else
+    const Tpetra::Vector<Sacado::MP::Vector<Storage>,Node>& vec,
+    Teuchos::RCP< const Tpetra::Map<Node> >& flat_map) {
+#endif
     if (flat_map == Teuchos::null) {
       const LocalOrdinal mp_size = Storage::static_size;
       flat_map = create_flat_map(*(vec.getMap()), mp_size);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > const_flat_map = flat_map;
+#else
+    const Teuchos::RCP< const Tpetra::Map<Node> > const_flat_map = flat_map;
+#endif
     return create_flat_vector_view(vec, const_flat_map);
   }
 
@@ -403,14 +511,25 @@ namespace Stokhos {
   // returned vector is a view of the original
   template <typename Storage, typename LocalOrdinal, typename GlobalOrdinal,
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::Vector<typename Storage::value_type,
                                LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP< Tpetra::Vector<typename Storage::value_type,Node> >
+#endif
   create_flat_vector_view(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Vector<Sacado::MP::Vector<Storage>,
                    LocalOrdinal,GlobalOrdinal,Node>& vec,
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_map) {
     Tpetra::MultiVector<Sacado::MP::Vector<Storage>,LocalOrdinal,GlobalOrdinal,Node>& mv = vec;
     Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,LocalOrdinal,GlobalOrdinal,Node> > flat_mv = create_flat_vector_view(mv, flat_map);
+#else
+    Tpetra::Vector<Sacado::MP::Vector<Storage>,Node>& vec,
+    const Teuchos::RCP< const Tpetra::Map<Node> >& flat_map) {
+    Tpetra::MultiVector<Sacado::MP::Vector<Storage>,Node>& mv = vec;
+    Teuchos::RCP< Tpetra::MultiVector<typename Storage::value_type,Node> > flat_mv = create_flat_vector_view(mv, flat_map);
+#endif
     return flat_mv->getVectorNonConst(0);
   }
 
@@ -419,17 +538,30 @@ namespace Stokhos {
   // map if necessary
   template <typename Storage, typename LocalOrdinal, typename GlobalOrdinal,
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::Vector<typename Storage::value_type,
                                LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP< Tpetra::Vector<typename Storage::value_type,Node> >
+#endif
   create_flat_vector_view(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::Vector<Sacado::MP::Vector<Storage>,
                    LocalOrdinal,GlobalOrdinal,Node>& vec,
     Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& flat_map) {
+#else
+    Tpetra::Vector<Sacado::MP::Vector<Storage>,Node>& vec,
+    Teuchos::RCP< const Tpetra::Map<Node> >& flat_map) {
+#endif
     if (flat_map == Teuchos::null) {
       const LocalOrdinal mp_size = Storage::static_size;
       flat_map = create_flat_map(*(vec.getMap()), mp_size);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP< const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > const_flat_map = flat_map;
+#else
+    const Teuchos::RCP< const Tpetra::Map<Node> > const_flat_map = flat_map;
+#endif
     return create_flat_vector_view(vec, const_flat_map);
   }
 
@@ -453,7 +585,11 @@ namespace Stokhos {
 
     typedef typename Storage::value_type BaseScalar;
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatVector;
+#else
+    typedef Tpetra::MultiVector<BaseScalar,Node> FlatVector;
+#endif
     typedef typename FlatVector::dual_view_type flat_view_type;
 
     // Create flattenend view using special reshaping view assignment operator
@@ -489,7 +625,11 @@ namespace Stokhos {
 
     typedef typename Storage::value_type BaseScalar;
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatVector;
+#else
+    typedef Tpetra::MultiVector<BaseScalar,Node> FlatVector;
+#endif
     typedef typename FlatVector::dual_view_type flat_view_type;
 
     // Create flattenend view using special reshaping view assignment operator
@@ -513,12 +653,21 @@ namespace Stokhos {
   // returned matrix is NOT a view of the original (and can't be)
   template <typename Storage, typename LocalOrdinal, typename GlobalOrdinal,
             typename Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::CrsMatrix<typename Storage::value_type,
                                   LocalOrdinal,GlobalOrdinal,Node> >
+#else
+  Teuchos::RCP< Tpetra::CrsMatrix<typename Storage::value_type,Node> >
+#endif
   create_flat_matrix(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Tpetra::CrsMatrix<Sacado::MP::Vector<Storage>,
                             LocalOrdinal,GlobalOrdinal,Node>& mat,
     const Teuchos::RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> >& flat_graph,
+#else
+    const Tpetra::CrsMatrix<Sacado::MP::Vector<Storage>,Node>& mat,
+    const Teuchos::RCP<const Tpetra::CrsGraph<Node> >& flat_graph,
+#endif
     const LocalOrdinal block_size) {
     using Teuchos::ArrayView;
     using Teuchos::Array;
@@ -527,7 +676,11 @@ namespace Stokhos {
 
     typedef Sacado::MP::Vector<Storage> Scalar;
     typedef typename Storage::value_type BaseScalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatMatrix;
+#else
+    typedef Tpetra::CrsMatrix<BaseScalar,Node> FlatMatrix;
+#endif
 
     // Create flat matrix
     RCP<FlatMatrix> flat_mat = rcp(new FlatMatrix(flat_graph));

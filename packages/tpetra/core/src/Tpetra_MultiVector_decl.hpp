@@ -110,9 +110,17 @@ namespace Tpetra {
   ///
   /// \pre <tt>src.numRows() == dst.getLocalLength()</tt>
   /// \pre <tt>src.numCols() == dst.getNumVectors()</tt>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class ST, class LO, class GO, class NT>
+#else
+  template <class ST, class NT>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   deep_copy (MultiVector<ST, LO, GO, NT>& dst,
+#else
+  deep_copy (MultiVector<ST, NT>& dst,
+#endif
              const Teuchos::SerialDenseMatrix<int, ST>& src);
 
   /// \brief Copy the local part of the Tpetra::MultiVector into the
@@ -121,10 +129,18 @@ namespace Tpetra {
   ///
   /// \pre <tt>src.numRows() == dst.getLocalLength()</tt>
   /// \pre <tt>src.numCols() == dst.getNumVectors()</tt>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class ST, class LO, class GO, class NT>
+#else
+  template <class ST, class NT>
+#endif
   void
   deep_copy (Teuchos::SerialDenseMatrix<int, ST>& dst,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              const MultiVector<ST, LO, GO, NT>& src);
+#else
+             const MultiVector<ST, NT>& src);
+#endif
 #endif // HAVE_TPETRACORE_TEUCHOSNUMERICS
 
   /// \brief Return a deep copy of the given MultiVector.
@@ -134,9 +150,15 @@ namespace Tpetra {
   ///   its input, by default.  If you want a deep copy, use the
   ///   two-argument copy constructor with Teuchos::Copy as the second
   ///   argument, or call this function (createCopy).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class ST, class LO, class GO, class NT>
   MultiVector<ST, LO, GO, NT>
   createCopy (const MultiVector<ST, LO, GO, NT>& src);
+#else
+  template <class ST, class NT>
+  MultiVector<ST, NT>
+  createCopy (const MultiVector<ST, NT>& src);
+#endif
 
   /// \brief Nonmember MultiVector "constructor": Create a MultiVector
   ///   from a given Map.
@@ -147,17 +169,31 @@ namespace Tpetra {
   ///   resulting MultiVector.
   /// \param numVectors [in] Number of columns of the resulting
   ///   MultiVector.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
   createMultiVector (const Teuchos::RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& map,
+#else
+  template <class Scalar, class Node>
+  Teuchos::RCP<MultiVector<Scalar, Node> >
+  createMultiVector (const Teuchos::RCP<const Map<Node> >& map,
+#endif
                      const size_t numVectors);
 
   // WARNING NOT FOR USERS
   // This means we don't need to make MultiVector a friend of
   // Vector or of itself (with different template parameters).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class SC, class LO, class GO, class NT>
+#else
+  template<class SC, class NT>
+#endif
   Teuchos::ArrayView<const size_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   getMultiVectorWhichVectors (const MultiVector<SC, LO, GO, NT>& X);
+#else
+  getMultiVectorWhichVectors (const MultiVector<SC, NT>& X);
+#endif
 
   /// \brief One or more distributed dense vectors.
   ///
@@ -379,13 +415,23 @@ namespace Tpetra {
   ///   process in the communicator, then inner products and norms may
   ///   be wrong.  This behavior may change in future releases.
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node>
   class MultiVector :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public DistObject<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+    public DistObject<Scalar, Node>
+#endif
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Typedefs to facilitate template metaprogramming.
     //@{
 
@@ -410,7 +456,11 @@ namespace Tpetra {
       typename Kokkos::Details::ArithTraits<Scalar>::val_type;
 
     //! The type of the Map specialization used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Map<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using map_type = Map<Node>;
+#endif
     //! The type of local indices that this class uses.
     using local_ordinal_type = typename map_type::local_ordinal_type;
     //! The type of global indices that this class uses.
@@ -495,7 +545,11 @@ namespace Tpetra {
     /// copyOrView = Teuchos::Copy will make the resulting MultiVector
     /// a deep copy of the input MultiVector.
     ///
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MultiVector (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& source,
+#else
+    MultiVector (const MultiVector<Scalar, Node>& source,
+#endif
                  const Teuchos::DataAccess copyOrView);
 
     /// \brief Create multivector by copying two-dimensional array of local data.
@@ -623,7 +677,11 @@ namespace Tpetra {
     ///
     /// \param X [in] Input MultiVector to view (in possibly nonconst fashion).
     /// \param j [in] The column of X to view.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MultiVector (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& X,
+#else
+    MultiVector (const MultiVector<Scalar, Node>& X,
+#endif
                  const size_t j);
 
   public:
@@ -741,7 +799,11 @@ namespace Tpetra {
     /// number of entries in \c subMap (in this case, zero) and the
     /// offset may equal the number of local entries in
     /// <tt>*this</tt>.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MultiVector (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& X,
+#else
+    MultiVector (const MultiVector<Scalar, Node>& X,
+#endif
                  const Teuchos::RCP<const map_type>& subMap,
                  const local_ordinal_type rowOffset = 0);
 
@@ -751,7 +813,11 @@ namespace Tpetra {
     /// This constructor exists for backwards compatibility.  It
     /// invokes the input Map's copy constructor, which is a shallow
     /// copy.  Maps are immutable anyway, so the copy is harmless.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MultiVector (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& X,
+#else
+    MultiVector (const MultiVector<Scalar, Node>& X,
+#endif
                  const map_type& subMap,
                  const size_t offset = 0);
 
@@ -763,22 +829,40 @@ namespace Tpetra {
     /// use the two-argument "copy constructor" (in this file, with
     /// <tt>copyOrView=Teuchos::Copy</tt>) to create a MultiVector
     /// that is a deep copy of an existing MultiVector.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MultiVector (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&) = default;
+#else
+    MultiVector (const MultiVector<Scalar, Node>&) = default;
+#endif
 
     //! Move constructor (shallow move).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MultiVector (MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&&) = default;
+#else
+    MultiVector (MultiVector<Scalar, Node>&&) = default;
+#endif
 
     /// \brief Copy assigment (shallow copy).
     ///
     /// MultiVector's copy constructor always does a shallow copy.
     /// Use the nonmember function <tt>Tpetra::deep_copy</tt> (see
     /// below) to deep-copy one existing MultiVector to another.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&
     operator= (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&) = default;
+#else
+    MultiVector<Scalar, Node>&
+    operator= (const MultiVector<Scalar, Node>&) = default;
+#endif
 
     //! Move assigment (shallow move).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&
     operator= (MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>&&) = default;
+#else
+    MultiVector<Scalar, Node>&
+    operator= (MultiVector<Scalar, Node>&&) = default;
+#endif
 
     /// \brief Destructor (virtual for memory safety of derived classes).
     ///
@@ -792,7 +876,11 @@ namespace Tpetra {
     virtual ~MultiVector () = default;
 
     //! Swap contents of \c mv with contents of \c *this.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void swap (MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& mv);
+#else
+    void swap (MultiVector<Scalar, Node>& mv);
+#endif
 
     //@}
     //! @name Post-construction modification routines
@@ -1241,27 +1329,51 @@ namespace Tpetra {
     //@{
 
     //! Return a MultiVector with copies of selected columns.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<MultiVector<Scalar, Node> >
+#endif
     subCopy (const Teuchos::Range1D& colRng) const;
 
     //! Return a MultiVector with copies of selected columns.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<MultiVector<Scalar, Node> >
+#endif
     subCopy (const Teuchos::ArrayView<const size_t>& cols) const;
 
     //! Return a const MultiVector with const views of selected columns.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<const MultiVector<Scalar, Node> >
+#endif
     subView (const Teuchos::Range1D& colRng) const;
 
     //! Return a const MultiVector with const views of selected columns.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<const MultiVector<Scalar, Node> >
+#endif
     subView (const Teuchos::ArrayView<const size_t>& cols) const;
 
     //! Return a MultiVector with views of selected columns.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<MultiVector<Scalar, Node> >
+#endif
     subViewNonConst (const Teuchos::Range1D& colRng);
 
     //! Return a MultiVector with views of selected columns.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<MultiVector<Scalar, Node> >
+#endif
     subViewNonConst (const Teuchos::ArrayView<const size_t>& cols);
 
     /// \brief Return a const view of a subset of rows.
@@ -1326,7 +1438,11 @@ namespace Tpetra {
     /// number of entries in \c subMap (in this case, zero) and the \c
     /// offset may equal the number of local entries in
     /// <tt>*this</tt>.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<const MultiVector<Scalar, Node> >
+#endif
     offsetView (const Teuchos::RCP<const map_type>& subMap,
                 const size_t offset) const;
 
@@ -1347,16 +1463,28 @@ namespace Tpetra {
     ///
     /// See the documentation of offsetView() for a code example and
     /// an explanation of edge cases.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<MultiVector<Scalar, Node> >
+#endif
     offsetViewNonConst (const Teuchos::RCP<const map_type>& subMap,
                         const size_t offset);
 
     //! Return a Vector which is a const view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<const Vector<Scalar, Node> >
+#endif
     getVector (const size_t j) const;
 
     //! Return a Vector which is a nonconst view of column j.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    Teuchos::RCP<Vector<Scalar, Node> >
+#endif
     getVectorNonConst (const size_t j);
 
     //! Const view of the local values in a particular vector of this multivector.
@@ -1532,7 +1660,11 @@ namespace Tpetra {
     ///
     /// \post <tt>dots[j] == (this->getVector[j])->dot (* (A.getVector[j]))</tt>
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     dot (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+    dot (const MultiVector<Scalar, Node>& A,
+#endif
          const Teuchos::ArrayView<dot_type>& dots) const;
 
     /// \brief Compute the dot product of each corresponding pair of
@@ -1548,7 +1680,11 @@ namespace Tpetra {
     /// different types; the method still returns \c void, as above.
     template <typename T>
     typename std::enable_if< ! (std::is_same<dot_type, T>::value), void >::type
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     dot (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+    dot (const MultiVector<Scalar, Node>& A,
+#endif
          const Teuchos::ArrayView<T> &dots) const
     {
       const size_t sz = static_cast<size_t> (dots.size ());
@@ -1563,7 +1699,11 @@ namespace Tpetra {
     //! Like the above dot() overload, but for std::vector output.
     template <typename T>
     typename std::enable_if< ! (std::is_same<dot_type, T>::value), void >::type
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     dot (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+    dot (const MultiVector<Scalar, Node>& A,
+#endif
          std::vector<T>& dots) const
     {
       const size_t sz = dots.size ();
@@ -1593,14 +1733,22 @@ namespace Tpetra {
     ///
     /// \post <tt>dots(j) == (this->getVector[j])->dot (* (A.getVector[j]))</tt>
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     dot (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+    dot (const MultiVector<Scalar, Node>& A,
+#endif
          const Kokkos::View<dot_type*, Kokkos::HostSpace>& norms) const;
 
     template<class ViewType>
     void
     dot (typename std::enable_if<std::is_same<typename ViewType::value_type,dot_type>::value &&
                                  std::is_same<typename ViewType::memory_space,typename device_type::memory_space>::value,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                  const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>>::type& A,
+#else
+                                 const MultiVector<Scalar, Node>>::type& A,
+#endif
          const ViewType& dots) const {
       const Kokkos::View<dot_type*, Kokkos::HostSpace> h_dots("Tpetra::Dots",dots.extent(0));
       this->dot (A, h_dots);
@@ -1621,7 +1769,11 @@ namespace Tpetra {
     /// different types; the method still returns \c void, as above.
     template <typename T>
     typename std::enable_if< ! (std::is_same<dot_type, T>::value), void >::type
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     dot (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+    dot (const MultiVector<Scalar, Node>& A,
+#endif
          const Kokkos::View<T*, device_type>& dots) const
     {
       const size_t numDots = dots.extent (0);
@@ -1639,10 +1791,18 @@ namespace Tpetra {
     }
 
     //! Put element-wise absolute values of input Multi-vector in target: A = abs(this)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void abs (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A);
+#else
+    void abs (const MultiVector<Scalar, Node>& A);
+#endif
 
     //! Put element-wise reciprocal values of input Multi-vector in target, this(i,j) = 1/A(i,j).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void reciprocal (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A);
+#else
+    void reciprocal (const MultiVector<Scalar, Node>& A);
+#endif
 
     /// \brief Scale in place: <tt>this = alpha*this</tt>.
     ///
@@ -1683,7 +1843,11 @@ namespace Tpetra {
     /// MultiVector.
     void
     scale (const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A);
+#else
+           const MultiVector<Scalar, Node>& A);
+#endif
 
     /// \brief Update: <tt>this = beta*this + alpha*A</tt>.
     ///
@@ -1693,7 +1857,11 @@ namespace Tpetra {
     /// MultiVector.
     void
     update (const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+            const MultiVector<Scalar, Node>& A,
+#endif
             const Scalar& beta);
 
     /// \brief Update: <tt>this = gamma*this + alpha*A + beta*B</tt>.
@@ -1704,9 +1872,17 @@ namespace Tpetra {
     /// alias this MultiVector.
     void
     update (const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
+#else
+            const MultiVector<Scalar, Node>& A,
+#endif
             const Scalar& beta,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+            const MultiVector<Scalar, Node>& B,
+#endif
             const Scalar& gamma);
 
     /// \brief Compute the one-norm of each vector (column), storing
@@ -2005,8 +2181,13 @@ namespace Tpetra {
     multiply (Teuchos::ETransp transA,
               Teuchos::ETransp transB,
               const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
               const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+              const MultiVector<Scalar, Node>& A,
+              const MultiVector<Scalar, Node>& B,
+#endif
               const Scalar& beta);
 
     /// \brief Multiply a Vector A elementwise by a MultiVector B.
@@ -2031,8 +2212,13 @@ namespace Tpetra {
     /// applying a diagonal scaling.
     void
     elementWiseMultiply (Scalar scalarAB,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& A,
                          const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& B,
+#else
+                         const Vector<Scalar, Node>& A,
+                         const MultiVector<Scalar, Node>& B,
+#endif
                          Scalar scalarThis);
     //@}
     //! @name Attribute access functions
@@ -2163,7 +2349,11 @@ namespace Tpetra {
     ///   assignment operator; it does not change anything in \c *this
     ///   other than the contents of storage.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     assign (const MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& src);
+#else
+    assign (const MultiVector<Scalar, Node>& src);
+#endif
 
 
     // \brief Checks to see if the local length, number of vectors and size of Scalar type match
@@ -2174,7 +2364,11 @@ namespace Tpetra {
     ///
     /// \post Any outstanding views of \c src or \c *this remain valid.
     ///
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool isSameSize(const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & vec) const;
+#else
+    bool isSameSize(const MultiVector<Scalar,Node> & vec) const;
+#endif
 
   private:
     //! The type of the base class of this class.
@@ -2241,8 +2435,13 @@ namespace Tpetra {
     /// isConstantStride() returns true.
     Teuchos::Array<size_t> whichVectors_;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class SC, class LO, class GO, class NT>
     friend ::Teuchos::ArrayView<const size_t> getMultiVectorWhichVectors (const ::Tpetra::MultiVector<SC, LO, GO, NT>& X);
+#else
+    template<class SC, class NT>
+    friend ::Teuchos::ArrayView<const size_t> getMultiVectorWhichVectors (const ::Tpetra::MultiVector<SC, NT>& X);
+#endif
 
     //@}
     //! @name Misc. implementation details
@@ -2365,9 +2564,17 @@ namespace Tpetra {
     //@}
   }; // class MultiVector
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class SC, class LO, class GO, class NT>
+#else
+  template<class SC, class NT>
+#endif
   Teuchos::ArrayView<const size_t>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   getMultiVectorWhichVectors (const MultiVector<SC, LO, GO, NT>& X)
+#else
+  getMultiVectorWhichVectors (const MultiVector<SC, NT>& X)
+#endif
   {
     return X.whichVectors_ ();
   }
@@ -2375,10 +2582,19 @@ namespace Tpetra {
 
   /// \brief Specialization of deep_copy for MultiVector objects with
   ///   the same template parameters.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class ST, class LO, class GO, class NT>
+#else
+  template <class ST, class NT>
+#endif
   void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   deep_copy (MultiVector<ST, LO, GO, NT>& dst,
              const MultiVector<ST, LO, GO, NT>& src)
+#else
+  deep_copy (MultiVector<ST, NT>& dst,
+             const MultiVector<ST, NT>& src)
+#endif
   {
     // NOTE (mfh 11 Sep 2014) We can't implement deep_copy with
     // shallow-copy operator=, because that would invalidate existing
@@ -2453,9 +2669,18 @@ namespace Teuchos {
 
   // Give Teuchos::TypeNameTraits<Tpetra::MultiVector<...> > a
   // human-readable definition.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class SC, class LO, class GO, class NT>
   class TypeNameTraits<Tpetra::MultiVector<SC, LO, GO, NT> > {
+#else
+  template<class SC, class NT>
+  class TypeNameTraits<Tpetra::MultiVector<SC, NT> > {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LO = typename Tpetra::Map<>::local_ordinal_type;
+    using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     static std::string name () {
       return std::string ("Tpetra::MultiVector<") +
         TypeNameTraits<SC>::name () + "," +
@@ -2465,7 +2690,11 @@ namespace Teuchos {
     }
 
     static std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     concreteName (const Tpetra::MultiVector<SC, LO, GO, NT>&) {
+#else
+    concreteName (const Tpetra::MultiVector<SC, NT>&) {
+#endif
       return name ();
     }
   };

@@ -67,12 +67,22 @@ namespace Xpetra {
   typedef std::string viewLabel_t;
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class ReorderedBlockedMultiVector :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public BlockedMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+    public BlockedMultiVector<Scalar, Node> {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_type;
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
@@ -98,8 +108,13 @@ namespace Xpetra {
     ReorderedBlockedMultiVector
         (Teuchos::RCP<const BlockedMap>& rangeMap,
          Teuchos::RCP<const Xpetra::BlockReorderManager> brm,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > bvec)
   : Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rangeMap,bvec->getNumVectors(), false) {
+#else
+         Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,Node> > bvec)
+  : Xpetra::BlockedMultiVector<Scalar,Node>(rangeMap,bvec->getNumVectors(), false) {
+#endif
       brm_ = brm;
       fullVec_ = bvec;
     }
@@ -115,7 +130,11 @@ namespace Xpetra {
     //@}
 
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > mergeSubBlockMaps(Teuchos::RCP<const Xpetra::BlockReorderManager> brm) {
+#else
+    Teuchos::RCP<const Xpetra::Map<Node> > mergeSubBlockMaps(Teuchos::RCP<const Xpetra::BlockReorderManager> brm) {
+#endif
       RCP<const BlockedMap> bmap = fullVec_->getBlockedMap();
 
       // number of sub blocks
@@ -163,22 +182,40 @@ namespace Xpetra {
 
   private:
     Teuchos::RCP<const Xpetra::BlockReorderManager > brm_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > fullVec_;
+#else
+    Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,Node> > fullVec_;
+#endif
 
 
 };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > mergeSubBlockMaps(Teuchos::RCP<const Xpetra::BlockReorderManager> brm, Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > bvec, bool bThyraMode) {
   typedef Xpetra::MapUtils<LocalOrdinal,GlobalOrdinal,Node> MapUtils;
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::Map<Node> > mergeSubBlockMaps(Teuchos::RCP<const Xpetra::BlockReorderManager> brm, Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,Node> > bvec, bool bThyraMode) {
+  typedef Xpetra::MapUtils<Node> MapUtils;
+#endif
 
   // TODO distinguish between range and domain map extractor! provide MapExtractor as parameter!
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node> > bmap = bvec->getBlockedMap();
+#else
+  RCP<const Xpetra::BlockedMap<Node> > bmap = bvec->getBlockedMap();
+#endif
 
   // number of sub blocks
   size_t numBlocks = brm->GetNumBlocks();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>> map = Teuchos::null;
+#else
+  Teuchos::RCP<const Xpetra::Map<Node>> map = Teuchos::null;
+#endif
 
   if(numBlocks == 0) {
     // it is a leaf node
@@ -187,7 +224,11 @@ Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > mergeSubBlockM
     map = bmap->getMap(Teuchos::as<size_t>(leaf->GetIndex()), bThyraMode);
   } else {
     // initialize vector for sub maps
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     std::vector<Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > > subMaps (numBlocks, Teuchos::null);
+#else
+    std::vector<Teuchos::RCP<const Xpetra::Map<Node> > > subMaps (numBlocks, Teuchos::null);
+#endif
 
     for(size_t i = 0; i < numBlocks; i++) {
       Teuchos::RCP<const Xpetra::BlockReorderManager> blkMgr = brm->GetBlock(Teuchos::as<int>(i));
@@ -197,10 +238,18 @@ Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > mergeSubBlockM
 #if 1
     // concatenate submaps
     // for Thyra mode this map isn't important
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > fullMap = MapUtils::concatenateMaps(subMaps);
+#else
+    Teuchos::RCP<const Xpetra::Map<Node> > fullMap = MapUtils::concatenateMaps(subMaps);
+#endif
 
     // create new BlockedMap (either in Thyra Mode or Xpetra mode)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     map = Teuchos::rcp(new Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node>(fullMap, subMaps, bThyraMode));
+#else
+    map = Teuchos::rcp(new Xpetra::BlockedMap<Node>(fullMap, subMaps, bThyraMode));
+#endif
 #else
     // TAW: 11/27/16 we just concatenate the submaps to one monolithic Map object.
     // Alternatively, we could create a new BlockedMap using the concatenated map and the submaps
@@ -213,15 +262,29 @@ Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > mergeSubBlockM
   return map;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > mergeSubBlocks(Teuchos::RCP<const Xpetra::BlockReorderManager> rowMgr, Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > bvec) {
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::MultiVector<Scalar,Node> > mergeSubBlocks(Teuchos::RCP<const Xpetra::BlockReorderManager> rowMgr, Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,Node> > bvec) {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
   typedef Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node> BlockedMap;
   typedef Xpetra::MapUtils<LocalOrdinal,GlobalOrdinal,Node> MapUtils;
   typedef Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MultiVector;
   typedef Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedMultiVector;
   typedef Xpetra::ReorderedBlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> ReorderedBlockedMultiVector;
+#else
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+  typedef Xpetra::MapUtils<Node> MapUtils;
+  typedef Xpetra::MultiVector<Scalar,Node> MultiVector;
+  typedef Xpetra::BlockedMultiVector<Scalar,Node> BlockedMultiVector;
+  typedef Xpetra::ReorderedBlockedMultiVector<Scalar,Node> ReorderedBlockedMultiVector;
+#endif
 
   // number of sub blocks
   size_t rowSz = rowMgr->GetNumBlocks();
@@ -291,6 +354,7 @@ Teuchos::RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   return rbvec;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > mergeSubBlocksThyra(Teuchos::RCP<const Xpetra::BlockReorderManager> rowMgr, Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > bvec) {
   typedef Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
@@ -298,6 +362,15 @@ Teuchos::RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   typedef Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MultiVector;
   typedef Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedMultiVector;
   typedef Xpetra::ReorderedBlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> ReorderedBlockedMultiVector;
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::MultiVector<Scalar,Node> > mergeSubBlocksThyra(Teuchos::RCP<const Xpetra::BlockReorderManager> rowMgr, Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,Node> > bvec) {
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+  typedef Xpetra::MultiVector<Scalar,Node> MultiVector;
+  typedef Xpetra::BlockedMultiVector<Scalar,Node> BlockedMultiVector;
+  typedef Xpetra::ReorderedBlockedMultiVector<Scalar,Node> ReorderedBlockedMultiVector;
+#endif
 
   TEUCHOS_ASSERT(bvec->getBlockedMap()->getThyraMode() == true);
 
@@ -366,10 +439,19 @@ Teuchos::RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   return rbvec;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > buildReorderedBlockedMultiVector(Teuchos::RCP<const Xpetra::BlockReorderManager> brm, Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > bvec) {
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::MultiVector<Scalar,Node> > buildReorderedBlockedMultiVector(Teuchos::RCP<const Xpetra::BlockReorderManager> brm, Teuchos::RCP<const Xpetra::BlockedMultiVector<Scalar,Node> > bvec) {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > rbvec = Teuchos::null;
+#else
+  Teuchos::RCP<const Xpetra::MultiVector<Scalar,Node> > rbvec = Teuchos::null;
+#endif
   if(bvec->getBlockedMap()->getThyraMode() == false) {
     rbvec = mergeSubBlocks(brm,bvec);
   } else {
@@ -379,11 +461,21 @@ Teuchos::RCP<const Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >
   return rbvec;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > buildReorderedBlockedMultiVector(Teuchos::RCP<const Xpetra::BlockReorderManager> brm, Teuchos::RCP<Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > bvec) {
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<Xpetra::MultiVector<Scalar,Node> > buildReorderedBlockedMultiVector(Teuchos::RCP<const Xpetra::BlockReorderManager> brm, Teuchos::RCP<Xpetra::BlockedMultiVector<Scalar,Node> > bvec) {
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MultiVector;
   typedef Xpetra::BlockedMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> BlockedMultiVector;
+#else
+  typedef Xpetra::MultiVector<Scalar,Node> MultiVector;
+  typedef Xpetra::BlockedMultiVector<Scalar,Node> BlockedMultiVector;
+#endif
   Teuchos::RCP<const MultiVector> rbvec = Teuchos::null;
   if(bvec->getBlockedMap()->getThyraMode() == false) {
     rbvec = mergeSubBlocks(brm,Teuchos::rcp_const_cast<const BlockedMultiVector>(bvec));

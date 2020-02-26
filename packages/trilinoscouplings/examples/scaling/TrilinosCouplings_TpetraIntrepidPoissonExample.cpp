@@ -208,7 +208,11 @@ makeMatrixAndRightHandSide (Teuchos::RCP<sparse_matrix_type>& A,
   X = rcp_implicit_cast<multivector_type> (x);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 double myDistance2(const Tpetra::MultiVector<ST, LO, GO, Node> &v, int i0, int i1) {
+#else
+double myDistance2(const Tpetra::MultiVector<ST, Node> &v, int i0, int i1) {
+#endif
  const size_t numVectors = v.getNumVectors();
  double distance = 0.0;
  for (size_t j=0; j<numVectors; j++) {
@@ -257,10 +261,19 @@ makeMatrixAndRightHandSide (Teuchos::RCP<sparse_matrix_type>& A,
   // these typedefs, modify the typedefs (ST, LO, GO, Node) near the
   // top of this file.
   //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, Node>         map_type;
   typedef Tpetra::Export<LO, GO, Node>      export_type;
+#else
+  typedef Tpetra::Map<Node>         map_type;
+  typedef Tpetra::Export<Node>      export_type;
+#endif
   //typedef Tpetra::Import<LO, GO, Node>      import_type; // unused
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LO, GO, Node>    sparse_graph_type;
+#else
+  typedef Tpetra::CrsGraph<Node>    sparse_graph_type;
+#endif
 
   // Number of independent variables fixed at 3
   //typedef Sacado::Fad::SFad<ST, 3>     Fad3; // unused
@@ -1439,8 +1452,13 @@ makeMatrixAndRightHandSide (Teuchos::RCP<sparse_matrix_type>& A,
 /**********************************************************************************/
 /***************************** STATISTICS (Part IIb) ******************************/
 /**********************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::CrsGraph<LO, GO, Node>> gl_StiffGraph = gl_StiffMatrix->getCrsGraph();
   Teuchos::RCP<Tpetra::MultiVector<ST, LO, GO, Node>> coordsOwnedPlusShared;
+#else
+  Teuchos::RCP<const Tpetra::CrsGraph<Node>> gl_StiffGraph = gl_StiffMatrix->getCrsGraph();
+  Teuchos::RCP<Tpetra::MultiVector<ST, Node>> coordsOwnedPlusShared;
+#endif
   if (!(gl_StiffGraph->getImporter().is_null())) {
     coordsOwnedPlusShared = rcp(new multivector_type(gl_StiffGraph->getColMap(), 3, true));
     coordsOwnedPlusShared->doImport(*coords, *gl_StiffGraph->getImporter(), Tpetra::CombineMode::ADD, false);
@@ -1448,8 +1466,13 @@ makeMatrixAndRightHandSide (Teuchos::RCP<sparse_matrix_type>& A,
   else {
     coordsOwnedPlusShared = coords;
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LO, GO, Node>> rowMap = gl_StiffMatrix->getRowMap();
   Tpetra::Vector<ST, LO, GO, Node> laplDiagOwned(rowMap, true);
+#else
+  Teuchos::RCP<const Tpetra::Map<Node>> rowMap = gl_StiffMatrix->getRowMap();
+  Tpetra::Vector<ST, Node> laplDiagOwned(rowMap, true);
+#endif
   Teuchos::ArrayView<const LO> indices;
   Teuchos::ArrayView<const ST> values;
   size_t numOwnedRows = rowMap->getNodeNumElements();
@@ -1462,9 +1485,17 @@ makeMatrixAndRightHandSide (Teuchos::RCP<sparse_matrix_type>& A,
       laplDiagOwned.sumIntoLocalValue(row, 1/myDistance2(*coordsOwnedPlusShared, row, col));
     }
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::Vector<ST, LO, GO, Node>> laplDiagOwnedPlusShared;
+#else
+  Teuchos::RCP<Tpetra::Vector<ST, Node>> laplDiagOwnedPlusShared;
+#endif
   if (!gl_StiffGraph->getImporter().is_null()) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     laplDiagOwnedPlusShared = rcp(new Tpetra::Vector<ST, LO, GO, Node>(gl_StiffGraph->getColMap(), true));
+#else
+    laplDiagOwnedPlusShared = rcp(new Tpetra::Vector<ST, Node>(gl_StiffGraph->getColMap(), true));
+#endif
     laplDiagOwnedPlusShared->doImport(laplDiagOwned, *gl_StiffGraph->getImporter(), Tpetra::CombineMode::ADD, false);
   }
   else {
@@ -1628,11 +1659,21 @@ makeMatrixAndRightHandSide (Teuchos::RCP<sparse_matrix_type>& A,
     RCP<const export_type> bdyExporter =
       rcp (new export_type (ColMap, globalMap));
     // Create a vector of global column indices to which we will export
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Vector<int, LO, GO, Node> > globColsToZeroT =
       rcp (new Tpetra::Vector<int, LO, GO, Node> (globalMap));
+#else
+    RCP<Tpetra::Vector<int, Node> > globColsToZeroT =
+      rcp (new Tpetra::Vector<int, Node> (globalMap));
+#endif
     // Create a vector of local column indices from which we will export
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Vector<int, LO, GO, Node> > myColsToZeroT =
       rcp (new Tpetra::Vector<int, LO, GO, Node> (ColMap));
+#else
+    RCP<Tpetra::Vector<int, Node> > myColsToZeroT =
+      rcp (new Tpetra::Vector<int, Node> (ColMap));
+#endif
     myColsToZeroT->putScalar (0);
 
     // Flag (set to 1) all local columns corresponding to the local

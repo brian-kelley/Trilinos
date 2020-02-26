@@ -82,13 +82,24 @@ namespace Ifpack2 {
 	 \author Mike Heroux, SNL 1416.
 	 \date Last modified on 11-May-2009
 	 */    
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>	
 	class ILU: public Preconditioner<Scalar,LocalOrdinal,GlobalOrdinal,Node> {
+#else
+	template<class Scalar, class Node>	
+	class ILU: public Preconditioner<Scalar,Node> {
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
 	
 public:
 	// @{ Constructors and destructors.
 	//! Constructor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	ILU(Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> * A);
+#else
+	ILU(Tpetra::RowMatrix<Scalar,Node> * A);
+#endif
 	
 	//! Destructor
 	~ILU()
@@ -150,14 +161,24 @@ public:
 	
 	// @{ Mathematical functions.
 	// Applies the matrix to X, returns the result in Y.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	int apply(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 			  Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const
+#else
+	int apply(const Tpetra::MultiVector<Scalar,Node>& X, 
+			  Tpetra::MultiVector<Scalar,Node>& Y) const
+#endif
 	{
 		return(Multiply(false,X,Y));
 	}
 	
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	int multiply(bool Trans, const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 				 Tpetra::Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const;
+#else
+	int multiply(bool Trans, const Tpetra::MultiVector<Scalar,Node>& X, 
+				 Tpetra::Tpetra::MultiVector<Scalar,Node>& Y) const;
+#endif
 	
 	//! Returns the result of a Tpetra::Operator inverse applied to an Tpetra::MultiVector X in Y.
 	/*! In this implementation, we use several existing attributes to determine how virtual
@@ -173,14 +194,23 @@ public:
 	 
 	 \return Integer error code, set to 0 if successful.
 	 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	int applyInverse(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 					 Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const;
+#else
+	int applyInverse(const Tpetra::MultiVector<Scalar,Node>& X, 
+					 Tpetra::MultiVector<Scalar,Node>& Y) const;
+#endif
 	
 	//! Computes the estimated condition number and returns the value.
 	double getCondest(const Ifpack2_CondestType CT = Ifpack2_Cheap, 
 					  const int MaxIters = 1550,
 					  const double Tol = 1e-9,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 					  Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>* Matrix_in = 0);
+#else
+					  Tpetra::RowMatrix<Scalar,Node>* Matrix_in = 0);
+#endif
 	
 	//! Returns the computed estimated condition number, or -1.0 if not computed.
 	double getCondest() const
@@ -192,13 +222,25 @@ public:
 	// @{ Query methods
 	
 	//! Returns the address of the L factor associated with this factored matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> & getL() const {return(*L_);};
+#else
+	const Tpetra::CrsMatrix<Scalar,Node> & getL() const {return(*L_);};
+#endif
 	
 	//! Returns the address of the D factor associated with this factored matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	const Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> & getD() const {return(*D_);};
+#else
+	const Tpetra::Vector<Scalar,Node> & getD() const {return(*D_);};
+#endif
 	
 	//! Returns the address of the L factor associated with this factored matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	const Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> & getU() const {return(*U_);};
+#else
+	const Tpetra::CrsMatrix<Scalar,Node> & getU() const {return(*U_);};
+#endif
 	
 	//! Returns a character string describing the operator
 	const char* getLabel() const {return(Label_);}
@@ -220,13 +262,25 @@ public:
 	bool useTranspose() const {return(UseTranspose_);};
 	
 	//! Returns the Tpetra::Map object associated with the domain of this operator.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	const Tpetra::Map<Scalar,LocalOrdinal,GlobalOrdinal,Node> & getOperatorDomainMap() const {return(U_->OperatorDomainMap());};
+#else
+	const Tpetra::Map<Scalar,Node> & getOperatorDomainMap() const {return(U_->OperatorDomainMap());};
+#endif
 	
 	//! Returns the Tpetra::Map object associated with the range of this operator.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	const Tpetra::Map<Scalar,LocalOrdinal,GlobalOrdinal,Node> & getOperatorRangeMap() const{return(L_->OperatorRangeMap());};
+#else
+	const Tpetra::Map<Scalar,Node> & getOperatorRangeMap() const{return(L_->OperatorRangeMap());};
+#endif
 	
 	//! Returns a reference to the matrix to be preconditioned.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& getUserMatrix() const
+#else
+	const Tpetra::RowMatrix<Scalar,Node>& getUserMatrix() const
+#endif
 	{ 
 		return(*A_);
 	}
@@ -311,11 +365,20 @@ private:
 	 
 	 \return Integer error code, set to 0 if successful.
 	 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	void solve(bool Trans, const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 			   Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const;
+#else
+	void solve(bool Trans, const Tpetra::MultiVector<Scalar,Node>& X, 
+			   Tpetra::MultiVector<Scalar,Node>& Y) const;
+#endif
 	
 	void computeSetup();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	void initAllValues(const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> & A, int MaxNumEntries);
+#else
+	void initAllValues(const Tpetra::RowMatrix<Scalar,Node> & A, int MaxNumEntries);
+#endif
 	
 	//! Returns the level of fill.
 	int getLevelOfFill() const {return levelOfFill_;}
@@ -363,7 +426,11 @@ private:
 	const Ifpack2_IlukGraph & Graph() const {return(*Graph_);};
 	
 	//! Returns a reference to the matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Matrix()
+#else
+	Tpetra::RowMatrix<Scalar,Node>& Matrix()
+#endif
 	{
 		return(*A_);
 	}
@@ -372,6 +439,7 @@ private:
 	// @{ Internal data
 	
 	//! Pointer to the Tpetra::RowMatrix to factorize
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	Teuchos::RCP<Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>> A_;
 	Teuchos::RCP<Ifpack2_IlukGraph<LocalOrdinal,GlobalOrdinal,Node>> Graph_;
 	Teuchos::RCP<Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node>> CrsGraph_;
@@ -380,14 +448,38 @@ private:
 	Teuchos::RCP<Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>> IlukRangeMap_;
 	const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> * U_DomainMap_;
 	const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> * L_RangeMap_;
+#else
+	Teuchos::RCP<Tpetra::RowMatrix<Scalar,Node>> A_;
+	Teuchos::RCP<Ifpack2_IlukGraph<Node>> Graph_;
+	Teuchos::RCP<Tpetra::CrsGraph<Node>> CrsGraph_;
+	Teuchos::RCP<Tpetra::Map<Node>> IlukRowMap_;
+	Teuchos::RCP<Tpetra::Map<Node>> IlukDomainMap_;
+	Teuchos::RCP<Tpetra::Map<Node>> IlukRangeMap_;
+	const Tpetra::Map<Node> * U_DomainMap_;
+	const Tpetra::Map<Node> * L_RangeMap_;
+#endif
 	//! Contains the L factors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>> L_;
+#else
+	Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node>> L_;
+#endif
 	//! Contains the U factors.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	Teuchos::RCP<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>> U_;
 	Teuchos::RCP<Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node>> L_Graph_;
 	Teuchos::RCP<Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node>> U_Graph_;
+#else
+	Teuchos::RCP<Tpetra::CrsMatrix<Scalar,Node>> U_;
+	Teuchos::RCP<Tpetra::CrsGraph<Node>> L_Graph_;
+	Teuchos::RCP<Tpetra::CrsGraph<Node>> U_Graph_;
+#endif
 	//! Diagonal of factors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	Teuchos::RCP<Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>> D_;
+#else
+	Teuchos::RCP<Tpetra::Vector<Scalar,Node>> D_;
+#endif
 	bool useTranspose_;
 	
 	int numMyDiagonals_;
@@ -434,7 +526,11 @@ private:
 ////////////////////////////////////////
 
 //==============================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ILU::ILU(Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>* Matrix_in) :
+#else
+ILU::ILU(Tpetra::RowMatrix<Scalar,Node>* Matrix_in) :
+#endif
 A_(rcp(Matrix_in,false)),
 useTranspose_(false),
 numMyDiagonals_(Teuchos::OrdinalTraits<LocalOrdinal>::zero()),
@@ -492,9 +588,15 @@ void ILU::computeSetup() {
 	LocalOrdinal izero = LOT::zero();
 	Scalar zero = ST::zero();
 	
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	L_ = rcp(new Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(Copy, Graph().getL_Graph()));
 	U_ = rcp(new Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(Copy, Graph().getU_Graph()));
 	D_ = rcp(new Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(Graph().getL_Graph().getRowMap()));
+#else
+	L_ = rcp(new Tpetra::CrsMatrix<Scalar,Node>(Copy, Graph().getL_Graph()));
+	U_ = rcp(new Tpetra::CrsMatrix<Scalar,Node>(Copy, Graph().getU_Graph()));
+	D_ = rcp(new Tpetra::Vector<Scalar,Node>(Graph().getL_Graph().getRowMap()));
+#endif
 	TEUCHOS_TEST_FOR_EXCEPTION(((L_.get() == 0) || (U_.get() == 0) || (D_.get() == 0)), std::runtime_error,
 					   "Ifpack2::ILU::computeSetup(): Local column value of "<< k << 
 					   " for user matrix at local row " << i << " and index " << j << " less than zero on node " <<
@@ -842,8 +944,13 @@ int ILU::Compute()
 
 //=============================================================================
 // This function finds Y such that LDU Y = X or U(trans) D L(trans) Y = X for multiple RHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int ILU::Solve(bool Trans, const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 			   Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const 
+#else
+int ILU::Solve(bool Trans, const Tpetra::MultiVector<Scalar,Node>& X, 
+			   Tpetra::MultiVector<Scalar,Node>& Y) const 
+#endif
 {
 	
 #ifdef ENABLE_IFPACK2_ILU_TEUCHOS_TIMERS
@@ -877,8 +984,13 @@ int ILU::Solve(bool Trans, const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalO
 
 //=============================================================================
 // This function finds X such that LDU Y = X or U(trans) D L(trans) Y = X for multiple RHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int ILU::Multiply(bool Trans, const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 				  Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const 
+#else
+int ILU::Multiply(bool Trans, const Tpetra::MultiVector<Scalar,Node>& X, 
+				  Tpetra::MultiVector<Scalar,Node>& Y) const 
+#endif
 {
 	
 #ifdef ENABLE_IFPACK2_ILU_TEUCHOS_TIMERS
@@ -917,8 +1029,13 @@ int ILU::Multiply(bool Trans, const Tpetra::MultiVector<Scalar,LocalOrdinal,Glob
 
 //=============================================================================
 // This function finds X such that LDU Y = X or U(trans) D L(trans) Y = X for multiple RHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 int ILU::ApplyInverse(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, 
 					  Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y) const
+#else
+int ILU::ApplyInverse(const Tpetra::MultiVector<Scalar,Node>& X, 
+					  Tpetra::MultiVector<Scalar,Node>& Y) const
+#endif
 {
 	
 #ifdef ENABLE_IFPACK2_ILU_TEUCHOS_TIMERS

@@ -102,7 +102,11 @@ public:
      * \param[in] clear If true, than any previous state saved by the operator 
      *                  is discarded.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void buildInverseOperator(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A,bool clear=true);
+#else
+   virtual void buildInverseOperator(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A,bool clear=true);
+#endif
 
    /** \brief Build this inverse operator from an Epetra_Operator 
      * passed in to this object.
@@ -116,7 +120,11 @@ public:
      * \param[in] clear If true, than any previous state saved by the operator 
      *                  is discarded.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void buildInverseOperator(const Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > & A,bool clear=true);
+#else
+   virtual void buildInverseOperator(const Teuchos::RCP<Tpetra::Operator<ST,NT> > & A,bool clear=true);
+#endif
 
    /** \brief Rebuild this inverse from an Epetra_Operator passed
      * in this to object. 
@@ -130,7 +138,11 @@ public:
      *
      * \param[in] A The Epetra source operator. (Should be a EpetraOperatorWrapper!)
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void rebuildInverseOperator(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A);
+#else
+   virtual void rebuildInverseOperator(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A);
+#endif
 
    /** \brief Rebuild this inverse from an Epetra_Operator passed
      * in this to object. 
@@ -144,21 +156,38 @@ public:
      *
      * \param[in] A The Epetra source operator. (Should be a EpetraOperatorWrapper!)
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void rebuildInverseOperator(const Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > & A);
+#else
+   virtual void rebuildInverseOperator(const Teuchos::RCP<Tpetra::Operator<ST,NT> > & A);
+#endif
 
    /** Extract the forward op used by <code>buildInverseOperator</code>
      * or <code>rebuildInverseOperator</code>.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > getForwardOp() const { return fwdOp_.getConstObj(); }
+#else
+   Teuchos::RCP<const Tpetra::Operator<ST,NT> > getForwardOp() const { return fwdOp_.getConstObj(); }
+#endif
 
    /** Extract the forward op used by <code>buildInverseOperator</code>
      * or <code>rebuildInverseOperator</code>.
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Tpetra::Operator<ST,LO,GO,NT> > getNonconstForwardOp() const { return fwdOp_.getNonconstObj(); }
+#else
+   Teuchos::RCP<Tpetra::Operator<ST,NT> > getNonconstForwardOp() const { return fwdOp_.getNonconstObj(); }
+#endif
 
 protected:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<const Thyra::LinearOpBase<ST> > extractLinearOp(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A) const;
    Teuchos::RCP<const MappingStrategy> extractMappingStrategy(const Teuchos::RCP<const Tpetra::Operator<ST,LO,GO,NT> > & A) const;
+#else
+   Teuchos::RCP<const Thyra::LinearOpBase<ST> > extractLinearOp(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A) const;
+   Teuchos::RCP<const MappingStrategy> extractMappingStrategy(const Teuchos::RCP<const Tpetra::Operator<ST,NT> > & A) const;
+#endif
 
    InverseFactoryOperator(); 
    InverseFactoryOperator(const InverseFactoryOperator &); 
@@ -167,7 +196,11 @@ protected:
    Teko::ModifiableLinearOp invOperator_;
    bool firstBuildComplete_;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::ConstNonconstObjectContainer<Tpetra::Operator<ST,LO,GO,NT> > fwdOp_;
+#else
+   Teuchos::ConstNonconstObjectContainer<Tpetra::Operator<ST,NT> > fwdOp_;
+#endif
    bool setConstFwdOp_;
 };
 

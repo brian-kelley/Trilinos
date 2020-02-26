@@ -77,15 +77,27 @@ namespace MueLu {
     This is not a problem, since after the previous aggregation phases one should not be able to build too large aggregates.
   */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
            class Node = DefaultNode>
+#else
+  template<class Node = DefaultNode>
+#endif
   class AggregationPhase2bAlgorithm :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public MueLu::AggregationAlgorithmBase<LocalOrdinal,GlobalOrdinal,Node> {
+#else
+    public MueLu::AggregationAlgorithmBase<Node> {
+#endif
 #undef MUELU_AGGREGATIONPHASE2BALGORITHM_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
 

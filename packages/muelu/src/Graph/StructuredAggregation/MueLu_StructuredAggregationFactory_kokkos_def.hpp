@@ -68,12 +68,22 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   StructuredAggregationFactory_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  StructuredAggregationFactory_kokkos<Node>::
+#endif
   StructuredAggregationFactory_kokkos() : bDefinitionPhase_(true) { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> StructuredAggregationFactory_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  RCP<const ParameterList> StructuredAggregationFactory_kokkos<Node>::
+#endif
   GetValidParameterList() const {
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
@@ -104,8 +114,13 @@ namespace MueLu {
     return validParamList;
   } // GetValidParameterList()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void StructuredAggregationFactory_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void StructuredAggregationFactory_kokkos<Node>::
+#endif
   DeclareInput(Level& currentLevel) const {
     Input(currentLevel, "Graph");
     Input(currentLevel, "DofsPerNode");
@@ -132,8 +147,13 @@ namespace MueLu {
     }
   } // DeclareInput()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   void StructuredAggregationFactory_kokkos<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template <class Node>
+  void StructuredAggregationFactory_kokkos<Node>::
+#endif
   Build(Level &currentLevel) const {
     FactoryMonitor m(*this, "Build", currentLevel);
 

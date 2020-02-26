@@ -293,7 +293,11 @@ timeTpetra (const GO numGlobalCoords,
   using std::cerr;
   using std::endl;
   typedef Tpetra::Map<LO, GO> map_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar, LO, GO> MV;
+#else
+  typedef Tpetra::MultiVector<Scalar> MV;
+#endif
   typedef ArrayView<const Scalar> coordList_t;
 
   const int nprocs = comm->getSize ();

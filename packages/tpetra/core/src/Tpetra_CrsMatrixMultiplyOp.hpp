@@ -98,14 +98,26 @@ namespace Tpetra {
             class GlobalOrdinal,
             class Node>
   class CrsMatrixMultiplyOp :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node>
+#else
+    public Operator<Scalar, Node>
+#endif
   {
   public:
     //! The specialization of CrsMatrix which this class wraps.
     using crs_matrix_type =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       CrsMatrix<MatScalar, LocalOrdinal, GlobalOrdinal, Node>;
+#else
+      CrsMatrix<MatScalar, Node>;
+#endif
     //! The specialization of Map which this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using map_type = Map<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+    using map_type = Map<Node>;
+#endif
 
   private:
     using local_matrix_type =
@@ -134,8 +146,13 @@ namespace Tpetra {
     /// \brief Compute <tt>Y = beta*Y + alpha*Op(A)*X</tt>, where
     ///   <tt>Op(A)</tt> is either A, \f$A^T\f$, or \f$A^H\f$.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     apply (const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X,
            MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y,
+#else
+    apply (const MultiVector<Scalar,Node>& X,
+           MultiVector<Scalar,Node>& Y,
+#endif
            Teuchos::ETransp mode = Teuchos::NO_TRANS,
            Scalar alpha = Teuchos::ScalarTraits<Scalar>::one (),
            Scalar beta = Teuchos::ScalarTraits<Scalar>::zero ()) const override
@@ -197,9 +214,15 @@ namespace Tpetra {
     ///
     /// \pre No other argument aliases X.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     gaussSeidel (const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B,
                  MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
                  const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &D,
+#else
+    gaussSeidel (const MultiVector<Scalar,Node> &B,
+                 MultiVector<Scalar,Node> &X,
+                 const MultiVector<Scalar,Node> &D,
+#endif
                  const Scalar& dampingFactor,
                  const ESweepDirection direction,
                  const int numSweeps) const
@@ -210,9 +233,15 @@ namespace Tpetra {
       using Teuchos::rcpFromRef;
       using Teuchos::rcp_const_cast;
       typedef Scalar OS;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Export<LocalOrdinal, GlobalOrdinal, Node> export_type;
       typedef Import<LocalOrdinal, GlobalOrdinal, Node> import_type;
       typedef MultiVector<OS, LocalOrdinal, GlobalOrdinal, Node> OSMV;
+#else
+      typedef Export<Node> export_type;
+      typedef Import<Node> import_type;
+      typedef MultiVector<OS,Node> OSMV;
+#endif
 
       TEUCHOS_TEST_FOR_EXCEPTION
         (numSweeps < 0, std::invalid_argument,
@@ -435,9 +464,15 @@ namespace Tpetra {
     ///   all the same.
     /// \pre No other argument aliases X.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     gaussSeidelCopy (MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
                      const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &B,
                      const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &D,
+#else
+    gaussSeidelCopy (MultiVector<Scalar,Node> &X,
+                     const MultiVector<Scalar,Node> &B,
+                     const MultiVector<Scalar,Node> &D,
+#endif
                      const Scalar& dampingFactor,
                      const ESweepDirection direction,
                      const int numSweeps) const
@@ -448,9 +483,15 @@ namespace Tpetra {
       using Teuchos::rcpFromRef;
       using Teuchos::rcp_const_cast;
       typedef Scalar OS;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Export<LocalOrdinal, GlobalOrdinal, Node> export_type;
       typedef Import<LocalOrdinal, GlobalOrdinal, Node> import_type;
       typedef MultiVector<OS, LocalOrdinal, GlobalOrdinal, Node> OSMV;
+#else
+      typedef Export<Node> export_type;
+      typedef Import<Node> import_type;
+      typedef MultiVector<OS,Node> OSMV;
+#endif
 
       TEUCHOS_TEST_FOR_EXCEPTION
         (numSweeps < 0, std::invalid_argument,
@@ -651,7 +692,11 @@ namespace Tpetra {
     //@}
 
   protected:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> MV;
+#else
+    typedef MultiVector<Scalar,Node> MV;
+#endif
 
     //! The underlying CrsMatrix object.
     const Teuchos::RCP<const crs_matrix_type> matrix_;
@@ -672,7 +717,11 @@ namespace Tpetra {
     /// This is declared <tt>mutable</tt> because the apply() method
     /// is const, yet the method needs to cache the MultiVector for
     /// later use.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     mutable Teuchos::RCP<MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > importMV_;
+#else
+    mutable Teuchos::RCP<MultiVector<Scalar,Node> > importMV_;
+#endif
 
     /// \brief Row Map MultiVector used in apply().
     ///
@@ -686,13 +735,22 @@ namespace Tpetra {
     /// This is declared <tt>mutable</tt> because the apply() method
     /// is const, yet the method needs to cache the MultiVector for
     /// later use.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     mutable Teuchos::RCP<MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > exportMV_;
+#else
+    mutable Teuchos::RCP<MultiVector<Scalar,Node> > exportMV_;
+#endif
 
     /// \brief Apply the transpose or conjugate transpose of the
     ///   matrix to X_in, producing Y_in.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     applyTranspose (const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X_in,
                     MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y_in,
+#else
+    applyTranspose (const MultiVector<Scalar,Node>& X_in,
+                    MultiVector<Scalar,Node> &Y_in,
+#endif
                     Teuchos::ETransp mode,
                     Scalar alpha,
                     Scalar beta) const
@@ -700,8 +758,13 @@ namespace Tpetra {
       using Teuchos::null;
       using Teuchos::RCP;
       using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       using export_type = Export<LocalOrdinal, GlobalOrdinal, Node>;
       using import_type = Import<LocalOrdinal, GlobalOrdinal, Node>;
+#else
+      using export_type = Export<Node>;
+      using import_type = Import<Node>;
+#endif
       using STS = Teuchos::ScalarTraits<Scalar>;
 
       const size_t numVectors = X_in.getNumVectors();
@@ -799,8 +862,13 @@ namespace Tpetra {
 
     //! Apply the matrix (not its transpose) to X_in, producing Y_in.
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     applyNonTranspose (const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X_in,
                        MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y_in,
+#else
+    applyNonTranspose (const MultiVector<Scalar,Node>& X_in,
+                       MultiVector<Scalar,Node>& Y_in,
+#endif
                        Scalar alpha,
                        Scalar beta) const
     {
@@ -810,8 +878,13 @@ namespace Tpetra {
       using Teuchos::rcp;
       using Teuchos::rcp_const_cast;
       using Teuchos::rcpFromRef;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Export<LocalOrdinal,GlobalOrdinal,Node> export_type;
       typedef Import<LocalOrdinal,GlobalOrdinal,Node> import_type;
+#else
+      typedef Export<Node> export_type;
+      typedef Import<Node> import_type;
+#endif
       typedef Teuchos::ScalarTraits<Scalar> STS;
 
       if (alpha == STS::zero ()) {
@@ -995,13 +1068,21 @@ namespace Tpetra {
     /// We don't test for the above in this method, because it depends
     /// on the specific kernel.
     Teuchos::RCP<MV>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getColumnMapMultiVector (const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X_domainMap,
+#else
+    getColumnMapMultiVector (const MultiVector<Scalar,Node>& X_domainMap,
+#endif
                              const bool force = false) const
     {
       using Teuchos::null;
       using Teuchos::RCP;
       using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Import<LocalOrdinal,GlobalOrdinal,Node> import_type;
+#else
+      typedef Import<Node> import_type;
+#endif
 
       const size_t numVecs = X_domainMap.getNumVectors ();
       RCP<const import_type> importer = matrix_->getGraph ()->getImporter ();
@@ -1059,13 +1140,21 @@ namespace Tpetra {
     /// We don't test for the above in this method, because it depends
     /// on the specific kernel.
     Teuchos::RCP<MV>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     getRowMapMultiVector (const MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y_rangeMap,
+#else
+    getRowMapMultiVector (const MultiVector<Scalar,Node>& Y_rangeMap,
+#endif
                           const bool force = false) const
     {
       using Teuchos::null;
       using Teuchos::RCP;
       using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Export<LocalOrdinal,GlobalOrdinal,Node> export_type;
+#else
+      typedef Export<Node> export_type;
+#endif
 
       const size_t numVecs = Y_rangeMap.getNumVectors ();
       RCP<const export_type> exporter = matrix_->getGraph ()->getExporter ();
@@ -1107,12 +1196,24 @@ namespace Tpetra {
             class GlobalOrdinal,
             class Node>
   Teuchos::RCP<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     CrsMatrixMultiplyOp<OpScalar, MatScalar, LocalOrdinal, GlobalOrdinal, Node> >
+#else
+    CrsMatrixMultiplyOp<OpScalar, MatScalar, Node> >
+#endif
   createCrsMatrixMultiplyOp (const Teuchos::RCP<
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const CrsMatrix<MatScalar, LocalOrdinal, GlobalOrdinal, Node> >& A)
+#else
+    const CrsMatrix<MatScalar, Node> >& A)
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrixMultiplyOp<OpScalar, MatScalar, LocalOrdinal,
       GlobalOrdinal, Node> op_type;
+#else
+    typedef CrsMatrixMultiplyOp<OpScalar, MatScalar, Node> op_type;
+#endif
     return Teuchos::rcp (new op_type (A));
   }
 

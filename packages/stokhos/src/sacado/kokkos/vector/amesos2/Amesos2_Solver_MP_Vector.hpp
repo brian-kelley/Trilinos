@@ -49,11 +49,21 @@
 
 namespace Amesos2 {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class S, class LO, class GO, class N>
+#else
+  template <class S, class N>
+#endif
   LO get_mp_vector_size(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::RCP<const Tpetra::CrsMatrix<Sacado::MP::Vector<S>, LO, GO, N> >& A = Teuchos::null,
     const Teuchos::RCP<Tpetra::MultiVector<Sacado::MP::Vector<S>, LO, GO, N> >& X = Teuchos::null,
     const Teuchos::RCP<const Tpetra::MultiVector<Sacado::MP::Vector<S>, LO, GO, N> >& B = Teuchos::null)
+#else
+    const Teuchos::RCP<const Tpetra::CrsMatrix<Sacado::MP::Vector<S>,N> >& A = Teuchos::null,
+    const Teuchos::RCP<Tpetra::MultiVector<Sacado::MP::Vector<S>,N> >& X = Teuchos::null,
+    const Teuchos::RCP<const Tpetra::MultiVector<Sacado::MP::Vector<S>,N> >& B = Teuchos::null)
+#endif
   {
     // Without KokkosRefactor, can only do static
     return S::static_size;
@@ -88,6 +98,7 @@ namespace Amesos2 {
   template <class Storage, class LocalOrdinal, class GlobalOrdinal, class Node,
             template<class,class> class ConcreteSolver>
   class MPVectorSolverAdapter :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public Solver< Tpetra::CrsMatrix<Sacado::MP::Vector<Storage>,
                                      LocalOrdinal,
                                      GlobalOrdinal,
@@ -96,19 +107,35 @@ namespace Amesos2 {
                                        LocalOrdinal,
                                        GlobalOrdinal,
                                        Node>
+#else
+    public Solver< Tpetra::CrsMatrix<Sacado::MP::Vector<Storage>,Node>,
+                   Tpetra::MultiVector<Sacado::MP::Vector<Storage>,Node>
+#endif
                    >
   {
   public:
 
     typedef Sacado::MP::Vector<Storage> Scalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> Matrix;
     typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> Vector;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> Matrix;
+    typedef Tpetra::MultiVector<Scalar,Node> Vector;
+#endif
 
     typedef typename Scalar::value_type BaseScalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> FlatGraph;
     typedef Tpetra::CrsMatrix<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatMatrix;
     typedef Tpetra::MultiVector<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatVector;
+#else
+    typedef Tpetra::Map<Node> Map;
+    typedef Tpetra::CrsGraph<Node> FlatGraph;
+    typedef Tpetra::CrsMatrix<BaseScalar,Node> FlatMatrix;
+    typedef Tpetra::MultiVector<BaseScalar,Node> FlatVector;
+#endif
     typedef ConcreteSolver<FlatMatrix,FlatVector> FlatConcreteSolver;
     typedef Solver<FlatMatrix,FlatVector> FlatSolver;
 
@@ -515,8 +542,13 @@ namespace Amesos2 {
              class ST, class LO, class GO, class NO >
   struct create_mp_vector_solver_impl {
     typedef Sacado::MP::Vector<ST> SC;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<SC,LO,GO,NO> Matrix;
     typedef Tpetra::MultiVector<SC,LO,GO,NO> Vector;
+#else
+    typedef Tpetra::CrsMatrix<SC,NO> Matrix;
+    typedef Tpetra::MultiVector<SC,NO> Vector;
+#endif
     static Teuchos::RCP<Solver<Matrix,Vector> >
     apply(Teuchos::RCP<const Matrix> A,
           Teuchos::RCP<Vector>       X,
@@ -530,7 +562,11 @@ namespace Amesos2 {
       (void)same_scalar_assertion; // This stops the compiler from warning about unused declared variables
 
       // If our assertion did not fail, then create and return a new solver
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return Teuchos::rcp( new MPVectorSolverAdapter<ST,LO,GO,NO,ConcreteSolver>(A, X, B) );
+#else
+      return Teuchos::rcp( new MPVectorSolverAdapter<ST,NO,ConcreteSolver>(A, X, B) );
+#endif
     }
   };
 
@@ -541,9 +577,15 @@ namespace Amesos2 {
              class ST, class LO, class GO, class NO >
   struct create_solver_with_supported_type<
     ConcreteSolver,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Tpetra::CrsMatrix<Sacado::MP::Vector<ST>,LO,GO,NO>,
     Tpetra::MultiVector<Sacado::MP::Vector<ST>,LO,GO,NO> > :
     public create_mp_vector_solver_impl<ConcreteSolver, ST, LO, GO, NO> {};
+#else
+    Tpetra::CrsMatrix<Sacado::MP::Vector<ST>,NO>,
+    Tpetra::MultiVector<Sacado::MP::Vector<ST>,NO> > :
+    public create_mp_vector_solver_impl<ConcreteSolver, ST,NO> {};
+#endif
 
   // Specialization for solver_supports_scalar for Sacado::MP::Vector<Storage>
   // value == true if and only if

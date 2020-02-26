@@ -59,16 +59,28 @@
 
 namespace MueLu{
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class GeometricInterpolationPFactory : public PFactory {
 #undef MUELU_GEOMETRICINTERPOLATIONPFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     // Declare useful types
     using real_type = typename Teuchos::ScalarTraits<SC>::coordinateType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using realvaluedmultivector_type = Xpetra::MultiVector<real_type,LO,GO,Node>;
+#else
+    using realvaluedmultivector_type = Xpetra::MultiVector<real_type,Node>;
+#endif
 
     //! @name Constructors/Destructors.
     //@{

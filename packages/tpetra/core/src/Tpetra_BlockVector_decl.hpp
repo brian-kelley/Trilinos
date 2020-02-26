@@ -74,12 +74,24 @@ namespace Tpetra {
 /// single vector (column).  Please refer to the documentation of
 /// BlockMultiVector for details.
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LO,
          class GO,
+#endif
          class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class BlockVector : public BlockMultiVector<Scalar, LO, GO, Node> {
+#else
+class BlockVector : public BlockMultiVector<Scalar, Node> {
+#endif
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef BlockMultiVector<Scalar, LO, GO, Node> base_type;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  typedef BlockMultiVector<Scalar, Node> base_type;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
 public:
@@ -100,11 +112,23 @@ public:
   typedef typename Node::device_type device_type;
 
   //! The specialization of Tpetra::Map that this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+#endif
   //! The specialization of Tpetra::MultiVector that this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar, LO, GO, Node> mv_type;
+#else
+  typedef Tpetra::MultiVector<Scalar, Node> mv_type;
+#endif
   //! The specialization of Tpetra::Vector that this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<Scalar, LO, GO, Node> vec_type;
+#else
+  typedef Tpetra::Vector<Scalar, Node> vec_type;
+#endif
 
   /// \brief "Block view" of all degrees of freedom at a mesh point.
   ///
@@ -147,21 +171,43 @@ public:
   BlockVector ();
 
   //! Copy constructor (shallow copy).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector (const BlockVector<Scalar, LO, GO, Node>&) = default;
+#else
+  BlockVector (const BlockVector<Scalar, Node>&) = default;
+#endif
 
   //! Move constructor (shallow move).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector (BlockVector<Scalar, LO, GO, Node>&&) = default;
+#else
+  BlockVector (BlockVector<Scalar, Node>&&) = default;
+#endif
 
   //! Copy assigment (shallow copy).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector<Scalar, LO, GO, Node>&
   operator= (const BlockVector<Scalar, LO, GO, Node>&) = default;
+#else
+  BlockVector<Scalar, Node>&
+  operator= (const BlockVector<Scalar, Node>&) = default;
+#endif
 
   //! Move assigment (shallow move).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector<Scalar, LO, GO, Node>&
   operator= (BlockVector<Scalar, LO, GO, Node>&&) = default;
+#else
+  BlockVector<Scalar, Node>&
+  operator= (BlockVector<Scalar, Node>&&) = default;
+#endif
 
   //! "Copy constructor" with option to deep copy.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector (const BlockVector<Scalar, LO, GO, Node>& in,
+#else
+  BlockVector (const BlockVector<Scalar, Node>& in,
+#endif
                const Teuchos::DataAccess copyOrView);
 
   /// \brief Constructor that takes a mesh Map and a block size.
@@ -240,7 +286,11 @@ public:
   ///   Map, supplying the corresponding point Map.
   ///
   /// This method corresponds to MultiVector's "offset view" constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector (const BlockVector<Scalar, LO, GO, Node>& X,
+#else
+  BlockVector (const BlockVector<Scalar, Node>& X,
+#endif
                const map_type& newMeshMap,
                const map_type& newPointMap,
                const size_t offset = 0);
@@ -249,7 +299,11 @@ public:
   ///   Map; compute the new point Map.
   ///
   /// This method corresponds to MultiVector's "offset view" constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockVector (const BlockVector<Scalar, LO, GO, Node>& X,
+#else
+  BlockVector (const BlockVector<Scalar, Node>& X,
+#endif
                const map_type& newMeshMap,
                const size_t offset = 0);
 

@@ -65,12 +65,21 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
 TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getDomainMap() const {
   typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix;
   typedef Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> Map;
   typedef Xpetra::BlockedMap<LocalOrdinal, GlobalOrdinal, Node> BlockedMap;
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Tpetra::Map<Node> >
+TpetraOperator<Scalar,Node>::getDomainMap() const {
+  typedef Xpetra::Matrix<Scalar, Node> Matrix;
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+#endif
 
   RCP<const Map> domainMap;
   if(!Hierarchy_.is_null()) domainMap = Hierarchy_->GetLevel(0)->template Get<RCP<Matrix> >("A")->getDomainMap();
@@ -84,11 +93,19 @@ TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getDomainMap() const {
   return Xpetra::toTpetraNonZero(domainMap);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>::getRangeMap() const {
   typedef Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> Matrix;
   typedef Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> Map;
   typedef Xpetra::BlockedMap<LocalOrdinal, GlobalOrdinal, Node> BlockedMap;
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Tpetra::Map<Node> > TpetraOperator<Scalar,Node>::getRangeMap() const {
+  typedef Xpetra::Matrix<Scalar, Node> Matrix;
+  typedef Xpetra::Map<Node> Map;
+  typedef Xpetra::BlockedMap<Node> BlockedMap;
+#endif
 
 
   RCP<const Map> rangeMap;
@@ -102,12 +119,23 @@ Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > TpetraOperator
   return Xpetra::toTpetraNonZero(rangeMap);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>::apply(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X,
                                                                                Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& Y,
+#else
+template<class Scalar, class Node>
+void TpetraOperator<Scalar,Node>::apply(const Tpetra::MultiVector<Scalar,Node>& X,
+                                                                               Tpetra::MultiVector<Scalar,Node>& Y,
+#endif
                                                                                Teuchos::ETransp /* mode */, Scalar /* alpha */, Scalar /* beta */) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>       TMV;
   typedef Xpetra::TpetraMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> XTMV;
+#else
+  typedef Tpetra::MultiVector<Scalar,Node>       TMV;
+  typedef Xpetra::TpetraMultiVector<Scalar,Node> XTMV;
+#endif
 
   try {
     TMV& temp_x = const_cast<TMV &>(X);
@@ -127,20 +155,37 @@ void TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>::apply(const Tpetra:
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 bool TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>::hasTransposeApply() const {
+#else
+template<class Scalar, class Node>
+bool TpetraOperator<Scalar,Node>::hasTransposeApply() const {
+#endif
   return false;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<MueLu::Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>::GetHierarchy() const {
+#else
+template<class Scalar, class Node>
+RCP<MueLu::Hierarchy<Scalar, Node> >
+TpetraOperator<Scalar,Node>::GetHierarchy() const {
+#endif
   return Hierarchy_;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<Xpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 TpetraOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node>::GetOperator() const {
+#else
+template<class Scalar, class Node>
+RCP<Xpetra::Operator<Scalar, Node> >
+TpetraOperator<Scalar,Node>::GetOperator() const {
+#endif
   return Operator_;
 }
 

@@ -666,7 +666,11 @@ namespace MueLuTests {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void testUniqueNumbering(Teuchos::FancyOStream &out, bool &success)
   {
     // simple test with dof coords corresponding to our sample three-element quad mesh with a quadratic basis
@@ -721,13 +725,25 @@ namespace MueLuTests {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, UniqueNumbering, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, UniqueNumbering, Scalar, Node)
+#endif
   {
     ;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     testUniqueNumbering<Scalar,LocalOrdinal,GlobalOrdinal,Node>(out,success);
+#else
+    testUniqueNumbering<Scalar,Node>(out,success);
+#endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template<class Scalar, class Node>
+#endif
   void testBuildSampleElementToNodeMapThreeElementQuad(Teuchos::FancyOStream &out, bool &success)
   {
     // simple test with quadratic basis on quads: check that we have the right numbering (hard-coded)
@@ -796,10 +812,18 @@ namespace MueLuTests {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, BuildSampleElementToNodeMapThreeElementQuad, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, BuildSampleElementToNodeMapThreeElementQuad, Scalar, Node)
+#endif
   {
     ;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     testBuildSampleElementToNodeMapThreeElementQuad<Scalar,LocalOrdinal,GlobalOrdinal,Node>(out,success);
+#else
+    testBuildSampleElementToNodeMapThreeElementQuad<Scalar,Node>(out,success);
+#endif
   }
 
 
@@ -818,8 +842,13 @@ namespace MueLuTests {
 
     using namespace Teuchos;
     RCP<Comm<int>> serialComm = rcp(new SerialComm<int>());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node> MapFactory;
     RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>> serialMapRCP, rowMapRCP, colMapRCP;
+#else
+    typedef Xpetra::MapFactory<Node> MapFactory;
+    RCP<const Xpetra::Map<Node>> serialMapRCP, rowMapRCP, colMapRCP;
+#endif
 
     for (int polyOrder=1; polyOrder<max_degree; polyOrder++)
     {
@@ -946,7 +975,11 @@ namespace MueLuTests {
           }
         }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         MueLu::MueLuIntrepid::FindGeometricSeedOrdinals<Basis,FCO,LocalOrdinal,GlobalOrdinal,Node>(basis, rankLocalElementToNodeMap,
+#else
+        MueLu::MueLuIntrepid::FindGeometricSeedOrdinals<Basis,FCO,Node>(basis, rankLocalElementToNodeMap,
+#endif
                                                                                                    seeds, *rowMapRCP, *colMapRCP);
 
         if (int(seeds.size()) != spaceDim + 1)
@@ -999,8 +1032,13 @@ namespace MueLuTests {
 
     using namespace Teuchos;
     RCP<Comm<int>> serialComm = rcp(new SerialComm<int>());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node> MapFactory;
     RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > serialMapRCP;
+#else
+    typedef Xpetra::MapFactory<Node> MapFactory;
+    RCP<const Xpetra::Map<Node> > serialMapRCP;
+#endif
 
     for (int polyOrder=1; polyOrder<max_degree; polyOrder++)
     {
@@ -1023,7 +1061,11 @@ namespace MueLuTests {
       int numElements = maxLID + 1;
       serialMapRCP = MapFactory::createLocalMapWithNode(lib, numElements, serialComm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLu::MueLuIntrepid::FindGeometricSeedOrdinals<Basis,FCO,LocalOrdinal,GlobalOrdinal,Node>(basis, elementToNodeMap,
+#else
+      MueLu::MueLuIntrepid::FindGeometricSeedOrdinals<Basis,FCO,Node>(basis, elementToNodeMap,
+#endif
                                                                                                  seeds, *serialMapRCP, *serialMapRCP);
 
       int spaceDim = basis->getBaseCellTopology().getDimension();
@@ -1079,7 +1121,11 @@ namespace MueLuTests {
     for (int rankCount=1; rankCount<=MAX_RANK_COUNT; rankCount++)
     {
       out << "running testFindSeedsParallel on " << rankCount << " emulated MPI ranks\n";
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       testFindSeeds<LocalOrdinal, GlobalOrdinal, Node, Basis, ExecutionSpace, ArrayScalar, ArrayOrdinal>(lib,max_degree, ptype, rankCount, out, success);
+#else
+      testFindSeeds<Node, Basis, ExecutionSpace, ArrayScalar, ArrayOrdinal>(lib,max_degree, ptype, rankCount, out, success);
+#endif
     }
   }
 
@@ -1098,66 +1144,124 @@ namespace MueLuTests {
 
   /******* End typedefs for FindSeeds tests by Nate ********/
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Line, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Line, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     FIND_SEEDS_MACROS;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     testFindSeedsParallel<LocalOrdinal,GlobalOrdinal,Node,LineBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_LINE_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
     testFindSeedsSerial<LocalOrdinal,GlobalOrdinal,Node,LineBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_LINE_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
+#else
+    testFindSeedsParallel<Node,LineBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_LINE_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
+    testFindSeedsSerial<Node,LineBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_LINE_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
+#endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Spectral_Line, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Spectral_Line, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     FIND_SEEDS_MACROS;
     const Intrepid2::EPointType POINTTYPE_SPECTRAL = static_cast<Intrepid2::EPointType>(1);// Not sure why I have to do this...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     testFindSeedsParallel<LocalOrdinal,GlobalOrdinal,Node,LineBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_LINE_DEGREE,POINTTYPE_SPECTRAL,out,success);
     testFindSeedsSerial<LocalOrdinal,GlobalOrdinal,Node,LineBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_LINE_DEGREE,POINTTYPE_SPECTRAL,out,success);
+#else
+    testFindSeedsParallel<Node,LineBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_LINE_DEGREE,POINTTYPE_SPECTRAL,out,success);
+    testFindSeedsSerial<Node,LineBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_LINE_DEGREE,POINTTYPE_SPECTRAL,out,success);
+#endif
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Quad, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Quad, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     FIND_SEEDS_MACROS;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     testFindSeedsParallel<LocalOrdinal,GlobalOrdinal,Node,QuadBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
     testFindSeedsSerial<LocalOrdinal,GlobalOrdinal,Node,QuadBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
+#else
+    testFindSeedsParallel<Node,QuadBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
+    testFindSeedsSerial<Node,QuadBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
+#endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Spectral_Quad, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Spectral_Quad, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     FIND_SEEDS_MACROS;
     const Intrepid2::EPointType POINTTYPE_SPECTRAL = static_cast<Intrepid2::EPointType>(1);// Not sure why I have to do this...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     testFindSeedsParallel<LocalOrdinal,GlobalOrdinal,Node,QuadBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,POINTTYPE_SPECTRAL,out,success);
     testFindSeedsSerial<LocalOrdinal,GlobalOrdinal,Node,QuadBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,POINTTYPE_SPECTRAL,out,success);
+#else
+    testFindSeedsParallel<Node,QuadBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,POINTTYPE_SPECTRAL,out,success);
+    testFindSeedsSerial<Node,QuadBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,POINTTYPE_SPECTRAL,out,success);
+#endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Hex, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Hex, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     FIND_SEEDS_MACROS;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     testFindSeedsParallel<LocalOrdinal,GlobalOrdinal,Node,HexBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
     testFindSeedsSerial<LocalOrdinal,GlobalOrdinal,Node,HexBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
+#else
+    testFindSeedsParallel<Node,HexBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
+    testFindSeedsSerial<Node,HexBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_QUAD_DEGREE,Intrepid2::POINTTYPE_EQUISPACED,out,success);
+#endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Spectral_Hex, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, FindSeeds_Spectral_Hex, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_LIMIT_SCOPE(Scalar,GlobalOrdinal,Node);
     FIND_SEEDS_MACROS;
     const Intrepid2::EPointType POINTTYPE_SPECTRAL = static_cast<Intrepid2::EPointType>(1);// Not sure why I have to do this...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     testFindSeedsParallel<LocalOrdinal,GlobalOrdinal,Node,HexBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_HEX_DEGREE,POINTTYPE_SPECTRAL,out,success);
     testFindSeedsSerial<LocalOrdinal,GlobalOrdinal,Node,HexBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_HEX_DEGREE,POINTTYPE_SPECTRAL,out,success);
+#else
+    testFindSeedsParallel<Node,HexBasis,ES,FC,FCO>(MueLuTests::TestHelpers::Parameters::getLib(),MAX_HEX_DEGREE,POINTTYPE_SPECTRAL,out,success);
+    testFindSeedsSerial<Node,HexBasis,ES,FC,FCO>  (MueLuTests::TestHelpers::Parameters::getLib(),MAX_HEX_DEGREE,POINTTYPE_SPECTRAL,out,success);
+#endif
   }
 
   /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GetP1NodeInHi, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GetP1NodeInHi, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1191,7 +1295,11 @@ namespace MueLuTests {
   }
 
   /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, BasisFactory, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, BasisFactory, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1212,7 +1320,11 @@ namespace MueLuTests {
 
 
   /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildLoElemToNode, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildLoElemToNode, Scalar, Node)
+#endif
   {
   #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1269,7 +1381,11 @@ namespace MueLuTests {
   }
 
   /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildLoElemToNodeWithDirichlet, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildLoElemToNodeWithDirichlet, Scalar, Node)
+#endif
   {
   #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1329,7 +1445,11 @@ namespace MueLuTests {
   }
 
   /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,GenerateColMapFromImport, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,GenerateColMapFromImport, Scalar, Node)
+#endif
   {
   #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1389,7 +1509,11 @@ namespace MueLuTests {
      p2_gold_in   - output vector of linear interpolation from lo_basis to hi_basis
 
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void TestPseudoPoisson(Teuchos::FancyOStream &out, int num_p1_nodes, int degree, std::vector<Scalar> &lo_gold_in, std::vector<Scalar> &hi_gold_out,const std::string & hi_basis, const std::string lo_basis = "hgrad_line_c1")
   {
   #   include "MueLu_UseShortNames.hpp"
@@ -1399,7 +1523,11 @@ void TestPseudoPoisson(Teuchos::FancyOStream &out, int num_p1_nodes, int degree,
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -1420,7 +1548,11 @@ void TestPseudoPoisson(Teuchos::FancyOStream &out, int num_p1_nodes, int degree,
 
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_p1_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_p1_nodes,degree,elem_to_node,lib);
+#endif
     fineLevel.Set("A",A);
     fineLevel.Set("pcoarsen: element to node map",rcp(&elem_to_node,false));
 
@@ -1437,7 +1569,11 @@ void TestPseudoPoisson(Teuchos::FancyOStream &out, int num_p1_nodes, int degree,
     Params.set("pcoarsen: lo basis",lo_basis);
 
     // Build P
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<MueLu::IntrepidPCoarsenFactory<SC,LO,GO,NO> > IPCFact = rcp(new MueLu::IntrepidPCoarsenFactory<SC,LO,GO,NO>());
+#else
+    RCP<MueLu::IntrepidPCoarsenFactory<SC,NO> > IPCFact = rcp(new MueLu::IntrepidPCoarsenFactory<SC,NO>());
+#endif
     IPCFact->SetParameterList(Params);
     coarseLevel.Request("P",IPCFact.get());  // request Ptent
     coarseLevel.Request("Nullspace",IPCFact.get());
@@ -1513,7 +1649,11 @@ void TestPseudoPoisson(Teuchos::FancyOStream &out, int num_p1_nodes, int degree,
 
 
  /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p2, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1523,12 +1663,20 @@ void TestPseudoPoisson(Teuchos::FancyOStream &out, int num_p1_nodes, int degree,
     std::vector<Scalar> p2_gold_in = {/*0,*/1,2,3,4,5,6,7,8,/*9*/};//Ignore Dirichlet unknowns
     std::vector<Scalar> p2_gold_out= {0,1,2,3,4,5,6,7,8,9,
                                   0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5};
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestPseudoPoisson<Scalar,LocalOrdinal,GlobalOrdinal,Node>(out,2+p2_gold_in.size(),2,p2_gold_in,p2_gold_out,std::string("hgrad_line_c2"));
+#else
+    TestPseudoPoisson<Scalar,Node>(out,2+p2_gold_in.size(),2,p2_gold_in,p2_gold_out,std::string("hgrad_line_c2"));
+#endif
   }
 
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p3, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1554,11 +1702,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestPseudoPoisson<Scalar,LocalOrdinal,GlobalOrdinal,Node>(out,2+gold_in.size(),3,gold_in,gold_out,std::string("hgrad_line_c3"));
+#else
+    TestPseudoPoisson<Scalar,Node>(out,2+gold_in.size(),3,gold_in,gold_out,std::string("hgrad_line_c3"));
+#endif
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p4, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p4, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1586,12 +1742,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestPseudoPoisson<Scalar,LocalOrdinal,GlobalOrdinal,Node>(out,2+gold_in.size(),4,gold_in,gold_out,std::string("hgrad_line_c4"));
+#else
+    TestPseudoPoisson<Scalar,Node>(out,2+gold_in.size(),4,gold_in,gold_out,std::string("hgrad_line_c4"));
+#endif
   }
 
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p2, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1609,7 +1773,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -1625,7 +1793,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -1655,11 +1827,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
 
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p3, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1677,7 +1857,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -1692,7 +1876,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -1721,11 +1909,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
 
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p4, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p4, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -1743,7 +1939,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -1758,7 +1958,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -1787,7 +1991,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p
 
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
 
@@ -2155,7 +2363,11 @@ bool test_representative_basis(Teuchos::FancyOStream &out, const std::string & n
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_LINE_Equispaced, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_LINE_Equispaced, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2168,12 +2380,20 @@ bool test_representative_basis(Teuchos::FancyOStream &out, const std::string & n
     typedef Intrepid2::Basis_HGRAD_LINE_Cn_FEM<ES,MT,MT> Basis;
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool rv = test_representative_basis<Scalar,LocalOrdinal,GlobalOrdinal,Node,Basis>(out," GenerateRepresentativeBasisNodes_LINE_EQUISPACED",Intrepid2::POINTTYPE_EQUISPACED,MAX_LINE_DEGREE);
+#else
+    bool rv = test_representative_basis<Scalar,Node,Basis>(out," GenerateRepresentativeBasisNodes_LINE_EQUISPACED",Intrepid2::POINTTYPE_EQUISPACED,MAX_LINE_DEGREE);
+#endif
     TEST_EQUALITY(rv,true);
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_QUAD_Equispaced, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_QUAD_Equispaced, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2185,12 +2405,20 @@ bool test_representative_basis(Teuchos::FancyOStream &out, const std::string & n
     typedef Kokkos::DynRankView<MT,typename Node::device_type> FC;
     typedef Intrepid2::Basis_HGRAD_QUAD_Cn_FEM<ES,MT,MT> Basis;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool rv = test_representative_basis<Scalar,LocalOrdinal,GlobalOrdinal,Node,Basis>(out," GenerateRepresentativeBasisNodes_QUAD_EQUISPACED",Intrepid2::POINTTYPE_EQUISPACED,MAX_QUAD_DEGREE);
+#else
+    bool rv = test_representative_basis<Scalar,Node,Basis>(out," GenerateRepresentativeBasisNodes_QUAD_EQUISPACED",Intrepid2::POINTTYPE_EQUISPACED,MAX_QUAD_DEGREE);
+#endif
     TEST_EQUALITY(rv,true);
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_QUAD_Spectral, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_QUAD_Spectral, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2203,13 +2431,21 @@ bool test_representative_basis(Teuchos::FancyOStream &out, const std::string & n
     typedef Intrepid2::Basis_HGRAD_QUAD_Cn_FEM<ES,MT,MT> Basis;
 
     const Intrepid2::EPointType POINTTYPE_SPECTRAL = static_cast<Intrepid2::EPointType>(1);// Not sure why I have to do this...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool rv = test_representative_basis<Scalar,LocalOrdinal,GlobalOrdinal,Node,Basis>(out," GenerateRepresentativeBasisNodes_QUAD_SPECTRAL",POINTTYPE_SPECTRAL,MAX_QUAD_DEGREE);
+#else
+    bool rv = test_representative_basis<Scalar,Node,Basis>(out," GenerateRepresentativeBasisNodes_QUAD_SPECTRAL",POINTTYPE_SPECTRAL,MAX_QUAD_DEGREE);
+#endif
     TEST_EQUALITY(rv,true);
   }
 
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_HEX_Equispaced, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_HEX_Equispaced, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2221,12 +2457,20 @@ bool test_representative_basis(Teuchos::FancyOStream &out, const std::string & n
     typedef Kokkos::DynRankView<MT,typename Node::device_type> FC;
     typedef Intrepid2::Basis_HGRAD_HEX_Cn_FEM<ES,MT,MT> Basis;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool rv = test_representative_basis<Scalar,LocalOrdinal,GlobalOrdinal,Node,Basis>(out," GenerateRepresentativeBasisNodes_HEX_EQUISPACED",Intrepid2::POINTTYPE_EQUISPACED,MAX_HEX_DEGREE);
+#else
+    bool rv = test_representative_basis<Scalar,Node,Basis>(out," GenerateRepresentativeBasisNodes_HEX_EQUISPACED",Intrepid2::POINTTYPE_EQUISPACED,MAX_HEX_DEGREE);
+#endif
     TEST_EQUALITY(rv,true);
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_HEX_Spectral, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_HEX_Spectral, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2239,12 +2483,20 @@ bool test_representative_basis(Teuchos::FancyOStream &out, const std::string & n
     typedef Intrepid2::Basis_HGRAD_HEX_Cn_FEM<ES,MT,MT> Basis;
 
     const Intrepid2::EPointType POINTTYPE_SPECTRAL = static_cast<Intrepid2::EPointType>(1);// Not sure why I have to do this...
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool rv = test_representative_basis<Scalar,LocalOrdinal,GlobalOrdinal,Node,Basis>(out," GenerateRepresentativeBasisNodes_HEX_SPECTRAL",POINTTYPE_SPECTRAL,MAX_HEX_DEGREE);
+#else
+    bool rv = test_representative_basis<Scalar,Node,Basis>(out," GenerateRepresentativeBasisNodes_HEX_SPECTRAL",POINTTYPE_SPECTRAL,MAX_HEX_DEGREE);
+#endif
     TEST_EQUALITY(rv,true);
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateLoNodeInHighViaGIDs_QUAD_pn_to_p1, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, GenerateLoNodeInHighViaGIDs_QUAD_pn_to_p1, Scalar, Node)
+#endif
   {
 
     // NOTE: We need more tests for this that do pn to pm
@@ -2298,7 +2550,11 @@ bool test_representative_basis(Teuchos::FancyOStream &out, const std::string & n
       // The dynamic stuff
       std::vector<std::vector<size_t> > candidates;
       MueLu::MueLuIntrepid::GenerateRepresentativeBasisNodes<LoBasis,FC>(*lo,hi_dofCoords,threshold,candidates);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       MueLu::MueLuIntrepid::GenerateLoNodeInHiViaGIDs<LO,GO,Node,FCi>(candidates,hi_e2n,hi_colMap,lo_e2n);
+#else
+      MueLu::MueLuIntrepid::GenerateLoNodeInHiViaGIDs<Node,FCi>(candidates,hi_e2n,hi_colMap,lo_e2n);
+#endif
 
       // Compare and make sure we're cool
       bool node_diff = false;
@@ -2317,7 +2573,11 @@ bool test_representative_basis(Teuchos::FancyOStream &out, const std::string & n
 
 
   /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildLoElemToNodeViaRepresentatives_QUAD_pn_to_p1, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildLoElemToNodeViaRepresentatives_QUAD_pn_to_p1, Scalar, Node)
+#endif
   {
     // NOTE: We need more tests for this that do pn to pm
   #   include "MueLu_UseShortNames.hpp"
@@ -2407,7 +2667,11 @@ bool test_representative_basis(Teuchos::FancyOStream &out, const std::string & n
 
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_LINE_p3_to_p2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_LINE_p3_to_p2, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2444,11 +2708,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestPseudoPoisson<Scalar,LocalOrdinal,GlobalOrdinal,Node>(out,num_p1_points,hi_degree,lo_gold_in,hi_gold_out,std::string("hgrad_line_c3"),std::string("hgrad_line_c2"));
+#else
+    TestPseudoPoisson<Scalar,Node>(out,num_p1_points,hi_degree,lo_gold_in,hi_gold_out,std::string("hgrad_line_c3"),std::string("hgrad_line_c2"));
+#endif
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_LINE_p4_to_p3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_LINE_p4_to_p3, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2485,11 +2757,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestPseudoPoisson<Scalar,LocalOrdinal,GlobalOrdinal,Node>(out,num_p1_points,hi_degree,lo_gold_in,hi_gold_out,std::string("hgrad_line_c4"),std::string("hgrad_line_c3"));
+#else
+    TestPseudoPoisson<Scalar,Node>(out,num_p1_points,hi_degree,lo_gold_in,hi_gold_out,std::string("hgrad_line_c4"),std::string("hgrad_line_c3"));
+#endif
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_LINE_p4_to_p2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_LINE_p4_to_p2, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -2525,12 +2805,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestPseudoPoisson<Scalar,LocalOrdinal,GlobalOrdinal,Node>(out,num_p1_points,hi_degree,lo_gold_in,hi_gold_out,std::string("hgrad_line_c4"),std::string("hgrad_line_c2"));
+#else
+    TestPseudoPoisson<Scalar,Node>(out,num_p1_points,hi_degree,lo_gold_in,hi_gold_out,std::string("hgrad_line_c4"),std::string("hgrad_line_c2"));
+#endif
   }
 
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p3_to_p2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p3_to_p2, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2548,7 +2836,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -2563,7 +2855,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -2592,11 +2888,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
 
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p4_to_p3, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p4_to_p3, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2614,7 +2918,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -2630,7 +2938,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -2659,11 +2971,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
 
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p4_to_p2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p4_to_p2, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2681,7 +3001,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -2696,7 +3020,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -2725,12 +3053,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
 
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p4_to_p3_to_p2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p4_to_p3_to_p2, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2748,7 +3084,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -2764,7 +3104,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -2808,13 +3152,21 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
 #endif
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
 
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p2_to_p1_sa, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p2_to_p1_sa, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2832,7 +3184,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -2847,7 +3203,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -2883,11 +3243,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
 
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p3_to_p2_to_p1_sa_manual, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p3_to_p2_to_p1_sa_manual, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     ;
@@ -2905,7 +3273,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -2920,7 +3292,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -2959,12 +3335,20 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
 
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
 
 /*********************************************************************************************************************/
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p3_to_p2_to_p1_sa_schedule, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory, CreatePreconditioner_p3_to_p2_to_p1_sa_schedule, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -2981,7 +3365,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     typedef GlobalOrdinal GO;
     typedef LocalOrdinal LO;
     typedef Node  NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
     typedef Kokkos::DynRankView<LocalOrdinal,typename Node::device_type> FCi;
 
@@ -2996,7 +3384,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     GO num_nodes = 972;
     // Build a pseudo-poisson test matrix
     FCi elem_to_node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,LO,GO,NO>(num_nodes,degree,elem_to_node,lib);
+#else
+    RCP<Matrix> A = TestHelpers::Build1DPseudoPoissonHigherOrder<SC,NO>(num_nodes,degree,elem_to_node,lib);
+#endif
 
     // Normalized RHS
     RCP<MultiVector> RHS1 = MultiVectorFactory::Build(A->getRowMap(), 1);
@@ -3026,11 +3418,16 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
     Params.set("verbosity","none");
 
     // Build hierarchy
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,LO,GO,NO>(A,Params);
+#else
+    RCP<Hierarchy> tH = MueLu::CreateXpetraPreconditioner<SC,NO>(A,Params);
+#endif
   }
 
   /*********************************************************************************************************************/
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(Scalar, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,GetP1NodeInHi,Scalar,LO,GO,Node)  \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,BasisFactory,Scalar,LO,GO,Node) \
@@ -3068,6 +3465,45 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_L
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, FindSeeds_Spectral_Quad, Scalar, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Hex, Scalar, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, FindSeeds_Spectral_Hex, Scalar, LO, GO, Node) \
+#else
+#  define MUELU_ETI_GROUP(Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,GetP1NodeInHi,Scalar,Node)  \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,BasisFactory,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,BuildLoElemToNode,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,BuildLoElemToNodeWithDirichlet,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,GenerateColMapFromImport,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p2,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p3,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory,BuildP_PseudoPoisson_p4,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p2, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p3, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p4, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_LINE_Equispaced,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_QUAD_Equispaced,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_QUAD_Spectral,  Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_HEX_Equispaced, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, GenerateRepresentativeBasisNodes_HEX_Spectral,   Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, GenerateLoNodeInHighViaGIDs_QUAD_pn_to_p1, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, BuildLoElemToNodeViaRepresentatives_QUAD_pn_to_p1, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, BuildP_PseudoPoisson_LINE_p3_to_p2,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, BuildP_PseudoPoisson_LINE_p4_to_p3,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, BuildP_PseudoPoisson_LINE_p4_to_p2,Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p3_to_p2, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p4_to_p3, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p4_to_p2, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p4_to_p3_to_p2, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p2_to_p1_sa, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p3_to_p2_to_p1_sa_manual, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, CreatePreconditioner_p3_to_p2_to_p1_sa_schedule, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, BuildSampleElementToNodeMapThreeElementQuad, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, UniqueNumbering, Scalar,Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Line, Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, FindSeeds_Spectral_Line, Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Quad, Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, FindSeeds_Spectral_Quad, Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, FindSeeds_Equispaced_Hex, Scalar, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(IntrepidPCoarsenFactory, FindSeeds_Spectral_Hex, Scalar, Node) \
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

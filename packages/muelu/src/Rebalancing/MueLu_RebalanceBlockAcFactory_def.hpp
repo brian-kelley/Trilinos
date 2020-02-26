@@ -70,11 +70,21 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RebalanceBlockAcFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::RebalanceBlockAcFactory() {  }
+#else
+  template <class Scalar, class Node>
+  RebalanceBlockAcFactory<Scalar, Node>::RebalanceBlockAcFactory() {  }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> RebalanceBlockAcFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> RebalanceBlockAcFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -88,13 +98,23 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void RebalanceBlockAcFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager) {
+#else
+  template <class Scalar, class Node>
+  void RebalanceBlockAcFactory<Scalar, Node>::AddFactoryManager(RCP<const FactoryManagerBase> FactManager) {
+#endif
     FactManager_.push_back(FactManager);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RebalanceBlockAcFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RebalanceBlockAcFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     Input(coarseLevel, "A");
 
     std::vector<Teuchos::RCP<const FactoryManagerBase> >::const_iterator it;
@@ -112,15 +132,24 @@ namespace MueLu {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RebalanceBlockAcFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void RebalanceBlockAcFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Computing blocked Ac", coarseLevel);
 
     RCP<Teuchos::FancyOStream> out = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
 
     RCP<Matrix> originalAc = Get< RCP<Matrix> >(coarseLevel, "A");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > bA = Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >(originalAc);
+#else
+    RCP<Xpetra::BlockedCrsMatrix<Scalar, Node> > bA = Teuchos::rcp_dynamic_cast<Xpetra::BlockedCrsMatrix<Scalar, Node> >(originalAc);
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(bA==Teuchos::null, Exceptions::BadCast, "MueLu::RebalanceBlockAcFactory::Build: input matrix A is not of type BlockedCrsMatrix! error.");
     TEUCHOS_TEST_FOR_EXCEPTION(bA->Rows() != bA->Cols(), Exceptions::RuntimeError, "MueLu::RebalanceBlockAcFactory::Build: Blocked operator has " << bA->Rows() << " and " << bA->Cols() << ". We only support square matrices (with same number of blocks and columns).");
 
@@ -417,8 +446,13 @@ namespace MueLu {
     }
   } //Build()
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void RebalanceBlockAcFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::AddRebalanceFactory(const RCP<const FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void RebalanceBlockAcFactory<Scalar, Node>::AddRebalanceFactory(const RCP<const FactoryBase>& factory) {
+#endif
 
     /*TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::rcp_dynamic_cast<const TwoLevelFactoryBase>(factory) == Teuchos::null, Exceptions::BadCast,
                                "MueLu::RAPFactory::AddTransferFactory: Transfer factory is not derived from TwoLevelFactoryBase. "

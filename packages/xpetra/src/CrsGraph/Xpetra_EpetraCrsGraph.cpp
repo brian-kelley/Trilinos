@@ -53,15 +53,25 @@
 namespace Xpetra {
 
   // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GlobalOrdinal, class Node>
   const Epetra_CrsGraph & toEpetra(const RCP< const CrsGraph<int, GlobalOrdinal, Node> > &graph) {
+#else
+  template<class Node>
+  const Epetra_CrsGraph & toEpetra(const RCP< const CrsGraph<Node> > &graph) {
+#endif
     XPETRA_RCP_DYNAMIC_CAST(const EpetraCrsGraphT<GlobalOrdinal XPETRA_COMMA Node>, graph, epetraGraph, "toEpetra");
     return *(epetraGraph->getEpetra_CrsGraph());
   }
 
   // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GlobalOrdinal, class Node>
   RCP<const CrsGraph<int, GlobalOrdinal, Node> >
+#else
+  template<class Node>
+  RCP<const CrsGraph<Node> >
+#endif
   toXpetra (const Epetra_CrsGraph &g)
   {
     RCP<const Epetra_CrsGraph> const_graph = rcp (new Epetra_CrsGraph (g));
@@ -76,36 +86,66 @@ namespace Xpetra {
 #if ((defined(EPETRA_HAVE_OMP) && !defined(HAVE_TPETRA_INST_OPENMP)) || \
     (!defined(EPETRA_HAVE_OMP) && !defined(HAVE_TPETRA_INST_SERIAL)))
   template class EpetraCrsGraphT<int, Xpetra::EpetraNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template RCP< const CrsGraph<int, int, Xpetra::EpetraNode > > toXpetra<int, Xpetra::EpetraNode>(const Epetra_CrsGraph &g);
   template const Epetra_CrsGraph & toEpetra<int, Xpetra::EpetraNode >(const RCP< const CrsGraph<int, int, Xpetra::EpetraNode > > &graph);
+#else
+  template RCP< const CrsGraph<Xpetra::EpetraNode > > toXpetra<int, Xpetra::EpetraNode>(const Epetra_CrsGraph &g);
+  template const Epetra_CrsGraph & toEpetra<int, Xpetra::EpetraNode >(const RCP< const CrsGraph<Xpetra::EpetraNode > > &graph);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_SERIAL
 template class EpetraCrsGraphT<int, Kokkos::Compat::KokkosSerialWrapperNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, int, Kokkos::Compat::KokkosSerialWrapperNode > > toXpetra<int, Kokkos::Compat::KokkosSerialWrapperNode>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<int, Kokkos::Compat::KokkosSerialWrapperNode >(const RCP< const CrsGraph<int, int, Kokkos::Compat::KokkosSerialWrapperNode > > &graph);
+#else
+template RCP< const CrsGraph<Kokkos::Compat::KokkosSerialWrapperNode > > toXpetra<int, Kokkos::Compat::KokkosSerialWrapperNode>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<int, Kokkos::Compat::KokkosSerialWrapperNode >(const RCP< const CrsGraph<Kokkos::Compat::KokkosSerialWrapperNode > > &graph);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_PTHREAD
 template class EpetraCrsGraphT<int, Kokkos::Compat::KokkosThreadsWrapperNode>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, int, Kokkos::Compat::KokkosThreadsWrapperNode > > toXpetra<int, Kokkos::Compat::KokkosThreadsWrapperNode>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<int, Kokkos::Compat::KokkosThreadsWrapperNode >(const RCP< const CrsGraph<int, int, Kokkos::Compat::KokkosThreadsWrapperNode > > &graph);
+#else
+template RCP< const CrsGraph<Kokkos::Compat::KokkosThreadsWrapperNode > > toXpetra<int, Kokkos::Compat::KokkosThreadsWrapperNode>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<int, Kokkos::Compat::KokkosThreadsWrapperNode >(const RCP< const CrsGraph<Kokkos::Compat::KokkosThreadsWrapperNode > > &graph);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_OPENMP
 template class EpetraCrsGraphT<int, Kokkos::Compat::KokkosOpenMPWrapperNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, int, Kokkos::Compat::KokkosOpenMPWrapperNode > > toXpetra<int, Kokkos::Compat::KokkosOpenMPWrapperNode>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<int, Kokkos::Compat::KokkosOpenMPWrapperNode >(const RCP< const CrsGraph<int, int, Kokkos::Compat::KokkosOpenMPWrapperNode > > &graph);
+#else
+template RCP< const CrsGraph<Kokkos::Compat::KokkosOpenMPWrapperNode > > toXpetra<int, Kokkos::Compat::KokkosOpenMPWrapperNode>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<int, Kokkos::Compat::KokkosOpenMPWrapperNode >(const RCP< const CrsGraph<Kokkos::Compat::KokkosOpenMPWrapperNode > > &graph);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_CUDA
 typedef Kokkos::Compat::KokkosCudaWrapperNode default_node_type;
 template class EpetraCrsGraphT<int, default_node_type >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, int, default_node_type > > toXpetra<int, default_node_type>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<int, default_node_type >(const RCP< const CrsGraph<int, int, default_node_type > > &graph);
+#else
+template RCP< const CrsGraph<default_node_type > > toXpetra<int, default_node_type>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<int, default_node_type >(const RCP< const CrsGraph<default_node_type > > &graph);
+#endif
 #endif
 #else
 // Tpetra is disabled and Kokkos not available: use dummy node type
 typedef Xpetra::EpetraNode default_node_type;
 template class EpetraCrsGraphT<int, default_node_type >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, int, default_node_type > > toXpetra<int, default_node_type>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<int, default_node_type >(const RCP< const CrsGraph<int, int, default_node_type > > &graph);
+#else
+template RCP< const CrsGraph<default_node_type > > toXpetra<int, default_node_type>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<int, default_node_type >(const RCP< const CrsGraph<default_node_type > > &graph);
+#endif
 #endif // HAVE_XPETRA_TPETRA
 #endif
 
@@ -115,36 +155,66 @@ template const Epetra_CrsGraph & toEpetra<int, default_node_type >(const RCP< co
 #if ((defined(EPETRA_HAVE_OMP) && !defined(HAVE_TPETRA_INST_OPENMP)) || \
     (!defined(EPETRA_HAVE_OMP) && !defined(HAVE_TPETRA_INST_SERIAL)))
   template class EpetraCrsGraphT<long long, Xpetra::EpetraNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template RCP< const CrsGraph<int, long long, Xpetra::EpetraNode > > toXpetra<long long, Xpetra::EpetraNode>(const Epetra_CrsGraph &g);
   template const Epetra_CrsGraph & toEpetra<long long, Xpetra::EpetraNode >(const RCP< const CrsGraph<int, long long, Xpetra::EpetraNode > > &graph);
+#else
+  template RCP< const CrsGraph<Xpetra::EpetraNode > > toXpetra<long long, Xpetra::EpetraNode>(const Epetra_CrsGraph &g);
+  template const Epetra_CrsGraph & toEpetra<long long, Xpetra::EpetraNode >(const RCP< const CrsGraph<Xpetra::EpetraNode > > &graph);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_SERIAL
 template class EpetraCrsGraphT<long long, Kokkos::Compat::KokkosSerialWrapperNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, long long, Kokkos::Compat::KokkosSerialWrapperNode > > toXpetra<long long, Kokkos::Compat::KokkosSerialWrapperNode>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<long long, Kokkos::Compat::KokkosSerialWrapperNode >(const RCP< const CrsGraph<int, long long, Kokkos::Compat::KokkosSerialWrapperNode > > &graph);
+#else
+template RCP< const CrsGraph<Kokkos::Compat::KokkosSerialWrapperNode > > toXpetra<long long, Kokkos::Compat::KokkosSerialWrapperNode>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<long long, Kokkos::Compat::KokkosSerialWrapperNode >(const RCP< const CrsGraph<Kokkos::Compat::KokkosSerialWrapperNode > > &graph);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_PTHREAD
 template class EpetraCrsGraphT<long long, Kokkos::Compat::KokkosThreadsWrapperNode>;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, long long, Kokkos::Compat::KokkosThreadsWrapperNode > > toXpetra<long long, Kokkos::Compat::KokkosThreadsWrapperNode>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<long long, Kokkos::Compat::KokkosThreadsWrapperNode >(const RCP< const CrsGraph<int, long long, Kokkos::Compat::KokkosThreadsWrapperNode > > &graph);
+#else
+template RCP< const CrsGraph<Kokkos::Compat::KokkosThreadsWrapperNode > > toXpetra<long long, Kokkos::Compat::KokkosThreadsWrapperNode>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<long long, Kokkos::Compat::KokkosThreadsWrapperNode >(const RCP< const CrsGraph<Kokkos::Compat::KokkosThreadsWrapperNode > > &graph);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_OPENMP
 template class EpetraCrsGraphT<long long, Kokkos::Compat::KokkosOpenMPWrapperNode >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, long long, Kokkos::Compat::KokkosOpenMPWrapperNode > > toXpetra<long long, Kokkos::Compat::KokkosOpenMPWrapperNode>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<long long, Kokkos::Compat::KokkosOpenMPWrapperNode >(const RCP< const CrsGraph<int, long long, Kokkos::Compat::KokkosOpenMPWrapperNode > > &graph);
+#else
+template RCP< const CrsGraph<Kokkos::Compat::KokkosOpenMPWrapperNode > > toXpetra<long long, Kokkos::Compat::KokkosOpenMPWrapperNode>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<long long, Kokkos::Compat::KokkosOpenMPWrapperNode >(const RCP< const CrsGraph<Kokkos::Compat::KokkosOpenMPWrapperNode > > &graph);
+#endif
 #endif
 #ifdef HAVE_TPETRA_INST_CUDA
 typedef Kokkos::Compat::KokkosCudaWrapperNode default_node_type;
 template class EpetraCrsGraphT<long long, default_node_type >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, long long, default_node_type > > toXpetra<long long, default_node_type>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<long long, default_node_type >(const RCP< const CrsGraph<int, long long, default_node_type > > &graph);
+#else
+template RCP< const CrsGraph<default_node_type > > toXpetra<long long, default_node_type>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<long long, default_node_type >(const RCP< const CrsGraph<default_node_type > > &graph);
+#endif
 #endif
 #else
 // Tpetra is disabled and Kokkos not available: use dummy node type
 typedef Xpetra::EpetraNode default_node_type;
 template class EpetraCrsGraphT<long long, default_node_type >;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template RCP< const CrsGraph<int, long long, default_node_type > > toXpetra<long long, default_node_type>(const Epetra_CrsGraph &g);
 template const Epetra_CrsGraph & toEpetra<long long, default_node_type >(const RCP< const CrsGraph<int, long long, default_node_type > > &graph);
+#else
+template RCP< const CrsGraph<default_node_type > > toXpetra<long long, default_node_type>(const Epetra_CrsGraph &g);
+template const Epetra_CrsGraph & toEpetra<long long, default_node_type >(const RCP< const CrsGraph<default_node_type > > &graph);
+#endif
 #endif // HAVE_XPETRA_TPETRA
 #endif
 

@@ -52,9 +52,15 @@
 namespace Ifpack2 {
 namespace Details {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 Teuchos::RCP<typename Factory<SC, LO, GO, NT>::prec_type>
 Factory<SC, LO, GO, NT>::
+#else
+template<class SC, class NT>
+Teuchos::RCP<typename Factory<SC, NT>::prec_type>
+Factory<SC, NT>::
+#endif
 create (const std::string& precType,
         const Teuchos::RCP<const row_matrix_type>& matrix,
         const int overlap)
@@ -113,9 +119,15 @@ create (const std::string& precType,
   return prec;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 Teuchos::RCP<typename Factory<SC, LO, GO, NT>::prec_type>
 Factory<SC, LO, GO, NT>::
+#else
+template<class SC, class NT>
+Teuchos::RCP<typename Factory<SC, NT>::prec_type>
+Factory<SC, NT>::
+#endif
 create (const std::string& precType,
         const Teuchos::RCP<const row_matrix_type>& matrix)
 {
@@ -192,7 +204,12 @@ create (const std::string& precType,
 } // namespace Details
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_FACTORY_INSTANT(S, LO, GO, N) \
   template class Ifpack2::Details::Factory<S, LO, GO, N>;
+#else
+#define IFPACK2_DETAILS_FACTORY_INSTANT(S, N) \
+  template class Ifpack2::Details::Factory<S, N>;
+#endif
 
 #endif // IFPACK2_DETAILS_FACTORY_DEF_HPP

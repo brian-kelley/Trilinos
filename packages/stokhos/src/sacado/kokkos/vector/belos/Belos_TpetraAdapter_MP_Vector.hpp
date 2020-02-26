@@ -71,16 +71,29 @@ namespace Belos {
   /// for more information.
   template<class Storage, class LO, class GO, class Node>
   class MultiVecTraits<typename Storage::value_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                        Tpetra::MultiVector< Sacado::MP::Vector<Storage>,
                                             LO, GO, Node > > {
+#else
+                       Tpetra::MultiVector< Sacado::MP::Vector<Storage>,Node > > {
+#endif
   public:
     typedef typename Storage::ordinal_type s_ordinal;
     typedef typename Storage::value_type BaseScalar;
     typedef Sacado::MP::Vector<Storage> Scalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar, LO, GO, Node> MV;
+#else
+    typedef Tpetra::MultiVector<Scalar, Node> MV;
+#endif
   public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Tpetra::MultiVector<Scalar,LO,GO,Node>::dot_type dot_type;
     typedef typename Tpetra::MultiVector<Scalar,LO,GO,Node>::mag_type mag_type;
+#else
+    typedef typename Tpetra::MultiVector<Scalar,Node>::dot_type dot_type;
+    typedef typename Tpetra::MultiVector<Scalar,Node>::mag_type mag_type;
+#endif
 
     /// \brief Create a new MultiVector with \c numVecs columns.
     ///
@@ -326,10 +339,18 @@ namespace Belos {
 
     static void
     MvTimesMatAddMv (const dot_type& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      const Tpetra::MultiVector<Scalar,LO,GO,Node>& A,
+#else
+                     const Tpetra::MultiVector<Scalar,Node>& A,
+#endif
                      const Teuchos::SerialDenseMatrix<int,dot_type>& B,
                      const dot_type& beta,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      Tpetra::MultiVector<Scalar,LO,GO,Node>& C)
+#else
+                     Tpetra::MultiVector<Scalar,Node>& C)
+#endif
     {
       using Teuchos::RCP;
       using Teuchos::rcp;
@@ -352,7 +373,11 @@ namespace Belos {
       else Ctmp = rcp(&C,false);
 
       // Create flattened view's
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::MultiVector<dot_type,LO,GO,Node> FMV;
+#else
+      typedef Tpetra::MultiVector<dot_type,Node> FMV;
+#endif
       typedef typename FMV::dual_view_type::t_dev flat_view_type;
       typedef typename flat_view_type::execution_space execution_space;
       flat_view_type flat_A_view = Atmp->template getLocalView<execution_space>();
@@ -394,23 +419,40 @@ namespace Belos {
     /// (Remember that NaN*0 = NaN.)
     static void
     MvAddMv (Scalar alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              const Tpetra::MultiVector<Scalar,LO,GO,Node>& A,
+#else
+             const Tpetra::MultiVector<Scalar,Node>& A,
+#endif
              Scalar beta,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              const Tpetra::MultiVector<Scalar,LO,GO,Node>& B,
              Tpetra::MultiVector<Scalar,LO,GO,Node>& mv)
+#else
+             const Tpetra::MultiVector<Scalar,Node>& B,
+             Tpetra::MultiVector<Scalar,Node>& mv)
+#endif
     {
       mv.update (alpha, A, beta, B, Teuchos::ScalarTraits<Scalar>::zero ());
     }
 
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MvScale (Tpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    MvScale (Tpetra::MultiVector<Scalar,Node>& mv,
+#endif
              const Scalar& alpha)
     {
       mv.scale (alpha);
     }
 
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MvScale (Tpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    MvScale (Tpetra::MultiVector<Scalar,Node>& mv,
+#endif
              const std::vector<BaseScalar>& alphas)
     {
       std::vector<Scalar> alphas_mp(alphas.size());
@@ -421,7 +463,11 @@ namespace Belos {
     }
 
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MvScale (Tpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    MvScale (Tpetra::MultiVector<Scalar,Node>& mv,
+#endif
              const std::vector<Scalar>& alphas)
     {
       mv.scale (alphas);
@@ -429,8 +475,13 @@ namespace Belos {
 
     static void
     MvTransMv (dot_type alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                const Tpetra::MultiVector<Scalar,LO,GO,Node>& A,
                const Tpetra::MultiVector<Scalar,LO,GO,Node>& B,
+#else
+               const Tpetra::MultiVector<Scalar,Node>& A,
+               const Tpetra::MultiVector<Scalar,Node>& B,
+#endif
                Teuchos::SerialDenseMatrix<int,dot_type>& C)
     {
       using Teuchos::Comm;
@@ -465,7 +516,11 @@ namespace Belos {
       else Btmp = rcp(&B,false);
 
       // Create flattened Kokkos::MultiVector's
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::MultiVector<dot_type,LO,GO,Node> FMV;
+#else
+      typedef Tpetra::MultiVector<dot_type,Node> FMV;
+#endif
       typedef typename FMV::dual_view_type::t_dev flat_view_type;
       typedef typename flat_view_type::execution_space execution_space;
       flat_view_type flat_A_view = Atmp->template getLocalView<execution_space>();
@@ -516,8 +571,13 @@ namespace Belos {
 
     //! For all columns j of A, set <tt>dots[j] := A[j]^T * B[j]</tt>.
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MvDot (const Tpetra::MultiVector<Scalar,LO,GO,Node>& A,
            const Tpetra::MultiVector<Scalar,LO,GO,Node>& B,
+#else
+    MvDot (const Tpetra::MultiVector<Scalar,Node>& A,
+           const Tpetra::MultiVector<Scalar,Node>& B,
+#endif
            std::vector<dot_type>& dots)
     {
       const size_t numVecs = A.getNumVectors ();
@@ -543,7 +603,11 @@ namespace Belos {
 
     //! For all columns j of mv, set <tt>normvec[j] = norm(mv[j])</tt>.
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     MvNorm (const Tpetra::MultiVector<Scalar,LO,GO,Node>& mv,
+#else
+    MvNorm (const Tpetra::MultiVector<Scalar,Node>& mv,
+#endif
             std::vector<mag_type> &normvec,
             NormType type=TwoNorm)
     {
@@ -750,7 +814,11 @@ namespace Belos {
     /// \typedef tsqr_adaptor_type
     /// \brief TsqrAdaptor specialization for Tpetra::MultiVector
     ///
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::TsqrAdaptor< Tpetra::MultiVector< Scalar, LO, GO, Node > > tsqr_adaptor_type;
+#else
+    typedef Tpetra::TsqrAdaptor< Tpetra::MultiVector< Scalar, Node > > tsqr_adaptor_type;
+#endif
 #endif // HAVE_BELOS_TSQR
   };
 
@@ -763,17 +831,28 @@ namespace Belos {
   /// \brief Partial specialization of OperatorTraits for Tpetra::Operator.
   template <class Storage, class LO, class GO, class Node>
   class OperatorTraits <typename Storage::value_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         Tpetra::MultiVector<Sacado::MP::Vector<Storage>,
                                              LO,GO,Node>,
                         Tpetra::Operator<Sacado::MP::Vector<Storage>,
                                          LO,GO,Node> >
+#else
+                        Tpetra::MultiVector<Sacado::MP::Vector<Storage>,Node>,
+                        Tpetra::Operator<Sacado::MP::Vector<Storage>,Node> >
+#endif
   {
   public:
     typedef Sacado::MP::Vector<Storage> Scalar;
     static void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Apply (const Tpetra::Operator<Scalar,LO,GO,Node>& Op,
            const Tpetra::MultiVector<Scalar,LO,GO,Node>& X,
            Tpetra::MultiVector<Scalar,LO,GO,Node>& Y,
+#else
+    Apply (const Tpetra::Operator<Scalar,Node>& Op,
+           const Tpetra::MultiVector<Scalar,Node>& X,
+           Tpetra::MultiVector<Scalar,Node>& Y,
+#endif
            ETrans trans=NOTRANS)
     {
       switch (trans) {
@@ -800,7 +879,11 @@ namespace Belos {
     }
 
     static bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     HasApplyTranspose (const Tpetra::Operator<Scalar,LO,GO,Node>& Op)
+#else
+    HasApplyTranspose (const Tpetra::Operator<Scalar,Node>& Op)
+#endif
     {
       return Op.hasTransposeApply ();
     }

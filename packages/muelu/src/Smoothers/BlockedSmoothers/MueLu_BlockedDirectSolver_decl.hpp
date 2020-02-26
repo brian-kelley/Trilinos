@@ -79,12 +79,23 @@ namespace MueLu {
       */
 
   template <class Scalar = SmootherPrototype<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = typename SmootherPrototype<Scalar>::local_ordinal_type,
             class GlobalOrdinal = typename SmootherPrototype<Scalar, LocalOrdinal>::global_ordinal_type,
             class Node = typename SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
   class BlockedDirectSolver : public SmootherPrototype<Scalar,LocalOrdinal,GlobalOrdinal,Node>
+#else
+            class Node = typename SmootherPrototype<Scalar>::node_type>
+  class BlockedDirectSolver : public SmootherPrototype<Scalar,Node>
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MapExtractor<Scalar, LocalOrdinal, GlobalOrdinal, Node> MapExtractorClass;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Xpetra::MapExtractor<Scalar, Node> MapExtractorClass;
+#endif
 
 #undef MUELU_BLOCKEDDIRECTSOLVER_SHORT
 #include "MueLu_UseShortNames.hpp"

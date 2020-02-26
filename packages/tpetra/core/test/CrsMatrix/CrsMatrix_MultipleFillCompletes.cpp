@@ -66,8 +66,13 @@ namespace {
     using Teuchos::tuple;
     using std::cerr;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> MAT;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> MAT;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     typedef Tpetra::global_size_t GST;
     typedef Teuchos::ScalarTraits<Scalar> ST;
 
@@ -87,7 +92,11 @@ namespace {
     // create a Map
     const size_t numLocal = 1; // change to 10
     RCP<const map_type> map =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::createContigMapWithNode<LO, GO, Node> (INVALID, numLocal, comm);
+#else
+      Tpetra::createContigMapWithNode<Node> (INVALID, numLocal, comm);
+#endif
     RCP<ParameterList> params = parameterList ();
     {
       if (myRank == 0) {
@@ -186,7 +195,11 @@ namespace {
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+#endif
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, MultipleFillCompletes, LO, GO, SCALAR, NODE )
 
   TPETRA_ETI_MANGLING_TYPEDEFS()

@@ -51,13 +51,23 @@
  |  ctor (public)                                            mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::ManagerT(const Teuchos::RCP<const Teuchos::Comm<LO> >& comm, int outlevel) :
+#else
+MoertelT::ManagerT<ST, N>::ManagerT(const Teuchos::RCP<const Teuchos::Comm<LO> >& comm, int outlevel) :
+#endif
 	outlevel_(outlevel),
 	comm_(comm),
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	dimensiontype_(MoertelT::ManagerT<ST, LO, GO, N>::manager_none),
+#else
+	dimensiontype_(MoertelT::ManagerT<ST, N>::manager_none),
+#endif
 	problemmap_(Teuchos::null),
 	inputmatrix_(Teuchos::null),
 	constraintsmap_(Teuchos::null),
@@ -83,11 +93,18 @@ MoertelT::ManagerT<ST, LO, GO, N>::ManagerT(const Teuchos::RCP<const Teuchos::Co
  |  ctor (public)                                            mwgee 03/06|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::ManagerT(const Teuchos::RCP<const Teuchos::Comm<LO> >& comm, 
                           MoertelT::ManagerT<ST, LO, GO, N>::DimensionType dimension, 
+#else
+MoertelT::ManagerT<ST, N>::ManagerT(const Teuchos::RCP<const Teuchos::Comm<LO> >& comm, 
+                          MoertelT::ManagerT<ST, N>::DimensionType dimension, 
+#endif
                           int outlevel) :
 outlevel_(outlevel),
 comm_(comm),
@@ -117,10 +134,16 @@ solver_(Teuchos::null)
  |  dtor (public)                                            mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::~ManagerT()
+#else
+MoertelT::ManagerT<ST, N>::~ManagerT()
+#endif
 {
   interface_.clear();
 }
@@ -129,11 +152,17 @@ MoertelT::ManagerT<ST, LO, GO, N>::~ManagerT()
  |  Add an interface (public)                                mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 Teuchos::ParameterList& 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::Default_Parameters()
+#else
+MoertelT::ManagerT<ST, N>::Default_Parameters()
+#endif
 {
   if (integrationparams_==Teuchos::null)
   {
@@ -152,10 +181,16 @@ MoertelT::ManagerT<ST, LO, GO, N>::Default_Parameters()
  |  << operator                                              mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 std::ostream& operator << (std::ostream& os, const MoertelT::ManagerT<ST, LO, GO, N>& man)
+#else
+std::ostream& operator << (std::ostream& os, const MoertelT::ManagerT<ST, N>& man)
+#endif
 { 
   man.Print();
   return (os);
@@ -165,11 +200,17 @@ std::ostream& operator << (std::ostream& os, const MoertelT::ManagerT<ST, LO, GO
  |  print all data                                           mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::Print() const
+#else
+MoertelT::ManagerT<ST, N>::Print() const
+#endif
 { 
   comm_->barrier();
 
@@ -179,10 +220,18 @@ MoertelT::ManagerT<ST, LO, GO, N>::Print() const
   
   comm_->barrier();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::const_iterator curr;
+#else
+  typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::const_iterator curr;
+#endif
   for (curr=interface_.begin(); curr!=interface_.end(); ++curr)
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > inter = curr->second;
+#else
+	Teuchos::RCP<MoertelT::InterfaceT<ST, N> > inter = curr->second;
+#endif
     if (inter==Teuchos::null)
     {
       std::cout << "***ERR*** MoertelT::ManagerT::Print:\n"
@@ -237,11 +286,17 @@ MoertelT::ManagerT<ST, LO, GO, N>::Print() const
  |  Add an interface (public)                                mwgee 06/05|
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::AddInterface(const Teuchos::RCP<const MoertelT::InterfaceT<ST, LO, GO, N> >& interface) 
+#else
+MoertelT::ManagerT<ST, N>::AddInterface(const Teuchos::RCP<const MoertelT::InterfaceT<ST, N> >& interface) 
+#endif
 {
   if (!interface->IsComplete())
   {
@@ -251,9 +306,15 @@ MoertelT::ManagerT<ST, LO, GO, N>::AddInterface(const Teuchos::RCP<const Moertel
     return false;
   }
   
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > tmp = 
       Teuchos::rcp(new MoertelT::InterfaceT<ST, LO, GO, N>(*interface));
   interface_.insert(std::pair<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >(tmp->Id(),tmp));
+#else
+  Teuchos::RCP<MoertelT::InterfaceT<ST, N> > tmp = 
+      Teuchos::rcp(new MoertelT::InterfaceT<ST, N>(*interface));
+  interface_.insert(std::pair<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >(tmp->Id(),tmp));
+#endif
   
   return true;
 }
@@ -263,11 +324,18 @@ MoertelT::ManagerT<ST, LO, GO, N>::AddInterface(const Teuchos::RCP<const Moertel
  | Note that this is collective for ALL procs                           |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::Map<LO, GO, N> > 
 MoertelT::ManagerT<ST, LO, GO, N> ::LagrangeMultiplierDofs()
+#else
+Teuchos::RCP<Tpetra::Map<N> > 
+MoertelT::ManagerT<ST, N> ::LagrangeMultiplierDofs()
+#endif
 {
   if (problemmap_==Teuchos::null)
   {
@@ -296,7 +364,11 @@ MoertelT::ManagerT<ST, LO, GO, N> ::LagrangeMultiplierDofs()
 
   // start with minLMGID and return maxLMGID+1 on a specific interface
   // Note this is collective for ALL procs
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typename std::map<int, Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+  typename std::map<int, Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
   for (curr=interface_.begin(); curr != interface_.end(); ++curr)
   {
     length -= minLMGID;
@@ -319,7 +391,11 @@ MoertelT::ManagerT<ST, LO, GO, N> ::LagrangeMultiplierDofs()
   // and add it to the global one
   for (curr=interface_.begin(); curr != interface_.end(); ++curr)
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > inter = curr->second;
+#else
+	Teuchos::RCP<MoertelT::InterfaceT<ST, N> > inter = curr->second;
+#endif
 	std::vector<GO>* lmids = inter->MyLMIds();
     if (count+lmids->size() > mylmids.size())
       mylmids.resize(mylmids.size()+5*lmids->size());
@@ -336,15 +412,27 @@ MoertelT::ManagerT<ST, LO, GO, N> ::LagrangeMultiplierDofs()
   // Note that this map contains the global communicator from the MoertelT::Manager
   // NOT any interface local one
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::Map<LO, GO, N> > map;
+#else
+  Teuchos::RCP<Tpetra::Map<N> > map;
+#endif
 
   if(lsize == 0) // this PE contributes nothing to the global map
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	map = Teuchos::rcp(new Tpetra::Map<LO, GO, N> (gsize,NULL,0,0,comm_));
+#else
+	map = Teuchos::rcp(new Tpetra::Map<N> (gsize,NULL,0,0,comm_));
+#endif
 
   else
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	map = Teuchos::rcp(new Tpetra::Map<LO, GO, N> (gsize,&(mylmids[0]),lsize,0,comm_));
+#else
+	map = Teuchos::rcp(new Tpetra::Map<N> (gsize,&(mylmids[0]),lsize,0,comm_));
+#endif
 
   // tidy up
   mylmids.clear();
@@ -357,16 +445,26 @@ MoertelT::ManagerT<ST, LO, GO, N> ::LagrangeMultiplierDofs()
  |  Note: All processors have to go in here!                            |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::Mortar_Integrate()
+#else
+MoertelT::ManagerT<ST, N>::Mortar_Integrate()
+#endif
 {
 		bool status;
   //-------------------------------------------------------------------
   // check for problem dimension
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if (Dimension() == MoertelT::ManagerT<ST, LO, GO, N>::manager_2D){
+#else
+  if (Dimension() == MoertelT::ManagerT<ST, N>::manager_2D){
+#endif
 
     status = Integrate_Interfaces_2D();
 
@@ -374,7 +472,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Mortar_Integrate()
 
     status = Build_MD_2D();
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   else if (Dimension() == MoertelT::ManagerT<ST, LO, GO, N>::manager_3D){
+#else
+  else if (Dimension() == MoertelT::ManagerT<ST, N>::manager_3D){
+#endif
 
     status = Integrate_Interfaces_3D();
 
@@ -398,18 +500,32 @@ MoertelT::ManagerT<ST, LO, GO, N>::Mortar_Integrate()
  |  Note: All processors have to go in here!                            |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces()
+#else
+MoertelT::ManagerT<ST, N>::Integrate_Interfaces()
+#endif
 {
 		bool status;
   //-------------------------------------------------------------------
   // check for problem dimension
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if (Dimension() == MoertelT::ManagerT<ST, LO, GO, N>::manager_2D)
+#else
+  if (Dimension() == MoertelT::ManagerT<ST, N>::manager_2D)
+#endif
     status = Integrate_Interfaces_2D();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   else if (Dimension() == MoertelT::ManagerT<ST, LO, GO, N>::manager_3D)
+#else
+  else if (Dimension() == MoertelT::ManagerT<ST, N>::manager_3D)
+#endif
     status = Integrate_Interfaces_3D();
   else
   {
@@ -605,22 +721,37 @@ bool MoertelT::Manager::Mortar_Integrate_2D()
  |  Note: All processors have to go in here!                            |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::Build_MD_2D()
+#else
+MoertelT::ManagerT<ST, N>::Build_MD_2D()
+#endif
 {
 
   //-------------------------------------------------------------------
   // build the Tpetra_CrsMatrix D and M
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   D_ = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(saddlemap_,5));
   M_ = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(saddlemap_,40));
+#else
+  D_ = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(saddlemap_,5));
+  M_ = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(saddlemap_,40));
+#endif
 
   //-------------------------------------------------------------------
   // now that we have all maps and dofs we can assemble from the nodes
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {  
       bool ok = curr->second->Mortar_Assemble(*D_,*M_);
@@ -655,16 +786,26 @@ MoertelT::ManagerT<ST, LO, GO, N>::Build_MD_2D()
  |  Note: All processors have to go in here!                            |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_2D()
+#else
+MoertelT::ManagerT<ST, N>::Integrate_Interfaces_2D()
+#endif
 {
 
   //-------------------------------------------------------------------
   // check for problem dimension
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if (Dimension() != MoertelT::ManagerT<ST, LO, GO, N>::manager_2D)
+#else
+  if (Dimension() != MoertelT::ManagerT<ST, N>::manager_2D)
+#endif
   {
     std::cout << "***ERR*** MoertelT::ManagerT::Integrate_Interfaces_2D:\n"
          << "***ERR*** problem dimension is not 2D?????\n"
@@ -692,7 +833,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_2D()
   // check whether we have a mortar side chosen on each interface or 
   // whether we have to chose it here
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     bool foundit = true;
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {
@@ -712,7 +857,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_2D()
   // if not, check for functions flag and set them
   {
     bool foundit = true;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {
       int nseg             = curr->second->GlobalNsegment();
@@ -732,7 +881,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_2D()
   //-------------------------------------------------------------------
   // build normals for all interfaces
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {
       bool ok = curr->second->BuildNormals();
@@ -753,7 +906,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_2D()
   // The choice of the Mortar side in the case of several interfaces
   // is then arbitrary
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {
       bool ok = curr->second->DetectEndSegmentsandReduceOrder();
@@ -774,7 +931,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_2D()
   // in advance. All integrated rows of D and M are stored as
   // scalars in the nodes
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {  
       bool ok = curr->second->Mortar_Integrate_2D(integrationparams_);
@@ -824,22 +985,37 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_2D()
  |  Note: All processors have to go in here!                            |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::Build_MD_3D()
+#else
+MoertelT::ManagerT<ST, N>::Build_MD_3D()
+#endif
 {
 
   //-------------------------------------------------------------------
   // build the Tpetra_CrsMatrix D and M
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   D_ = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(saddlemap_,50));
   M_ = Teuchos::rcp(new Tpetra::CrsMatrix<ST, LO, GO, N>(saddlemap_,100));
+#else
+  D_ = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(saddlemap_,50));
+  M_ = Teuchos::rcp(new Tpetra::CrsMatrix<ST, N>(saddlemap_,100));
+#endif
 
   //-------------------------------------------------------------------
   // now that we have all maps and dofs we can assemble from the nodes
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {  
       bool ok = curr->second->Mortar_Assemble(*D_,*M_);
@@ -877,15 +1053,25 @@ MoertelT::ManagerT<ST, LO, GO, N>::Build_MD_3D()
  |  Note: All processors have to go in here!                            |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_3D()
+#else
+MoertelT::ManagerT<ST, N>::Integrate_Interfaces_3D()
+#endif
 {
   //-------------------------------------------------------------------
   // check for problem dimension
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if (Dimension() != MoertelT::ManagerT<ST, LO, GO, N>::manager_3D)
+#else
+  if (Dimension() != MoertelT::ManagerT<ST, N>::manager_3D)
+#endif
   {
     std::cout << "***ERR*** MoertelT::ManagerT::Integrate_Interfaces_3D:\n"
          << "***ERR*** problem dimension is not 3D?????\n"
@@ -913,7 +1099,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_3D()
   // check whether we have a mortar side chosen on each interface or 
   // whether we have to chose it here
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     bool foundit = true;
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {
@@ -933,7 +1123,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_3D()
   // if not, check for functions flags and set functions from them
   {
     bool foundit = true;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {
       const int nseg          = curr->second->GlobalNsegment();
@@ -953,7 +1147,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_3D()
   //-------------------------------------------------------------------
   // build normals for all interfaces
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {
       bool ok = curr->second->BuildNormals();
@@ -974,7 +1172,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_3D()
   // The choice of the Mortar side in the case of several interfaces
   // is then arbitrary
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {
       bool ok = curr->second->DetectEndSegmentsandReduceOrder();
@@ -991,7 +1193,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_3D()
   //-------------------------------------------------------------------
   // integrate all interfaces
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {  
       bool ok = curr->second->Mortar_Integrate(integrationparams_);
@@ -1039,17 +1245,27 @@ MoertelT::ManagerT<ST, LO, GO, N>::Integrate_Interfaces_3D()
  | Assemble interface nodes times soln into JFNK residual vector
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::AssembleInterfacesIntoResidual(MOERTEL::Lmselector *sel)
+#else
+MoertelT::ManagerT<ST, N>::AssembleInterfacesIntoResidual(MOERTEL::Lmselector *sel)
+#endif
 {
 
   //-------------------------------------------------------------------
   // now that we have all maps and dofs we can assemble from the nodes
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+	typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
     for (curr=interface_.begin(); curr != interface_.end(); ++curr)
     {  
       bool ok = curr->second->AssembleJFNKVec(sel);
@@ -1072,15 +1288,26 @@ MoertelT::ManagerT<ST, LO, GO, N>::AssembleInterfacesIntoResidual(MOERTEL::Lmsel
  |  choose the mortar side                                              |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::ChooseMortarSide()
+#else
+MoertelT::ManagerT<ST, N>::ChooseMortarSide()
+#endif
 {
   // find all interfaces
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > > inter(Ninterfaces());
   typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+  std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, N> > > inter(Ninterfaces());
+  typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
   curr=interface_.begin();
   int count = 0;
   for (curr=interface_.begin(); curr != interface_.end(); ++curr)
@@ -1092,9 +1319,17 @@ MoertelT::ManagerT<ST, LO, GO, N>::ChooseMortarSide()
   
   // call choice of the mortar side for all 1D interfaces
   bool ok = false; 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if (Dimension() == MoertelT::ManagerT<ST, LO, GO, N>::manager_2D)
+#else
+  if (Dimension() == MoertelT::ManagerT<ST, N>::manager_2D)
+#endif
     ok = ChooseMortarSide_2D(inter);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   if (Dimension() == MoertelT::ManagerT<ST, LO, GO, N>::manager_3D)
+#else
+  if (Dimension() == MoertelT::ManagerT<ST, N>::manager_3D)
+#endif
     ok = ChooseMortarSide_3D(inter);
 
   // tidy up
@@ -1109,11 +1344,17 @@ MoertelT::ManagerT<ST, LO, GO, N>::ChooseMortarSide()
  |  choose the mortar side                                              |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::ChooseMortarSide_3D(std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >& inter)
+#else
+MoertelT::ManagerT<ST, N>::ChooseMortarSide_3D(std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >& inter)
+#endif
 {
   // loop interfaces and choose the side with less nodes as slave side
   // (only if not already chosen on some interface)
@@ -1133,11 +1374,17 @@ MoertelT::ManagerT<ST, LO, GO, N>::ChooseMortarSide_3D(std::vector<Teuchos::RCP<
  |  choose the mortar side                                              |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::ChooseMortarSide_2D(std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >& inter)
+#else
+MoertelT::ManagerT<ST, N>::ChooseMortarSide_2D(std::vector<Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >& inter)
+#endif
 {
   // loop interfaces and choose the side with less nodes as slave side
   // (only if not already chosen on some interface)
@@ -1613,14 +1860,24 @@ bool MoertelT::Manager::ChooseMortarSide_2D(std::vector<Teuchos::RCP<MoertelT::I
 #endif
 
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::ManagerT<ST, LO, GO, N>::BuildSaddleMap()
+#else
+MoertelT::ManagerT<ST, N>::BuildSaddleMap()
+#endif
 {
   // check whether all interfaces are complete and integrated
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, LO, GO, N> > >::iterator curr;
+#else
+  typename std::map<int,Teuchos::RCP<MoertelT::InterfaceT<ST, N> > >::iterator curr;
+#endif
   for (curr=interface_.begin(); curr != interface_.end(); ++curr)
   {
     if (curr->second->IsComplete() == false)
@@ -1670,7 +1927,11 @@ MoertelT::ManagerT<ST, LO, GO, N>::BuildSaddleMap()
          << "***ERR*** file/line: " << __FILE__ << "/" << __LINE__ << "\n";
     return false;
   }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   saddlemap_ = Teuchos::rcp(new Tpetra::Map<LO, GO, N>(numglobalelements, &(myglobalelements[0]), 
+#else
+  saddlemap_ = Teuchos::rcp(new Tpetra::Map<N>(numglobalelements, &(myglobalelements[0]), 
+#endif
        nummyelements, 0, comm_));
   myglobalelements.clear();
 

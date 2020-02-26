@@ -64,16 +64,28 @@ namespace MueLu {
    This class holds an underlying Xpetra_CrsGraph.
    This class can be considered a facade, as MueLu needs only limited functionality for aggregation.
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
             class Node = DefaultNode>
+#else
+  template <class Node = DefaultNode>
+#endif
   class Graph
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public MueLu::GraphBase<LocalOrdinal,GlobalOrdinal,Node> { //FIXME  shortnames isn't working
+#else
+    : public MueLu::GraphBase<Node> { //FIXME  shortnames isn't working
+#endif
 #undef MUELU_GRAPH_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors.
     //@{
     Graph(const RCP<const CrsGraph> & graph, const std::string & /* objectLabel */="") : graph_(graph) {

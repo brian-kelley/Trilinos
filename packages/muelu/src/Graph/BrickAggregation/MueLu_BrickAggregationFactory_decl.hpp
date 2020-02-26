@@ -76,13 +76,19 @@
 namespace MueLu {
 
   template<class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
            class Node = DefaultNode>
   class BrickAggregationFactory : public SingleLevelFactoryBase {
 #undef MUELU_BRICKAGGREGATIONFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
   private:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Teuchos::ScalarTraits<Scalar>                                  STS;
 
     // Comparator for doubles
@@ -133,7 +139,11 @@ namespace MueLu {
     //@}
 
   private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void Setup(const RCP<const Teuchos::Comm<int> >& comm, const RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> >& coords, const RCP<const Map>& map) const;
+#else
+    void Setup(const RCP<const Teuchos::Comm<int> >& comm, const RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> >& coords, const RCP<const Map>& map) const;
+#endif
     RCP<container> Construct1DMap(const RCP<const Teuchos::Comm<int> >& comm, const ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::magnitudeType>& x) const;
 
     bool           isRoot  (LocalOrdinal LID) const;

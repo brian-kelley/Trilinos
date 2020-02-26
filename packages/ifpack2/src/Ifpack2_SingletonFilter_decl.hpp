@@ -69,7 +69,11 @@ public:
   typedef typename MatrixType::global_ordinal_type GlobalOrdinal;
   typedef typename MatrixType::node_type Node;
   typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType magnitudeType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> row_matrix_type;
+#else
+  typedef Tpetra::RowMatrix<Scalar, Node> row_matrix_type;
+#endif
   typedef typename row_matrix_type::mag_type mag_type;
 
   static_assert(std::is_same<MatrixType, row_matrix_type>::value, "Ifpack2::SingletonFilter: The template parameter MatrixType must be a Tpetra::RowMatrix specialization.  Please don't use Tpetra::CrsMatrix (a subclass of Tpetra::RowMatrix) here anymore.");
@@ -78,7 +82,11 @@ public:
   //@{
 
   //! Constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   explicit SingletonFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& Matrix);
+#else
+  explicit SingletonFilter(const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> >& Matrix);
+#endif
 
   //! Destructor.
   virtual ~SingletonFilter();
@@ -93,19 +101,39 @@ public:
 
 
   //! Returns the Map that describes the row distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRowMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getRowMap() const;
+#endif
 
   //! \brief Returns the Map that describes the column distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getColMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getColMap() const;
+#endif
 
   //! Returns the Map that describes the domain distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getDomainMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getDomainMap() const;
+#endif
 
   //! \brief Returns the Map that describes the range distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > getRangeMap() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::Map<Node> > getRangeMap() const;
+#endif
 
   //! Returns the RowGraph associated with this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual Teuchos::RCP<const Tpetra::RowGraph<LocalOrdinal,GlobalOrdinal,Node> > getGraph() const;
+#else
+  virtual Teuchos::RCP<const Tpetra::RowGraph<Node> > getGraph() const;
+#endif
 
   //! Returns the number of global rows in this matrix.
   virtual global_size_t getGlobalNumRows() const;
@@ -225,7 +253,11 @@ public:
   //! \brief Get a copy of the diagonal entries owned by this node, with local row indices.
   /*! Returns a distributed Vector object partitioned according to this matrix's row map, containing the
     the zero and non-zero diagonals owned by this node. */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void getLocalDiagCopy(Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &diag) const;
+#else
+  virtual void getLocalDiagCopy(Tpetra::Vector<Scalar,Node> &diag) const;
+#endif
 
   //@}
 
@@ -241,7 +273,11 @@ public:
    *
    * \param x A vector to left scale this matrix.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void leftScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x);
+#else
+  virtual void leftScale(const Tpetra::Vector<Scalar, Node>& x);
+#endif
 
   /**
    * \brief Scales the RowMatrix on the right with the Vector x.
@@ -252,7 +288,11 @@ public:
    *
    * \param x A vector to right scale this matrix.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void rightScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x);
+#else
+  virtual void rightScale(const Tpetra::Vector<Scalar, Node>& x);
+#endif
 
   //! Returns the Frobenius norm of the matrix.
   /** Computes and returns the Frobenius norm of the matrix, defined as:
@@ -266,8 +306,13 @@ public:
     - if <tt>beta == 0</tt>, apply() <b>must</b> overwrite \c Y, so that any values in \c Y (including NaNs) are ignored.
     - if <tt>alpha == 0</tt>, apply() <b>may</b> short-circuit the operator, so that any values in \c X (including NaNs) are ignored.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void apply(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
                      Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+  virtual void apply(const Tpetra::MultiVector<Scalar,Node> &X,
+                     Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
                      Teuchos::ETransp mode = Teuchos::NO_TRANS,
                      Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
                      Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const;
@@ -276,41 +321,85 @@ public:
   virtual bool hasTransposeApply() const;
 
   //! Solve the singleton components of the linear system
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void SolveSingletons(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& RHS,
                       Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& LHS);
+#else
+  virtual void SolveSingletons(const Tpetra::MultiVector<Scalar,Node>& RHS,
+                      Tpetra::MultiVector<Scalar,Node>& LHS);
+#endif
 
   template <class DomainScalar, class RangeScalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void SolveSingletonsTempl(const Tpetra::MultiVector<DomainScalar,LocalOrdinal,GlobalOrdinal,Node>& RHS,
                             Tpetra::MultiVector<RangeScalar,LocalOrdinal,GlobalOrdinal,Node>& LHS);
+#else
+  void SolveSingletonsTempl(const Tpetra::MultiVector<DomainScalar,Node>& RHS,
+                            Tpetra::MultiVector<RangeScalar,Node>& LHS);
+#endif
 
   //! Creates a RHS for the reduced singleton-free system
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void CreateReducedRHS(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& LHS,
                        const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& RHS,
                        Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& ReducedRHS);
+#else
+  virtual void CreateReducedRHS(const Tpetra::MultiVector<Scalar,Node>& LHS,
+                       const Tpetra::MultiVector<Scalar,Node>& RHS,
+                       Tpetra::MultiVector<Scalar,Node>& ReducedRHS);
+#endif
 
   template <class DomainScalar, class RangeScalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void CreateReducedRHSTempl(const Tpetra::MultiVector<DomainScalar,LocalOrdinal,GlobalOrdinal,Node>& LHS,
                              const Tpetra::MultiVector<RangeScalar,LocalOrdinal,GlobalOrdinal,Node>& RHS,
                              Tpetra::MultiVector<RangeScalar,LocalOrdinal,GlobalOrdinal,Node>& ReducedRHS);
+#else
+  void CreateReducedRHSTempl(const Tpetra::MultiVector<DomainScalar,Node>& LHS,
+                             const Tpetra::MultiVector<RangeScalar,Node>& RHS,
+                             Tpetra::MultiVector<RangeScalar,Node>& ReducedRHS);
+#endif
 
   //! Updates a full LHS from a reduces LHS
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   virtual void UpdateLHS(const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& ReducedLHS,
                 Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& LHS);
+#else
+  virtual void UpdateLHS(const Tpetra::MultiVector<Scalar,Node>& ReducedLHS,
+                Tpetra::MultiVector<Scalar,Node>& LHS);
+#endif
 
   template <class DomainScalar, class RangeScalar>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   void UpdateLHSTempl(const Tpetra::MultiVector<DomainScalar,LocalOrdinal,GlobalOrdinal,Node>& ReducedLHS,
                       Tpetra::MultiVector<RangeScalar,LocalOrdinal,GlobalOrdinal,Node>& LHS);
+#else
+  void UpdateLHSTempl(const Tpetra::MultiVector<DomainScalar,Node>& ReducedLHS,
+                      Tpetra::MultiVector<RangeScalar,Node>& LHS);
+#endif
 
 
   //@}
 private:
 
   //! Pointer to the matrix to be preconditioned.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > A_;
+#else
+  Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> > A_;
+#endif
   //! Map containing the non-singleton rows only.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > ReducedMap_;
+#else
+  Teuchos::RCP<const Tpetra::Map<Node> > ReducedMap_;
+#endif
   //! Reduced diagonal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > Diagonal_;
+#else
+  Teuchos::RCP<Tpetra::Vector<Scalar,Node> > Diagonal_;
+#endif
   //! Number of Singletons
   size_t NumSingletons_;
   //! Indices of the singletons

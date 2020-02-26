@@ -52,14 +52,22 @@ namespace Tpetra {
 namespace Details {
 
 //! Deep copy of A's local sparse matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class SC, class LO, class GO, class NT>
+#else
+template <class SC, class NT>
+#endif
 KokkosSparse::CrsMatrix<
   typename Kokkos::ArithTraits<SC>::val_type,
     LO,
     typename NT::execution_space,
     void>
 localDeepCopyLocallyIndexedRowMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   (const RowMatrix<SC, LO, GO, NT>& A,
+#else
+  (const RowMatrix<SC, NT>& A,
+#endif
    const char label[]);
 
 } // namespace Details

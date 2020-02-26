@@ -56,7 +56,11 @@
 namespace MueLuTests {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(VariableDofLaplacianFactory, VarLaplConstructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(VariableDofLaplacianFactory, VarLaplConstructor, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -69,7 +73,11 @@ namespace MueLuTests {
     using magnitude_type        = typename TST::magnitudeType;
     using TMT                   = Teuchos::ScalarTraits<magnitude_type>;
     using real_type             = typename TST::coordinateType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using RealValuedMultiVector = Xpetra::MultiVector<real_type,LO,GO,NO>;
+#else
+    using RealValuedMultiVector = Xpetra::MultiVector<real_type,NO>;
+#endif
 
     RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
 
@@ -116,7 +124,11 @@ namespace MueLuTests {
     TEST_COMPARE(res->normInf(),<, 100*TMT::eps());
   } // VarLaplConstructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(VariableDofLaplacianFactory, VarLaplConstructor2, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(VariableDofLaplacianFactory, VarLaplConstructor2, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -128,7 +140,11 @@ namespace MueLuTests {
     using magnitude_type        = typename TST::magnitudeType;
     using TMT                   = Teuchos::ScalarTraits<magnitude_type>;
     using real_type             = typename TST::coordinateType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using RealValuedMultiVector = Xpetra::MultiVector<real_type,LO,GO,NO>;
+#else
+    using RealValuedMultiVector = Xpetra::MultiVector<real_type,NO>;
+#endif
 
     RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
 
@@ -143,7 +159,11 @@ namespace MueLuTests {
     Teuchos::ParameterList galeriList;
     galeriList.set("nx", nx);
     galeriList.set("ny", ny);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> nodeMap = Galeri::Xpetra::CreateMap<LocalOrdinal, GlobalOrdinal, Node>(lib, "Cartesian2D", comm, galeriList);
+#else
+    RCP<const Map> nodeMap = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian2D", comm, galeriList);
+#endif
 
     //build coordinates before expanding map (nodal coordinates, not dof-based)
     RCP<RealValuedMultiVector> coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LocalOrdinal,GlobalOrdinal,Map,RealValuedMultiVector>("2D", nodeMap, galeriList);
@@ -217,7 +237,11 @@ namespace MueLuTests {
     //lapA2->describe(out, Teuchos::VERB_EXTREME);
   } // VarLaplConstructor2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(VariableDofLaplacianFactory, VarLaplPtent, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(VariableDofLaplacianFactory, VarLaplPtent, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -226,7 +250,11 @@ namespace MueLuTests {
     out << "version: " << MueLu::Version() << std::endl;
 
     typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
     RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
 
@@ -237,14 +265,23 @@ namespace MueLuTests {
 
     GlobalOrdinal nx = 6, ny = 6;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> mv_type_double;
     typedef Xpetra::MultiVectorFactory<double,LocalOrdinal,GlobalOrdinal,Node> MVFactory_double;
+#else
+    typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> mv_type_double;
+    typedef Xpetra::MultiVectorFactory<double,Node> MVFactory_double;
+#endif
 
     // Describes the initial layout of matrix rows across processors.
     Teuchos::ParameterList galeriList;
     galeriList.set("nx", nx);
     galeriList.set("ny", ny);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map> nodeMap = Galeri::Xpetra::CreateMap<LocalOrdinal, GlobalOrdinal, Node>(lib, "Cartesian2D", comm, galeriList);
+#else
+    RCP<const Map> nodeMap = Galeri::Xpetra::CreateMap<Node>(lib, "Cartesian2D", comm, galeriList);
+#endif
 
     //build coordinates before expanding map (nodal coordinates, not dof-based)
     RCP<RealValuedMultiVector> coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<double,LocalOrdinal,GlobalOrdinal,Map,RealValuedMultiVector>("2D", nodeMap, galeriList);
@@ -270,7 +307,11 @@ namespace MueLuTests {
 
     // build hierarchy
     typedef Teuchos::ScalarTraits<Scalar> TST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> test_factory;
+#else
+    typedef TestHelpers::TestFactory<Scalar, Node> test_factory;
+#endif
 
     // generate laplacian matrix using level l
     Level l;
@@ -302,10 +343,17 @@ namespace MueLuTests {
     TEST_EQUALITY(pMat->getNodeNumEntries(), pMat->getRowMap()->getNodeNumElements());
   } // VarLaplPtent
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(VariableDofLaplacianFactory, VarLaplConstructor, SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(VariableDofLaplacianFactory, VarLaplConstructor2, SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(VariableDofLaplacianFactory, VarLaplPtent, SC, LO, GO, Node) \
+#else
+#  define MUELU_ETI_GROUP(SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(VariableDofLaplacianFactory, VarLaplConstructor, SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(VariableDofLaplacianFactory, VarLaplConstructor2, SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(VariableDofLaplacianFactory, VarLaplPtent, SC, Node) \
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 }

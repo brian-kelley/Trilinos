@@ -96,7 +96,11 @@ public:
 // Compare the number of unique IDs in the three maps; the test passes if
 // the number of unique IDs matches.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename LO, typename GO, typename NO>
+#else
+template <typename NO>
+#endif
 int runTest(
   const char *message,
   std::ostream &outStream,   // allows varying levels of output
@@ -112,7 +116,11 @@ int runTest(
   try {
     Teuchos::Array<GO> arrP0(vecP0), arrP1(vecP1), arrP2(vecP2), arrP3(vecP3);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO,GO,NO> map_t;
+#else
+    typedef Tpetra::Map<NO> map_t;
+#endif
     Teuchos::RCP<map_t> overlapMap;
     GreedyTieBreak<LO,GO> greedy_tie_break;
 
@@ -146,7 +154,11 @@ int runTest(
 
     // Create non-overlap Map with TieBreak function
     Teuchos::RCP<const map_t> nonOverlapMapTB =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              Tpetra::createOneToOne<LO,GO,NO>(overlapMap, greedy_tie_break);
+#else
+             Tpetra::createOneToOne<NO>(overlapMap, greedy_tie_break);
+#endif
 
     std::cout << message
               << ": After Tpetra::createOneToOne with TieBreak on Proc "
@@ -162,7 +174,11 @@ int runTest(
 
     // Create non-overlap Map without TieBreak function
     Teuchos::RCP<const map_t> nonOverlapMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              Tpetra::createOneToOne<LO,GO,NO>(overlapMap);
+#else
+             Tpetra::createOneToOne<NO>(overlapMap);
+#endif
 
     std::cout << message
               << ": After Tpetra::createOneToOne without TieBreak on Proc "
@@ -289,12 +305,20 @@ int main(int narg, char *arg[]) {
         2936, 2937, 2938, 2939, 2940, 2941, 2942, 2943, 2944, 2945, 2948, 2951,
         2954, 2956, 2957, 2958, 2959, 2960, 2961, 2962};
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     errorFlag += runTest<LO,GO,NO>("sparseTest", outStream, comm,
+#else
+    errorFlag += runTest<NO>("sparseTest", outStream, comm,
+#endif
                                    vecP0, vecP1, vecP2, vecP3);
 
     // Make sure it works if some process has no data
     std::vector<GO> empty = { } ;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     errorFlag += runTest<LO,GO,NO>("sparseTestEmptyP2", outStream, comm,
+#else
+    errorFlag += runTest<NO>("sparseTestEmptyP2", outStream, comm,
+#endif
                                    vecP0, vecP1, empty, vecP3);
   }
 
@@ -327,12 +351,20 @@ int main(int narg, char *arg[]) {
         636, 637, 638, 639, 640, 641, 642, 643, 644, 645, 648, 651,
         654, 656, 657, 658, 659, 660, 661, 662};
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     errorFlag += runTest<LO,GO,NO>("denseTest", outStream, comm,
+#else
+    errorFlag += runTest<NO>("denseTest", outStream, comm,
+#endif
                                    vecP0, vecP1, vecP2, vecP3);
 
     // Make sure it works if some process has no data
     std::vector<GO> empty = { } ;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     errorFlag += runTest<LO,GO,NO>("denseTestEmptyP2", outStream, comm,
+#else
+    errorFlag += runTest<NO>("denseTestEmptyP2", outStream, comm,
+#endif
                                    vecP0, vecP1, empty, vecP3);
   }
 

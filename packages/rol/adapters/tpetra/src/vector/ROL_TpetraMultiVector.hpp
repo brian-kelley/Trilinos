@@ -66,7 +66,11 @@ namespace TPMultiVector {
           class GO=Tpetra::Map<>::global_ordinal_type,
           class Node=Tpetra::Map<>::node_type >
   struct unaryFunc {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Tpetra::MultiVector<Real,LO,GO,Node>::dual_view_type::t_dev ViewType;
+#else
+    typedef typename Tpetra::MultiVector<Real,Node>::dual_view_type::t_dev ViewType;
+#endif
     typedef typename ViewType::execution_space execution_space;
     ViewType X_;
     const Elementwise::UnaryFunction<Real>* const f_;
@@ -89,7 +93,11 @@ namespace TPMultiVector {
             class GO=Tpetra::Map<>::global_ordinal_type,
             class Node=Tpetra::Map<>::node_type >
    struct binaryFunc {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Tpetra::MultiVector<Real,LO,GO,Node>::dual_view_type::t_dev ViewType;
+#else
+    typedef typename Tpetra::MultiVector<Real,Node>::dual_view_type::t_dev ViewType;
+#endif
     typedef typename ViewType::execution_space execution_space;
     ViewType X_;
     ViewType Y_;
@@ -113,7 +121,11 @@ namespace TPMultiVector {
             class GO=Tpetra::Map<>::global_ordinal_type,
             class Node=Tpetra::Map<>::node_type >
   struct reduceFunc {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Tpetra::MultiVector<Real,LO,GO,Node>::dual_view_type::t_dev ViewType;
+#else
+    typedef typename Tpetra::MultiVector<Real,Node>::dual_view_type::t_dev ViewType;
+#endif
     typedef typename ViewType::execution_space execution_space;
     ViewType X_;
     const Elementwise::ReductionOp<Real>* const r_;
@@ -153,19 +165,32 @@ template <class Real,
           class Node=Tpetra::Map<>::node_type >
 class TpetraMultiVector : public Vector<Real> {
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > tpetra_vec_;
   const Ptr<const Tpetra::Map<LO,GO,Node> > map_;
+#else
+  const Ptr<Tpetra::MultiVector<Real,Node> > tpetra_vec_;
+  const Ptr<const Tpetra::Map<Node> > map_;
+#endif
   const Ptr<const Teuchos::Comm<int> > comm_;
 
 protected:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   const Ptr<const Tpetra::Map<LO,GO,Node> > getMap(void) const {
+#else
+  const Ptr<const Tpetra::Map<Node> > getMap(void) const {
+#endif
     return map_;
   }
 
 public:
   virtual ~TpetraMultiVector() {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TpetraMultiVector(const Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec)
+#else
+  TpetraMultiVector(const Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec)
+#endif
     : tpetra_vec_(tpetra_vec), map_(tpetra_vec_->getMap()), comm_(map_->getComm()) {}
 
   /** \brief Assign \f$y \leftarrow x \f$ where \f$y = \mbox{*this}\f$.
@@ -234,7 +259,11 @@ public:
   virtual Ptr<Vector<Real> > clone() const {
     size_t n = tpetra_vec_->getNumVectors();
     return makePtr<TpetraMultiVector>(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(map_,n));
+#else
+           makePtr<Tpetra::MultiVector<Real,Node>>(map_,n));
+#endif
   }
 
   /**  \brief Set to zero vector.
@@ -252,11 +281,19 @@ public:
     tpetra_vec_->randomize(static_cast<double>(l),static_cast<double>(u));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Ptr<const Tpetra::MultiVector<Real,LO,GO,Node> > getVector() const {
+#else
+  Ptr<const Tpetra::MultiVector<Real,Node> > getVector() const {
+#endif
     return tpetra_vec_;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > getVector() {
+#else
+  Ptr<Tpetra::MultiVector<Real,Node> > getVector() {
+#endif
     return tpetra_vec_;
   }
 
@@ -268,7 +305,11 @@ public:
     const size_t n = tpetra_vec_->getNumVectors();
     if ( (map_ != nullPtr) && map_->isNodeGlobalElement(static_cast<GO>(i))) {
       for (size_t j = 0; j < n; ++j) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         (staticPtrCast<TpetraMultiVector<Real,LO,GO,Node> >(e)->getVector())->replaceGlobalValue(i, j, ScalarTraits<Real>::one());
+#else
+        (staticPtrCast<TpetraMultiVector<Real,Node> >(e)->getVector())->replaceGlobalValue(i, j, ScalarTraits<Real>::one());
+#endif
       }
     }
     return e;
@@ -284,14 +325,22 @@ public:
 /************** ELEMENTWISE DEFINITIONS AND IMPLEMENTATIONS ******************/
 /*****************************************************************************/
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef typename Tpetra::MultiVector<Real,LO,GO,Node>::dual_view_type::t_dev ViewType;
+#else
+  typedef typename Tpetra::MultiVector<Real,Node>::dual_view_type::t_dev ViewType;
+#endif
 
 public:
   void applyUnary( const Elementwise::UnaryFunction<Real> &f ) {
     ViewType v_lcl =  tpetra_vec_->getLocalViewDevice();
 
     int lclDim = tpetra_vec_->getLocalLength();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TPMultiVector::unaryFunc<Real,LO,GO,Node> func(v_lcl, &f);
+#else
+    TPMultiVector::unaryFunc<Real,Node> func(v_lcl, &f);
+#endif
 
     Kokkos::parallel_for(lclDim,func);
   }
@@ -303,14 +352,22 @@ public:
                                 "Error: Vectors must have the same dimension." );
 
    const TpetraMultiVector &ex = dynamic_cast<const TpetraMultiVector&>(x);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Ptr<const Tpetra::MultiVector<Real,LO,GO,Node> > xp = ex.getVector();
+#else
+   Ptr<const Tpetra::MultiVector<Real,Node> > xp = ex.getVector();
+#endif
 
     ViewType v_lcl = tpetra_vec_->getLocalViewDevice();
     ViewType x_lcl = xp->getLocalViewDevice();
 
     int lclDim = tpetra_vec_->getLocalLength();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TPMultiVector::binaryFunc<Real,LO,GO,Node> func(v_lcl,x_lcl,&f);
+#else
+    TPMultiVector::binaryFunc<Real,Node> func(v_lcl,x_lcl,&f);
+#endif
 
     Kokkos::parallel_for(lclDim,func);
 
@@ -320,7 +377,11 @@ public:
     ViewType v_lcl = tpetra_vec_->getLocalViewDevice();
 
     int lclDim = tpetra_vec_->getLocalLength();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TPMultiVector::reduceFunc<Real,LO,GO,Node> func(v_lcl, &r);
+#else
+    TPMultiVector::reduceFunc<Real,Node> func(v_lcl, &r);
+#endif
 
     Real lclValue;
 

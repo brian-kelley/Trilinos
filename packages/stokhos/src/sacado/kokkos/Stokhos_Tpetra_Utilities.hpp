@@ -234,14 +234,25 @@ namespace Stokhos {
     const size_type vec_size;
   };
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LO, typename GO, typename N>
   Teuchos::RCP< Tpetra::CrsMatrix<Scalar,LO,GO,N> >
   build_mean_matrix(const Tpetra::CrsMatrix<Scalar,LO,GO,N>& A)
+#else
+  template <typename Scalar, typename N>
+  Teuchos::RCP< Tpetra::CrsMatrix<Scalar,N> >
+  build_mean_matrix(const Tpetra::CrsMatrix<Scalar,N>& A)
+#endif
   {
     using Teuchos::RCP;
     using Teuchos::rcp;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LO,GO,N> MatrixType;
     typedef Tpetra::Map<LO,GO,N> Map;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,N> MatrixType;
+    typedef Tpetra::Map<N> Map;
+#endif
 
     typedef typename MatrixType::local_matrix_type KokkosMatrixType;
 
@@ -270,16 +281,28 @@ namespace Stokhos {
     return mean_matrix;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LO, typename GO, typename N>
   Teuchos::RCP< Tpetra::CrsMatrix<typename Scalar::value_type,LO,GO,N> >
   build_mean_scalar_matrix(const Tpetra::CrsMatrix<Scalar,LO,GO,N>& A)
+#else
+  template <typename Scalar, typename N>
+  Teuchos::RCP< Tpetra::CrsMatrix<typename Scalar::value_type,N> >
+  build_mean_scalar_matrix(const Tpetra::CrsMatrix<Scalar,N>& A)
+#endif
   {
     using Teuchos::RCP;
     using Teuchos::rcp;
     typedef typename Scalar::value_type BaseScalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LO,GO,N> MatrixType;
     typedef Tpetra::CrsMatrix<BaseScalar,LO,GO,N> ScalarMatrixType;
     typedef Tpetra::Map<LO,GO,N> Map;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,N> MatrixType;
+    typedef Tpetra::CrsMatrix<BaseScalar,N> ScalarMatrixType;
+    typedef Tpetra::Map<N> Map;
+#endif
 
     typedef typename MatrixType::local_matrix_type KokkosMatrixType;
     typedef typename ScalarMatrixType::local_matrix_type ScalarKokkosMatrixType;
@@ -502,37 +525,64 @@ namespace Stokhos {
   // Tpetra operator wrapper allowing a mean0-based operator (with double
   // scalar type) to be applied to a UQ::PCE multi-vector
   template <typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             typename LocalOrdinal,
             typename GlobalOrdinal,
+#endif
             typename Node>
   class MeanBasedTpetraOperator :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual public Tpetra::Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
+#else
+    virtual public Tpetra::Operator<Scalar, Node> {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_type;
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node node_type;
     typedef typename scalar_type::value_type base_scalar_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Operator<base_scalar_type,LocalOrdinal,GlobalOrdinal,Node> scalar_op_type;
+#else
+    typedef Tpetra::Operator<base_scalar_type,Node> scalar_op_type;
+#endif
 
     MeanBasedTpetraOperator(const Teuchos::RCP<const scalar_op_type>& mb_op_) :
       mb_op(mb_op_) {}
 
     virtual ~MeanBasedTpetraOperator() {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+    virtual Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
     getDomainMap() const {
       return mb_op->getDomainMap();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+    virtual Teuchos::RCP<const Tpetra::Map<Node> >
+#endif
     getRangeMap() const {
       return mb_op->getRangeMap();
     }
 
     virtual void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     apply (const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
            Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+    apply (const Tpetra::MultiVector<Scalar,Node> &X,
+           Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
            Teuchos::ETransp mode = Teuchos::NO_TRANS,
            Scalar alpha = Teuchos::ScalarTraits<Scalar>::one(),
            Scalar beta = Teuchos::ScalarTraits<Scalar>::zero()) const
@@ -570,7 +620,11 @@ namespace Stokhos {
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<base_scalar_type,LocalOrdinal,GlobalOrdinal,Node> scalar_mv_type;
+#else
+    typedef Tpetra::MultiVector<base_scalar_type,Node> scalar_mv_type;
+#endif
     mutable Teuchos::RCP<scalar_mv_type> X_s, Y_s;
     Teuchos::RCP<const scalar_op_type> mb_op;
 

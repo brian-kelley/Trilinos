@@ -62,11 +62,21 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   void GetProblemData(RCP<const Teuchos::Comm<int> >& comm, const Xpetra::UnderlyingLib lib, const LocalOrdinal numDimensions,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> >& Op,
                       RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType, LocalOrdinal, GlobalOrdinal, Node> >& Coordinates,
                       RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> >& map,
+#else
+                      RCP<Xpetra::Matrix<Scalar, Node> >& Op,
+                      RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> >& Coordinates,
+                      RCP<Xpetra::Map<Node> >& map,
+#endif
                       Array<GlobalOrdinal>& gNodesPerDim, Array<LocalOrdinal>& lNodesPerDim) {
 #include "MueLu_UseShortNames.hpp"
 
@@ -179,7 +189,11 @@ namespace MueLuTests {
 
     // Create the map and store coordinates using the above array views
     map         = MapFactory::Build(lib, gNumPoints, myGIDs(), 0, comm);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(map, myCoordinates(), numDimensions);
+#else
+    Coordinates = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(map, myCoordinates(), numDimensions);
+#endif
 
     // small parameter list for Galeri
     Teuchos::ParameterList problemParamList;
@@ -209,7 +223,11 @@ namespace MueLuTests {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(StructuredLineDetectionFactory, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(StructuredLineDetectionFactory, Constructor, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -222,7 +240,11 @@ namespace MueLuTests {
 
   } // Constructor
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(StructuredLineDetectionFactory, LabelLines, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(StructuredLineDetectionFactory, LabelLines, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -241,11 +263,20 @@ namespace MueLuTests {
 
     LO maxLevels = 2, maxIter = 10;
     RCP<Matrix> Op;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates;
     RCP<Xpetra::Map<LO,GO,NO> > map;
+#else
+    RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates;
+    RCP<Xpetra::Map<NO> > map;
+#endif
     Array<GO> gNodesPerDim(3);
     Array<LO> lNodesPerDim(3);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     GetProblemData<SC,LO,GO,NO>(comm, lib, numDimensions, Op, coordinates, map, gNodesPerDim, lNodesPerDim);
+#else
+    GetProblemData<SC,NO>(comm, lib, numDimensions, Op, coordinates, map, gNodesPerDim, lNodesPerDim);
+#endif
 
     // build nullspace
     RCP<MultiVector> nullSpace = MultiVectorFactory::Build(map,1);
@@ -347,9 +378,15 @@ namespace MueLuTests {
     TEST_EQUALITY( (norms[0] < 1.0e-7), true);
   } // LabelLines
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(Scalar, LO, GO, Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(StructuredLineDetectionFactory,Constructor,Scalar,LO,GO,Node) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(StructuredLineDetectionFactory,LabelLines,Scalar,LO,GO,Node)
+#else
+#  define MUELU_ETI_GROUP(Scalar, Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(StructuredLineDetectionFactory,Constructor,Scalar,Node) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(StructuredLineDetectionFactory,LabelLines,Scalar,Node)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

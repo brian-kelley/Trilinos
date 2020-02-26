@@ -118,10 +118,18 @@ bool tLumping_tpetra::test_lumping(int verbosity,std::ostream & os)
    tester.show_all_tests(true);
    tester.set_all_error_tol(tolerance_);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Map<LO,GO,NT> map(100,0,GetComm_tpetra());
+#else
+   Tpetra::Map<NT> map(100,0,GetComm_tpetra());
+#endif
 
    // A matrix...to be lumped
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::CrsMatrix<ST,LO,GO,NT> A(rcpFromRef(map),5);
+#else
+   Tpetra::CrsMatrix<ST,NT> A(rcpFromRef(map),5);
+#endif
    GO indices[5];
    ST values[5] = {1,2,3,4,5};
    for(size_t i=0;i<A.getNodeNumRows()-5;i++) {
@@ -139,7 +147,11 @@ bool tLumping_tpetra::test_lumping(int verbosity,std::ostream & os)
    A.fillComplete();
 
    // B matrix...already lumped
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::CrsMatrix<ST,LO,GO,NT> B(rcpFromRef(map),1);
+#else
+   Tpetra::CrsMatrix<ST,NT> B(rcpFromRef(map),1);
+#endif
    ST number[1] = {15.0};
    for(size_t i=0;i<B.getNodeNumRows();i++) {
       GO index[1] = {B.getRowMap()->getGlobalElement(i)};
@@ -147,8 +159,13 @@ bool tLumping_tpetra::test_lumping(int verbosity,std::ostream & os)
    }
    B.fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teko::LinearOp pA = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(A.getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(A.getDomainMap()),rcpFromRef(A));
    Teko::LinearOp pB = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(B.getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(B.getDomainMap()),rcpFromRef(B));
+#else
+   Teko::LinearOp pA = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(A.getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(A.getDomainMap()),rcpFromRef(A));
+   Teko::LinearOp pB = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(B.getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(B.getDomainMap()),rcpFromRef(B));
+#endif
    Teko::LinearOp lumpedA = getLumpedMatrix(pA);
 
    {
@@ -174,10 +191,18 @@ bool tLumping_tpetra::test_invLumping(int verbosity,std::ostream & os)
    tester.show_all_tests(true);
    tester.set_all_error_tol(tolerance_);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Map<LO,GO,NT> map(100,0,GetComm_tpetra());
+#else
+   Tpetra::Map<NT> map(100,0,GetComm_tpetra());
+#endif
 
    // A matrix...to be lumped
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::CrsMatrix<ST,LO,GO,NT> A(rcpFromRef(map),5);
+#else
+   Tpetra::CrsMatrix<ST,NT> A(rcpFromRef(map),5);
+#endif
    GO indices[5];
    ST values[5] = {1,2,3,4,5};
    for(size_t i=0;i<A.getNodeNumRows()-5;i++) {
@@ -195,7 +220,11 @@ bool tLumping_tpetra::test_invLumping(int verbosity,std::ostream & os)
    A.fillComplete();
 
    // B matrix...already lumped
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::CrsMatrix<ST,LO,GO,NT> B(rcpFromRef(map),1);
+#else
+   Tpetra::CrsMatrix<ST,NT> B(rcpFromRef(map),1);
+#endif
    ST number[1] = {1.0/15.0};
    for(size_t i=0;i<B.getNodeNumRows();i++) {
       GO index[1] = {B.getRowMap()->getGlobalElement(i)};
@@ -203,8 +232,13 @@ bool tLumping_tpetra::test_invLumping(int verbosity,std::ostream & os)
    }
    B.fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teko::LinearOp pA = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(A.getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(A.getDomainMap()),rcpFromRef(A));
    Teko::LinearOp pB = Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(B.getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(B.getDomainMap()),rcpFromRef(B));
+#else
+   Teko::LinearOp pA = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(A.getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(A.getDomainMap()),rcpFromRef(A));
+   Teko::LinearOp pB = Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(B.getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(B.getDomainMap()),rcpFromRef(B));
+#endif
    Teko::LinearOp lumpedA = getInvLumpedMatrix(pA);
 
    {

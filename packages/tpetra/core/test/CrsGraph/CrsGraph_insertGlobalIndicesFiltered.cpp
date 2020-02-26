@@ -59,7 +59,11 @@ namespace { // (anonymous)
   // UNIT TESTS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, insertGlobalIndicesFiltered, LO, GO, NODE_TYPE )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( CrsGraph, insertGlobalIndicesFiltered, NODE_TYPE )
+#endif
   {
     static_assert (std::is_integral<LO>::value,
                    "LO must be a built-in integer type.");
@@ -71,9 +75,15 @@ namespace { // (anonymous)
     // is a valid Kokkos execution space, and some M which is a valid
     // Kokkos memory space."
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsGraph<LO, GO, NODE_TYPE> crs_graph_type;
     typedef Tpetra::Map<LO, GO, NODE_TYPE> map_type;
     typedef Tpetra::Export<LO, GO, NODE_TYPE> export_type;
+#else
+    typedef Tpetra::CrsGraph<NODE_TYPE> crs_graph_type;
+    typedef Tpetra::Map<NODE_TYPE> map_type;
+    typedef Tpetra::Export<NODE_TYPE> export_type;
+#endif
     int lclSuccess = 1; // to set below
     int gblSuccess = 0; // to set below
     const GST INVALID = Teuchos::OrdinalTraits<GST>::invalid ();
@@ -182,8 +192,13 @@ namespace { // (anonymous)
 
 // Tests to build and run.  We will instantiate them over all enabled
 // local ordinal (LO), global ordinal (GO), and Kokkos Node (NT) types.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, insertGlobalIndicesFiltered, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP(NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( CrsGraph, insertGlobalIndicesFiltered, NT )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

@@ -140,12 +140,24 @@ namespace Details {
 /// copies back in to the Teuchos::ArrayView objects, if needed).  When
 /// CrsGraph migrates fully to adopting Kokkos::DualView objects for its storage
 /// of data, this procedure could be bypassed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 size_t
 unpackAndCombineWithOwningPIDsCount(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const CrsGraph<LO, GO, NT> & sourceGraph,
+#else
+    const CrsGraph<NT> & sourceGraph,
+#endif
     const Teuchos::ArrayView<const LO> &importLIDs,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::ArrayView<const typename CrsGraph<LO,GO,NT>::packet_type> &imports,
+#else
+    const Teuchos::ArrayView<const typename CrsGraph<NT>::packet_type> &imports,
+#endif
     const Teuchos::ArrayView<const size_t>& numPacketsPerLID,
     size_t constantNumPackets,
     Distributor &distor,
@@ -168,12 +180,24 @@ unpackAndCombineWithOwningPIDsCount(
 /// Note: The TargetPids vector (on output) will contain owning PIDs
 /// for each entry in the graph, with the "-1 for local" for locally
 /// owned entries.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 void
 unpackAndCombineIntoCrsArrays(
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const CrsGraph<LO, GO, NT> & sourceGraph,
+#else
+    const CrsGraph<NT> & sourceGraph,
+#endif
     const Teuchos::ArrayView<const LO>& importLIDs,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const Teuchos::ArrayView<const typename CrsGraph<LO,GO,NT>::packet_type>& imports,
+#else
+    const Teuchos::ArrayView<const typename CrsGraph<NT>::packet_type>& imports,
+#endif
     const Teuchos::ArrayView<const size_t>& numPacketsPerLID,
     const size_t constantNumPackets,
     Distributor& distor,

@@ -84,8 +84,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> AggregationExportFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     std::string output_msg = "Output filename template (%TIMESTEP is replaced by \'Output file: time step\' variable,"
@@ -114,8 +119,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     Input(fineLevel, "Aggregates");         //< factory which created aggregates
     Input(fineLevel, "DofsPerNode");        //< CoalesceAndDropFactory (needed for DofsPerNode variable)
     Input(fineLevel, "UnAmalgamationInfo"); //< AmalgamationFactory (needed for UnAmalgamationInfo variable)
@@ -136,8 +146,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::Build(Level &fineLevel, Level &coarseLevel) const {
+#endif
     using namespace std;
     //Decide which build function to follow, based on input params
     const ParameterList& pL = GetParameterList();
@@ -170,8 +185,13 @@ namespace MueLu {
     Teuchos::RCP<Matrix> Ac;
     if(doCoarseGraphEdges_)
       Ac = Get<RCP<Matrix> >(coarseLevel, "A");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > coords = Teuchos::null;
     Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > coordsCoarse = Teuchos::null;
+#else
+    Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > coords = Teuchos::null;
+    Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > coordsCoarse = Teuchos::null;
+#endif
     Teuchos::RCP<GraphBase> fineGraph = Teuchos::null;
     Teuchos::RCP<GraphBase> coarseGraph = Teuchos::null;
     if(doFineGraphEdges_)
@@ -180,22 +200,40 @@ namespace MueLu {
       coarseGraph = Get<RCP<GraphBase> >(coarseLevel, "Graph");
     if(useVTK) //otherwise leave null, will not be accessed by non-vtk code
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       coords = Get<RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > >(fineLevel, "Coordinates");
+#else
+      coords = Get<RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > >(fineLevel, "Coordinates");
+#endif
       if(doCoarseGraphEdges_)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         coordsCoarse = Get<RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > >(coarseLevel, "Coordinates");
+#else
+        coordsCoarse = Get<RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > >(coarseLevel, "Coordinates");
+#endif
       dims_ = coords->getNumVectors();  //2D or 3D?
       if(numProcs > 1)
       {
         {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<Import> coordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coords->getMap(), Amat->getColMap());
           RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node>::Build(Amat->getColMap(), dims_);
+#else
+          RCP<Import> coordImporter = Xpetra::ImportFactory<Node>::Build(coords->getMap(), Amat->getColMap());
+          RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node>::Build(Amat->getColMap(), dims_);
+#endif
           ghostedCoords->doImport(*coords, *coordImporter, Xpetra::INSERT);
           coords = ghostedCoords;
         }
         if(doCoarseGraphEdges_)
         {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<Import> coordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coordsCoarse->getMap(), Ac->getColMap());
           RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node>::Build(Ac->getColMap(), dims_);
+#else
+          RCP<Import> coordImporter = Xpetra::ImportFactory<Node>::Build(coordsCoarse->getMap(), Ac->getColMap());
+          RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node> > ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType,Node>::Build(Ac->getColMap(), dims_);
+#endif
           ghostedCoords->doImport(*coordsCoarse, *coordImporter, Xpetra::INSERT);
           coordsCoarse = ghostedCoords;
         }
@@ -366,14 +404,24 @@ namespace MueLu {
     fout.close();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doJacksPlus_(std::vector<int>& /* vertices */, std::vector<int>& /* geomSizes */) const
+#else
+  template<class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::doJacksPlus_(std::vector<int>& /* vertices */, std::vector<int>& /* geomSizes */) const
+#endif
   {
     //TODO
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doConvexHulls(std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#else
+  template<class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::doConvexHulls(std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#endif
   {
     if(dims_ == 2)
       this->doConvexHulls2D(vertices, geomSizes, numAggs_, numNodes_, isRoot_, vertex2AggId_, xCoords_, yCoords_);
@@ -382,8 +430,13 @@ namespace MueLu {
   }
 
 #ifdef HAVE_MUELU_CGAL
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doAlphaHulls_(std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#else
+  template<class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::doAlphaHulls_(std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#endif
   {
     using namespace std;
     if(dims_ == 2)
@@ -392,8 +445,13 @@ namespace MueLu {
       doAlphaHulls3D_(vertices, geomSizes);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doAlphaHulls2D_(std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#else
+  template<class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::doAlphaHulls2D_(std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#endif
   {
     //const double ALPHA_VAL = 2; //Make configurable?
     using namespace std;
@@ -452,8 +510,13 @@ namespace MueLu {
 #endif // if 0
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doAlphaHulls3D_(std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#else
+  template<class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::doAlphaHulls3D_(std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#endif
   {
     typedef CGAL::Exact_predicates_inexact_constructions_kernel Gt;
 #if 0 // does not compile with CGAL 4-8
@@ -547,8 +610,13 @@ namespace MueLu {
   }
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doGraphEdges_(std::ofstream& fout, Teuchos::RCP<Matrix>& A, Teuchos::RCP<GraphBase>& G, bool fine, int dofs) const
+#else
+  template <class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::doGraphEdges_(std::ofstream& fout, Teuchos::RCP<Matrix>& A, Teuchos::RCP<GraphBase>& G, bool fine, int dofs) const
+#endif
   {
     using namespace std;
     ArrayView<const Scalar> values;
@@ -812,8 +880,13 @@ namespace MueLu {
     fout << "</VTKFile>" << endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFile_(std::ofstream& fout, std::string styleName, std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#else
+  template <class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::writeFile_(std::ofstream& fout, std::string styleName, std::vector<int>& vertices, std::vector<int>& geomSizes) const
+#endif
   {
     using namespace std;
     vector<int> uniqueFine = this->makeUnique(vertices);
@@ -929,8 +1002,13 @@ namespace MueLu {
     fout << "</VTKFile>" << endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::buildColormap_() const
+#else
+  template <class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::buildColormap_() const
+#endif
   {
     using namespace std;
     try
@@ -956,8 +1034,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writePVTU_(std::ofstream& pvtu, std::string baseFname, int numProcs) const
+#else
+  template <class Scalar, class Node>
+  void AggregationExportFactory<Scalar, Node>::writePVTU_(std::ofstream& pvtu, std::string baseFname, int numProcs) const
+#endif
   {
     using namespace std;
     //If using vtk, filenameToWrite now contains final, correct ***.vtu filename (for the current proc)

@@ -161,13 +161,22 @@ class FooSolverFactory : public Belos::CustomSolverFactory<SC, MV, OP>
 //
 // The actual unit test.
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CustomSolverFactory, AddFactory, SC, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CustomSolverFactory, AddFactory, SC, NT )
+#endif
 {
   using Teuchos::RCP;
   using Teuchos::rcp;
   using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<SC,LO,GO,NT> MV;
   typedef Tpetra::Operator<SC,LO,GO,NT> OP;
+#else
+  typedef Tpetra::MultiVector<SC,NT> MV;
+  typedef Tpetra::Operator<SC,NT> OP;
+#endif
   typedef Belos::SolverManager<SC, MV, OP> solver_type;
   typedef Belos::CustomSolverFactory<SC, MV, OP> custom_factory_type;
 
@@ -222,8 +231,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CustomSolverFactory, AddFactory, SC, LO, GO, 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 
 // Macro that instantiates the unit test
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define LCLINST( SC, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CustomSolverFactory, AddFactory, SC, LO, GO, NT )
+#else
+#define LCLINST( SC, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CustomSolverFactory, AddFactory, SC, NT )
+#endif
 
 // Tpetra's ETI will instantiate the unit test for all enabled type
 // combinations.

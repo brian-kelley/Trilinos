@@ -190,7 +190,11 @@ namespace panzer
       {
         using Teuchos::rcp;
         return rcp(new
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           GatherTangent_BlockedEpetra<EvalT, TRAITS, LO, GO>(indexers_, pl));
+#else
+          GatherTangent_BlockedEpetra<EvalT, TRAITS>(indexers_, pl));
+#endif
       } // end of clone()
 
     private:

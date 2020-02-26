@@ -99,13 +99,23 @@ namespace MueLu {
                   SetAndReturnDefaultFactory(varName, rcp(new newFactory()));
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void FactoryManager<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetFactory(const std::string& varName, const RCP<const FactoryBase>& factory) {
+#else
+  template <class Scalar, class Node>
+  void FactoryManager<Scalar, Node>::SetFactory(const std::string& varName, const RCP<const FactoryBase>& factory) {
+#endif
     factoryTable_[varName] = factory;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   const RCP<const FactoryBase> FactoryManager<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetFactory(const std::string& varName) const {
+#else
+  template <class Scalar, class Node>
+  const RCP<const FactoryBase> FactoryManager<Scalar, Node>::GetFactory(const std::string& varName) const {
+#endif
     if (factoryTable_.count(varName)) {
       // Search user provided factories
       return factoryTable_.find(varName)->second;
@@ -115,19 +125,34 @@ namespace MueLu {
     return GetDefaultFactory(varName);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   const RCP<FactoryBase> FactoryManager<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetFactoryNonConst(const std::string& varName) {
+#else
+  template <class Scalar, class Node>
+  const RCP<FactoryBase> FactoryManager<Scalar, Node>::GetFactoryNonConst(const std::string& varName) {
+#endif
     return Teuchos::rcp_const_cast<FactoryBase>(GetFactory(varName));
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool FactoryManager<Scalar, LocalOrdinal, GlobalOrdinal, Node>::hasFactory(const std::string& varName) const {
+#else
+  template <class Scalar, class Node>
+  bool FactoryManager<Scalar, Node>::hasFactory(const std::string& varName) const {
+#endif
     if (factoryTable_.count(varName)) return true;
     return false;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   const RCP<const FactoryBase> FactoryManager<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetDefaultFactory(const std::string& varName) const {
+#else
+  template <class Scalar, class Node>
+  const RCP<const FactoryBase> FactoryManager<Scalar, Node>::GetDefaultFactory(const std::string& varName) const {
+#endif
     if (defaultFactoryTable_.count(varName)) {
       // The factory for this name was already created (possibly, for previous level, if we reuse factory manager)
       return defaultFactoryTable_.find(varName)->second;
@@ -234,8 +259,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   const RCP<const FactoryBase> FactoryManager<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetAndReturnDefaultFactory(const std::string& varName, const RCP<const FactoryBase>& factory) const {
+#else
+  template <class Scalar, class Node>
+  const RCP<const FactoryBase> FactoryManager<Scalar, Node>::SetAndReturnDefaultFactory(const std::string& varName, const RCP<const FactoryBase>& factory) const {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(factory.is_null(), Exceptions::RuntimeError, "The default factory for building '" << varName << "' is null");
 
     GetOStream(Runtime1) << "Using default factory (" << factory->ShortClassName() <<"["<<factory->GetID()<<"] "<< ") for building '" << varName << "'." << std::endl;
@@ -245,8 +275,13 @@ namespace MueLu {
     return defaultFactoryTable_[varName];
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void FactoryManager<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Print() const {
+#else
+  template <class Scalar, class Node>
+  void FactoryManager<Scalar, Node>::Print() const {
+#endif
     std::map<std::string, RCP<const FactoryBase> >::const_iterator it;
 
     Teuchos::FancyOStream& fancy = GetOStream(Debug);
@@ -282,8 +317,13 @@ namespace MueLu {
   }
 
 #ifdef HAVE_MUELU_DEBUG
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void FactoryManager<Scalar, LocalOrdinal, GlobalOrdinal, Node>::ResetDebugData() const {
+#else
+  template <class Scalar, class Node>
+  void FactoryManager<Scalar, Node>::ResetDebugData() const {
+#endif
     std::map<std::string, RCP<const FactoryBase> >::const_iterator it;
 
     for (it = factoryTable_.begin(); it != factoryTable_.end(); it++)

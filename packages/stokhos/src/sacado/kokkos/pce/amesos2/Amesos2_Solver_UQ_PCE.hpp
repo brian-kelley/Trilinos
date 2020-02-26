@@ -92,14 +92,26 @@ namespace Amesos2 {
 
     typedef Sacado::UQ::PCE<Storage> Scalar;
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<Device> Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> Matrix;
     typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> Vector;
+#else
+    typedef Tpetra::CrsMatrix<Scalar,Node> Matrix;
+    typedef Tpetra::MultiVector<Scalar,Node> Vector;
+#endif
 
     typedef typename Scalar::value_type BaseScalar;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> Map;
     typedef Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> FlatGraph;
     typedef Tpetra::CrsMatrix<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatMatrix;
     typedef Tpetra::MultiVector<BaseScalar,LocalOrdinal,GlobalOrdinal,Node> FlatVector;
+#else
+    typedef Tpetra::Map<Node> Map;
+    typedef Tpetra::CrsGraph<Node> FlatGraph;
+    typedef Tpetra::CrsMatrix<BaseScalar,Node> FlatMatrix;
+    typedef Tpetra::MultiVector<BaseScalar,Node> FlatVector;
+#endif
     typedef ConcreteSolver<FlatMatrix,FlatVector> FlatConcreteSolver;
     typedef Solver<FlatMatrix,FlatVector> FlatSolver;
 
@@ -515,8 +527,13 @@ namespace Amesos2 {
     Tpetra::MultiVector<Sacado::UQ::PCE<ST>,LO,GO,Kokkos::Compat::KokkosDeviceWrapperNode<D> > > {
     typedef Sacado::UQ::PCE<ST> SC;
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<D> NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::CrsMatrix<SC,LO,GO,NO> Matrix;
     typedef Tpetra::MultiVector<SC,LO,GO,NO> Vector;
+#else
+    typedef Tpetra::CrsMatrix<SC,NO> Matrix;
+    typedef Tpetra::MultiVector<SC,NO> Vector;
+#endif
     static Teuchos::RCP<Solver<Matrix,Vector> >
     apply(Teuchos::RCP<const Matrix> A,
           Teuchos::RCP<Vector>       X,

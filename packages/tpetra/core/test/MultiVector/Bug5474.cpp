@@ -80,7 +80,11 @@ namespace { // (anonymous)
 
   // Test for Bug 5474: getData and getDataNonConst should return
   // Teuchos::null if the vector is locally empty.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Vector, Bug5474_1, S, LO, GO, NODE)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(Vector, Bug5474_1, S,NODE)
+#endif
   {
     using Teuchos::outArg;
     using Teuchos::RCP;
@@ -88,8 +92,13 @@ namespace { // (anonymous)
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, NODE> map_type;
     typedef Tpetra::Vector<S, LO, GO, NODE> vec_type;
+#else
+    typedef Tpetra::Map<NODE> map_type;
+    typedef Tpetra::Vector<S, NODE> vec_type;
+#endif
     typedef Tpetra::global_size_t GST;
 
     out << "Tpetra::Vector: Bug 5474 test (getData and getDataNonConst "
@@ -152,8 +161,13 @@ namespace { // (anonymous)
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Vector, Bug5474_1, SCALAR, LO, GO, NODE)
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( Vector, Bug5474_1, SCALAR,NODE)
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

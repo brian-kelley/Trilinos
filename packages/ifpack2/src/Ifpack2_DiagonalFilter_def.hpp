@@ -55,7 +55,11 @@ namespace Ifpack2 {
 
 template<class MatrixType>
 DiagonalFilter<MatrixType>::
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 DiagonalFilter (const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >& Matrix,
+#else
+DiagonalFilter (const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,Node> >& Matrix,
+#endif
                 typename Teuchos::ScalarTraits<Scalar>::magnitudeType AbsoluteThreshold,
                 typename Teuchos::ScalarTraits<Scalar>::magnitudeType RelativeThreshold):
   A_(Matrix),
@@ -63,7 +67,11 @@ DiagonalFilter (const Teuchos::RCP<const Tpetra::RowMatrix<Scalar,LocalOrdinal,G
   RelativeThreshold_(RelativeThreshold)
 {
   pos_.resize(getNodeNumRows());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   val_=Teuchos::rcp(new Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(A_->getRowMap()));
+#else
+  val_=Teuchos::rcp(new Tpetra::Vector<Scalar,Node>(A_->getRowMap()));
+#endif
 
   std::vector<LocalOrdinal> Indices(getNodeMaxNumRowEntries());
   std::vector<Scalar> Values(getNodeMaxNumRowEntries());
@@ -103,45 +111,65 @@ Teuchos::RCP<const Teuchos::Comm<int> > DiagonalFilter<MatrixType>::getComm() co
 
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 DiagonalFilter<MatrixType>::getRowMap() const
 {
   return A_->getRowMap();
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 DiagonalFilter<MatrixType>::getColMap() const
 {
   return A_->getColMap();
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 DiagonalFilter<MatrixType>::getDomainMap() const
 {
   return A_->getDomainMap();
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,
                                typename MatrixType::global_ordinal_type,
                                typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 DiagonalFilter<MatrixType>::getRangeMap() const
 {
   return A_->getRangeMap();
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::local_ordinal_type,
                                      typename MatrixType::global_ordinal_type,
                                      typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowGraph<typename MatrixType::node_type> >
+#endif
 DiagonalFilter<MatrixType>::getGraph() const
 {
   return A_->getGraph();
@@ -287,7 +315,11 @@ getLocalRowView (LocalOrdinal /* LocalRow */,
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void DiagonalFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &diag) const
+#else
+void DiagonalFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,Node> &diag) const
+#endif
 {
   // Returns the matrix's actual diagonal, rather than the "filtered" diagonal.
   // This is dubious, but it duplicates the functionality of Old Ifpack.
@@ -295,21 +327,34 @@ void DiagonalFilter<MatrixType>::getLocalDiagCopy(Tpetra::Vector<Scalar,LocalOrd
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void DiagonalFilter<MatrixType>::leftScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* x */)
+#else
+void DiagonalFilter<MatrixType>::leftScale(const Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
 {
   throw std::runtime_error("Ifpack2::DiagonalFilter does not support leftScale.");
 }
 
 template<class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void DiagonalFilter<MatrixType>::rightScale(const Tpetra::Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& /* x */)
+#else
+void DiagonalFilter<MatrixType>::rightScale(const Tpetra::Vector<Scalar, Node>& /* x */)
+#endif
 {
   throw std::runtime_error("Ifpack2::DiagonalFilter does not support rightScale.");
 }
 
 template<class MatrixType>
 void DiagonalFilter<MatrixType>::
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 apply (const Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &X,
        Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> &Y,
+#else
+apply (const Tpetra::MultiVector<Scalar,Node> &X,
+       Tpetra::MultiVector<Scalar,Node> &Y,
+#endif
        Teuchos::ETransp mode,
        Scalar alpha,
        Scalar beta) const
@@ -342,7 +387,12 @@ typename DiagonalFilter<MatrixType>::mag_type DiagonalFilter<MatrixType>::getFro
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DIAGONALFILTER_INSTANT(S,LO,GO,N) \
   template class Ifpack2::DiagonalFilter< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_DIAGONALFILTER_INSTANT(S,N) \
+  template class Ifpack2::DiagonalFilter< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif

@@ -107,12 +107,21 @@ namespace {
   //
 
   // Test BlockMultiVector's constructors.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, ctor, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, ctor, Scalar, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::BlockMultiVector<Scalar, Node> BMV;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     typedef Tpetra::global_size_t GST;
 
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm ();
@@ -196,8 +205,13 @@ namespace {
     // TEST_ASSERT( W.getPointMap ().isSameAs (X.getPointMap ()) );
 
     // Test BlockVector constructor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockVector<Scalar, LO, GO, Node> BV;
     typedef Tpetra::Vector<Scalar, LO, GO, Node> vec_type;
+#else
+    typedef Tpetra::BlockVector<Scalar, Node> BV;
+    typedef Tpetra::Vector<Scalar, Node> vec_type;
+#endif
     Teuchos::RCP<const vec_type> V1 = X_mv.getVector (0);
     BV V (*V1, meshMap, blockSize);
     vec_type V2 = V.getVectorView ();
@@ -242,12 +256,21 @@ namespace {
   // Test BlockMultiVector::getMultiVectorView.  It must return a
   // MultiVector with view semantics, and it must view the same data
   // that the BlockMultiVector view.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, MVView, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, MVView, Scalar, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::BlockMultiVector<Scalar, Node> BMV;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     typedef Tpetra::global_size_t GST;
     typedef Teuchos::ScalarTraits<Scalar> STS;
 
@@ -372,17 +395,30 @@ namespace {
   }
 
   // Make sure that Import works with BlockMultiVector.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, Import, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, Import, Scalar, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::outArg;
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
     using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
+#else
+    typedef Tpetra::BlockMultiVector<Scalar, Node> BMV;
+#endif
     typedef typename BMV::little_vec_type little_vec_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Map<LO, GO, Node> map_type;
     typedef Tpetra::Import<LO, GO, Node> import_type;
+#else
+    typedef Tpetra::Map<Node> map_type;
+    typedef Tpetra::Import<Node> import_type;
+#endif
     typedef Tpetra::global_size_t GST;
     typedef Teuchos::ScalarTraits<Scalar> STS;
 
@@ -492,16 +528,29 @@ namespace {
   //
   // Make sure that BlockMultiVector's "offset view" constructors work.
   //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, OffsetView, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( BlockMultiVector, OffsetView, Scalar, Node )
+#endif
   {
     using Teuchos::Comm;
     using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
     typedef Tpetra::Map<LO, GO, Node> map_type;
+#else
+    typedef Tpetra::BlockMultiVector<Scalar, Node> BMV;
+    typedef Tpetra::Map<Node> map_type;
+#endif
     typedef typename map_type::device_type device_type;
     typedef Tpetra::global_size_t GST;
     typedef Teuchos::ScalarTraits<Scalar> STS;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar, LO, GO, Node> MV;
+#else
+    typedef Tpetra::MultiVector<Scalar, Node> MV;
+#endif
     typedef typename MV::mag_type MT;
 
     RCP<const Comm<int> > comm = Tpetra::getDefaultComm ();
@@ -628,11 +677,19 @@ namespace {
 // INSTANTIATIONS
 //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, ctor, SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, MVView, SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, Import, SCALAR, LO, GO, NODE ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, OffsetView, SCALAR, LO, GO, NODE )
+#else
+#define UNIT_TEST_GROUP( SCALAR, NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, ctor, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, MVView, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, Import, SCALAR,NODE ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( BlockMultiVector, OffsetView, SCALAR,NODE )
+#endif
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 

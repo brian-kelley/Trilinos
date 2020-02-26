@@ -75,12 +75,16 @@ template<class MatrixType,
          const bool stub = ! LapackSupportsScalar<typename MatrixType::scalar_type>::value>
 class TriDiSolver :
     public Ifpack2::Preconditioner<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    typename MatrixType::local_ordinal_type,
                                    typename MatrixType::global_ordinal_type,
+#endif
                                    typename MatrixType::node_type>,
     virtual public Ifpack2::Details::CanChangeMatrix<Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                        typename MatrixType::local_ordinal_type,
                                                                        typename MatrixType::global_ordinal_type,
+#endif
                                                                        typename MatrixType::node_type> >
 {};
 
@@ -88,12 +92,16 @@ class TriDiSolver :
 template<class MatrixType>
 class TriDiSolver<MatrixType, false> :
     public Ifpack2::Preconditioner<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    typename MatrixType::local_ordinal_type,
                                    typename MatrixType::global_ordinal_type,
+#endif
                                    typename MatrixType::node_type>,
     virtual public Ifpack2::Details::CanChangeMatrix<Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                        typename MatrixType::local_ordinal_type,
                                                                        typename MatrixType::global_ordinal_type,
+#endif
                                                                        typename MatrixType::node_type> >
 {
 public:
@@ -345,12 +353,16 @@ private:
 template<class MatrixType>
 class TriDiSolver<MatrixType, true> :
     public Ifpack2::Preconditioner<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                    typename MatrixType::local_ordinal_type,
                                    typename MatrixType::global_ordinal_type,
+#endif
                                    typename MatrixType::node_type>,
     virtual public Ifpack2::Details::CanChangeMatrix<Tpetra::RowMatrix<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                                                        typename MatrixType::local_ordinal_type,
                                                                        typename MatrixType::global_ordinal_type,
+#endif
                                                                        typename MatrixType::node_type> >
 {
 public:

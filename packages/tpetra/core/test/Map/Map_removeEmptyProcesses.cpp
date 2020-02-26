@@ -76,9 +76,17 @@ using std::endl;
 typedef Tpetra::global_size_t GST;
 
 // This test is only meaningful in an MPI build.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Map, removeEmptyProcesses_MpiComm_noncontigMap, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Map, removeEmptyProcesses_MpiComm_noncontigMap, NT)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
   typedef typename Array<GO>::size_type size_type;
 
   RCP<const Comm<int> > origComm = rcp(new MpiComm<int>(MPI_COMM_WORLD));
@@ -228,9 +236,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Map, removeEmptyProcesses_MpiComm_noncontigMap
 }
 
 // This test is only meaningful in an MPI build.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Map, removeEmptyProcesses_MpiComm_contigMap, LO, GO, NT)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Map, removeEmptyProcesses_MpiComm_contigMap, NT)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
 
   RCP<const Comm<int> > origComm = rcp(new MpiComm<int>(MPI_COMM_WORLD));
   const int numProcs = origComm->getSize();
@@ -375,9 +391,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Map, removeEmptyProcesses_MpiComm_contigMap, L
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, removeEmptyProcesses_SerialComm1, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, removeEmptyProcesses_SerialComm1, NT )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
   typedef typename Array<GO>::size_type size_type;
 
   RCP<const Comm<int> > origComm = rcp(new SerialComm<int>);
@@ -518,9 +542,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, removeEmptyProcesses_SerialComm1, LO, GO
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, removeEmptyProcesses_SerialComm2, LO, GO, NT )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, removeEmptyProcesses_SerialComm2, NT )
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NT> map_type;
+#else
+  typedef Tpetra::Map<NT> map_type;
+#endif
   typedef typename Array<GO>::size_type size_type;
 
   RCP<const Comm<int> > origComm = rcp(new SerialComm<int>);
@@ -576,11 +608,19 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( Map, removeEmptyProcesses_SerialComm2, LO, GO
 //
 // Instantiations of tests
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP( LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, removeEmptyProcesses_MpiComm_noncontigMap, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, removeEmptyProcesses_MpiComm_contigMap, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, removeEmptyProcesses_SerialComm1, LO, GO, NT ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, removeEmptyProcesses_SerialComm2, LO, GO, NT )
+#else
+#define UNIT_TEST_GROUP(NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, removeEmptyProcesses_MpiComm_noncontigMap, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, removeEmptyProcesses_MpiComm_contigMap, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, removeEmptyProcesses_SerialComm1, NT ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Map, removeEmptyProcesses_SerialComm2, NT )
+#endif
 
 TPETRA_ETI_MANGLING_TYPEDEFS()
 

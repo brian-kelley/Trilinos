@@ -46,8 +46,13 @@
 
 namespace Tpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Scalar, class Node>
+FECrsMatrix<Scalar, Node>::
+#endif
 FECrsMatrix(const Teuchos::RCP<const fe_crs_graph_type>& graph,
             const Teuchos::RCP<Teuchos::ParameterList>& params) : 
   // We want the OWNED_PLUS_SHARED graph here
@@ -87,8 +92,13 @@ FECrsMatrix(const Teuchos::RCP<const fe_crs_graph_type>& graph,
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doOwnedPlusSharedToOwned(const CombineMode CM) {
+#else
+template<class Scalar, class Node>
+void FECrsMatrix<Scalar, Node>::doOwnedPlusSharedToOwned(const CombineMode CM) {
+#endif
   if(!inactiveCrsMatrix_.is_null() && *activeCrsMatrix_ == FE_ACTIVE_OWNED_PLUS_SHARED) {
     // Do a self-export in "restricted mode"
     this->doExport(*this,*feGraph_->importer_,CM,true);
@@ -98,13 +108,23 @@ void FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doOwnedPlusSharedTo
 }//end doOverlapToLocal
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doOwnedToOwnedPlusShared(const CombineMode /* CM */) {
+#else
+template<class Scalar, class Node>
+void FECrsMatrix<Scalar, Node>::doOwnedToOwnedPlusShared(const CombineMode /* CM */) {
+#endif
   // This should be a no-op for all of our purposes
 }//end doLocalToOverlap
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::switchActiveCrsMatrix() {
+#else
+template<class Scalar, class Node>
+void FECrsMatrix<Scalar, Node>::switchActiveCrsMatrix() {
+#endif
   if(*activeCrsMatrix_ == FE_ACTIVE_OWNED_PLUS_SHARED)
     *activeCrsMatrix_ = FE_ACTIVE_OWNED;
   else
@@ -117,8 +137,13 @@ void FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::switchActiveCrsMatr
 }//end switchActiveCrsMatrix
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::endFill() {
+#else
+template<class Scalar, class Node>
+void FECrsMatrix<Scalar, Node>::endFill() {
+#endif
   if(*activeCrsMatrix_ == FE_ACTIVE_OWNED_PLUS_SHARED) {
     doOwnedPlusSharedToOwned(Tpetra::ADD);
     switchActiveCrsMatrix();
@@ -127,8 +152,13 @@ void FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::endFill() {
     throw std::runtime_error("FECrsMatrix: Local CrsMatrix already active.  Cannot endFill()");
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::beginFill()  {
+#else
+template<class Scalar, class Node>
+void FECrsMatrix<Scalar, Node>::beginFill()  {
+#endif
   // Note: This does not throw an error since the on construction, the FECRS is in overlap mode.  Ergo, calling beginFill(),
   // like one should expect to do in a rational universe, should not cause an error.
   if(*activeCrsMatrix_ == FE_ACTIVE_OWNED) {
@@ -148,8 +178,13 @@ void FECrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::beginFill()  {
 //
 // Must be expanded from within the Tpetra namespace!
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_FECRSMATRIX_INSTANT(SCALAR,LO,GO,NODE) \
   template class FECrsMatrix<SCALAR, LO, GO, NODE>;
+#else
+#define TPETRA_FECRSMATRIX_INSTANT(SCALAR,NODE) \
+  template class FECrsMatrix<SCALAR, NODE>;
+#endif
 
 
 

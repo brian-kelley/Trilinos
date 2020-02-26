@@ -63,11 +63,21 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  NodePartitionInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::NodePartitionInterface() { }
+#else
+ template <class Scalar, class Node>
+ NodePartitionInterface<Scalar, Node>::NodePartitionInterface() { }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
  RCP<const ParameterList> NodePartitionInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+ template <class Scalar, class Node>
+ RCP<const ParameterList> NodePartitionInterface<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
     SET_VALID_ENTRY("repartition: node id");
@@ -83,16 +93,26 @@ namespace MueLu {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void NodePartitionInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level& currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void NodePartitionInterface<Scalar, Node>::DeclareInput(Level& currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "number of partitions");
     Input(currentLevel, "Node Comm");
     Input(currentLevel, "Coordinates");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void NodePartitionInterface<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& level) const {
+#else
+  template <class Scalar, class Node>
+  void NodePartitionInterface<Scalar, Node>::Build(Level& level) const {
+#endif
     FactoryMonitor m(*this, "Build", level);
     RCP<Matrix>    A      = Get<RCP<Matrix> >(level, "A");
     RCP<const Map> rowMap = A->getRowMap();
@@ -100,7 +120,11 @@ namespace MueLu {
     int numParts = Get<int>(level, "number of partitions");
     if (numParts == 1 || numParts == -1) {
       // Single processor, decomposition is trivial: all zeros
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition = Xpetra::VectorFactory<GO, LO, GO, NO>::Build(rowMap, true);
+#else
+      RCP<Xpetra::Vector<GO,NO> > decomposition = Xpetra::VectorFactory<GO, NO>::Build(rowMap, true);
+#endif
       Set(level, "Partition", decomposition);
       return;
     }
@@ -115,7 +139,11 @@ namespace MueLu {
 
     // A "Partition" from a *Interface is supposed to be is a vector of length # of my rows with the partition number to which the unknown is assigned
     // BUT, since we're bypassing remap for NodePartition, we'll return a *rank* of the guy who gets each unknown (which is what remap outputs).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<GO,LO,GO,NO> > decomposition = Xpetra::VectorFactory<GO,LO,GO,NO>::Build(rowMap, false);
+#else
+    RCP<Xpetra::Vector<GO,NO> > decomposition = Xpetra::VectorFactory<GO,NO>::Build(rowMap, false);
+#endif
     decomposition->putScalar(Teuchos::as<GO>(nodeZeroRank));
 
     Set(level, "Partition", decomposition);

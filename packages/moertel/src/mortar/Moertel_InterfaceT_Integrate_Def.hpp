@@ -63,12 +63,19 @@
   |  assemble values from integration                                    |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::Mortar_Assemble(Tpetra::CrsMatrix<ST, LO, GO, N>& D,
     Tpetra::CrsMatrix<ST, LO, GO, N>& M)
+#else
+MoertelT::InterfaceT<ST, N>::Mortar_Assemble(Tpetra::CrsMatrix<ST, N>& D,
+    Tpetra::CrsMatrix<ST, N>& M)
+#endif
 {
 
   //-------------------------------------------------------------------
@@ -214,11 +221,17 @@ MoertelT::InterfaceT<OrdinalType>::Mortar_Integrate(Tpetra_CrsMatrix& D,
   |  make mortar integration of this interface (2D problem)              |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::Mortar_Integrate_2D(
+#else
+MoertelT::InterfaceT<ST, N>::Mortar_Integrate_2D(
+#endif
     Teuchos::RCP<Teuchos::ParameterList> intparams)
 {
   bool ok = false;
@@ -313,11 +326,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::Mortar_Integrate_2D(
   |  make mortar integration of master/slave side in 2D (1D interface)   |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::Integrate_2D()
+#else
+MoertelT::InterfaceT<ST, N>::Integrate_2D()
+#endif
 {
   if (!IsComplete())
   {
@@ -454,11 +473,17 @@ bool MoertelT::Interface::Integrate_2D(Tpetra_CrsMatrix& M,
   | of 2 segments (2D version) IF there is an overlap                    |
  *----------------------------------------------------------------------*/
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::Integrate_2D_Section(MOERTEL::Segment& sseg,
+#else
+MoertelT::InterfaceT<ST, N>::Integrate_2D_Section(MOERTEL::Segment& sseg,
+#endif
     MOERTEL::Segment& mseg)
 {
   // if one of the segments is quadratic, we have to do something here
@@ -650,7 +675,11 @@ MoertelT::InterfaceT<ST, LO, GO, N>::Integrate_2D_Section(MOERTEL::Segment& sseg
 #endif
 
   // create an integrator instance of some given order
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   MoertelT::IntegratorT<ST, LO, GO, N> integrator(5,IsOneDimensional(),OutLevel());
+#else
+  MoertelT::IntegratorT<ST, N> integrator(5,IsOneDimensional(),OutLevel());
+#endif
 
   // do the integration of the master side
   Teuchos::SerialDenseMatrix<LO, ST>* Mdense =
@@ -790,11 +819,17 @@ MoertelT::InterfaceT<ST, LO, GO, N>::Integrate_2D_Section(MOERTEL::Segment& sseg
 }
 
 template <class ST,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           class LO,
           class GO,
+#endif
           class N >
 bool 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 MoertelT::InterfaceT<ST, LO, GO, N>::QuickOverlapTest_2D(MOERTEL::Segment& sseg, MOERTEL::Segment& mseg)
+#else
+MoertelT::InterfaceT<ST, N>::QuickOverlapTest_2D(MOERTEL::Segment& sseg, MOERTEL::Segment& mseg)
+#endif
 {
 
   MOERTEL::Node** snode = sseg.Nodes();

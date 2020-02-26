@@ -30,8 +30,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void AlgebraicPermutationStrategy<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
+#else
+  template<class Scalar, class Node>
+  void AlgebraicPermutationStrategy<Scalar, Node>::
+#endif
   BuildPermutation(const Teuchos::RCP<Matrix> & A, const Teuchos::RCP<const Map>& permRowMap,
                    Level & currentLevel, const FactoryBase* genFactory) const {
 
@@ -634,8 +639,13 @@ namespace MueLu {
     }
 
     // build permP * A * permQT
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Matrix> ApermQt = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*A, false, *permQTmatrix, false, GetOStream(Statistics2));
     Teuchos::RCP<Matrix> permPApermQt = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*permPmatrix, false, *ApermQt, false, GetOStream(Statistics2));
+#else
+    Teuchos::RCP<Matrix> ApermQt = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*A, false, *permQTmatrix, false, GetOStream(Statistics2));
+    Teuchos::RCP<Matrix> permPApermQt = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*permPmatrix, false, *ApermQt, false, GetOStream(Statistics2));
+#endif
 
     /*
       MueLu::Utils<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Write("A.mat", *A);
@@ -668,7 +678,11 @@ namespace MueLu {
     }
     diagScalingOp->fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Matrix> scaledA = Xpetra::MatrixMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Multiply(*diagScalingOp, false, *permPApermQt, false, GetOStream(Statistics2));
+#else
+    Teuchos::RCP<Matrix> scaledA = Xpetra::MatrixMatrix<Scalar, Node>::Multiply(*diagScalingOp, false, *permPApermQt, false, GetOStream(Statistics2));
+#endif
     currentLevel.Set("A", Teuchos::rcp_dynamic_cast<Matrix>(scaledA), genFactory/*this*/);
 
     currentLevel.Set("permA", Teuchos::rcp_dynamic_cast<Matrix>(permPApermQt), genFactory/*this*/);  // TODO careful with this!!!

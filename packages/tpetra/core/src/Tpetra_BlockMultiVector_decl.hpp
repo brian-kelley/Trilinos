@@ -137,14 +137,26 @@ namespace Tpetra {
 /// MultiVector, because the desired fill interfaces of the two
 /// classes are different.
 template<class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LO,
          class GO,
+#endif
          class Node>
 class BlockMultiVector :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public Tpetra::DistObject<Scalar, LO, GO, Node>
+#else
+    public Tpetra::DistObject<Scalar, Node>
+#endif
 {
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using dist_object_type = Tpetra::DistObject<Scalar, LO, GO, Node>;
+#else
+  using LO = typename Tpetra::Map<>::local_ordinal_type;
+  using GO = typename Tpetra::Map<>::global_ordinal_type;
+  using dist_object_type = Tpetra::DistObject<Scalar, Node>;
+#endif
   using STS = Teuchos::ScalarTraits<Scalar>;
   using packet_type = typename dist_object_type::packet_type;
 
@@ -153,9 +165,17 @@ public:
   //@{
 
   //! The specialization of Tpetra::Map that this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using map_type = Tpetra::Map<LO, GO, Node>;
+#else
+  using map_type = Tpetra::Map<Node>;
+#endif
   //! The specialization of Tpetra::MultiVector that this class uses.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using mv_type = Tpetra::MultiVector<Scalar, LO, GO, Node>;
+#else
+  using mv_type = Tpetra::MultiVector<Scalar, Node>;
+#endif
 
   //! The type of entries in the object.
   using scalar_type = Scalar;
@@ -221,21 +241,43 @@ public:
   BlockMultiVector ();
 
   //! Copy constructor (shallow copy).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>&) = default;
+#else
+  BlockMultiVector (const BlockMultiVector<Scalar, Node>&) = default;
+#endif
 
   //! Move constructor (shallow move).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockMultiVector (BlockMultiVector<Scalar, LO, GO, Node>&&) = default;
+#else
+  BlockMultiVector (BlockMultiVector<Scalar, Node>&&) = default;
+#endif
 
   //! Copy assigment (shallow copy).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockMultiVector<Scalar, LO, GO, Node>&
   operator= (const BlockMultiVector<Scalar, LO, GO, Node>&) = default;
+#else
+  BlockMultiVector<Scalar, Node>&
+  operator= (const BlockMultiVector<Scalar, Node>&) = default;
+#endif
 
   //! Move assigment (shallow move).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockMultiVector<Scalar, LO, GO, Node>&
   operator= (BlockMultiVector<Scalar, LO, GO, Node>&&) = default;
+#else
+  BlockMultiVector<Scalar, Node>&
+  operator= (BlockMultiVector<Scalar, Node>&&) = default;
+#endif
 
   //! "Copy constructor" with option to deep copy.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>& in,
+#else
+  BlockMultiVector (const BlockMultiVector<Scalar, Node>& in,
+#endif
                     const Teuchos::DataAccess copyOrView);
 
   /// \brief Constructor that takes a mesh Map, a block size, and a
@@ -301,7 +343,11 @@ public:
   ///   Map, supplying the corresponding point Map.
   ///
   /// This method corresponds to MultiVector's "offset view" constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>& X,
+#else
+  BlockMultiVector (const BlockMultiVector<Scalar, Node>& X,
+#endif
                     const map_type& newMeshMap,
                     const map_type& newPointMap,
                     const size_t offset = 0);
@@ -310,7 +356,11 @@ public:
   ///   Map; compute the new point Map.
   ///
   /// This method corresponds to MultiVector's "offset view" constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   BlockMultiVector (const BlockMultiVector<Scalar, LO, GO, Node>& X,
+#else
+  BlockMultiVector (const BlockMultiVector<Scalar, Node>& X,
+#endif
                     const map_type& newMeshMap,
                     const size_t offset = 0);
 
@@ -370,7 +420,11 @@ public:
   /// MultiVector.
   void
   update (const Scalar& alpha,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           const BlockMultiVector<Scalar, LO, GO, Node>& X,
+#else
+          const BlockMultiVector<Scalar, Node>& X,
+#endif
           const Scalar& beta);
 
   /// \brief <tt>*this := alpha * D * X</tt>, where D is a block
@@ -398,7 +452,11 @@ public:
   blockWiseMultiply (const Scalar& alpha,
                      const Kokkos::View<const impl_scalar_type***,
                        device_type, Kokkos::MemoryUnmanaged>& D,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      const BlockMultiVector<Scalar, LO, GO, Node>& X);
+#else
+                     const BlockMultiVector<Scalar, Node>& X);
+#endif
 
   /// \brief Block Jacobi update \f$Y = \beta * Y + \alpha D (X - Z)\f$.
   ///
@@ -434,8 +492,13 @@ public:
   blockJacobiUpdate (const Scalar& alpha,
                      const Kokkos::View<const impl_scalar_type***,
                        device_type, Kokkos::MemoryUnmanaged>& D,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      const BlockMultiVector<Scalar, LO, GO, Node>& X,
                      BlockMultiVector<Scalar, LO, GO, Node>& Z,
+#else
+                     const BlockMultiVector<Scalar, Node>& X,
+                     BlockMultiVector<Scalar, Node>& Z,
+#endif
                      const Scalar& beta);
 
   //@}
@@ -716,7 +779,11 @@ private:
   static Teuchos::RCP<const mv_type>
   getMultiVectorFromSrcDistObject (const Tpetra::SrcDistObject&);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static Teuchos::RCP<const BlockMultiVector<Scalar, LO, GO, Node> >
+#else
+  static Teuchos::RCP<const BlockMultiVector<Scalar, Node> >
+#endif
   getBlockMultiVectorFromSrcDistObject (const Tpetra::SrcDistObject& src);
 };
 

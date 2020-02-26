@@ -77,7 +77,11 @@ namespace MueLu {
     and local lexicographic mesh orderings are supported.
 */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Node>
+#endif
   class IndexManager : public BaseClass {
 #undef MUELU_INDEXMANAGER_SHORT
 #include "MueLu_UseShortNamesOrdinal.hpp"
@@ -86,6 +90,10 @@ namespace MueLu {
 
   protected:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     const RCP<const Teuchos::Comm<int> > comm_; ///< Communicator used by uncoupled aggregation
     const bool coupled_;                ///< Flag for coupled vs uncoupled aggregation mode, if true aggregation is coupled.
     const int numDimensions;            ///< Number of spacial dimensions in the problem

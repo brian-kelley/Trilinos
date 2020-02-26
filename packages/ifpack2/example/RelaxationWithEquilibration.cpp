@@ -84,9 +84,17 @@ tpetraToEpetraComm (const Teuchos::Comm<int>& tpetraComm)
 // Given a Tpetra::Map map_t, and comm_e, the result of
 // tpetraToEpetraComm(*(map_t.getComm())), return the corresponding
 // Epetra_Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 Epetra_Map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 tpetraToEpetraMap (const Tpetra::Map<LO, GO, NT>& map_t,
+#else
+tpetraToEpetraMap (const Tpetra::Map<NT>& map_t,
+#endif
                    const Epetra_Comm& comm_e)
 {
   const int gblNumInds = static_cast<int> (map_t.getGlobalNumElements ());
@@ -130,10 +138,18 @@ getRankSafelyFromTpetraDistObject (const TpetraDistObjectType& X)
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 std::pair<int, std::string>
 deep_copy (Epetra_Vector& X_e,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            const Tpetra::Vector<double, LO, GO, NT>& X_t)
+#else
+           const Tpetra::Vector<double, NT>& X_t)
+#endif
 {
   using host_view_type = Kokkos::View<double*, Kokkos::LayoutLeft,
     Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged> >;
@@ -188,9 +204,17 @@ deep_copy (Epetra_Vector& X_e,
   return {lclErrCode, ""};
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 std::pair<int, std::string>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 deep_copy (Tpetra::Vector<double, LO, GO, NT>& X_t,
+#else
+deep_copy (Tpetra::Vector<double, NT>& X_t,
+#endif
            const Epetra_Vector& X_e)
 {
   using host_view_type = Kokkos::View<const double*, Kokkos::LayoutLeft,
@@ -248,10 +272,18 @@ deep_copy (Tpetra::Vector<double, LO, GO, NT>& X_t,
   return {lclErrCode, ""};
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 std::pair<int, std::string>
 deep_copy (Epetra_MultiVector& X_e,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            const Tpetra::MultiVector<double, LO, GO, NT>& X_t)
+#else
+           const Tpetra::MultiVector<double, NT>& X_t)
+#endif
 {
   const int myRank = getRankSafelyFromTpetraDistObject (X_t);
   std::ostringstream errStrm;
@@ -288,9 +320,17 @@ deep_copy (Epetra_MultiVector& X_e,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 std::pair<int, std::string>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 deep_copy (Tpetra::MultiVector<double, LO, GO, NT>& X_t,
+#else
+deep_copy (Tpetra::MultiVector<double, NT>& X_t,
+#endif
            const Epetra_MultiVector& X_e)
 {
   const int myRank = getRankSafelyFromTpetraDistObject (X_t);
@@ -328,9 +368,17 @@ deep_copy (Tpetra::MultiVector<double, LO, GO, NT>& X_t,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 Epetra_Vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 tpetraToEpetraVector (const Tpetra::MultiVector<double, LO, GO, NT>& X_t,
+#else
+tpetraToEpetraVector (const Tpetra::MultiVector<double, NT>& X_t,
+#endif
                       const Epetra_Map& map_e)
 {
   TEUCHOS_TEST_FOR_EXCEPTION
@@ -367,9 +415,17 @@ tpetraToEpetraVector (const Tpetra::MultiVector<double, LO, GO, NT>& X_t,
   return X_e;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 Epetra_CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 tpetraToEpetraCrsMatrix (const Tpetra::CrsMatrix<double, LO, GO, NT>& A_t,
+#else
+tpetraToEpetraCrsMatrix (const Tpetra::CrsMatrix<double, NT>& A_t,
+#endif
                          const Epetra_Map& rowMap,
                          const Epetra_Map& colMap,
                          const Epetra_Map& domMap,
@@ -435,11 +491,21 @@ tpetraToEpetraCrsMatrix (const Tpetra::CrsMatrix<double, LO, GO, NT>& A_t,
 }
 
 // Return Epetra versions of (A, x, b).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LO, class GO, class NT>
+#else
+template<class NT>
+#endif
 std::tuple<Epetra_CrsMatrix, Epetra_Vector, Epetra_Vector>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 tpetraToEpetraLinearSystem (const Tpetra::CrsMatrix<double, LO, GO, NT>& A_t,
                             const Tpetra::MultiVector<double, LO, GO, NT>& x_t,
                             const Tpetra::MultiVector<double, LO, GO, NT>& b_t)
+#else
+tpetraToEpetraLinearSystem (const Tpetra::CrsMatrix<double, NT>& A_t,
+                            const Tpetra::MultiVector<double, NT>& x_t,
+                            const Tpetra::MultiVector<double, NT>& b_t)
+#endif
 {
   TEUCHOS_TEST_FOR_EXCEPTION
     (! A_t.isFillComplete (), std::invalid_argument,
@@ -875,17 +941,34 @@ bicgstab_no_prec_paper (MV& x,
   return std::make_tuple (scaled_r_norm, max_it, scaled_r_norm <= tol);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 std::pair<Teuchos::RCP<Tpetra::CrsMatrix<SC, LO, GO, NT> >,
           Teuchos::RCP<Tpetra::MultiVector<SC, LO, GO, NT> > >
+#else
+template<class SC, class NT>
+std::pair<Teuchos::RCP<Tpetra::CrsMatrix<SC, NT> >,
+          Teuchos::RCP<Tpetra::MultiVector<SC, NT> > >
+#endif
 gatherCrsMatrixAndMultiVector (LO& errCode,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                const Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
                                const Tpetra::MultiVector<SC, LO, GO, NT>& B)
+#else
+                               const Tpetra::CrsMatrix<SC, NT>& A,
+                               const Tpetra::MultiVector<SC, NT>& B)
+#endif
 {
   using Tpetra::Details::computeGatherMap;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
   using export_type = Tpetra::Export<LO, GO, NT>;
   using mv_type = Tpetra::MultiVector<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+  using export_type = Tpetra::Export<NT>;
+  using mv_type = Tpetra::MultiVector<SC, NT>;
+#endif
 
   auto rowMap_gathered = computeGatherMap (A.getRowMap (), Teuchos::null);
   export_type exp (A.getRowMap (), rowMap_gathered);
@@ -908,24 +991,43 @@ gatherCrsMatrixAndMultiVector (LO& errCode,
 using host_device_type = Kokkos::Device<Kokkos::DefaultHostExecutionSpace, Kokkos::HostSpace>;
 
 template<class SC = Tpetra::MultiVector<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          class LO = Tpetra::MultiVector<>::local_ordinal_type,
          class GO = Tpetra::MultiVector<>::global_ordinal_type,
+#endif
          class NT = Tpetra::MultiVector<>::node_type>
 using HostDenseMatrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Kokkos::View<typename Tpetra::MultiVector<SC, LO, GO, NT>::impl_scalar_type**,
+#else
+  Kokkos::View<typename Tpetra::MultiVector<SC, NT>::impl_scalar_type**,
+#endif
                Kokkos::LayoutLeft,
                host_device_type>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 HostDenseMatrix<SC, LO, GO, NT>
+#else
+template<class SC, class NT>
+HostDenseMatrix<SC, NT>
+#endif
 densifyGatheredCrsMatrix (LO& errCode,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                           const Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
+#else
+                          const Tpetra::CrsMatrix<SC, NT>& A,
+#endif
                           const std::string& label)
 {
   const LO numRows = LO (A.getRangeMap ()->getNodeNumElements ());
   const LO numCols = LO (A.getDomainMap ()->getNodeNumElements ());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using dense_matrix_type = HostDenseMatrix<SC, LO, GO, NT>;
+#else
+  using dense_matrix_type = HostDenseMatrix<SC, NT>;
+#endif
   dense_matrix_type A_dense (label, numRows, numCols);
 
   for (LO lclRow = 0; lclRow < numRows; ++lclRow) {
@@ -940,7 +1042,11 @@ densifyGatheredCrsMatrix (LO& errCode,
       for (LO k = 0; k < numEnt; ++k) {
         const LO lclCol = lclColInds[k];
         using impl_scalar_type =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typename Tpetra::CrsMatrix<SC, LO, GO, NT>::impl_scalar_type;
+#else
+          typename Tpetra::CrsMatrix<SC, NT>::impl_scalar_type;
+#endif
         A_dense(lclRow, lclCol) += impl_scalar_type (vals[k]);
       }
     }
@@ -949,12 +1055,22 @@ densifyGatheredCrsMatrix (LO& errCode,
   return A_dense;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 HostDenseMatrix<SC, LO, GO, NT>
 copyGatheredMultiVector (Tpetra::MultiVector<SC, LO, GO, NT>& X,
+#else
+template<class SC, class NT>
+HostDenseMatrix<SC, NT>
+copyGatheredMultiVector (Tpetra::MultiVector<SC, NT>& X,
+#endif
                          const std::string& label)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using dense_matrix_type = HostDenseMatrix<SC, LO, GO, NT>;
+#else
+  using dense_matrix_type = HostDenseMatrix<SC, NT>;
+#endif
 
   X.sync_host ();
   auto X_lcl = X.getLocalViewHost ();
@@ -965,12 +1081,23 @@ copyGatheredMultiVector (Tpetra::MultiVector<SC, LO, GO, NT>& X,
   return X_copy;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
+#else
+template<class SC, class NT>
+#endif
 LO
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 gatherAndDensify (HostDenseMatrix<SC, LO, GO, NT>& A_dense,
                   HostDenseMatrix<SC, LO, GO, NT>& B_dense,
                   const Tpetra::CrsMatrix<SC, LO, GO, NT>& A,
                   Tpetra::MultiVector<SC, LO, GO, NT>& B)
+#else
+gatherAndDensify (HostDenseMatrix<SC, NT>& A_dense,
+                  HostDenseMatrix<SC, NT>& B_dense,
+                  const Tpetra::CrsMatrix<SC, NT>& A,
+                  Tpetra::MultiVector<SC, NT>& B)
+#endif
 {
   LO errCode = 0;
   auto A_and_B_gathered = gatherCrsMatrixAndMultiVector (errCode, A, B);
@@ -1127,12 +1254,22 @@ findEigenvaluesAndReport (DenseMatrixType A)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class SC, class LO, class GO, class NT>
 Teuchos::RCP<Tpetra::CrsMatrix<SC, LO, GO, NT> >
 deepCopyFillCompleteCrsMatrix (const Tpetra::CrsMatrix<SC, LO, GO, NT>& A)
+#else
+template<class SC, class NT>
+Teuchos::RCP<Tpetra::CrsMatrix<SC, NT> >
+deepCopyFillCompleteCrsMatrix (const Tpetra::CrsMatrix<SC, NT>& A)
+#endif
 {
   using Teuchos::RCP;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   using crs_matrix_type = Tpetra::CrsMatrix<SC, LO, GO, NT>;
+#else
+  using crs_matrix_type = Tpetra::CrsMatrix<SC, NT>;
+#endif
 
   TEUCHOS_TEST_FOR_EXCEPTION
     (! A.isFillComplete (), std::invalid_argument,

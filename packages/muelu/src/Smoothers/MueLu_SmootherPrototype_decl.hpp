@@ -68,14 +68,26 @@ namespace MueLu {
   */
 
   template <class Scalar = SmootherBase<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = typename SmootherBase<Scalar>::local_ordinal_type,
             class GlobalOrdinal = typename SmootherBase<Scalar, LocalOrdinal>::global_ordinal_type,
             class Node = typename SmootherBase<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
+#else
+            class Node = typename SmootherBase<Scalar>::node_type>
+#endif
   class SmootherPrototype :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     public SmootherBase<Scalar, LocalOrdinal, GlobalOrdinal, Node>,
+#else
+    public SmootherBase<Scalar, Node>,
+#endif
     public Factory
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_type;
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;

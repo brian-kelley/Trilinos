@@ -63,7 +63,11 @@
 
 namespace {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortCrsEntriesTpetra, SC, LO, GO, NO )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortCrsEntriesTpetra, SC, NO )
+#endif
 {
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
@@ -77,7 +81,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortCrsEntriesTpetra, SC, LO, 
   Teuchos::ArrayView<LO>      CRS_colind(colind);
   Teuchos::ArrayView<SC>      CRS_values(values);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::CrsMatrixUtils<SC,LO,GO,NO>::sortCrsEntries(CRS_rowptr, CRS_colind, CRS_values,
+#else
+  Xpetra::CrsMatrixUtils<SC,NO>::sortCrsEntries(CRS_rowptr, CRS_colind, CRS_values,
+#endif
                                                       Xpetra::UseTpetra);
   bool sorted = true;
   for(decltype(CRS_rowptr.size()) row = 1; row < CRS_rowptr.size(); ++row) { // Loop over the matrix rows
@@ -91,7 +99,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortCrsEntriesTpetra, SC, LO, 
   TEST_EQUALITY(sorted, true);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortCrsEntriesEpetra, SC, LO, GO, NO )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortCrsEntriesEpetra, SC, NO )
+#endif
 {
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
@@ -105,7 +117,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortCrsEntriesEpetra, SC, LO, 
   Teuchos::ArrayView<LO>      CRS_colind(colind);
   Teuchos::ArrayView<SC>      CRS_values(values);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::CrsMatrixUtils<SC,LO,GO,NO>::sortCrsEntries(CRS_rowptr, CRS_colind, CRS_values,
+#else
+  Xpetra::CrsMatrixUtils<SC,NO>::sortCrsEntries(CRS_rowptr, CRS_colind, CRS_values,
+#endif
                                                       Xpetra::UseEpetra);
   bool sorted = true;
   for(decltype(CRS_rowptr.size()) row = 1; row < CRS_rowptr.size(); ++row) { // Loop over the matrix rows
@@ -120,7 +136,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortCrsEntriesEpetra, SC, LO, 
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortAndMergeCrsEntriesTpetra, SC, LO, GO, NO )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortAndMergeCrsEntriesTpetra, SC, NO )
+#endif
 {
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
@@ -138,7 +158,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortAndMergeCrsEntriesTpetra, 
   Teuchos::ArrayView<LO>      CRS_colind(colind);
   Teuchos::ArrayView<SC>      CRS_values(values);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::CrsMatrixUtils<SC,LO,GO,NO>::sortAndMergeCrsEntries(CRS_rowptr, CRS_colind, CRS_values,
+#else
+  Xpetra::CrsMatrixUtils<SC,NO>::sortAndMergeCrsEntries(CRS_rowptr, CRS_colind, CRS_values,
+#endif
                                                               Xpetra::UseTpetra);
 
   std::vector<size_t> resizedRows = {0, 5, 9, 13, 16};
@@ -171,7 +195,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortAndMergeCrsEntriesTpetra, 
   TEST_EQUALITY(merged , true);
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortAndMergeCrsEntriesEpetra, SC, LO, GO, NO )
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortAndMergeCrsEntriesEpetra, SC, NO )
+#endif
 {
   // get a comm and node
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
@@ -189,7 +217,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortAndMergeCrsEntriesEpetra, 
   Teuchos::ArrayView<LO>      CRS_colind(colind);
   Teuchos::ArrayView<SC>      CRS_values(values);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Xpetra::CrsMatrixUtils<SC,LO,GO,NO>::sortAndMergeCrsEntries(CRS_rowptr, CRS_colind, CRS_values,
+#else
+  Xpetra::CrsMatrixUtils<SC,NO>::sortAndMergeCrsEntries(CRS_rowptr, CRS_colind, CRS_values,
+#endif
                                                               Xpetra::UseEpetra);
 
   std::vector<size_t> resizedRows = {0, 5, 9, 13, 16};
@@ -229,14 +261,26 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(CrsMatrixUtils, sortAndMergeCrsEntriesEpetra, 
   //
 
   // List of tests which run only with Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_ORDINAL_TPETRAONLY(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrixUtils, sortCrsEntriesTpetra, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrixUtils, sortAndMergeCrsEntriesTpetra, SC, LO, GO, NO)
+#else
+#define UNIT_TEST_GROUP_ORDINAL_TPETRAONLY(SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrixUtils, sortCrsEntriesTpetra, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrixUtils, sortAndMergeCrsEntriesTpetra, SC, NO)
+#endif
 
   // List of tests which run only with Epetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_ORDINAL_EPETRAONLY(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrixUtils, sortCrsEntriesEpetra, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrixUtils, sortAndMergeCrsEntriesEpetra, SC, LO, GO, NO)
+#else
+#define UNIT_TEST_GROUP_ORDINAL_EPETRAONLY(SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrixUtils, sortCrsEntriesEpetra, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(CrsMatrixUtils, sortAndMergeCrsEntriesEpetra, SC, NO)
+#endif
 
 
 #if defined(HAVE_XPETRA_TPETRA)

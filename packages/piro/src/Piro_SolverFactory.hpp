@@ -79,7 +79,11 @@ public:
    *
    *  For Epetra-based models, additional options are available in Piro::Epetra::SolverFactory.
    */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal = default_lo, typename GlobalOrdinal = default_go,
+#else
+  template <typename Scalar,
+#endif
           typename Node = KokkosClassic::DefaultNode::DefaultNodeType>
   Teuchos::RCP<Thyra::ResponseOnlyModelEvaluatorBase<Scalar> > createSolver(
       const Teuchos::RCP<Teuchos::ParameterList> &piroParams,
@@ -87,7 +91,11 @@ public:
       const Teuchos::RCP<Thyra::AdaptiveSolutionManager> &solMgr,
       const Teuchos::RCP<Piro::ObserverBase<Scalar> > &observer = Teuchos::null);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <typename Scalar, typename LocalOrdinal = default_lo, typename GlobalOrdinal = default_go,
+#else
+  template <typename Scalar,
+#endif
           typename Node = KokkosClassic::DefaultNode::DefaultNodeType>
   Teuchos::RCP<Thyra::ResponseOnlyModelEvaluatorBase<Scalar> > createSolver(
       const Teuchos::RCP<Teuchos::ParameterList> &piroParams,

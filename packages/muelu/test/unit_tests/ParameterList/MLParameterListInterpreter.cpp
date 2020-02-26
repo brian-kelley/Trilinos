@@ -56,7 +56,11 @@
 
 namespace MueLuTests {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(MLParameterListInterpreter, SetParameterList, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(MLParameterListInterpreter, SetParameterList, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -73,7 +77,11 @@ namespace MueLuTests {
     MUELU_TESTING_DO_NOT_TEST(Xpetra::UseTpetra, "Tpetra, Ifpack2, Amesos2");
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers::TestFactory<SC, LO, GO, NO>::Build1DPoisson(99);
+#else
+    RCP<Matrix> A = TestHelpers::TestFactory<SC, NO>::Build1DPoisson(99);
+#endif
     Teuchos::ParameterList galeriParameters;
     galeriParameters.set<GO>("nx", 99);
     RCP<MultiVector> coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map,MultiVector>("1D", A->getRowMap(), galeriParameters);
@@ -100,8 +108,13 @@ namespace MueLuTests {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #  define MUELU_ETI_GROUP(SC, LO, GO, Node) \
       TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(MLParameterListInterpreter, SetParameterList, SC, LO, GO, Node) \
+#else
+#  define MUELU_ETI_GROUP(SC, Node) \
+      TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(MLParameterListInterpreter, SetParameterList, SC, Node) \
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

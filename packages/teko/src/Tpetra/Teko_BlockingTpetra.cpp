@@ -72,8 +72,13 @@ namespace Blocking {
   */
 const MapPair buildSubMap(const std::vector< GO > & gid, const Teuchos::Comm<int> &comm)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Tpetra::Map<LO,GO,NT> > gidMap = rcp(new Tpetra::Map<LO,GO,NT>(-1,Teuchos::ArrayView<const GO>(gid),0,rcpFromRef(comm)));
    Teuchos::RCP<Tpetra::Map<LO,GO,NT> > contigMap = rcp(new Tpetra::Map<LO,GO,NT>(-1,gid.size(),0,rcpFromRef(comm)));
+#else
+   Teuchos::RCP<Tpetra::Map<NT> > gidMap = rcp(new Tpetra::Map<NT>(-1,Teuchos::ArrayView<const GO>(gid),0,rcpFromRef(comm)));
+   Teuchos::RCP<Tpetra::Map<NT> > contigMap = rcp(new Tpetra::Map<NT>(-1,gid.size(),0,rcpFromRef(comm)));
+#endif
 
    return std::make_pair(gidMap,contigMap); 
 }
@@ -87,10 +92,19 @@ const MapPair buildSubMap(const std::vector< GO > & gid, const Teuchos::Comm<int
   *
   * \returns A pair containing pointers to the Import/Export objects.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 const ImExPair buildExportImport(const Tpetra::Map<LO,GO,NT> & baseMap,const MapPair & maps)
+#else
+const ImExPair buildExportImport(const Tpetra::Map<NT> & baseMap,const MapPair & maps)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    return std::make_pair(rcp(new Tpetra::Import<LO,GO,NT>(rcpFromRef(baseMap),maps.first)),
                          rcp(new Tpetra::Export<LO,GO,NT>(maps.first,rcpFromRef(baseMap))));
+#else
+   return std::make_pair(rcp(new Tpetra::Import<NT>(rcpFromRef(baseMap),maps.first)),
+                         rcp(new Tpetra::Export<NT>(maps.first,rcpFromRef(baseMap))));
+#endif
 }
 
 /** Using a list of map pairs created by <code>buildSubMap</code>, buidl the corresponding
@@ -101,14 +115,22 @@ const ImExPair buildExportImport(const Tpetra::Map<LO,GO,NT> & baseMap,const Map
   * \param[in] count Number of multivectors to build.
   */
 void buildSubVectors(const std::vector<MapPair> & maps,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                      std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > & vectors,int count)
+#else
+                     std::vector<RCP<Tpetra::MultiVector<ST,NT> > > & vectors,int count)
+#endif
 {
    std::vector<MapPair>::const_iterator mapItr;
    
    // loop over all maps
    for(mapItr=maps.begin();mapItr!=maps.end();mapItr++) {
       // add new elements to vectors
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Tpetra::MultiVector<ST,LO,GO,NT> > mv = rcp(new Tpetra::MultiVector<ST,LO,GO,NT>((*mapItr).second,count));
+#else
+      RCP<Tpetra::MultiVector<ST,NT> > mv = rcp(new Tpetra::MultiVector<ST,NT>((*mapItr).second,count));
+#endif
       vectors.push_back(mv);
    } 
 }
@@ -119,21 +141,39 @@ void buildSubVectors(const std::vector<MapPair> & maps,
   * \param[in] one The source vector.
   * \param[in] subImport A list of import objects to use in copying.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void one2many(std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > & many, const Tpetra::MultiVector<ST,LO,GO,NT> & single,
                                                             const std::vector<RCP<Tpetra::Import<LO,GO,NT> > > & subImport)
+#else
+void one2many(std::vector<RCP<Tpetra::MultiVector<ST,NT> > > & many, const Tpetra::MultiVector<ST,NT> & single,
+                                                            const std::vector<RCP<Tpetra::Import<NT> > > & subImport)
+#endif
 {
    // std::vector<RCP<Epetra_Vector> >::const_iterator vecItr;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > >::const_iterator vecItr;
    std::vector<RCP<Tpetra::Import<LO,GO,NT> > >::const_iterator impItr;
+#else
+   std::vector<RCP<Tpetra::MultiVector<ST,NT> > >::const_iterator vecItr;
+   std::vector<RCP<Tpetra::Import<NT> > >::const_iterator impItr;
+#endif
 
    // using Importers fill the sub vectors from the mama vector
    for(vecItr=many.begin(),impItr=subImport.begin();
        vecItr!=many.end();++vecItr,++impItr) {
       // for ease of access to the destination
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Tpetra::MultiVector<ST,LO,GO,NT> > destVec = *vecItr;
+#else
+      RCP<Tpetra::MultiVector<ST,NT> > destVec = *vecItr;
+#endif
 
       // extract the map with global indicies from the current vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::Map<LO,GO,NT> & globalMap = *(*impItr)->getTargetMap();
+#else
+      const Tpetra::Map<NT> & globalMap = *(*impItr)->getTargetMap();
+#endif
 
       // build the import vector as a view on the destination
       GO lda = destVec->getStride();
@@ -141,12 +181,20 @@ void one2many(std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > & many, const
       std::vector<ST> destArray(destSize);
       Teuchos::ArrayView<ST> destVals(destArray);
       destVec->get1dCopy(destVals,lda);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> importVector(rcpFromRef(globalMap),destVals,lda,destVec->getNumVectors());
+#else
+      Tpetra::MultiVector<ST,NT> importVector(rcpFromRef(globalMap),destVals,lda,destVec->getNumVectors());
+#endif
 
       // perform the import
       importVector.doImport(single,**impItr,Tpetra::INSERT);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::Import<LO,GO,NT> importer(destVec->getMap(),destVec->getMap());
+#else
+      Tpetra::Import<NT> importer(destVec->getMap(),destVec->getMap());
+#endif
       importVector.replaceMap(destVec->getMap());
       destVec->doExport(importVector,importer,Tpetra::INSERT);
    }
@@ -161,22 +209,40 @@ void one2many(std::vector<RCP<Tpetra::MultiVector<ST,LO,GO,NT> > > & many, const
   * \param[in] many Sub-vectors created by <code>buildSubVectors</code> used to fill <code>one</code>.
   * \param[in] subExport A list of export objects to use in copying.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void many2one(Tpetra::MultiVector<ST,LO,GO,NT> & one, const std::vector<RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > > & many,
                                         const std::vector<RCP<Tpetra::Export<LO,GO,NT> > > & subExport)
+#else
+void many2one(Tpetra::MultiVector<ST,NT> & one, const std::vector<RCP<const Tpetra::MultiVector<ST,NT> > > & many,
+                                        const std::vector<RCP<Tpetra::Export<NT> > > & subExport)
+#endif
 {
    // std::vector<RCP<const Epetra_Vector> >::const_iterator vecItr;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > >::const_iterator vecItr;
    std::vector<RCP<Tpetra::Export<LO,GO,NT> > >::const_iterator expItr;
+#else
+   std::vector<RCP<const Tpetra::MultiVector<ST,NT> > >::const_iterator vecItr;
+   std::vector<RCP<Tpetra::Export<NT> > >::const_iterator expItr;
+#endif
 
    // using Exporters fill the empty vector from the sub-vectors
    for(vecItr=many.begin(),expItr=subExport.begin();
        vecItr!=many.end();++vecItr,++expItr) {
 
       // for ease of access to the source
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<const Tpetra::MultiVector<ST,LO,GO,NT> > srcVec = *vecItr;
+#else
+      RCP<const Tpetra::MultiVector<ST,NT> > srcVec = *vecItr;
+#endif
 
       // extract the map with global indicies from the current vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::Map<LO,GO,NT> & globalMap = *(*expItr)->getSourceMap();
+#else
+      const Tpetra::Map<NT> & globalMap = *(*expItr)->getSourceMap();
+#endif
 
       // build the export vector as a view of the destination
       GO lda = srcVec->getStride();
@@ -184,7 +250,11 @@ void many2one(Tpetra::MultiVector<ST,LO,GO,NT> & one, const std::vector<RCP<cons
       std::vector<ST> srcArray(srcSize);
       Teuchos::ArrayView<ST> srcVals(srcArray);
       srcVec->get1dCopy(srcVals,lda);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::MultiVector<ST,LO,GO,NT> exportVector(rcpFromRef(globalMap),srcVals,lda,srcVec->getNumVectors());
+#else
+      Tpetra::MultiVector<ST,NT> exportVector(rcpFromRef(globalMap),srcVals,lda,srcVec->getNumVectors());
+#endif
 
       // perform the export
       one.doExport(exportVector,**expItr,Tpetra::INSERT);
@@ -196,13 +266,26 @@ void many2one(Tpetra::MultiVector<ST,LO,GO,NT> & one, const std::vector<RCP<cons
   * sub-block row map. The other columns will be filled with the contiguous row map
   * values.
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 RCP<Tpetra::Vector<GO,LO,GO,NT> > getSubBlockColumnGIDs(const Tpetra::CrsMatrix<ST,LO,GO,NT> & A,const MapPair & mapPair)
+#else
+RCP<Tpetra::Vector<GO,NT> > getSubBlockColumnGIDs(const Tpetra::CrsMatrix<ST,NT> & A,const MapPair & mapPair)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::Map<LO,GO,NT> > blkGIDMap = mapPair.first;
    RCP<const Tpetra::Map<LO,GO,NT> > blkContigMap = mapPair.second;
+#else
+   RCP<const Tpetra::Map<NT> > blkGIDMap = mapPair.first;
+   RCP<const Tpetra::Map<NT> > blkContigMap = mapPair.second;
+#endif
 
    // fill index vector for rows
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Vector<GO,LO,GO,NT> rIndex(A.getRowMap(),true);
+#else
+   Tpetra::Vector<GO,NT> rIndex(A.getRowMap(),true);
+#endif
    for(size_t i=0;i<A.getNodeNumRows();i++) {
       // LID is need to get to contiguous map
       LO lid = blkGIDMap->getLocalElement(A.getRowMap()->getGlobalElement(i)); // this LID makes me nervous
@@ -214,27 +297,47 @@ RCP<Tpetra::Vector<GO,LO,GO,NT> > getSubBlockColumnGIDs(const Tpetra::CrsMatrix<
 
    // get relavant column indices
    
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Tpetra::Import<LO,GO,NT> import(A.getRowMap(),A.getColMap());
    RCP<Tpetra::Vector<GO,LO,GO,NT> > cIndex = rcp(new Tpetra::Vector<GO,LO,GO,NT>(A.getColMap(),true));
+#else
+   Tpetra::Import<NT> import(A.getRowMap(),A.getColMap());
+   RCP<Tpetra::Vector<GO,NT> > cIndex = rcp(new Tpetra::Vector<GO,NT>(A.getColMap(),true));
+#endif
    cIndex->doImport(rIndex,import,Tpetra::INSERT);
 
    return cIndex;
 }
 
 // build a single subblock Epetra_CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > buildSubBlock(int i,int j,const RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> >& A,const std::vector<MapPair> & subMaps)
+#else
+RCP<Tpetra::CrsMatrix<ST,NT> > buildSubBlock(int i,int j,const RCP<const Tpetra::CrsMatrix<ST,NT> >& A,const std::vector<MapPair> & subMaps)
+#endif
 {
    // get the number of variables families
    int numVarFamily = subMaps.size();
 
    TEUCHOS_ASSERT(i>=0 && i<numVarFamily);
    TEUCHOS_ASSERT(j>=0 && j<numVarFamily);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::Map<LO,GO,NT> > gRowMap = subMaps[i].first; // new GIDs
    const RCP<const Tpetra::Map<LO,GO,NT> > rowMap = subMaps[i].second; // contiguous GIDs
    const RCP<const Tpetra::Map<LO,GO,NT> > colMap = subMaps[j].second;
+#else
+   const RCP<const Tpetra::Map<NT> > gRowMap = subMaps[i].first; // new GIDs
+   const RCP<const Tpetra::Map<NT> > rowMap = subMaps[i].second; // contiguous GIDs
+   const RCP<const Tpetra::Map<NT> > colMap = subMaps[j].second;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Vector<GO,LO,GO,NT> > plocal2ContigGIDs = getSubBlockColumnGIDs(*A,subMaps[j]);
    Tpetra::Vector<GO,LO,GO,NT> & local2ContigGIDs = *plocal2ContigGIDs;
+#else
+   const RCP<Tpetra::Vector<GO,NT> > plocal2ContigGIDs = getSubBlockColumnGIDs(*A,subMaps[j]);
+   Tpetra::Vector<GO,NT> & local2ContigGIDs = *plocal2ContigGIDs;
+#endif
 
 
    // get entry information
@@ -275,7 +378,11 @@ RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > buildSubBlock(int i,int j,const RCP<const T
       nEntriesPerRow[localRow] = numOwnedCols;
    }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > mat = rcp(new Tpetra::CrsMatrix<ST,LO,GO,NT>(rowMap,Teuchos::ArrayView<size_t>(nEntriesPerRow)));
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > mat = rcp(new Tpetra::CrsMatrix<ST,NT>(rowMap,Teuchos::ArrayView<size_t>(nEntriesPerRow)));
+#endif
 
    // insert each row into subblock
    // let FillComplete handle column distribution
@@ -317,7 +424,11 @@ RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > buildSubBlock(int i,int j,const RCP<const T
 }
 
 // build a single subblock Epetra_CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 void rebuildSubBlock(int i,int j,const RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> >& A,const std::vector<MapPair> & subMaps,Tpetra::CrsMatrix<ST,LO,GO,NT> & mat)
+#else
+void rebuildSubBlock(int i,int j,const RCP<const Tpetra::CrsMatrix<ST,NT> >& A,const std::vector<MapPair> & subMaps,Tpetra::CrsMatrix<ST,NT> & mat)
+#endif
 {
    // get the number of variables families
    int numVarFamily = subMaps.size();
@@ -325,12 +436,23 @@ void rebuildSubBlock(int i,int j,const RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> 
    TEUCHOS_ASSERT(i>=0 && i<numVarFamily);
    TEUCHOS_ASSERT(j>=0 && j<numVarFamily);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const Tpetra::Map<LO,GO,NT> & gRowMap = *subMaps[i].first; // new GIDs
    const Tpetra::Map<LO,GO,NT> & rowMap = *subMaps[i].second; // contiguous GIDs
    const Tpetra::Map<LO,GO,NT> & colMap = *subMaps[j].second;
+#else
+   const Tpetra::Map<NT> & gRowMap = *subMaps[i].first; // new GIDs
+   const Tpetra::Map<NT> & rowMap = *subMaps[i].second; // contiguous GIDs
+   const Tpetra::Map<NT> & colMap = *subMaps[j].second;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<Tpetra::Vector<GO,LO,GO,NT> > plocal2ContigGIDs = getSubBlockColumnGIDs(*A,subMaps[j]);
    Tpetra::Vector<GO,LO,GO,NT> & local2ContigGIDs = *plocal2ContigGIDs;
+#else
+   const RCP<Tpetra::Vector<GO,NT> > plocal2ContigGIDs = getSubBlockColumnGIDs(*A,subMaps[j]);
+   Tpetra::Vector<GO,NT> & local2ContigGIDs = *plocal2ContigGIDs;
+#endif
 
    mat.resumeFill();
    mat.setAllToScalar(0.0);

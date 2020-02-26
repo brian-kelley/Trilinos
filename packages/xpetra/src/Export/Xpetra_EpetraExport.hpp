@@ -59,10 +59,17 @@
 namespace Xpetra {
 
   // TODO: move that elsewhere
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class GlobalOrdinal, class Node>
   const Epetra_Export & toEpetra(const Export<int, GlobalOrdinal, Node> &);
   template<class GlobalOrdinal, class Node>
   RCP<const Export<int, GlobalOrdinal, Node> > toXpetra(const Epetra_Export *exp);
+#else
+  template<class Node>
+  const Epetra_Export & toEpetra(const Export<Node> &);
+  template<class Node>
+  RCP<const Export<Node> > toXpetra(const Epetra_Export *exp);
+#endif
 
   template<class EpetraGlobalOrdinal, class Node>
   class EpetraExportT
@@ -72,7 +79,11 @@ namespace Xpetra {
     typedef int LocalOrdinal;
     typedef EpetraGlobalOrdinal GlobalOrdinal;
     //! The specialization of Map used by this class.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LocalOrdinal,GlobalOrdinal,Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
 
   public:
 
@@ -145,10 +156,18 @@ namespace Xpetra {
     ArrayView< const int > getExportPIDs() const { XPETRA_MONITOR("EpetraExportT::getExportImageIDs"); return ArrayView<const int> (export_->ExportPIDs(),export_->NumExportIDs()); }
 
     //! The source Map used to construct this Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getSourceMap() const { XPETRA_MONITOR("EpetraExportT::getSourceMap"); return toXpetra<GlobalOrdinal, Node>(export_->SourceMap()); }
+#else
+    Teuchos::RCP< const Map<Node > > getSourceMap() const { XPETRA_MONITOR("EpetraExportT::getSourceMap"); return toXpetra<GlobalOrdinal, Node>(export_->SourceMap()); }
+#endif
 
     //! The target Map used to construct this Export.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > getTargetMap() const { XPETRA_MONITOR("EpetraExportT::getTargetMap"); return toXpetra<GlobalOrdinal, Node>(export_->TargetMap()); }
+#else
+    Teuchos::RCP< const Map<Node > > getTargetMap() const { XPETRA_MONITOR("EpetraExportT::getTargetMap"); return toXpetra<GlobalOrdinal, Node>(export_->TargetMap()); }
+#endif
 
     //! Set parameters on the underlying object
     void setDistributorParameters(const Teuchos::RCP<Teuchos::ParameterList> params) const { XPETRA_MONITOR("EpetraExportT::setDistributorParameters"); }

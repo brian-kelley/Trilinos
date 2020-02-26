@@ -55,7 +55,11 @@ namespace panzer {
 // **************************************************************
 
 template <typename TRAITS,typename LO,typename GO,typename NodeT>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>
+#else
+class ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,NodeT>
+#endif
   : public panzer::EvaluatorWithBaseImpl<TRAITS>,
     public PHX::EvaluatorDerived<panzer::Traits::Hessian, TRAITS>,
     public panzer::CloneableEvaluator {
@@ -75,12 +79,17 @@ public:
   void evaluateFields(typename TRAITS::EvalData workset);
   
   virtual Teuchos::RCP<CloneableEvaluator> clone(const Teuchos::ParameterList & pl) const
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   { return Teuchos::rcp(new ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,LO,GO,NodeT>(globalIndexer_,pl)); }
+#else
+  { return Teuchos::rcp(new ScatterResidual_BlockedTpetra<panzer::Traits::Hessian,TRAITS,NodeT>(globalIndexer_,pl)); }
+#endif
 
 private:
   typedef typename panzer::Traits::Hessian::ScalarT ScalarT;
   typedef typename TRAITS::RealType RealType;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef BlockedTpetraLinearObjContainer<RealType,LO,GO,NodeT> ContainerType;
   typedef Tpetra::Vector<RealType,LO,GO,NodeT> VectorType;
   typedef Tpetra::CrsMatrix<RealType,LO,GO,NodeT> CrsMatrixType;
@@ -88,6 +97,15 @@ private:
   typedef Tpetra::Map<LO,GO,NodeT> MapType;
   typedef Tpetra::Import<LO,GO,NodeT> ImportType;
   typedef Tpetra::Export<LO,GO,NodeT> ExportType;
+#else
+  typedef BlockedTpetraLinearObjContainer<RealType,NodeT> ContainerType;
+  typedef Tpetra::Vector<RealType,NodeT> VectorType;
+  typedef Tpetra::CrsMatrix<RealType,NodeT> CrsMatrixType;
+  typedef Tpetra::CrsGraph<NodeT> CrsGraphType;
+  typedef Tpetra::Map<NodeT> MapType;
+  typedef Tpetra::Import<NodeT> ImportType;
+  typedef Tpetra::Export<NodeT> ExportType;
+#endif
 
   // dummy field so that the evaluator will have something to do
   Teuchos::RCP<PHX::FieldTag> scatterHolder_;
@@ -108,7 +126,11 @@ private:
   Teuchos::RCP<const std::map<std::string,std::string> > fieldMap_;
 
   std::string globalDataKey_; // what global data does this fill?
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const BlockedTpetraLinearObjContainer<RealType,LO,GO,NodeT> > blockedContainer_;
+#else
+  Teuchos::RCP<const BlockedTpetraLinearObjContainer<RealType,NodeT> > blockedContainer_;
+#endif
 
   ScatterResidual_BlockedTpetra();
 };

@@ -132,9 +132,15 @@ Teko::LinearOp FullMaxwellPreconditionerFactory::buildPreconditionerOperator(Tek
          typedef int LocalOrdinal;
          typedef panzer::GlobalOrdinal GlobalOrdinal;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          RCP<const Thyra::TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(K2,true);
          RCP<Thyra::TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node> > tOp2 = Teuchos::rcp_const_cast<Thyra::TpetraLinearOp<Scalar,LocalOrdinal,GlobalOrdinal,Node>>(tOp);
          RCP<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > crsOp = rcp_dynamic_cast<Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(tOp2->getTpetraOperator(),true);
+#else
+         RCP<const Thyra::TpetraLinearOp<Scalar,Node> > tOp = rcp_dynamic_cast<const Thyra::TpetraLinearOp<Scalar,Node> >(K2,true);
+         RCP<Thyra::TpetraLinearOp<Scalar,Node> > tOp2 = Teuchos::rcp_const_cast<Thyra::TpetraLinearOp<Scalar,Node>>(tOp);
+         RCP<Tpetra::CrsMatrix<Scalar,Node> > crsOp = rcp_dynamic_cast<Tpetra::CrsMatrix<Scalar,Node> >(tOp2->getTpetraOperator(),true);
+#endif
          crsOp->resumeFill();
          crsOp->scale(dt);
          crsOp->fillComplete(crsOp->getDomainMap(),crsOp->getRangeMap());
@@ -205,7 +211,11 @@ Teko::LinearOp FullMaxwellPreconditionerFactory::buildPreconditionerOperator(Tek
 #else
          if (useTpetra && (S_E_prec_type_ == "MueLuRefMaxwell")) {
 #endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            RCP<Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > Coordinates = S_E_prec_pl.get<RCP<Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node> > >("Coordinates");
+#else
+           RCP<Tpetra::MultiVector<Scalar, Node> > Coordinates = S_E_prec_pl.get<RCP<Tpetra::MultiVector<Scalar, Node> > >("Coordinates");
+#endif
            S_E_prec_pl.sublist("Preconditioner Types").sublist(S_E_prec_type_).set("Coordinates",Coordinates);
 #ifndef PANZER_HIDE_DEPRECATED_CODE
          } else if (!useTpetra && ((S_E_prec_type_ == "MueLuRefMaxwell") || (S_E_prec_type_ == "MueLuRefMaxwell-Tpetra"))) {

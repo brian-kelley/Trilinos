@@ -81,10 +81,18 @@ string Ifpack2_toString(const double& x);
 
 //! Prints on cout the true residual.
 int Ifpack2_PrintResidual(char* Label,  const Tpetra_RowMatrix& A,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>&Y);
+#else
+                         const Tpetra_MultiVector<Scalar,Node>& X, const Tpetra_MultiVector<Scalar,Node>&Y);
+#endif
 
 int Ifpack2_PrintResidual(const int iter, const Tpetra_RowMatrix& A,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                          const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& X, const Tpetra_MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>&Y);
+#else
+                         const Tpetra_MultiVector<Scalar,Node>& X, const Tpetra_MultiVector<Scalar,Node>&Y);
+#endif
 
 void Ifpack2_PrintSparsity_Simple(const Tpetra_RowMatrix& A);
 

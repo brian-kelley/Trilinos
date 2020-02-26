@@ -321,8 +321,13 @@ struct ScalarViewTraits<Sacado::UQ::PCE<S>, D> {
 } // namespace Tpetra
 
 namespace Kokkos {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class S, class L, class G, class N>
   size_t dimension_scalar(const Tpetra::MultiVector<S,L,G,N>& mv) {
+#else
+  template <class S, class N>
+  size_t dimension_scalar(const Tpetra::MultiVector<S,N>& mv) {
+#endif
     if ( mv.need_sync_device() ) {
       // NOTE (mfh 02 Apr 2019) This doesn't look right.  Shouldn't I
       // want the most recently updated View, which in this case would
@@ -334,8 +339,13 @@ namespace Kokkos {
     return dimension_scalar(mv.getLocalViewHost());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class S, class L, class G, class N>
   size_t dimension_scalar(const Tpetra::Vector<S,L,G,N>& v) {
+#else
+  template <class S, class N>
+  size_t dimension_scalar(const Tpetra::Vector<S,N>& v) {
+#endif
     if ( v.need_sync_device() ) {
       // NOTE (mfh 02 Apr 2019) This doesn't look right.  Shouldn't I
       // want the most recently updated View, which in this case would

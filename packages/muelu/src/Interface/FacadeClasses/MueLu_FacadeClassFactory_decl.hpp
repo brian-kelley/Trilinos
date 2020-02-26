@@ -56,13 +56,21 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class FacadeClassFactory
   : public virtual BaseClass{
 #undef MUELU_FACADECLASSFACTORY_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors/Destructors
     //@{
 
@@ -87,13 +95,21 @@ namespace MueLu {
      * @param[in] name: name that is used to access Facade class
      * @param[in] facadeclass: RCP pointer to facade class instance
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void RegisterFacadeClass(std::string name, Teuchos::RCP<FacadeClassBase<Scalar,LocalOrdinal,GlobalOrdinal,Node> > facadeclass) {
+#else
+    void RegisterFacadeClass(std::string name, Teuchos::RCP<FacadeClassBase<Scalar,Node> > facadeclass) {
+#endif
       facadeClasses_[name] = facadeclass;
     }
 
   private:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     std::map<std::string, Teuchos::RCP<FacadeClassBase<Scalar,LocalOrdinal,GlobalOrdinal,Node> > > facadeClasses_;
+#else
+    std::map<std::string, Teuchos::RCP<FacadeClassBase<Scalar,Node> > > facadeClasses_;
+#endif
 
   };
 

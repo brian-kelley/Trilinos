@@ -60,9 +60,17 @@
 
 namespace Tpetra {
   namespace Details {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Directory<LO, GO, NT>::
+#else
+    Directory<NT>::
+#endif
     getEntries (const map_type& map,
                 const Teuchos::ArrayView<const GO> &globalIDs,
                 const Teuchos::ArrayView<int> &nodeIDs,
@@ -98,16 +106,29 @@ namespace Tpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
     ReplicatedDirectory<LO, GO, NT>::
+#else
+    template<class NT>
+    ReplicatedDirectory<NT>::
+#endif
     ReplicatedDirectory (const map_type& map) :
       numProcs_ (map.getComm ()->getSize ())
     {}
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ReplicatedDirectory<LO, GO, NT>::
+#else
+    ReplicatedDirectory<NT>::
+#endif
     isOneToOne (const Teuchos::Comm<int>& /* comm */) const
     {
       // A locally replicated Map is one-to-one only if there is no
@@ -117,9 +138,17 @@ namespace Tpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ReplicatedDirectory<LO, GO, NT>::description () const
+#else
+    ReplicatedDirectory<NT>::description () const
+#endif
     {
       std::ostringstream os;
       os << "ReplicatedDirectory"
@@ -130,8 +159,13 @@ namespace Tpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
     ContiguousUniformDirectory<LO, GO, NT>::
+#else
+    template<class NT>
+    ContiguousUniformDirectory<NT>::
+#endif
     ContiguousUniformDirectory (const map_type& map)
     {
       TEUCHOS_TEST_FOR_EXCEPTION(! map.isContiguous (), std::invalid_argument,
@@ -141,9 +175,17 @@ namespace Tpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ContiguousUniformDirectory<LO, GO, NT>::description () const
+#else
+    ContiguousUniformDirectory<NT>::description () const
+#endif
     {
       std::ostringstream os;
       os << "ContiguousUniformDirectory"
@@ -154,9 +196,17 @@ namespace Tpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ContiguousUniformDirectory<LO, GO, NT>::
+#else
+    ContiguousUniformDirectory<NT>::
+#endif
     getEntriesImpl (const map_type& map,
                     const Teuchos::ArrayView<const GO> &globalIDs,
                     const Teuchos::ArrayView<int> &nodeIDs,
@@ -281,8 +331,13 @@ namespace Tpetra {
       return res;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
     DistributedContiguousDirectory<LO, GO, NT>::
+#else
+    template<class NT>
+    DistributedContiguousDirectory<NT>::
+#endif
     DistributedContiguousDirectory (const map_type& map)
     {
       using Teuchos::arcp;
@@ -357,9 +412,17 @@ namespace Tpetra {
         + Teuchos::OrdinalTraits<GO>::one ();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistributedContiguousDirectory<LO, GO, NT>::description () const
+#else
+    DistributedContiguousDirectory<NT>::description () const
+#endif
     {
       std::ostringstream os;
       os << "DistributedContiguousDirectory"
@@ -369,9 +432,17 @@ namespace Tpetra {
       return os.str ();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     ReplicatedDirectory<LO, GO, NT>::
+#else
+    ReplicatedDirectory<NT>::
+#endif
     getEntriesImpl (const map_type& map,
                     const Teuchos::ArrayView<const GO> &globalIDs,
                     const Teuchos::ArrayView<int> &nodeIDs,
@@ -412,9 +483,17 @@ namespace Tpetra {
       return res;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistributedContiguousDirectory<LO, GO, NT>::
+#else
+    DistributedContiguousDirectory<NT>::
+#endif
     getEntriesImpl (const map_type& map,
                     const Teuchos::ArrayView<const GO> &globalIDs,
                     const Teuchos::ArrayView<int> &nodeIDs,
@@ -484,8 +563,13 @@ namespace Tpetra {
       return res;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
     DistributedNoncontiguousDirectory<LO, GO, NT>::
+#else
+    template<class NT>
+    DistributedNoncontiguousDirectory<NT>::
+#endif
     DistributedNoncontiguousDirectory (const map_type& map) :
       oneToOneResult_ (ONE_TO_ONE_NOT_CALLED_YET), // to be revised below
       locallyOneToOne_ (true), // to be revised below
@@ -494,8 +578,13 @@ namespace Tpetra {
       initialize (map, Teuchos::null);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
     DistributedNoncontiguousDirectory<LO, GO, NT>::
+#else
+    template<class NT>
+    DistributedNoncontiguousDirectory<NT>::
+#endif
     DistributedNoncontiguousDirectory (const map_type& map,
                                        const tie_break_type& tie_break) :
       oneToOneResult_ (ONE_TO_ONE_NOT_CALLED_YET), // to be revised below
@@ -505,9 +594,17 @@ namespace Tpetra {
       initialize (map, Teuchos::ptrFromRef (tie_break));
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistributedNoncontiguousDirectory<LO, GO, NT>::
+#else
+    DistributedNoncontiguousDirectory<NT>::
+#endif
     initialize (const map_type& map,
                 Teuchos::Ptr<const tie_break_type> tie_break)
     {
@@ -915,9 +1012,17 @@ namespace Tpetra {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistributedNoncontiguousDirectory<LO, GO, NT>::description () const
+#else
+    DistributedNoncontiguousDirectory<NT>::description () const
+#endif
     {
       std::ostringstream os;
       os << "DistributedNoncontiguousDirectory"
@@ -927,9 +1032,17 @@ namespace Tpetra {
       return os.str ();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistributedNoncontiguousDirectory<LO, GO, NT>::
+#else
+    DistributedNoncontiguousDirectory<NT>::
+#endif
     getEntriesImpl (const map_type& map,
                     const Teuchos::ArrayView<const GO> &globalIDs,
                     const Teuchos::ArrayView<int> &nodeIDs,
@@ -1265,9 +1378,17 @@ namespace Tpetra {
     }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template<class LO, class GO, class NT>
+#else
+    template<class NT>
+#endif
     bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     DistributedNoncontiguousDirectory<LO, GO, NT>::
+#else
+    DistributedNoncontiguousDirectory<NT>::
+#endif
     isOneToOne (const Teuchos::Comm<int>& comm) const
     {
       if (oneToOneResult_ == ONE_TO_ONE_NOT_CALLED_YET) {
@@ -1287,13 +1408,25 @@ namespace Tpetra {
 //
 // Must be expanded from within the Tpetra namespace!
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define TPETRA_DIRECTORYIMPL_INSTANT(LO,GO,NODE) \
+#else
+#define TPETRA_DIRECTORYIMPL_INSTANT(NODE) \
+#endif
   namespace Details { \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template class Directory< LO , GO , NODE >; \
     template class ReplicatedDirectory< LO , GO , NODE >; \
     template class ContiguousUniformDirectory< LO, GO, NODE >; \
     template class DistributedContiguousDirectory< LO , GO , NODE >; \
     template class DistributedNoncontiguousDirectory< LO , GO , NODE >; \
+#else
+    template class Directory<NODE >; \
+    template class ReplicatedDirectory<NODE >; \
+    template class ContiguousUniformDirectory<NODE >; \
+    template class DistributedContiguousDirectory<NODE >; \
+    template class DistributedNoncontiguousDirectory<NODE >; \
+#endif
   }
 
 #endif // TPETRA_DIRECTORYIMPL_DEF_HPP

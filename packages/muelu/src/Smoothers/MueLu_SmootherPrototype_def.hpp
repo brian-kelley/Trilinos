@@ -50,17 +50,37 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SmootherPrototype() : isSetup_(false) {}
+#else
+  template <class Scalar, class Node>
+  SmootherPrototype<Scalar, Node>::SmootherPrototype() : isSetup_(false) {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node>::~SmootherPrototype() {}
+#else
+  template <class Scalar, class Node>
+  SmootherPrototype<Scalar, Node>::~SmootherPrototype() {}
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   bool SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node>::IsSetup() const { return isSetup_; }
+#else
+  template <class Scalar, class Node>
+  bool SmootherPrototype<Scalar, Node>::IsSetup() const { return isSetup_; }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void SmootherPrototype<Scalar, LocalOrdinal, GlobalOrdinal, Node>::IsSetup(bool const &ToF) { isSetup_ = ToF; }
+#else
+  template <class Scalar, class Node>
+  void SmootherPrototype<Scalar, Node>::IsSetup(bool const &ToF) { isSetup_ = ToF; }
+#endif
 
 } // namespace MueLu
 

@@ -79,8 +79,13 @@ using Thyra::tpetraLinearOp;
 
 RCP<Thyra::LinearOpBase<ST> > buildExampleOp(int type,RCP<const Teuchos::Comm<int> > comm,ST scale)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::Map<LO,GO,NT> > map = rcp(new const Tpetra::Map<LO,GO,NT>(3,0,comm));
    const RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > mat = Tpetra::createCrsMatrix<ST,LO,GO,NT> (map,3);
+#else
+   const RCP<const Tpetra::Map<NT> > map = rcp(new const Tpetra::Map<NT>(3,0,comm));
+   const RCP<Tpetra::CrsMatrix<ST,NT> > mat = Tpetra::createCrsMatrix<ST,NT> (map,3);
+#endif
 
    ST values[3];
    GO indices[3] = { 0, 1, 2 };
@@ -122,7 +127,11 @@ RCP<Thyra::LinearOpBase<ST> > buildExampleOp(int type,RCP<const Teuchos::Comm<in
    mat->scale(scale);
    mat->fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    return Thyra::tpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(mat->getRangeMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(mat->getDomainMap()),mat);
+#else
+   return Thyra::tpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(mat->getRangeMap()),Thyra::tpetraVectorSpace<ST,NT>(mat->getDomainMap()),mat);
+#endif
 }
 
 void tPCDStrategy_tpetra::initializeTest()

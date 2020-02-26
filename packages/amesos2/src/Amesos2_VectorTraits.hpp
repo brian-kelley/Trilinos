@@ -66,20 +66,32 @@ namespace Amesos2 {
    *******************/
 
   template < typename Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
              typename LocalOrdinal,
              typename GlobalOrdinal,
+#endif
              typename Node >
   struct VectorTraits<
     Tpetra::MultiVector<Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       LocalOrdinal,
                       GlobalOrdinal,
+#endif
                       Node> > {
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_t;
     typedef LocalOrdinal local_ordinal_t;
     typedef GlobalOrdinal global_ordinal_t;
     typedef Node node_t;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>  multivector_type;
+#else
+    typedef Tpetra::MultiVector<Scalar, Node>  multivector_type;
+#endif
     typedef typename multivector_type::impl_scalar_type  ptr_scalar_type; // TODO Make this a pointer
   };
 

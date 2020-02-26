@@ -19,8 +19,13 @@ int main(int argc, char *argv[]) {
   typedef Tpetra::Map<>::local_ordinal_type LO;
   typedef Tpetra::Map<>::global_ordinal_type GO;
   typedef Tpetra::Details::DefaultTypes::node_type NO;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, NO> mapType;
   typedef Tpetra::Vector<GO, LO, GO, NO> vectorType;
+#else
+  typedef Tpetra::Map<NO> mapType;
+  typedef Tpetra::Vector<GO, NO> vectorType;
+#endif
 
   Teuchos::GlobalMPISession mpiSession(&argc, &argv, NULL);
   RCP< const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
@@ -66,7 +71,11 @@ int main(int argc, char *argv[]) {
   comm->barrier();
 
   RCP<vectorType> targetVec = rcp(new vectorType(targetMap) );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Tpetra::Export<LO,GO,NO> > exporter = rcp(new Tpetra::Export<LO,GO,NO>(sourceMap, targetMap));
+#else
+  RCP<Tpetra::Export<NO> > exporter = rcp(new Tpetra::Export<NO>(sourceMap, targetMap));
+#endif
   targetVec->doExport(*sourceVec,*exporter,Tpetra::ADD);
   fos->setOutputToRootOnly(0);
   *fos << "=======\ntargetVec\n=======" << std::endl;

@@ -59,16 +59,26 @@ namespace Xpetra {
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+BlockedMap<Node>::
+#endif
 BlockedMap()
 {
     bThyraMode_ = false;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+BlockedMap<Node>::
+#endif
 BlockedMap(const RCP<const Map>& fullmap, const std::vector<RCP<const Map>>& maps, bool bThyraMode)
 {
     bThyraMode_ = bThyraMode;
@@ -138,7 +148,11 @@ BlockedMap(const RCP<const Map>& fullmap, const std::vector<RCP<const Map>>& map
 
             Teuchos::ArrayView<GlobalOrdinal> subMapGidsView(&subMapGids[ 0 ], subMapGids.size());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             Teuchos::RCP<Map> mySubMap = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(
+#else
+            Teuchos::RCP<Map> mySubMap = Xpetra::MapFactory<Node>::Build(
+#endif
               maps[ v ]->lib(), INVALID, subMapGidsView, maps[ v ]->getIndexBase(), maps[ v ]->getComm());
             maps_[ v ] = mySubMap;
         }
@@ -152,7 +166,11 @@ BlockedMap(const RCP<const Map>& fullmap, const std::vector<RCP<const Map>>& map
 
         Teuchos::ArrayView<GlobalOrdinal> fullMapGidsView(&fullMapGids[ 0 ], fullMapGids.size());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         fullmap_ = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(
+#else
+        fullmap_ = Xpetra::MapFactory<Node>::Build(
+#endif
           fullmap->lib(), INVALID, fullMapGidsView, fullmap->getIndexBase(), fullmap->getComm());
 
         // plausibility check
@@ -173,7 +191,11 @@ BlockedMap(const RCP<const Map>& fullmap, const std::vector<RCP<const Map>>& map
     {
         if(maps[ i ] != null)
         {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             importers_[ i ] = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(fullmap_, maps_[ i ]);
+#else
+            importers_[ i ] = Xpetra::ImportFactory<Node>::Build(fullmap_, maps_[ i ]);
+#endif
         }
     }
     TEUCHOS_TEST_FOR_EXCEPTION(
@@ -181,8 +203,13 @@ BlockedMap(const RCP<const Map>& fullmap, const std::vector<RCP<const Map>>& map
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+BlockedMap<Node>::
+#endif
 BlockedMap(const std::vector<RCP<const Map>>& maps, const std::vector<RCP<const Map>>& thyramaps)
 {
     bThyraMode_ = true;
@@ -222,7 +249,11 @@ BlockedMap(const std::vector<RCP<const Map>>& maps, const std::vector<RCP<const 
     {
         if(maps[ i ] != null)
         {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             importers_[ i ] = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(fullmap_, maps_[ i ]);
+#else
+            importers_[ i ] = Xpetra::ImportFactory<Node>::Build(fullmap_, maps_[ i ]);
+#endif
         }
     }
     TEUCHOS_TEST_FOR_EXCEPTION(
@@ -230,8 +261,13 @@ BlockedMap(const std::vector<RCP<const Map>>& maps, const std::vector<RCP<const 
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+BlockedMap<Node>::
+#endif
 BlockedMap(const BlockedMap& input)
 {
     bThyraMode_ = input.getThyraMode();
@@ -242,8 +278,13 @@ BlockedMap(const BlockedMap& input)
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+BlockedMap<Node>::
+#endif
 ~BlockedMap()
 {
     // make sure all RCP's are freed
@@ -259,107 +300,203 @@ BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 global_size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getGlobalNumElements() const
 {
     return fullmap_->getGlobalNumElements();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::getNodeNumElements() const
+#else
+BlockedMap<Node>::getNodeNumElements() const
+#endif
 {
     return fullmap_->getNodeNumElements();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getIndexBase() const
 {
     return fullmap_->getIndexBase();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LocalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getMinLocalIndex() const
 {
     return fullmap_->getMinLocalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LocalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getMaxLocalIndex() const
 {
     return fullmap_->getMaxLocalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getMinGlobalIndex() const
 {
     return fullmap_->getMinGlobalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getMaxGlobalIndex() const
 {
     return fullmap_->getMaxGlobalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getMinAllGlobalIndex() const
 {
     return fullmap_->getMinAllGlobalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getMaxAllGlobalIndex() const
 {
     return fullmap_->getMaxAllGlobalIndex();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LocalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getLocalElement(GlobalOrdinal globalIndex) const
 {
     return fullmap_->getLocalElement(globalIndex);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 GlobalOrdinal
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getGlobalElement(LocalOrdinal localIndex) const
 {
     return fullmap_->getGlobalElement(localIndex);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getRemoteIndexList(const Teuchos::ArrayView<const GlobalOrdinal>& /* GIDList    */,
                                             const Teuchos::ArrayView<int>& /* nodeIDList */,
                                             const Teuchos::ArrayView<LocalOrdinal>& /* LIDList    */) const
@@ -369,9 +506,17 @@ getRemoteIndexList(const Teuchos::ArrayView<const GlobalOrdinal>& /* GIDList    
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 LookupStatus
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getRemoteIndexList(const Teuchos::ArrayView<const GlobalOrdinal>& /* GIDList */,
                    const Teuchos::ArrayView<int>& /* nodeIDList */) const
 {
@@ -380,36 +525,68 @@ getRemoteIndexList(const Teuchos::ArrayView<const GlobalOrdinal>& /* GIDList */,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 Teuchos::ArrayView<const GlobalOrdinal>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getNodeElementList() const
 {
     return fullmap_->getNodeElementList();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 isNodeLocalElement(LocalOrdinal localIndex) const
 {
     return fullmap_->isNodeLocalElement(localIndex);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 isNodeGlobalElement(GlobalOrdinal globalIndex) const
 {
     return fullmap_->isNodeGlobalElement(globalIndex);
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 isContiguous() const
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMap::isContiguous: routine not implemented.");
@@ -417,19 +594,36 @@ isContiguous() const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 isDistributed() const
 {
     return fullmap_->isDistributed();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
 isCompatible(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& map) const
+#else
+BlockedMap<Node>::
+isCompatible(const Xpetra::Map<Node>& map) const
+#endif
 {
     RCP<const Map>        rcpMap  = Teuchos::rcpFromRef(map);
     RCP<const BlockedMap> rcpBMap = Teuchos::rcp_dynamic_cast<const BlockedMap>(rcpMap);
@@ -450,10 +644,19 @@ isCompatible(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& map) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
 isSameAs(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& map) const
+#else
+BlockedMap<Node>::
+isSameAs(const Xpetra::Map<Node>& map) const
+#endif
 {
     RCP<const Map>        rcpMap  = Teuchos::rcpFromRef(map);
     RCP<const BlockedMap> rcpBMap = Teuchos::rcp_dynamic_cast<const BlockedMap>(rcpMap);
@@ -490,9 +693,17 @@ isSameAs(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& map) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 Teuchos::RCP<const Teuchos::Comm<int>>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getComm() const
 {
     return fullmap_->getComm();
@@ -501,70 +712,124 @@ getComm() const
 
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>&
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+BlockedMap<Node>&
+BlockedMap<Node>::
+#endif
 operator=(const BlockedMap& rhs)
 {
     assign(rhs);      // dispatch to protected virtual method
     return *this;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::getThyraMode() const
+#else
+BlockedMap<Node>::getThyraMode() const
+#endif
 {
     return bThyraMode_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+RCP<const Xpetra::Map<Node>>
+BlockedMap<Node>::
+#endif
 removeEmptyProcesses() const
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMap::removeEmptyProcesses: routine not implemented.");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+RCP<const Xpetra::Map<Node>>
+BlockedMap<Node>::
+#endif
 replaceCommWithSubset(const Teuchos::RCP<const Teuchos::Comm<int>>& /* newComm */) const
 {
     throw Xpetra::Exceptions::RuntimeError("BlockedMap::replaceCommWithSubset: routine not implemented.");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 UnderlyingLib
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::lib() const
+#else
+BlockedMap<Node>::lib() const
+#endif
 {
     return fullmap_->lib();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+RCP<const Xpetra::Map<Node>>
+BlockedMap<Node>::
+#endif
 getMap() const
 {
     return getFullMap();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getNumMaps() const
 {
     return maps_.size();
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 const RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+const RCP<const Xpetra::Map<Node>>
+BlockedMap<Node>::
+#endif
 getMap(size_t i,
        bool   bThyraMode) const
 {
@@ -586,9 +851,15 @@ getMap(size_t i,
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 const RCP<Xpetra::Import<LocalOrdinal,GlobalOrdinal,Node>>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+const RCP<Xpetra::Import<Node>>
+BlockedMap<Node>::
+#endif
 getImporter(size_t i) const
 {
     XPETRA_TEST_FOR_EXCEPTION(i >= getNumMaps(),
@@ -600,18 +871,32 @@ getImporter(size_t i) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 const RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+template<class Node>
+const RCP<const Xpetra::Map<Node>>
+BlockedMap<Node>::
+#endif
 getFullMap() const
 {
     return fullmap_;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 size_t
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 getMapIndexForGID(GlobalOrdinal gid) const
 {
     for(size_t i = 0; i < getNumMaps(); i++)
@@ -624,18 +909,34 @@ getMapIndexForGID(GlobalOrdinal gid) const
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 std::string
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 description() const
 {
     return std::string("BlockedMap");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 describe(Teuchos::FancyOStream& out, const Teuchos::EVerbosityLevel verbLevel) const
 {
     out << "------------- Blocked Map -----------" << std::endl;
@@ -660,24 +961,44 @@ describe(Teuchos::FancyOStream& out, const Teuchos::EVerbosityLevel verbLevel) c
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 assign(const BlockedMap& input)
 {
     // TODO check implementation, simplify copy constructor
     bThyraMode_ = input.getThyraMode();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     fullmap_ = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(input.getFullMap(), 1);
+#else
+    fullmap_ = Xpetra::MapFactory<Node>::Build(input.getFullMap(), 1);
+#endif
 
     maps_.resize(input.getNumMaps(), Teuchos::null);
     if(bThyraMode_ == true)
         thyraMaps_.resize(input.getNumMaps(), Teuchos::null);
     for(size_t i = 0; i < input.getNumMaps(); ++i)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         maps_[ i ] = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(input.getMap(i, false), 1);
+#else
+        maps_[ i ] = Xpetra::MapFactory<Node>::Build(input.getMap(i, false), 1);
+#endif
         if(bThyraMode_ == true)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             thyraMaps_[ i ] = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(input.getMap(i, true), 1);
+#else
+            thyraMaps_[ i ] = Xpetra::MapFactory<Node>::Build(input.getMap(i, true), 1);
+#endif
     }
 
     // plausibility check
@@ -695,23 +1016,38 @@ assign(const BlockedMap& input)
     importers_.resize(maps_.size());
     for(unsigned i = 0; i < maps_.size(); ++i)
         if(maps_[ i ] != null)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             importers_[ i ] = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(fullmap_, maps_[ i ]);
+#else
+            importers_[ i ] = Xpetra::ImportFactory<Node>::Build(fullmap_, maps_[ i ]);
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(
       CheckConsistency() == false, std::logic_error, "logic error. full map and sub maps are inconsistently distributed over the processors.");
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
 concatenateMaps(const std::vector<Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>>>& subMaps)
+#else
+template<class Node>
+Teuchos::RCP<const Xpetra::Map<Node>>
+BlockedMap<Node>::
+concatenateMaps(const std::vector<Teuchos::RCP<const Xpetra::Map<Node>>>& subMaps)
+#endif
 {
 
     // merge submaps to global map
     std::vector<GlobalOrdinal> gids;
     for(size_t tt = 0; tt < subMaps.size(); ++tt)
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>> subMap = subMaps[ tt ];
+#else
+        Teuchos::RCP<const Xpetra::Map<Node>> subMap = subMaps[ tt ];
+#endif
 
 #if 1      // WCMCLEN : IS THIS NECESSARY TO HANG ONTO?
         Teuchos::ArrayView<const GlobalOrdinal> subMapGids = subMap->getNodeElementList();
@@ -731,16 +1067,28 @@ concatenateMaps(const std::vector<Teuchos::RCP<const Xpetra::Map<LocalOrdinal, G
     // gids.erase(std::unique(gids.begin(), gids.end()), gids.end());
     Teuchos::ArrayView<GlobalOrdinal>                            gidsView(&gids[ 0 ], gids.size());
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>> fullMap = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+    Teuchos::RCP<Xpetra::Map<Node>> fullMap = Xpetra::MapFactory<Node>::
+#endif
         Build(subMaps[ 0 ]->lib(), INVALID, gidsView, subMaps[ 0 ]->getIndexBase(), subMaps[ 0 ]->getComm());
 
     return fullMap;
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Node>
+#endif
 bool
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 BlockedMap<LocalOrdinal, GlobalOrdinal, Node>::
+#else
+BlockedMap<Node>::
+#endif
 CheckConsistency() const
 {
     const RCP<const Map> fullMap = getFullMap();

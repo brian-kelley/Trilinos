@@ -74,10 +74,19 @@ void tGraphLaplacian_tpetra::initializeTest()
    tolerance_ = 1e-12;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > stencil(const Teuchos::Comm<int> & comm)
+#else
+Teuchos::RCP<Tpetra::CrsMatrix<ST,NT> > stencil(const Teuchos::Comm<int> & comm)
+#endif
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<Tpetra::Map<LO,GO,NT> > map = rcp(new Tpetra::Map<LO,GO,NT>(5,0,rcpFromRef(comm)));
    Teuchos::RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > mat = rcp(new Tpetra::CrsMatrix<ST,LO,GO,NT>(map,6));
+#else
+   Teuchos::RCP<Tpetra::Map<NT> > map = rcp(new Tpetra::Map<NT>(5,0,rcpFromRef(comm)));
+   Teuchos::RCP<Tpetra::CrsMatrix<ST,NT> > mat = rcp(new Tpetra::CrsMatrix<ST,NT>(map,6));
+#endif
    // KDD 8/2019:  The value 6 above is needed because this test inserts 
    // three indices twice into row 4 of the matrix.
    // Tpetra is robust enough to correctly handle the double insertion. 
@@ -173,7 +182,11 @@ int tGraphLaplacian_tpetra::runTest(int verbosity,std::ostream & stdstrm,std::os
    return failcount;
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 bool tGraphLaplacian_tpetra::compareMatrix(const Tpetra::CrsMatrix<ST,LO,GO,NT> & gl,const std::string & name,int verbosity,std::ostream & os) const
+#else
+bool tGraphLaplacian_tpetra::compareMatrix(const Tpetra::CrsMatrix<ST,NT> & gl,const std::string & name,int verbosity,std::ostream & os) const
+#endif
 {
    bool status = false;
    bool allPassed = true;
@@ -211,11 +224,19 @@ bool tGraphLaplacian_tpetra::test_single_array(int verbosity,std::ostream & os)
    std::vector<ST> points;
 
    // build coordinates and the stencil
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > sten = stencil(*GetComm_tpetra());
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > sten = stencil(*GetComm_tpetra());
+#endif
    coords(points);
 
    // build the graph laplacian
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > gl = buildGraphLaplacian(3,&points[0],*sten);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > gl = buildGraphLaplacian(3,&points[0],*sten);
+#endif
 
    TEST_ASSERT(compareMatrix(*gl,"test_single_array",verbosity,os),
                 "\n   tGraphLaplacian_tpetra::test_single_array: " << toString(status) << "\n" 
@@ -233,19 +254,31 @@ bool tGraphLaplacian_tpetra::test_multi_array(int verbosity,std::ostream & os)
    std::vector<ST> points;
 
    // build coordinates and the stencil
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > sten = stencil(*GetComm_tpetra());
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > sten = stencil(*GetComm_tpetra());
+#endif
    coords(x,y,z);
    coords(points);
 
    // build the graph laplacian
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > gl = buildGraphLaplacian(&x[0],&y[0],&z[0],1,*sten);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > gl = buildGraphLaplacian(&x[0],&y[0],&z[0],1,*sten);
+#endif
 
    TEST_ASSERT(compareMatrix(*gl,"test_multi_array",verbosity,os),
                 "\n   tGraphLaplacian_tpetra::test_multi_array: " << toString(status) << "\n" 
              << "      checked multi array laplacian matrix, unit stride");
 
    // build the graph laplacian
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<Tpetra::CrsMatrix<ST,LO,GO,NT> > gl2 = buildGraphLaplacian(&points[0],&points[1],&points[2],3,*sten);
+#else
+   RCP<Tpetra::CrsMatrix<ST,NT> > gl2 = buildGraphLaplacian(&points[0],&points[1],&points[2],3,*sten);
+#endif
 
    TEST_ASSERT(compareMatrix(*gl2,"test_multi_array",verbosity,os),
                 "\n   tGraphLaplacian_tpetra::test_multi_array: " << toString(status) << "\n" 

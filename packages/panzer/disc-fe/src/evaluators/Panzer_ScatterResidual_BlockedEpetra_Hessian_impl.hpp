@@ -55,7 +55,11 @@ namespace panzer {
 // Hessian Specialization
 // **************************************************************
 template<typename TRAITS,typename LO,typename GO>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterResidual_BlockedEpetra<panzer::Traits::Hessian,TRAITS,LO,GO>::
+#else
+ScatterResidual_BlockedEpetra<panzer::Traits::Hessian,TRAITS>::
+#endif
 ScatterResidual_BlockedEpetra(const std::vector<Teuchos::RCP<const GlobalIndexer<LO,int> > > & rIndexers,
                               const std::vector<Teuchos::RCP<const GlobalIndexer<LO,int> > > & cIndexers,
                               const Teuchos::ParameterList& p,
@@ -108,7 +112,11 @@ ScatterResidual_BlockedEpetra(const std::vector<Teuchos::RCP<const GlobalIndexer
   
 template<typename TRAITS,typename LO,typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterResidual_BlockedEpetra<panzer::Traits::Hessian,TRAITS,LO,GO>::
+#else
+ScatterResidual_BlockedEpetra<panzer::Traits::Hessian,TRAITS>::
+#endif
 postRegistrationSetup(typename TRAITS::SetupData /* d */,
                       PHX::FieldManager<TRAITS>& /* fm */)
 {
@@ -127,7 +135,11 @@ postRegistrationSetup(typename TRAITS::SetupData /* d */,
 
 template<typename TRAITS,typename LO,typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterResidual_BlockedEpetra<panzer::Traits::Hessian,TRAITS,LO,GO>::
+#else
+ScatterResidual_BlockedEpetra<panzer::Traits::Hessian,TRAITS>::
+#endif
 preEvaluate(typename TRAITS::PreEvalData d) 
 {
    using Teuchos::RCP;
@@ -155,7 +167,11 @@ preEvaluate(typename TRAITS::PreEvalData d)
   
 template<typename TRAITS,typename LO,typename GO>
 void
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 ScatterResidual_BlockedEpetra<panzer::Traits::Hessian,TRAITS,LO,GO>::
+#else
+ScatterResidual_BlockedEpetra<panzer::Traits::Hessian,TRAITS>::
+#endif
 evaluateFields(typename TRAITS::EvalData workset) 
 {
    using Teuchos::RCP;

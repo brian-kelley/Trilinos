@@ -228,26 +228,49 @@ int main(int argc, char *argv[]) {
     /////////////////////////////////////// transform Epetra objects to Xpetra (needed for MueLu)
 
     // build Xpetra objects from Epetra_CrsMatrix objects
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar,LO,GO,Node> > xA11 = rcp(new Xpetra::EpetraCrsMatrixT<GO,Node>(A11));
     RCP<Xpetra::CrsMatrix<Scalar,LO,GO,Node> > xA12 = rcp(new Xpetra::EpetraCrsMatrixT<GO,Node>(A12));
     RCP<Xpetra::CrsMatrix<Scalar,LO,GO,Node> > xA21 = rcp(new Xpetra::EpetraCrsMatrixT<GO,Node>(A21));
     RCP<Xpetra::CrsMatrix<Scalar,LO,GO,Node> > xA22 = rcp(new Xpetra::EpetraCrsMatrixT<GO,Node>(A22));
+#else
+    RCP<Xpetra::CrsMatrix<Scalar,Node> > xA11 = rcp(new Xpetra::EpetraCrsMatrixT<GO,Node>(A11));
+    RCP<Xpetra::CrsMatrix<Scalar,Node> > xA12 = rcp(new Xpetra::EpetraCrsMatrixT<GO,Node>(A12));
+    RCP<Xpetra::CrsMatrix<Scalar,Node> > xA21 = rcp(new Xpetra::EpetraCrsMatrixT<GO,Node>(A21));
+    RCP<Xpetra::CrsMatrix<Scalar,Node> > xA22 = rcp(new Xpetra::EpetraCrsMatrixT<GO,Node>(A22));
+#endif
 
     /////////////////////////////////////// generate MapExtractor object
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     std::vector<RCP<const Xpetra::Map<LO,GO,Node> > > xmaps;
+#else
+    std::vector<RCP<const Xpetra::Map<Node> > > xmaps;
+#endif
     xmaps.push_back(xstridedvelmap);
     xmaps.push_back(xstridedpremap);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::MapExtractor<Scalar,LO,GO,Node> > map_extractor = Xpetra::MapExtractorFactory<Scalar,LO,GO,Node>::Build(xstridedfullmap,xmaps);
+#else
+    RCP<const Xpetra::MapExtractor<Scalar,Node> > map_extractor = Xpetra::MapExtractorFactory<Scalar,Node>::Build(xstridedfullmap,xmaps);
+#endif
 
     /////////////////////////////////////// build blocked transfer operator
     // using the map extractor
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node> > bOp = rcp(new Xpetra::BlockedCrsMatrix<Scalar,LO,GO,Node>(map_extractor,map_extractor,10));
     bOp->setMatrix(0,0,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xA11)));
     bOp->setMatrix(0,1,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xA12)));
     bOp->setMatrix(1,0,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xA21)));
     bOp->setMatrix(1,1,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,LocalOrdinal,GlobalOrdinal,Node>(xA22)));
+#else
+    RCP<Xpetra::BlockedCrsMatrix<Scalar,Node> > bOp = rcp(new Xpetra::BlockedCrsMatrix<Scalar,Node>(map_extractor,map_extractor,10));
+    bOp->setMatrix(0,0,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xA11)));
+    bOp->setMatrix(0,1,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xA12)));
+    bOp->setMatrix(1,0,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xA21)));
+    bOp->setMatrix(1,1,Teuchos::rcp(new Xpetra::CrsMatrixWrap<Scalar,Node>(xA22)));
+#endif
 
     bOp->fillComplete();
 

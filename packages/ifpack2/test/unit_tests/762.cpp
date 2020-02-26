@@ -63,16 +63,28 @@ using Teuchos::reduceAll;
 using std::cerr;
 using std::endl;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LO, class GO, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 void
 test762 (FancyOStream& out,
          bool& success,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const Tpetra::CrsMatrix<Scalar, LO, GO, Node>& A,
+#else
+         const Tpetra::CrsMatrix<Scalar, Node>& A,
+#endif
          const Scalar& alpha,
          const Scalar& beta,
          const size_t numVecs)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<Scalar, LO, GO, Node> MV;
+#else
+  typedef Tpetra::MultiVector<Scalar, Node> MV;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   int lclSuccess = 1; // to be updated below
@@ -115,11 +127,20 @@ test762 (FancyOStream& out,
   }
 }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2, Issue762, Scalar, LO, GO)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2, Issue762, Scalar)
+#endif
 {
   typedef tif_utest::Node Node;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, Node> map_type;
   typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node> crs_matrix_type;
+#else
+  typedef Tpetra::Map<Node> map_type;
+  typedef Tpetra::CrsMatrix<Scalar,Node> crs_matrix_type;
+#endif
   typedef Teuchos::ScalarTraits<Scalar> STS;
 
   // Whether to test the known bad case (that triggered #762).
@@ -148,7 +169,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2, Issue762, Scalar, LO, GO)
 
   const global_size_t num_rows_per_proc = 5;
   RCP<const map_type> rowmap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_tpetra_map<LO, GO, Node> (num_rows_per_proc);
+#else
+    tif_utest::create_tpetra_map<Node> (num_rows_per_proc);
+#endif
   TEST_ASSERT( ! rowmap.is_null () );
   if (rowmap.is_null ()) {
     return; // that's the best we can do
@@ -167,7 +192,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2, Issue762, Scalar, LO, GO)
   fout << "Creating matrix" << endl;
   RCP<const crs_matrix_type> crsmatrix;
   try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     crsmatrix = tif_utest::create_test_matrix2<Scalar,LO,GO,Node>(rowmap);
+#else
+    crsmatrix = tif_utest::create_test_matrix2<Scalar,Node>(rowmap);
+#endif
     if (printToCerr) {
       cerr << "create_test_matrix2 returned!" << endl;
     }
@@ -220,7 +249,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2, Issue762, Scalar, LO, GO)
       if (runTheTest) {
         fout << "Running case alpha = " << alpha << ", beta = " << beta
              << ", numVecs = " << numVecs << endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         test762<Scalar, LO, GO, Node> (fout, success, *crsmatrix,
+#else
+        test762<Scalar, Node> (fout, success, *crsmatrix,
+#endif
                                        alpha, beta, numVecs);
       }
       else {
@@ -232,7 +265,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2, Issue762, Scalar, LO, GO)
 }
 
 #define UNIT_TEST_GROUP_SC_LO_GO( SC, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2, Issue762, SC, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2, Issue762, SC )
+#endif
 
 #include "Ifpack2_ETIHelperMacros.h"
 

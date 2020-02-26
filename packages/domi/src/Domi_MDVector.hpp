@@ -762,7 +762,11 @@ public:
    */
   template< class LocalOrdinal,
             class GlobalOrdinal = TpetraGOType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::Vector< Scalar, LocalOrdinal, GlobalOrdinal > >
+#else
+  Teuchos::RCP< Tpetra::Vector< Scalar > >
+#endif
   getTpetraVectorView() const;
 
   /** \brief Return a view of this MDVector as a Tpetra::MultiVector
@@ -784,9 +788,13 @@ public:
    */
   template < class LocalOrdinal,
              class GlobalOrdinal = TpetraGOType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::MultiVector< Scalar,
                                      LocalOrdinal,
                                      GlobalOrdinal > >
+#else
+  Teuchos::RCP< Tpetra::MultiVector< Scalar > >
+#endif
   getTpetraMultiVectorView() const;
 
   /** \brief Return a copy of this MDVector as a Tpetra::Vector
@@ -796,7 +804,11 @@ public:
    */
   template< class LocalOrdinal,
             class GlobalOrdinal = TpetraGOType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::Vector< Scalar, LocalOrdinal, GlobalOrdinal > >
+#else
+  Teuchos::RCP< Tpetra::Vector< Scalar > >
+#endif
   getTpetraVectorCopy() const;
 
   /** \brief Return a copy of this MDVector as a Tpetra::MultiVector
@@ -813,9 +825,13 @@ public:
    */
   template < class LocalOrdinal,
              class GlobalOrdinal = TpetraGOType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::MultiVector< Scalar,
                                      LocalOrdinal,
                                      GlobalOrdinal > >
+#else
+  Teuchos::RCP< Tpetra::MultiVector< Scalar > >
+#endif
   getTpetraMultiVectorCopy() const;
 
 #endif
@@ -2190,7 +2206,11 @@ getEpetraMultiVectorCopy() const
 template< class Scalar >
 template< class LocalOrdinal,
           class GlobalOrdinal >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP< Tpetra::Vector< Scalar, LocalOrdinal, GlobalOrdinal > >
+#else
+Teuchos::RCP< Tpetra::Vector< Scalar > >
+#endif
 MDVector< Scalar >::
 getTpetraVectorView() const
 {
@@ -2207,9 +2227,13 @@ getTpetraVectorView() const
     _mdMap->template getTpetraMap< LocalOrdinal, GlobalOrdinal >(true);
 
   // Return the result
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Teuchos::rcp(new Tpetra::Vector< Scalar,
                                           LocalOrdinal,
                                           GlobalOrdinal >(tpetraMap,
+#else
+  return Teuchos::rcp(new Tpetra::Vector< Scalar >(tpetraMap,
+#endif
                                                           _mdArrayView.arrayView()));
 }
 
@@ -2218,7 +2242,11 @@ getTpetraVectorView() const
 template< class Scalar >
 template< class LocalOrdinal,
           class GlobalOrdinal >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP< Tpetra::Vector< Scalar, LocalOrdinal, GlobalOrdinal > >
+#else
+Teuchos::RCP< Tpetra::Vector< Scalar > >
+#endif
 MDVector< Scalar >::
 getTpetraVectorCopy() const
 {
@@ -2230,12 +2258,17 @@ getTpetraVectorCopy() const
     _mdMap->template getTpetraMap< LocalOrdinal, GlobalOrdinal >(true);
 
   // Construct the result
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::Vector< Scalar,
                                 LocalOrdinal,
                                 GlobalOrdinal > > result =
     Teuchos::rcp(new Tpetra::Vector< Scalar,
                                      LocalOrdinal,
                                      GlobalOrdinal >(tpetraMap) );
+#else
+  Teuchos::RCP< Tpetra::Vector< Scalar > > result =
+    Teuchos::rcp(new Tpetra::Vector< Scalar >(tpetraMap) );
+#endif
 
   // Copy the MDVector data to the Tpetra::Vector, even if the
   // MDVector is non-contiguous
@@ -2253,9 +2286,13 @@ getTpetraVectorCopy() const
 template< class Scalar >
 template < class LocalOrdinal,
            class GlobalOrdinal >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP< Tpetra::MultiVector< Scalar,
                                    LocalOrdinal,
                                    GlobalOrdinal > >
+#else
+Teuchos::RCP< Tpetra::MultiVector< Scalar > >
+#endif
 MDVector< Scalar >::
 getTpetraMultiVectorView() const
 {
@@ -2299,9 +2336,13 @@ getTpetraMultiVectorView() const
     newMdMap->template getTpetraMap< LocalOrdinal, GlobalOrdinal >(true);
 
   // Return the result
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Teuchos::rcp(new Tpetra::MultiVector< Scalar,
                                                LocalOrdinal,
                                                GlobalOrdinal >(tpetraMap,
+#else
+  return Teuchos::rcp(new Tpetra::MultiVector< Scalar >(tpetraMap,
+#endif
                                                                _mdArrayView.arrayView(),
                                                                lda,
                                                                numVectors));
@@ -2312,9 +2353,13 @@ getTpetraMultiVectorView() const
 template< class Scalar >
 template < class LocalOrdinal,
            class GlobalOrdinal >
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP< Tpetra::MultiVector< Scalar,
                                    LocalOrdinal,
                                    GlobalOrdinal > >
+#else
+Teuchos::RCP< Tpetra::MultiVector< Scalar > >
+#endif
 MDVector< Scalar >::
 getTpetraMultiVectorCopy() const
 {
@@ -2343,12 +2388,17 @@ getTpetraMultiVectorCopy() const
     newMdMap->template getTpetraMap< LocalOrdinal, GlobalOrdinal >(true);
 
   // Construct the result
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP< Tpetra::MultiVector< Scalar,
                                      LocalOrdinal,
                                      GlobalOrdinal > > result =
     Teuchos::rcp(new Tpetra::MultiVector< Scalar,
                                           LocalOrdinal,
                                           GlobalOrdinal >(tpetraMap, numVectors));
+#else
+  Teuchos::RCP< Tpetra::MultiVector< Scalar > > result =
+    Teuchos::rcp(new Tpetra::MultiVector< Scalar >(tpetraMap, numVectors));
+#endif
 
   // Copy the MDVector to the Tpetra::MultiVector, even if the
   // MDVector is non-contiguous

@@ -51,25 +51,56 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class AlgebraicOverlappingPreconditioner : public SchwarzPreconditioner<SC,LO,GO,NO> {
+#else
+    class AlgebraicOverlappingPreconditioner : public SchwarzPreconditioner<SC,NO> {
+#endif
 
     protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMapPtr                           = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMapPtr;
         using ConstXMapPtr                      = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMapPtr;
+#else
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+        using XMapPtr                           = typename SchwarzPreconditioner<SC,NO>::XMapPtr;
+        using ConstXMapPtr                      = typename SchwarzPreconditioner<SC,NO>::ConstXMapPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrixPtr                        = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMatrixPtr;
         using ConstXMatrixPtr                   = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMatrixPtr;
+#else
+        using XMatrixPtr                        = typename SchwarzPreconditioner<SC,NO>::XMatrixPtr;
+        using ConstXMatrixPtr                   = typename SchwarzPreconditioner<SC,NO>::ConstXMatrixPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector                      = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMultiVector;
+#else
+        using XMultiVector                      = typename SchwarzPreconditioner<SC,NO>::XMultiVector;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using ParameterListPtr                  = typename SchwarzPreconditioner<SC,LO,GO,NO>::ParameterListPtr;
+#else
+        using ParameterListPtr                  = typename SchwarzPreconditioner<SC,NO>::ParameterListPtr;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using SumOperatorPtr                    = typename SchwarzPreconditioner<SC,LO,GO,NO>::SumOperatorPtr;
         using AlgebraicOverlappingOperatorPtr   = typename SchwarzPreconditioner<SC,LO,GO,NO>::AlgebraicOverlappingOperatorPtr;
+#else
+        using SumOperatorPtr                    = typename SchwarzPreconditioner<SC,NO>::SumOperatorPtr;
+        using AlgebraicOverlappingOperatorPtr   = typename SchwarzPreconditioner<SC,NO>::AlgebraicOverlappingOperatorPtr;
+#endif
 
     public:
 

@@ -59,17 +59,34 @@
 
 namespace Xpetra {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
  const RCP<Map<LocalOrdinal,GlobalOrdinal,Node> > toXpetraNonConst(const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& map);
+#else
+  template <class Node>
+ const RCP<Map<Node> > toXpetraNonConst(const RCP<const Tpetra::Map<Node> >& map);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,
             class GlobalOrdinal,
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class TpetraMap
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public virtual Map<LocalOrdinal,GlobalOrdinal,Node> {
+#else
+    : public virtual Map<Node> {
+#endif
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! @name Constructors and destructor
     //@{
 
@@ -178,10 +195,18 @@ namespace Xpetra {
     bool isDistributed() const;
 
     //! True if and only if map is compatible with this Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool isCompatible(const Map< LocalOrdinal, GlobalOrdinal, Node > &map) const;
+#else
+    bool isCompatible(const Map<Node > &map) const;
+#endif
 
     //! True if and only if map is identical to this Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     bool isSameAs(const Map< LocalOrdinal, GlobalOrdinal, Node > &map) const;
+#else
+    bool isSameAs(const Map<Node > &map) const;
+#endif
 
     //@}
 
@@ -203,8 +228,13 @@ namespace Xpetra {
     //! Print this object with the given verbosity level to the given FancyOStream.
     void describe(Teuchos::FancyOStream &out, const Teuchos::EVerbosityLevel verbLevel=Teuchos::Describable::verbLevel_default) const;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > removeEmptyProcesses () const;
     RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> > replaceCommWithSubset (const Teuchos::RCP<const Teuchos::Comm<int> >& newComm) const;
+#else
+    RCP<const Map<Node> > removeEmptyProcesses () const;
+    RCP<const Map<Node> > replaceCommWithSubset (const Teuchos::RCP<const Teuchos::Comm<int> >& newComm) const;
+#endif
 
 //@}
 
@@ -212,17 +242,29 @@ namespace Xpetra {
     //@{
 
     //! TpetraMap constructor to wrap a Tpetra::Map object
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TpetraMap(const Teuchos::RCP<const Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node > > &map);
+#else
+    TpetraMap(const Teuchos::RCP<const Tpetra::Map<Node > > &map);
+#endif
 
     //! Get the library used by this object (Tpetra or Epetra?)    
     UnderlyingLib lib() const;
 
     //! Get the underlying Tpetra map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< const Tpetra::Map< LocalOrdinal, GlobalOrdinal, Node > > getTpetra_Map() const;
+#else
+    RCP< const Tpetra::Map<Node > > getTpetra_Map() const;
+#endif
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using local_map_type = typename Map<LocalOrdinal, GlobalOrdinal, Node>::local_map_type;
+#else
+    using local_map_type = typename Map<Node>::local_map_type;
+#endif
     /// \brief Get the local Map for Kokkos kernels.
     local_map_type getLocalMap () const;
 #endif
@@ -232,21 +274,40 @@ namespace Xpetra {
 
   protected:
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< const Tpetra::Map< LocalOrdinal, GlobalOrdinal, Node > > map_;
+#else
+    RCP< const Tpetra::Map<Node > > map_;
+#endif
 
   }; // TpetraMap class
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> & toTpetra(const Map<LocalOrdinal,GlobalOrdinal,Node> &map) {
+#else
+  template <class Node>
+  const Tpetra::Map<Node> & toTpetra(const Map<Node> &map) {
+#endif
     // TODO: throw exception
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const TpetraMap<LocalOrdinal,GlobalOrdinal,Node> & tpetraMap = dynamic_cast<const TpetraMap<LocalOrdinal,GlobalOrdinal,Node> &>(*map.getMap());
+#else
+    const TpetraMap<Node> & tpetraMap = dynamic_cast<const TpetraMap<Node> &>(*map.getMap());
+#endif
     return *tpetraMap.getTpetra_Map();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   const RCP< const Tpetra::Map< LocalOrdinal, GlobalOrdinal, Node > > toTpetra(const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map) {
     typedef TpetraMap<LocalOrdinal, GlobalOrdinal, Node> TpetraMapClass;
+#else
+  template <class Node>
+  const RCP< const Tpetra::Map<Node > > toTpetra(const RCP< const Map<Node > > &map) {
+    typedef TpetraMap<Node> TpetraMapClass;
+#endif
     if (map != Teuchos::null) {
       XPETRA_RCP_DYNAMIC_CAST(const TpetraMapClass, map->getMap(), tpetraMap, "toTpetra");
       return tpetraMap->getTpetra_Map();
@@ -256,26 +317,53 @@ namespace Xpetra {
 
   // In some cases (for instance, in MueLu adapter to Tpetra operator), we need to return a reference. This is only possible if
   // we assume that the map argument is nonzero
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   const RCP< const Tpetra::Map< LocalOrdinal, GlobalOrdinal, Node > > toTpetraNonZero(const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &map) {
+#else
+  template <class Node>
+  const RCP< const Tpetra::Map<Node > > toTpetraNonZero(const RCP< const Map<Node > > &map) {
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(map.is_null(), std::invalid_argument, "map must be nonzero");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef TpetraMap<LocalOrdinal, GlobalOrdinal, Node> TpetraMapClass;
+#else
+    typedef TpetraMap<Node> TpetraMapClass;
+#endif
     XPETRA_RCP_DYNAMIC_CAST(const TpetraMapClass, map->getMap(), tpetraMap, "toTpetra");
     return tpetraMap->getTpetra_Map();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > toXpetra(const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& map) {
+#else
+  template <class Node>
+  const RCP<const Map<Node> > toXpetra(const RCP<const Tpetra::Map<Node> >& map) {
+#endif
     if (!map.is_null())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return rcp(new TpetraMap<LocalOrdinal, GlobalOrdinal, Node>(map));
+#else
+      return rcp(new TpetraMap<Node>(map));
+#endif
 
     return Teuchos::null;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal, class GlobalOrdinal, class Node>
   const RCP<Map<LocalOrdinal,GlobalOrdinal,Node> > toXpetraNonConst(const RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& map) {
+#else
+  template <class Node>
+  const RCP<Map<Node> > toXpetraNonConst(const RCP<const Tpetra::Map<Node> >& map) {
+#endif
     if (!map.is_null())
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return rcp(new TpetraMap<LocalOrdinal,GlobalOrdinal,Node>(map));
+#else
+      return rcp(new TpetraMap<Node>(map));
+#endif
 
     return Teuchos::null;
   }
@@ -284,13 +372,22 @@ namespace Xpetra {
   namespace useTpetra {
 
     //! Non-member function to create a locally replicated Map with a specified node.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LocalOrdinal, class GlobalOrdinal, class Node>
     Teuchos::RCP< const TpetraMap<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+    template <class Node>
+    Teuchos::RCP< const TpetraMap<Node> >
+#endif
     createLocalMapWithNode(size_t numElements, const Teuchos::RCP< const Teuchos::Comm< int > > &comm)
     {
       XPETRA_MONITOR("useTpetra::createLocalMapWithNode");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return rcp(new TpetraMap<LocalOrdinal,GlobalOrdinal,Node>(Tpetra::createLocalMapWithNode<LocalOrdinal,GlobalOrdinal,Node>(numElements, comm)));
+#else
+      return rcp(new TpetraMap<Node>(Tpetra::createLocalMapWithNode<Node>(numElements, comm)));
+#endif
     }
 
     //! Non-member function to create a (potentially) non-uniform, contiguous Map with the default node.
@@ -303,13 +400,22 @@ namespace Xpetra {
     }
 
     //! Non-member function to create a (potentially) non-uniform, contiguous Map with a user-specified node.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LocalOrdinal, class GlobalOrdinal, class Node>
     Teuchos::RCP< const TpetraMap<LocalOrdinal,GlobalOrdinal,Node> >
+#else
+    template <class Node>
+    Teuchos::RCP< const TpetraMap<Node> >
+#endif
     createContigMapWithNode(global_size_t numElements, size_t localNumElements,
                             const Teuchos::RCP< const Teuchos::Comm< int > > &comm)
     {
       XPETRA_MONITOR("useTpetra::createContigMap");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return rcp(new TpetraMap<LocalOrdinal,GlobalOrdinal,Node>(Tpetra::createContigMapWithNode<LocalOrdinal,GlobalOrdinal,Node>(numElements, localNumElements, comm)));
+#else
+      return rcp(new TpetraMap<Node>(Tpetra::createContigMapWithNode<Node>(numElements, localNumElements, comm)));
+#endif
     }
   } // useTpetra namespace
 

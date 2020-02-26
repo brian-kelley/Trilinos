@@ -183,30 +183,61 @@ int main(int argc, char *argv[])
         GaleriList.set("my", GO(N));
         GaleriList.set("mz", GO(N));
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Map<LO,GO,NO> > UniqueMap;
         RCP<MultiVector<SC,LO,GO,NO> > Coordinates;
         RCP<Matrix<SC,LO,GO,NO> > K;
+#else
+        RCP<const Map<NO> > UniqueMap;
+        RCP<MultiVector<SC,NO> > Coordinates;
+        RCP<Matrix<SC,NO> > K;
+#endif
         if (Dimension==2) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             UniqueMap = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian2D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
             Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("2D",UniqueMap,GaleriList);
             RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Laplace2D",UniqueMap,GaleriList);
+#else
+            UniqueMap = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian2D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+            Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("2D",UniqueMap,GaleriList);
+            RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Laplace2D",UniqueMap,GaleriList);
+#endif
             K = Problem->BuildMatrix();
         } else if (Dimension==3) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             UniqueMap = Galeri::Xpetra::CreateMap<LO,GO,NO>(xpetraLib,"Cartesian3D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
             Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("3D",UniqueMap,GaleriList);
             RCP<Galeri::Xpetra::Problem<Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<LO,GO,NO>,CrsMatrixWrap<SC,LO,GO,NO>,MultiVector<SC,LO,GO,NO> >("Laplace3D",UniqueMap,GaleriList);
+#else
+            UniqueMap = Galeri::Xpetra::CreateMap<NO>(xpetraLib,"Cartesian3D",Comm,GaleriList); // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); nodeMap->describe(*fancy,VERB_EXTREME);
+            Coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<SC,LO,GO,Map<NO>,MultiVector<SC,NO> >("3D",UniqueMap,GaleriList);
+            RCP<Galeri::Xpetra::Problem<Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> > > Problem = Galeri::Xpetra::BuildProblem<SC,LO,GO,Map<NO>,CrsMatrixWrap<SC,NO>,MultiVector<SC,NO> >("Laplace3D",UniqueMap,GaleriList);
+#endif
             K = Problem->BuildMatrix();
         }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<const Map<LO,GO,NO> > RepeatedMap = BuildRepeatedMapNonConst<LO,GO,NO>(K->getCrsGraph());
+#else
+        RCP<const Map<NO> > RepeatedMap = BuildRepeatedMapNonConst<NO>(K->getCrsGraph());
+#endif
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "##############################\n# Set Up Coarse Operator #\n##############################\n" << endl;
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<GDSWCoarseOperator<SC,LO,GO,NO> > CoarseOperator(new GDSWCoarseOperator<SC,LO,GO,NO>(K,parameterList));
+#else
+        RCP<GDSWCoarseOperator<SC,NO> > CoarseOperator(new GDSWCoarseOperator<SC,NO>(K,parameterList));
+#endif
         CoarseOperator->initialize(Dimension,RepeatedMap);
         CoarseOperator->compute();
         
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<MultiVector<SC,LO,GO,NO> > x = MultiVectorFactory<SC,LO,GO,NO>::Build(K->getMap(),1);
         RCP<MultiVector<SC,LO,GO,NO> > y = MultiVectorFactory<SC,LO,GO,NO>::Build(K->getMap(),1);
+#else
+        RCP<MultiVector<SC,NO> > x = MultiVectorFactory<SC,NO>::Build(K->getMap(),1);
+        RCP<MultiVector<SC,NO> > y = MultiVectorFactory<SC,NO>::Build(K->getMap(),1);
+#endif
         x->putScalar(ScalarTraits<SC>::one());
         y->putScalar(ScalarTraits<SC>::zero());
         

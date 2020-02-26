@@ -57,7 +57,11 @@ namespace Xpetra {
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
   // forward declaration of BlockedMap, needed to prevent circular inclusions
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LO, class GO, class N> class BlockedMap;
+#else
+  template<class N> class BlockedMap;
+#endif
 #endif
 
 /*!
@@ -67,15 +71,23 @@ namespace Xpetra {
   The routines should be independent from Epetra/Tpetra and be purely implemented in Xpetra.
 
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <class LocalOrdinal,
           class GlobalOrdinal,
           class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+template <class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
 class MapUtils {
 #undef XPETRA_MAPUTILS_SHORT
 #include "Xpetra_UseShortNamesOrdinal.hpp"
 
 public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
   /*! @brief Helper function to concatenate several maps
 
     @param  subMaps    vector of maps which are concatenated
@@ -90,14 +102,22 @@ public:
              subMap[1] = { 2, 5 };
              concatenated map = { 0, 1, 3, 4, 2 ,5 };
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > concatenateMaps(const std::vector<Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > > & subMaps) {
+#else
+  static Teuchos::RCP<const Xpetra::Map<Node> > concatenateMaps(const std::vector<Teuchos::RCP<const Xpetra::Map<Node> > > & subMaps) {
+#endif
 
     // ToDo Resolve header issues to allow for using this routing in Xpetra::BlockedMap.
 
     // merge submaps to global map
     std::vector<GlobalOrdinal> gids;
     for(size_t tt = 0; tt<subMaps.size(); ++tt) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > subMap = subMaps[tt];
+#else
+      Teuchos::RCP<const Xpetra::Map<Node> > subMap = subMaps[tt];
+#endif
       Teuchos::ArrayView< const GlobalOrdinal > subMapGids = subMap->getNodeElementList();
       gids.insert(gids.end(), subMapGids.begin(), subMapGids.end());
     }
@@ -106,7 +126,11 @@ public:
     //std::sort(gids.begin(), gids.end());
     //gids.erase(std::unique(gids.begin(), gids.end()), gids.end());
     Teuchos::ArrayView<GlobalOrdinal> gidsView(&gids[0], gids.size());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > fullMap = Xpetra::MapFactory<LocalOrdinal,GlobalOrdinal,Node>::Build(subMaps[0]->lib(), INVALID, gidsView, subMaps[0]->getIndexBase(), subMaps[0]->getComm());
+#else
+    Teuchos::RCP<Xpetra::Map<Node> > fullMap = Xpetra::MapFactory<Node>::Build(subMaps[0]->lib(), INVALID, gidsView, subMaps[0]->getIndexBase(), subMaps[0]->getComm());
+#endif
     return fullMap;
   }
 
@@ -125,9 +149,15 @@ public:
              result = { 0, 1, 2, 3, 4 }; on proc 0
              result = { 3, 4, 5, 6, 7 }; on proc 1
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > 
   shrinkMapGIDs(const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& input,
                 const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& nonOvlInput)
+#else
+  static Teuchos::RCP<Xpetra::Map<Node> > 
+  shrinkMapGIDs(const Xpetra::Map<Node>& input,
+                const Xpetra::Map<Node>& nonOvlInput)
+#endif
   {
     TEUCHOS_TEST_FOR_EXCEPTION(nonOvlInput.getNodeNumElements() > input.getNodeNumElements(), 
                                Xpetra::Exceptions::Incompatible, 
@@ -207,8 +237,13 @@ public:
       GlobalOrdinal gcid = input.getGlobalElement(i);
       ovlDomainMapArray.push_back(origGID2newGID[gcid]);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > ovlDomainMap =
         Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build
+#else
+    RCP<Xpetra::Map<Node> > ovlDomainMap =
+        Xpetra::MapFactory<Node>::Build
+#endif
         (nonOvlInput.lib(),Teuchos::OrdinalTraits<GlobalOrdinal>::invalid(),ovlDomainMapArray(),0,comm);
     return ovlDomainMap;
   }
@@ -229,10 +264,17 @@ public:
              result = { 33, 44, 55, 101 }; on proc 0
              result = { 55, 101, 102, 103}; on proc 1
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static Teuchos::RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > transformThyra2XpetraGIDs(
       const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& input,
       const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& nonOvlInput,
       const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& nonOvlReferenceInput) {
+#else
+  static Teuchos::RCP<Xpetra::Map<Node> > transformThyra2XpetraGIDs(
+      const Xpetra::Map<Node>& input,
+      const Xpetra::Map<Node>& nonOvlInput,
+      const Xpetra::Map<Node>& nonOvlReferenceInput) {
+#endif
     //TEUCHOS_TEST_FOR_EXCEPTION(nonOvlInput.getNodeNumElements() > input.getNodeNumElements(), Xpetra::Exceptions::Incompatible, "Xpetra::MatrixUtils::transformThyra2XpetraGIDs: the non-overlapping map must not have more local ids than the overlapping map.");
     TEUCHOS_TEST_FOR_EXCEPTION(nonOvlInput.getNodeNumElements() != nonOvlReferenceInput.getNodeNumElements(), Xpetra::Exceptions::Incompatible, "Xpetra::MatrixUtils::transformThyra2XpetraGIDs: the number of local Xpetra reference GIDs and local Thyra GIDs of the non-overlapping maps must be the same!");
     //TEUCHOS_TEST_FOR_EXCEPTION(nonOvlInput.getMaxAllGlobalIndex() != input.getMaxAllGlobalIndex(), Xpetra::Exceptions::Incompatible, "Xpetra::MatrixUtils::transformThyra2XpetraGIDs: the maximum GIDs of the overlapping and non-overlapping maps must be the same. nonOvlInput.getMaxAllGlobalIndex() = " << nonOvlInput.getMaxAllGlobalIndex() << " ovlInput.getMaxAllGlobalIndex() = " << input.getMaxAllGlobalIndex());
@@ -295,8 +337,13 @@ public:
       GlobalOrdinal gcid = input.getGlobalElement(i);
       ovlDomainMapArray.push_back(thyra2xpetraGID[gcid]);
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > ovlDomainMap =
         Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build
+#else
+    RCP<Xpetra::Map<Node> > ovlDomainMap =
+        Xpetra::MapFactory<Node>::Build
+#endif
         (nonOvlInput.lib(),Teuchos::OrdinalTraits<GlobalOrdinal>::invalid(),ovlDomainMapArray(),0,comm);
 
     TEUCHOS_TEST_FOR_EXCEPTION(input.getNodeNumElements() != ovlDomainMap->getNodeNumElements(), Xpetra::Exceptions::Incompatible, "Xpetra::MatrixUtils::transformThyra2XpetraGIDs: the number of local Thyra reference GIDs (overlapping) and local Xpetra GIDs (overlapping) must be the same!");
@@ -311,16 +358,29 @@ public:
     @param  offset GID offset for resulting Xpetra GIDs
     @return Map (or BlockedMap) containing Xpetra GIDs
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   static Teuchos::RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > transformThyra2XpetraGIDs(
       const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& input, GlobalOrdinal offset) {
+#else
+  static Teuchos::RCP<const Xpetra::Map<Node> > transformThyra2XpetraGIDs(
+      const Xpetra::Map<Node>& input, GlobalOrdinal offset) {
+#endif
 
     const GO INVALID = Teuchos::OrdinalTraits<Xpetra::global_size_t>::invalid();
     RCP< const Teuchos::Comm<int> > comm = input.getComm();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > rcpInput = Teuchos::rcpFromRef(input);
+#else
+    RCP<const Xpetra::Map<Node> > rcpInput = Teuchos::rcpFromRef(input);
+#endif
 
     // check whether input map is a BlockedMap or a standard Map
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node> > rcpBlockedInput = Teuchos::rcp_dynamic_cast<const Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node> >(rcpInput);
+#else
+    RCP<const Xpetra::BlockedMap<Node> > rcpBlockedInput = Teuchos::rcp_dynamic_cast<const Xpetra::BlockedMap<Node> >(rcpInput);
+#endif
     if(rcpBlockedInput.is_null() == true) {
 
       // create a new map with Xpetra GIDs (may start not from GID = 0)
@@ -357,7 +417,11 @@ public:
       mapsThyra[b]  = subMapThyra;  // map can be of type Map or BlockedMap
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Teuchos::RCP<Map> resultMap = Teuchos::rcp(new Xpetra::BlockedMap<LocalOrdinal,GlobalOrdinal,Node>(mapsXpetra, mapsThyra));
+#else
+    Teuchos::RCP<Map> resultMap = Teuchos::rcp(new Xpetra::BlockedMap<Node>(mapsXpetra, mapsThyra));
+#endif
     return resultMap;
   }
 

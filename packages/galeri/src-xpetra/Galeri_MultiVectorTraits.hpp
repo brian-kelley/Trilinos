@@ -94,14 +94,31 @@ namespace Galeri {
 
 #ifdef HAVE_GALERI_TPETRA
     /* Specialized traits for Map = Tpetra::Map<...> */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
     class MultiVectorTraits<Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node>,Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > {
+#else
+    template <class Scalar, class Node>
+    class MultiVectorTraits<Tpetra::Map<Node>,Tpetra::MultiVector<Scalar,Node> > {
+#endif
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> type;
       typedef Tpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> type_real;
+#else
+      using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+      using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+      typedef Tpetra::MultiVector<Scalar,Node> type;
+      typedef Tpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> type_real;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > Build(const Teuchos::RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >& map, size_t num) {
         return Teuchos::rcp(new Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(map, num));
+#else
+      static Teuchos::RCP<Tpetra::MultiVector<Scalar,Node> > Build(const Teuchos::RCP<const Tpetra::Map<Node> >& map, size_t num) {
+        return Teuchos::rcp(new Tpetra::MultiVector<Scalar,Node>(map, num));
+#endif
       }
     };
 #endif // HAVE_GALERI_TPETRA
@@ -109,13 +126,27 @@ namespace Galeri {
 #ifdef HAVE_GALERI_XPETRA
     /* Specialized traits for Map = Xpetra::TpetraMap<...> */
     template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, class Map>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class MultiVectorTraits<Map,::Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > {
+#else
+    class MultiVectorTraits<Map,::Xpetra::MultiVector<Scalar,Node> > {
+#endif
     public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef ::Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> type;
       typedef ::Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> type_real;
+#else
+      typedef ::Xpetra::MultiVector<Scalar,Node> type;
+      typedef ::Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> type_real;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       static Teuchos::RCP< ::Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > Build(const Teuchos::RCP<const Map>& map, size_t num) {
         return ::Xpetra::MultiVectorFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build(map, num);
+#else
+      static Teuchos::RCP< ::Xpetra::MultiVector<Scalar,Node> > Build(const Teuchos::RCP<const Map>& map, size_t num) {
+        return ::Xpetra::MultiVectorFactory<Scalar,Node>::Build(map, num);
+#endif
       }
     };
 #endif // HAVE_GALERI_XPETRA

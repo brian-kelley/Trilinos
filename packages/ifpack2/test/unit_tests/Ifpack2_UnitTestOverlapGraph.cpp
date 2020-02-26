@@ -96,8 +96,13 @@ typedef tif_utest::Node Node;
 //this macro declares the unit-test-class:
 TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL(Ifpack2OverlapGraph, OverlapGraphTest0, LO, GO)
 {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LO,GO,Node> crs_graph_type;
   typedef Ifpack2::OverlapGraph<LO,GO,Node> overlap_graph_type;
+#else
+  typedef Tpetra::CrsGraph<Node> crs_graph_type;
+  typedef Ifpack2::OverlapGraph<Node> overlap_graph_type;
+#endif
   int lclSuccess = 1;
   int gblSuccess = 1;
   std::ostringstream errStrm; // for error collection
@@ -111,7 +116,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_2_DECL(Ifpack2OverlapGraph, OverlapGraphTest0, LO, GO
   const size_t num_rows_per_proc = 5;
   RCP<const crs_graph_type> crsgraph;
   try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     crsgraph = tif_utest::create_tridiag_graph<LO,GO,Node> (num_rows_per_proc);
+#else
+    crsgraph = tif_utest::create_tridiag_graph<Node> (num_rows_per_proc);
+#endif
   } catch (std::exception& e) {
     lclSuccess = 0;
     errStrm << "create_tridiag_graph threw exception: " << e.what () << endl;

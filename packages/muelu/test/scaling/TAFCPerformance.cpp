@@ -91,8 +91,13 @@ using Teuchos::TimeMonitor;
 // =========================================================================
 // =========================================================================
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >  build_map_for_transfer(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > oldMap){
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::Map<Node> >  build_map_for_transfer(const Teuchos::RCP<const Xpetra::Map<Node> > oldMap){
+#endif
 #include <MueLu_UseShortNames.hpp>
   // 10 unknowns per proc except N-1: Assume Ids run from 0 to MaxGlobalIndex
   int Nproc = oldMap->getComm()->getSize();
@@ -121,13 +126,22 @@ Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >  build_map_for
   fflush(stdout);
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Xpetra::MapFactory<LO,GO,Node>::Build(lib,oldMap->getGlobalNumElements(),elems(),oldMap->getIndexBase(),oldMap->getComm());
+#else
+  return Xpetra::MapFactory<Node>::Build(lib,oldMap->getGlobalNumElements(),elems(),oldMap->getIndexBase(),oldMap->getComm());
+#endif
 
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >  build_map_for_transfer_repartition(const Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > oldMap){
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::Map<Node> >  build_map_for_transfer_repartition(const Teuchos::RCP<const Xpetra::Map<Node> > oldMap){
+#endif
 #include <MueLu_UseShortNames.hpp>
   // Turn P procs into ~P/9 procs
   int Nproc = oldMap->getComm()->getSize();
@@ -163,13 +177,22 @@ Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >  build_map_for
   Teuchos::reduce(&i_am_active,&num_active,1,Teuchos::REDUCE_SUM,0,*oldMap->getComm());
   if(MyPID==0) printf("Repartitioning to %d/%d processors\n",num_active,Nproc);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   return Xpetra::MapFactory<LO,GO,Node>::Build(lib,oldMap->getGlobalNumElements(),elems(),oldMap->getIndexBase(),oldMap->getComm());
+#else
+  return Xpetra::MapFactory<Node>::Build(lib,oldMap->getGlobalNumElements(),elems(),oldMap->getIndexBase(),oldMap->getComm());
+#endif
 
 }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 Teuchos::RCP<const Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > toXpetraCrs(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &A) {
+#else
+template<class Scalar, class Node>
+Teuchos::RCP<const Xpetra::CrsMatrix<Scalar,Node> > toXpetraCrs(Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > &A) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   RCP<const CrsMatrixWrap> crswrapA = Teuchos::rcp_dynamic_cast<const CrsMatrixWrap>(A);
   TEUCHOS_TEST_FOR_EXCEPTION(crswrapA == Teuchos::null, MueLu::Exceptions::BadCast,
@@ -185,14 +208,23 @@ Teuchos::RCP<const Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > t
 // =========================================================================
 // =========================================================================
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 void TestTransferAndFillComplete(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > &A, Teuchos::RCP<Xpetra::Import<LocalOrdinal,GlobalOrdinal,Node> > &importer) {
+#else
+template<class Scalar, class Node>
+void TestTransferAndFillComplete(Teuchos::RCP<Xpetra::Matrix<Scalar,Node> > &A, Teuchos::RCP<Xpetra::Import<Node> > &importer) {
+#endif
 #include <MueLu_UseShortNames.hpp>
   //  Xpetra::UnderlyingLib lib = A->getRowMap()->lib();
   RCP<TimeMonitor> tm;
 
   // It makes me sad to do this
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Teuchos::RCP<const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > constA = Teuchos::rcp<const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> >(&*A,false);
+#else
+  Teuchos::RCP<const Xpetra::Matrix<Scalar,Node> > constA = Teuchos::rcp<const Xpetra::Matrix<Scalar,Node> >(&*A,false);
+#endif
 
   // Only makes sense in parallel
   if(A->getRowMap()->getComm()->getSize()==1) return;
@@ -202,7 +234,11 @@ void TestTransferAndFillComplete(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal
   // ==================
   {
     tm = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("OptimizedTransfer")));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar,LO,GO,Node> > B = Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(toXpetraCrs(A),*importer);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar,Node> > B = Xpetra::CrsMatrixFactory<Scalar,Node>::Build(toXpetraCrs(A),*importer);
+#endif
   }
 
   A->getRowMap()->getComm()->barrier();
@@ -212,7 +248,11 @@ void TestTransferAndFillComplete(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal
   // ==================
   {
     tm = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("NaiveTransfer")));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > B = Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(importer->getTargetMap(), 0);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar,Node> > B = Xpetra::CrsMatrixFactory<Scalar,Node>::Build(importer->getTargetMap(), 0);
+#endif
     B->doImport(*toXpetraCrs(A),*importer,Xpetra::ADD);
     B->fillComplete();
   }
@@ -223,7 +263,11 @@ void TestTransferAndFillComplete(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal
 // =========================================================================
 // =========================================================================
 // =========================================================================
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+template<class Scalar, class Node>
+#endif
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>
   using Teuchos::RCP;
@@ -232,7 +276,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   using Teuchos::ParameterList;
 
   typedef typename Teuchos::ScalarTraits<SC>::magnitudeType real_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Xpetra::MultiVector<real_type,LO,GO,NO> RealValuedMultiVector;
+#else
+  typedef Xpetra::MultiVector<real_type,NO> RealValuedMultiVector;
+#endif
 
   // =========================================================================
   // MPI initialization using Teuchos
@@ -286,7 +334,11 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
   RCP<TimeMonitor> globalTimeMonitor = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("Driver: S - Global Time")));
   RCP<TimeMonitor> tm                = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("Driver: 1 - Matrix Build")));
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<Xpetra::Matrix<Scalar,LO,GO,Node> >      A;
+#else
+  RCP<Xpetra::Matrix<Scalar,Node> >      A;
+#endif
   RCP<const Map>   map;
   RCP<RealValuedMultiVector> coordinates;
   typedef typename RealValuedMultiVector::scalar_type Real;
@@ -308,24 +360,44 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
     // In the future, we hope to be able to first create a Galeri problem, and then request map and coordinates from it
     // At the moment, however, things are fragile as we hope that the Problem uses same map and coordinates inside
     if (matrixType == "Laplace1D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian1D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<Real,LO,GO,Map,RealValuedMultiVector>("1D", map, galeriList);
 
     } else if (matrixType == "Laplace2D" || matrixType == "Star2D" ||
                matrixType == "BigStar2D" || matrixType == "Elasticity2D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian2D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<Real,LO,GO,Map,RealValuedMultiVector>("2D", map, galeriList);
 
     } else if (matrixType == "Laplace3D" || matrixType == "Brick3D" || matrixType == "Elasticity3D") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Galeri::Xpetra::CreateMap<LO, GO, Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#else
+      map = Galeri::Xpetra::CreateMap<Node>(xpetraParameters.GetLib(), "Cartesian3D", comm, galeriList);
+#endif
       coordinates = Galeri::Xpetra::Utils::CreateCartesianCoordinates<Real,LO,GO,Map,RealValuedMultiVector>("3D", map, galeriList);
     }
 
     // Expand map to do multiple DOF per node for block problems
     if (matrixType == "Elasticity2D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 2);
+#else
+      map = Xpetra::MapFactory<Node>::Build(map, 2);
+#endif
     if (matrixType == "Elasticity3D")
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       map = Xpetra::MapFactory<LO,GO,Node>::Build(map, 3);
+#else
+      map = Xpetra::MapFactory<Node>::Build(map, 3);
+#endif
 
     galeriStream << "Processor subdomains in x direction: " << galeriList.get<GO>("mx") << std::endl
                  << "Processor subdomains in y direction: " << galeriList.get<GO>("my") << std::endl
@@ -396,19 +468,33 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib& lib, int ar
 
 
       // Build the target map for the importing
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> >  importMap;
       if(mapmode=="small") importMap=build_map_for_transfer<Scalar,LO,GO,Node>(A->getRowMap());
       else if(mapmode=="repartition") importMap=build_map_for_transfer_repartition<Scalar,LO,GO,Node>(A->getRowMap());
+#else
+      Teuchos::RCP<const Xpetra::Map<Node> >  importMap;
+      if(mapmode=="small") importMap=build_map_for_transfer<Scalar,Node>(A->getRowMap());
+      else if(mapmode=="repartition") importMap=build_map_for_transfer_repartition<Scalar,Node>(A->getRowMap());
+#endif
       else throw std::runtime_error("Invalid map mode");
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Xpetra::Import<LocalOrdinal,GlobalOrdinal,Node> > importer = Xpetra::ImportFactory<LO,GO,Node>::Build(A->getRowMap(),importMap);
+#else
+      Teuchos::RCP<Xpetra::Import<Node> > importer = Xpetra::ImportFactory<Node>::Build(A->getRowMap(),importMap);
+#endif
 
       for(int i=0; i<numImports; i++) {
         // =========================================================================
         // Optimized transfer & fill complete loop
         // =========================================================================
         tm = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("Driver: 4 - TransferAndFillComplete")));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 	TestTransferAndFillComplete<Scalar,LO,GO,Node>(A,importer);
+#else
+	TestTransferAndFillComplete<Scalar,Node>(A,importer);
+#endif
         comm->barrier();
         tm= Teuchos::null;
       }

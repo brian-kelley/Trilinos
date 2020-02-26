@@ -62,12 +62,22 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   TwoLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::TwoLevelMatlabFactory()
+#else
+  template <class Scalar, class Node>
+  TwoLevelMatlabFactory<Scalar, Node>::TwoLevelMatlabFactory()
+#endif
     : hasDeclaredInput_(false) { }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> TwoLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> TwoLevelMatlabFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = getInputParamList();
     validParamList->set<std::string>("Provides"     , "" ,"A comma-separated list of objects provided on the coarse level by the TwoLevelMatlabFactory");
     validParamList->set<std::string>("Needs Fine"   , "", "A comma-separated list of objects needed on the fine level by the TwoLevelMatlabFactory");
@@ -76,8 +86,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TwoLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void TwoLevelMatlabFactory<Scalar, Node>::DeclareInput(Level &fineLevel, Level &coarseLevel) const {
+#endif
     using namespace std;
     const Teuchos::ParameterList& pL = GetParameterList();
     // Get needs strings
@@ -98,8 +113,13 @@ namespace MueLu {
     hasDeclaredInput_ = true;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void TwoLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void TwoLevelMatlabFactory<Scalar, Node>::Build(Level& fineLevel, Level& coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Build", coarseLevel);
 
     const Teuchos::ParameterList& pL = GetParameterList();
@@ -108,8 +128,13 @@ namespace MueLu {
     using namespace std;
     string needsFine = pL.get<string>("Needs Fine");
     string needsCoarse = pL.get<string>("Needs Coarse");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     vector<RCP<MuemexArg>> InputArgs = processNeeds<Scalar, LocalOrdinal, GlobalOrdinal, Node>(this, needsFine, fineLevel);
     vector<RCP<MuemexArg>> InputArgsCoarse = processNeeds<Scalar, LocalOrdinal, GlobalOrdinal, Node>(this, needsCoarse, coarseLevel);
+#else
+    vector<RCP<MuemexArg>> InputArgs = processNeeds<Scalar, Node>(this, needsFine, fineLevel);
+    vector<RCP<MuemexArg>> InputArgsCoarse = processNeeds<Scalar, Node>(this, needsCoarse, coarseLevel);
+#endif
     //Add coarse args to the end of InputArgs
     InputArgs.reserve(InputArgs.size() + InputArgsCoarse.size());
     InputArgs.insert(InputArgs.begin(), InputArgsCoarse.begin(), InputArgsCoarse.end());
@@ -122,11 +147,20 @@ namespace MueLu {
     if(!matlabFunction.length())
       throw runtime_error("Invalid matlab function name");
     vector<RCP<MuemexArg>> mexOutput = callMatlab(matlabFunction, numProvides, InputArgs);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     processProvides<Scalar, LocalOrdinal, GlobalOrdinal, Node>(mexOutput, this, provides, coarseLevel);
+#else
+    processProvides<Scalar, Node>(mexOutput, this, provides, coarseLevel);
+#endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string TwoLevelMatlabFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::description() const {
+#else
+  template <class Scalar, class Node>
+  std::string TwoLevelMatlabFactory<Scalar, Node>::description() const {
+#endif
     std::ostringstream out;
     const Teuchos::ParameterList& pL = GetParameterList();
     out << "TwoLevelMatlabFactory["<<pL.get<std::string>("Function")<<"]";

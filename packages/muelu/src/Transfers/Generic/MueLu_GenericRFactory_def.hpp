@@ -58,15 +58,25 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> GenericRFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> GenericRFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
     validParamList->set< RCP<const FactoryBase> >("P", Teuchos::null, "Generating factory of the matrix P");
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void GenericRFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &/* fineLevel */, Level &coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void GenericRFactory<Scalar, Node>::DeclareInput(Level &/* fineLevel */, Level &coarseLevel) const {
+#endif
     RCP<const FactoryBase> PFact1 = GetFactory("P");
     if (PFact1 == Teuchos::null) { PFact1 = coarseLevel.GetFactoryManager()->GetFactory("P"); }
     RCP<PFactory> PFact = Teuchos::rcp_const_cast<PFactory>(rcp_dynamic_cast<const PFactory>(PFact1));;
@@ -88,8 +98,13 @@ namespace MueLu {
     PFact->setRestrictionMode(rmode);            // reset restriciton mode flag
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void GenericRFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level & /* fineLevel */, Level & coarseLevel) const {
+#else
+  template <class Scalar, class Node>
+  void GenericRFactory<Scalar, Node>::Build(Level & /* fineLevel */, Level & coarseLevel) const {
+#endif
     FactoryMonitor m(*this, "Call prolongator factory for calculating restrictor", coarseLevel);
 
     RCP<const FactoryBase> PFact1 = GetFactory("P");

@@ -24,8 +24,10 @@
 namespace MueLu {
 
   template<class Scalar = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
            class LocalOrdinal = DefaultLocalOrdinal,
            class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
            class Node = DefaultNode>
   class TopSmootherFactory : public SingleLevelFactoryBase { //TODO: inherit from SmootherFactoryBase ?
 #undef MUELU_TOPSMOOTHERFACTORY_SHORT
@@ -33,6 +35,10 @@ namespace MueLu {
 
   public:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     TopSmootherFactory(RCP<const FactoryManagerBase> parentFactoryManager, const std::string& varName);
 
     virtual ~TopSmootherFactory();

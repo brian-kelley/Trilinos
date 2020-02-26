@@ -102,16 +102,26 @@ namespace MueLu {
     @ingroup MueLuAdapters
   */
   template <class Scalar        = DefaultScalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal  = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node          = DefaultNode>
   class ShiftedLaplacian : public BaseClass {
 #undef MUELU_SHIFTEDLAPLACIAN_SHORT
 #include "MueLu_UseShortNames.hpp"
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Tpetra::Vector<SC,LO,GO,NO>                  TVEC;
     typedef Tpetra::MultiVector<SC,LO,GO,NO>             TMV;
     typedef Tpetra::Operator<SC,LO,GO,NO>                OP;
+#else
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+    typedef Tpetra::Vector<SC,NO>                  TVEC;
+    typedef Tpetra::MultiVector<SC,NO>             TMV;
+    typedef Tpetra::Operator<SC,NO>                OP;
+#endif
 #ifdef HAVE_MUELU_TPETRA_INST_INT_INT
     typedef Belos::LinearProblem<SC,TMV,OP>              LinearProblem;
     typedef Belos::SolverManager<SC,TMV,OP>              SolverManager;
@@ -179,13 +189,29 @@ namespace MueLu {
 
     // Set matrices
     void setProblemMatrix(RCP<Matrix>& A);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void setProblemMatrix(RCP< Tpetra::CrsMatrix<SC,LO,GO,NO> >& TpetraA);
+#else
+    void setProblemMatrix(RCP< Tpetra::CrsMatrix<SC,NO> >& TpetraA);
+#endif
     void setPreconditioningMatrix(RCP<Matrix>& P);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void setPreconditioningMatrix(RCP< Tpetra::CrsMatrix<SC,LO,GO,NO> >& TpetraP);
+#else
+    void setPreconditioningMatrix(RCP< Tpetra::CrsMatrix<SC,NO> >& TpetraP);
+#endif
     void setstiff(RCP<Matrix>& K);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void setstiff(RCP< Tpetra::CrsMatrix<SC,LO,GO,NO> >& TpetraK);
+#else
+    void setstiff(RCP< Tpetra::CrsMatrix<SC,NO> >& TpetraK);
+#endif
     void setmass(RCP<Matrix>& M);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void setmass(RCP< Tpetra::CrsMatrix<SC,LO,GO,NO> >& TpetraM);
+#else
+    void setmass(RCP< Tpetra::CrsMatrix<SC,NO> >& TpetraM);
+#endif
     void setcoords(RCP<MultiVector>& Coords);
     void setNullSpace(RCP<MultiVector> NullSpace);
     void setLevelShifts(std::vector<Scalar> levelshifts);
@@ -215,8 +241,13 @@ namespace MueLu {
     int solve(const RCP<TMV> B, RCP<TMV>& X);
     void multigrid_apply(const RCP<MultiVector> B,
 			 RCP<MultiVector>& X);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     void multigrid_apply(const RCP<Tpetra::MultiVector<SC,LO,GO,NO> > B,
 			 RCP<Tpetra::MultiVector<SC,LO,GO,NO> >& X);
+#else
+    void multigrid_apply(const RCP<Tpetra::MultiVector<SC,NO> > B,
+			 RCP<Tpetra::MultiVector<SC,NO> >& X);
+#endif
     int GetIterations();
     typename Teuchos::ScalarTraits<Scalar>::magnitudeType GetResidual();
 
@@ -296,8 +327,13 @@ namespace MueLu {
     Teuchos::ParameterList            precList_;
 
     // Operator and Preconditioner
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP< MueLu::ShiftedLaplacianOperator<SC,LO,GO,NO> > MueLuOp_;
     RCP< Tpetra::CrsMatrix<SC,LO,GO,NO> >               TpetraA_;
+#else
+    RCP< MueLu::ShiftedLaplacianOperator<SC,NO> > MueLuOp_;
+    RCP< Tpetra::CrsMatrix<SC,NO> >               TpetraA_;
+#endif
 
 #ifdef HAVE_MUELU_TPETRA_INST_INT_INT
     // Belos Linear Problem and Solver

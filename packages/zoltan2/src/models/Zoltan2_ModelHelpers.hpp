@@ -72,7 +72,11 @@ get2ndAdjsMatFromAdjs(const Teuchos::RCP<const MeshAdapter<User> > &ia,
 
   typedef int nonzero_t;  // adjacency matrix doesn't need scalar_t
   typedef Tpetra::CrsMatrix<nonzero_t,lno_t,gno_t,node_t>   sparse_matrix_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<lno_t, gno_t, node_t>                 map_type;
+#else
+  typedef Tpetra::Map<node_t>                 map_type;
+#endif
   typedef Tpetra::global_size_t GST;
   const GST dummy = Teuchos::OrdinalTraits<GST>::invalid ();
 
@@ -153,7 +157,11 @@ get2ndAdjsMatFromAdjs(const Teuchos::RCP<const MeshAdapter<User> > &ia,
 
     //Create a new map with IDs uniquely assigned to ranks (oneToOneTMap)
     RCP<const map_type> oneToOneTMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Tpetra::createOneToOne<lno_t, gno_t, node_t>(throughMapG);
+#else
+      Tpetra::createOneToOne<node_t>(throughMapG);
+#endif
 
     /***********************************************************************/
     /************************* BUILD GRAPH FOR ADJS ************************/

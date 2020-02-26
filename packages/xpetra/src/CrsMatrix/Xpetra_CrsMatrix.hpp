@@ -65,14 +65,25 @@
 namespace Xpetra {
 
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal,
             class GlobalOrdinal,
+#endif
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
   class CrsMatrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     : public RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>,
       public DistObject<char, LocalOrdinal,GlobalOrdinal,Node>
+#else
+    : public RowMatrix<Scalar,Node>,
+      public DistObject<char,Node>
+#endif
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar scalar_type;
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
@@ -136,19 +147,34 @@ namespace Xpetra {
     virtual void resumeFill(const RCP< ParameterList > &params=null)= 0;
 
     //! Signal that data entry is complete, specifying domain and range maps.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void fillComplete(const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &domainMap, const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > &rangeMap, const RCP< ParameterList > &params=null)= 0;
+#else
+    virtual void fillComplete(const RCP< const Map<Node > > &domainMap, const RCP< const Map<Node > > &rangeMap, const RCP< ParameterList > &params=null)= 0;
+#endif
 
     //! Signal that data entry is complete.
     virtual void fillComplete(const RCP< ParameterList > &params=null)= 0;
 
     //!  Replaces the current domainMap and importer with the user-specified objects.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void replaceDomainMapAndImporter(const Teuchos::RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >& newDomainMap, Teuchos::RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> >  & newImporter)=0;
+#else
+    virtual void replaceDomainMapAndImporter(const Teuchos::RCP< const Map<Node > >& newDomainMap, Teuchos::RCP<const Import<Node> >  & newImporter)=0;
+#endif
 
     //! Expert static fill complete
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void expertStaticFillComplete(const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & domainMap,
                                           const RCP<const Map<LocalOrdinal,GlobalOrdinal,Node> > & rangeMap,
                                           const RCP<const Import<LocalOrdinal,GlobalOrdinal,Node> > &importer=Teuchos::null,
                                           const RCP<const Export<LocalOrdinal,GlobalOrdinal,Node> > &exporter=Teuchos::null,
+#else
+    virtual void expertStaticFillComplete(const RCP<const Map<Node> > & domainMap,
+                                          const RCP<const Map<Node> > & rangeMap,
+                                          const RCP<const Import<Node> > &importer=Teuchos::null,
+                                          const RCP<const Export<Node> > &exporter=Teuchos::null,
+#endif
                                           const RCP<ParameterList> &params=Teuchos::null) = 0;
     //@}
 
@@ -156,13 +182,25 @@ namespace Xpetra {
     //@{
 
     //! Returns the Map that describes the row distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getRowMap() const = 0;
+#else
+    virtual const RCP< const Map<Node > >  getRowMap() const = 0;
+#endif
 
     //! Returns the Map that describes the column distribution in this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getColMap() const = 0;
+#else
+    virtual const RCP< const Map<Node > >  getColMap() const = 0;
+#endif
 
     //! Returns the CrsGraph associated with this matrix.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP< const CrsGraph< LocalOrdinal, GlobalOrdinal, Node > > getCrsGraph() const = 0;
+#else
+    virtual RCP< const CrsGraph<Node > > getCrsGraph() const = 0;
+#endif
 
     //! Number of global elements in the row map of this matrix.
     virtual global_size_t getGlobalNumRows() const = 0;
@@ -219,24 +257,48 @@ namespace Xpetra {
     virtual void getLocalRowView(LocalOrdinal LocalRow, ArrayView< const LocalOrdinal > &indices, ArrayView< const Scalar > &values) const = 0;
 
     //! Get a copy of the diagonal entries owned by this node, with local row indices.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void getLocalDiagCopy(Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &diag) const = 0;
+#else
+    virtual void getLocalDiagCopy(Vector< Scalar, Node > &diag) const = 0;
+#endif
 
     //! Get offsets of the diagonal entries in the matrix.
     virtual void getLocalDiagOffsets(Teuchos::ArrayRCP<size_t> &offsets) const = 0;
 
     //! Get a copy of the diagonal entries owned by this node, with local row indices, using row offsets.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void getLocalDiagCopy(Vector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &diag, const Teuchos::ArrayView<const size_t> &offsets) const = 0;
+#else
+    virtual void getLocalDiagCopy(Vector< Scalar, Node > &diag, const Teuchos::ArrayView<const size_t> &offsets) const = 0;
+#endif
 
     //! Replace the diagonal entries of the matrix
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void replaceDiag(const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node> &diag) = 0;
+#else
+    virtual void replaceDiag(const Vector<Scalar, Node> &diag) = 0;
+#endif
 
     //! Left scale matrix using the given vector entries
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void leftScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) = 0;
+#else
+    virtual void leftScale (const Vector<Scalar, Node>& x) = 0;
+#endif
 
     //! Right scale matrix using the given vector entries
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void rightScale (const Vector<Scalar, LocalOrdinal, GlobalOrdinal, Node>& x) = 0;
+#else
+    virtual void rightScale (const Vector<Scalar, Node>& x) = 0;
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void removeEmptyProcessesInPlace(const RCP<const Map<LocalOrdinal, GlobalOrdinal, Node> >& newMap) = 0;
+#else
+    virtual void removeEmptyProcessesInPlace(const RCP<const Map<Node> >& newMap) = 0;
+#endif
 
     //! Returns true if globalConstants have been computed; false otherwise
     virtual bool haveGlobalConstants() const = 0;
@@ -258,13 +320,25 @@ namespace Xpetra {
      * @param[in] alpha Scaling factor
      * @param[in] beta Scaling factor
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void apply(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &X, MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, Scalar alpha=ScalarTraits< Scalar >::one(), Scalar beta=ScalarTraits< Scalar >::zero()) const = 0;
+#else
+    virtual void apply(const MultiVector< Scalar, Node > &X, MultiVector< Scalar, Node > &Y, Teuchos::ETransp mode=Teuchos::NO_TRANS, Scalar alpha=ScalarTraits< Scalar >::one(), Scalar beta=ScalarTraits< Scalar >::zero()) const = 0;
+#endif
 
     //! Returns the Map associated with the domain of this operator. This will be null until fillComplete() is called.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getDomainMap() const = 0;
+#else
+    virtual const RCP< const Map<Node > >  getDomainMap() const = 0;
+#endif
 
     //!
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual const RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >  getRangeMap() const = 0;
+#else
+    virtual const RCP< const Map<Node > >  getRangeMap() const = 0;
+#endif
 
     //@}
 
@@ -328,9 +402,15 @@ namespace Xpetra {
     virtual bool hasMatrix() const = 0;
 
     //! Compute a residual R = B - (*this) * X
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual void residual(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & X,
                           const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & B,
                           MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > & R) const = 0;
+#else
+    virtual void residual(const MultiVector< Scalar, Node > & X,
+                          const MultiVector< Scalar, Node > & B,
+                          MultiVector< Scalar, Node > & R) const = 0;
+#endif
 
 
   }; // CrsMatrix class

@@ -149,16 +149,32 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, gaussSeidelSerial, LocalOrdinalTyp
   typedef node_type NT;
 
   // CrsMatrix specialization to use in this test.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<ST, LO, GO, NT> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<ST, NT> crs_matrix_type;
+#endif
 
   // CrsGraph specialization corresponding to crs_matrix_type (the
   // CrsMatrix specialization).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LO, GO, NT> crs_graph_type;
+#else
+  typedef Tpetra::CrsGraph<NT> crs_graph_type;
+#endif
 
   // MultiVector specialization corresponding to crs_matrix_type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<ST, LO, GO, NT> multivector_type;
+#else
+  typedef Tpetra::MultiVector<ST, NT> multivector_type;
+#endif
   // Vector specialization corresponding to crs_matrix_type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<ST, LO, GO, NT> vector_type;
+#else
+  typedef Tpetra::Vector<ST, NT> vector_type;
+#endif
 
   // This controls whether to print to std::cerr instead of out.
   // Printing to std::cerr ensures that output appears before Kokkos
@@ -226,7 +242,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, gaussSeidelSerial, LocalOrdinalTyp
 
   // Create a contiguous row Map, with numLocalRows rows per process.
   RCP<const map_type> rowMap =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     createContigMapWithNode<LO, GO, NT> (INVALID, numLocalRows, comm);
+#else
+    createContigMapWithNode<NT> (INVALID, numLocalRows, comm);
+#endif
 
   // The Gauss-Seidel kernel requires that the row, domain, and range
   // Maps all be the same.
@@ -384,10 +404,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, gaussSeidelSerial, LocalOrdinalTyp
   // Gauss-Seidel in the domain / range Map.
 
   RCP<const map_type> colMap = graph->getColMap ();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<multivector_type> X_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
   RCP<multivector_type> X_exact_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
   RCP<multivector_type> B_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
   RCP<multivector_type> R_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
+#else
+  RCP<multivector_type> X_colMap = createMultiVector<ST, NT> (colMap, 1);
+  RCP<multivector_type> X_exact_colMap = createMultiVector<ST, NT> (colMap, 1);
+  RCP<multivector_type> B_colMap = createMultiVector<ST, NT> (colMap, 1);
+  RCP<multivector_type> R_colMap = createMultiVector<ST, NT> (colMap, 1);
+#endif
   RCP<multivector_type> X = X_colMap->offsetViewNonConst (domainMap, 0);
   RCP<multivector_type> X_exact = X_exact_colMap->offsetViewNonConst (domainMap, 0);
   RCP<multivector_type> B = B_colMap->offsetViewNonConst (rangeMap, 0);
@@ -621,16 +648,32 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, reorderedGaussSeidelSerial, LocalO
   typedef node_type NT;
 
   // CrsMatrix specialization to use in this test.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<ST, LO, GO, NT> crs_matrix_type;
+#else
+  typedef Tpetra::CrsMatrix<ST, NT> crs_matrix_type;
+#endif
 
   // CrsGraph specialization corresponding to crs_matrix_type (the
   // CrsMatrix specialization).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LO, GO, NT> crs_graph_type;
+#else
+  typedef Tpetra::CrsGraph<NT> crs_graph_type;
+#endif
 
   // MultiVector specialization corresponding to crs_matrix_type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::MultiVector<ST, LO, GO, NT> multivector_type;
+#else
+  typedef Tpetra::MultiVector<ST, NT> multivector_type;
+#endif
   // Vector specialization corresponding to crs_matrix_type.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Vector<ST, LO, GO, NT> vector_type;
+#else
+  typedef Tpetra::Vector<ST, NT> vector_type;
+#endif
 
 
   ////////////////////////////////////////////////////////////////////
@@ -681,7 +724,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, reorderedGaussSeidelSerial, LocalO
   }
 
   // Create a contiguous row Map, with numLocalRows rows per process.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const map_type> rowMap = createContigMapWithNode<LO, GO, NT> (INVALID, numLocalRows, comm);
+#else
+  RCP<const map_type> rowMap = createContigMapWithNode<NT> (INVALID, numLocalRows, comm);
+#endif
 
   // The Gauss-Seidel kernel requires that the row, domain, and range
   // Maps all be the same.
@@ -813,10 +860,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, reorderedGaussSeidelSerial, LocalO
   // Gauss-Seidel in the domain / range Map.
 
   RCP<const map_type> colMap = graph->getColMap ();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<multivector_type> X_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
   RCP<multivector_type> X_exact_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
   RCP<multivector_type> B_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
   RCP<multivector_type> R_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
+#else
+  RCP<multivector_type> X_colMap = createMultiVector<ST, NT> (colMap, 1);
+  RCP<multivector_type> X_exact_colMap = createMultiVector<ST, NT> (colMap, 1);
+  RCP<multivector_type> B_colMap = createMultiVector<ST, NT> (colMap, 1);
+  RCP<multivector_type> R_colMap = createMultiVector<ST, NT> (colMap, 1);
+#endif
   RCP<multivector_type> X = X_colMap->offsetViewNonConst (domainMap, 0);
   RCP<multivector_type> X_exact = X_exact_colMap->offsetViewNonConst (domainMap, 0);
   RCP<multivector_type> B = B_colMap->offsetViewNonConst (rangeMap, 0);

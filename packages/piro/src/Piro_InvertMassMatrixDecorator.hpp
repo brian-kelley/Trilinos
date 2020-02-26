@@ -62,7 +62,11 @@ using default_go = Tpetra::Map<>::global_ordinal_type;
 namespace Piro {
 
 #ifdef ALBANY_BUILD
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 template <typename Scalar, typename LocalOrdinal = default_lo, typename GlobalOrdinal = default_go,
+#else
+template <typename Scalar,
+#endif
           typename Node = KokkosClassic::DefaultNode::DefaultNodeType>
 #else
 template<typename Scalar>

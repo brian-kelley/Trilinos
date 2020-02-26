@@ -101,12 +101,25 @@ namespace MueLu {
   ----------|--------------|------------
   | Coordinates | CoordinatesTransferFactory   | coarse level coordinates
 */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class CoordinatesTransferFactory_kokkos;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   class CoordinatesTransferFactory_kokkos<Scalar, LocalOrdinal, GlobalOrdinal, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType> > : public TwoLevelFactoryBase {
+#else
+  template <class Scalar, class DeviceType>
+  class CoordinatesTransferFactory_kokkos<Scalar, Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType> > : public TwoLevelFactoryBase {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef Scalar                                              scalar_type;
     typedef LocalOrdinal                                        local_ordinal_type;
     typedef GlobalOrdinal                                       global_ordinal_type;

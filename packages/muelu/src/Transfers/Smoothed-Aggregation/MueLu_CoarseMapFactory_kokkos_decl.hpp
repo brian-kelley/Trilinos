@@ -106,12 +106,25 @@ namespace MueLu {
      | CoarseMap | CoarseMapFactory | Map containing the coarse map used as domain map in the tentative prolongation operator
 
   */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
+#else
+  template <class Scalar, class Node>
+#endif
   class CoarseMapFactory_kokkos;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   class CoarseMapFactory_kokkos<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>> : public SingleLevelFactoryBase {
+#else
+  template<class Scalar, class DeviceType>
+  class CoarseMapFactory_kokkos<Scalar,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>> : public SingleLevelFactoryBase {
+#endif
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef LocalOrdinal                                        local_ordinal_type;
     typedef GlobalOrdinal                                       global_ordinal_type;
     typedef typename DeviceType::execution_space                execution_space;

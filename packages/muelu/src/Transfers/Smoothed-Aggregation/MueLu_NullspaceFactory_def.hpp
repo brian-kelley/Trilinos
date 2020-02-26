@@ -57,8 +57,13 @@
 
 namespace MueLu {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<const ParameterList> NullspaceFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::GetValidParameterList() const {
+#else
+  template <class Scalar, class Node>
+  RCP<const ParameterList> NullspaceFactory<Scalar, Node>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
     validParamList->set< std::string >("Fine level nullspace", "Nullspace", "Variable name which is used to store null space multi vector on the finest level (default=\"Nullspace\"). For block matrices also \"Nullspace1\" to \"Nullspace9\" are accepted to describe the null space vectors for the (i,i) block (i=1..9).");
@@ -81,8 +86,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void NullspaceFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void NullspaceFactory<Scalar, Node>::DeclareInput(Level &currentLevel) const {
+#endif
 
     const ParameterList & pL = GetParameterList();
     std::string nspName = pL.get<std::string>("Fine level nullspace");
@@ -104,8 +114,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void NullspaceFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Build(Level &currentLevel) const {
+#else
+  template <class Scalar, class Node>
+  void NullspaceFactory<Scalar, Node>::Build(Level &currentLevel) const {
+#endif
     FactoryMonitor m(*this, "Nullspace factory", currentLevel);
 
     RCP<MultiVector> nullspace;
@@ -163,8 +178,13 @@ namespace MueLu {
 
   } // Build
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void NullspaceFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::fillNullspaceVector(const RCP<BlockedMultiVector>& nsp, LocalOrdinal numPDEs) const {
+#else
+  template <class Scalar, class Node>
+  void NullspaceFactory<Scalar, Node>::fillNullspaceVector(const RCP<BlockedMultiVector>& nsp, LocalOrdinal numPDEs) const {
+#endif
     RCP< const BlockedMap> bmap = nsp->getBlockedMap();
 
     for(size_t r = 0; r < bmap->getNumMaps(); r++) {

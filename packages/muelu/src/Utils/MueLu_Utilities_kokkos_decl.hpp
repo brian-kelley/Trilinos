@@ -103,17 +103,29 @@ namespace MueLu {
     go away, while others should be moved to Xpetra.
   */
   template <class Scalar,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             class LocalOrdinal = DefaultLocalOrdinal,
             class GlobalOrdinal = DefaultGlobalOrdinal,
+#endif
             class Node = DefaultNode>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class Utilities_kokkos : public MueLu::UtilitiesBase<Scalar,LocalOrdinal,GlobalOrdinal,Node> {
+#else
+  class Utilities_kokkos : public MueLu::UtilitiesBase<Scalar,Node> {using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+
+#endif
 #undef MUELU_UTILITIES_KOKKOS_SHORT
 #include "MueLu_UseShortNames.hpp"
 
   public:
     using TST                   = Teuchos::ScalarTraits<SC>;
     using Magnitude             = typename TST::magnitudeType;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using RealValuedMultiVector = Xpetra::MultiVector<Magnitude,LO,GO,NO>;
+#else
+    using RealValuedMultiVector = Xpetra::MultiVector<Magnitude,NO>;
+#endif
 
 #ifdef HAVE_MUELU_EPETRA
     //! Helper utility to pull out the underlying Epetra objects from an Xpetra object
@@ -137,26 +149,60 @@ namespace MueLu {
 #ifdef HAVE_MUELU_TPETRA
     //! Helper utility to pull out the underlying Tpetra objects from an Xpetra object
     // @{
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Tpetra::MultiVector<SC,LO,GO,NO> >     MV2TpetraMV(RCP<MultiVector> const vec)     { return Utilities::MV2TpetraMV(vec); }
     static RCP<      Tpetra::MultiVector<SC,LO,GO,NO> >     MV2NonConstTpetraMV(RCP<MultiVector> vec)   { return Utilities::MV2NonConstTpetraMV(vec); }
     static RCP<      Tpetra::MultiVector<SC,LO,GO,NO> >     MV2NonConstTpetraMV2(MultiVector& vec)      { return Utilities::MV2NonConstTpetraMV2(vec); }
-
-    static const Tpetra::MultiVector<SC,LO,GO,NO>&          MV2TpetraMV(const MultiVector& vec)         { return Utilities::MV2TpetraMV(vec); }
-    static       Tpetra::MultiVector<SC,LO,GO,NO>&          MV2NonConstTpetraMV(MultiVector& vec)       { return Utilities::MV2NonConstTpetraMV(vec); }
-
-    static RCP<const Tpetra::CrsMatrix<SC,LO,GO,NO> >       Op2TpetraCrs(RCP<const Matrix> Op)          { return Utilities::Op2TpetraCrs(Op); }
-    static RCP<      Tpetra::CrsMatrix<SC,LO,GO,NO> >       Op2NonConstTpetraCrs(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraCrs(Op); }
-
-    static const Tpetra::CrsMatrix<SC,LO,GO,NO>&            Op2TpetraCrs(const Matrix& Op)              { return Utilities::Op2TpetraCrs(Op); }
-    static       Tpetra::CrsMatrix<SC,LO,GO,NO>&            Op2NonConstTpetraCrs(Matrix& Op)            { return Utilities::Op2NonConstTpetraCrs(Op); }
-
-    static RCP<const Tpetra::RowMatrix<SC,LO,GO,NO> >       Op2TpetraRow(RCP<const Matrix> Op)          { return Utilities::Op2TpetraRow(Op); }
-    static RCP<      Tpetra::RowMatrix<SC,LO,GO,NO> >       Op2NonConstTpetraRow(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraRow(Op); }
-
-    static const RCP<const Tpetra::Map<LO, GO, NO> >        Map2TpetraMap(const Map& map)               { return Utilities::Map2TpetraMap(map); }
+#else
+    static RCP<const Tpetra::MultiVector<SC,NO> >     MV2TpetraMV(RCP<MultiVector> const vec)     { return Utilities::MV2TpetraMV(vec); }
+    static RCP<      Tpetra::MultiVector<SC,NO> >     MV2NonConstTpetraMV(RCP<MultiVector> vec)   { return Utilities::MV2NonConstTpetraMV(vec); }
+    static RCP<      Tpetra::MultiVector<SC,NO> >     MV2NonConstTpetraMV2(MultiVector& vec)      { return Utilities::MV2NonConstTpetraMV2(vec); }
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    static const Tpetra::MultiVector<SC,LO,GO,NO>&          MV2TpetraMV(const MultiVector& vec)         { return Utilities::MV2TpetraMV(vec); }
+    static       Tpetra::MultiVector<SC,LO,GO,NO>&          MV2NonConstTpetraMV(MultiVector& vec)       { return Utilities::MV2NonConstTpetraMV(vec); }
+#else
+    static const Tpetra::MultiVector<SC,NO>&          MV2TpetraMV(const MultiVector& vec)         { return Utilities::MV2TpetraMV(vec); }
+    static       Tpetra::MultiVector<SC,NO>&          MV2NonConstTpetraMV(MultiVector& vec)       { return Utilities::MV2NonConstTpetraMV(vec); }
+#endif
+
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    static RCP<const Tpetra::CrsMatrix<SC,LO,GO,NO> >       Op2TpetraCrs(RCP<const Matrix> Op)          { return Utilities::Op2TpetraCrs(Op); }
+    static RCP<      Tpetra::CrsMatrix<SC,LO,GO,NO> >       Op2NonConstTpetraCrs(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraCrs(Op); }
+#else
+    static RCP<const Tpetra::CrsMatrix<SC,NO> >       Op2TpetraCrs(RCP<const Matrix> Op)          { return Utilities::Op2TpetraCrs(Op); }
+    static RCP<      Tpetra::CrsMatrix<SC,NO> >       Op2NonConstTpetraCrs(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraCrs(Op); }
+#endif
+
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    static const Tpetra::CrsMatrix<SC,LO,GO,NO>&            Op2TpetraCrs(const Matrix& Op)              { return Utilities::Op2TpetraCrs(Op); }
+    static       Tpetra::CrsMatrix<SC,LO,GO,NO>&            Op2NonConstTpetraCrs(Matrix& Op)            { return Utilities::Op2NonConstTpetraCrs(Op); }
+#else
+    static const Tpetra::CrsMatrix<SC,NO>&            Op2TpetraCrs(const Matrix& Op)              { return Utilities::Op2TpetraCrs(Op); }
+    static       Tpetra::CrsMatrix<SC,NO>&            Op2NonConstTpetraCrs(Matrix& Op)            { return Utilities::Op2NonConstTpetraCrs(Op); }
+#endif
+
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    static RCP<const Tpetra::RowMatrix<SC,LO,GO,NO> >       Op2TpetraRow(RCP<const Matrix> Op)          { return Utilities::Op2TpetraRow(Op); }
+    static RCP<      Tpetra::RowMatrix<SC,LO,GO,NO> >       Op2NonConstTpetraRow(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraRow(Op); }
+#else
+    static RCP<const Tpetra::RowMatrix<SC,NO> >       Op2TpetraRow(RCP<const Matrix> Op)          { return Utilities::Op2TpetraRow(Op); }
+    static RCP<      Tpetra::RowMatrix<SC,NO> >       Op2NonConstTpetraRow(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraRow(Op); }
+#endif
+
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    static const RCP<const Tpetra::Map<LO, GO, NO> >        Map2TpetraMap(const Map& map)               { return Utilities::Map2TpetraMap(map); }
+#else
+    static const RCP<const Tpetra::Map<NO> >        Map2TpetraMap(const Map& map)               { return Utilities::Map2TpetraMap(map); }
+#endif
+#endif
+
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Matrix<SC,LO,GO,NO> >                Crs2Op(RCP<CrsMatrix> Op)                   { return Utilities::Crs2Op(Op); }
+#else
+    static RCP<Xpetra::Matrix<SC,NO> >                Crs2Op(RCP<CrsMatrix> Op)                   { return Utilities::Crs2Op(Op); }
+#endif
 
      /*! @brief Extract Matrix Diagonal
 
@@ -192,7 +238,11 @@ namespace MueLu {
      * @param[in] tolReplacement: Value put in for undefined entries in output vector (default: 0.0)
      * @ret: vector containing inverse values of input vector v
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static Teuchos::RCP<Vector> GetInverse(Teuchos::RCP<const Vector> v, Magnitude tol = Teuchos::ScalarTraits<Scalar>::eps()*100, Scalar tolReplacement = Teuchos::ScalarTraits<Scalar>::zero()) { return MueLu::UtilitiesBase<Scalar,LocalOrdinal,GlobalOrdinal,Node>::GetInverse(v,tol,tolReplacement); }
+#else
+    static Teuchos::RCP<Vector> GetInverse(Teuchos::RCP<const Vector> v, Magnitude tol = Teuchos::ScalarTraits<Scalar>::eps()*100, Scalar tolReplacement = Teuchos::ScalarTraits<Scalar>::zero()) { return MueLu::UtilitiesBase<Scalar,Node>::GetInverse(v,tol,tolReplacement); }
+#endif
 
     // TODO: should NOT return an Array. Definition must be changed to:
     // - ArrayRCP<> ResidualNorm(Matrix const &Op, MultiVector const &X, MultiVector const &RHS)
@@ -289,7 +339,11 @@ namespace MueLu {
       return Utilities::Transpose(Op, optimizeTranspose, label);
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LocalOrdinal,GlobalOrdinal,Node> > ExtractCoordinatesFromParameterList(ParameterList& paramList) {
+#else
+    static RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,Node> > ExtractCoordinatesFromParameterList(ParameterList& paramList) {
+#endif
       return Utilities::ExtractCoordinatesFromParameterList(paramList);
     }
 
@@ -306,13 +360,21 @@ namespace MueLu {
         Note: this is the implementation for Epetra. Tpetra throws if TPETRA_INST_INT_INT is disabled!
    */
   template <class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   class Utilities_kokkos<double,int,int,Node> : public UtilitiesBase<double,int,int,Node> {
+#else
+  class Utilities_kokkos<double,Node> : public UtilitiesBase<double,Node> {
+#endif
   public:
     typedef double Scalar;
     typedef int LocalOrdinal;
     typedef int GlobalOrdinal;
     typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType Magnitude;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::MultiVector<Magnitude,LocalOrdinal,GlobalOrdinal,Node> RealValuedMultiVector;
+#else
+    typedef Xpetra::MultiVector<Magnitude,Node> RealValuedMultiVector;
+#endif
 
   private:
 #undef MUELU_UTILITIES_KOKKOS_SHORT
@@ -342,25 +404,59 @@ namespace MueLu {
 #ifdef HAVE_MUELU_TPETRA
     //! Helper utility to pull out the underlying Tpetra objects from an Xpetra object
     // @{
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Tpetra::MultiVector<SC,LO,GO,NO> >     MV2TpetraMV(RCP<MultiVector> const vec)     { return Utilities::MV2TpetraMV(vec); }
     static RCP<      Tpetra::MultiVector<SC,LO,GO,NO> >     MV2NonConstTpetraMV(RCP<MultiVector> vec)   { return Utilities::MV2NonConstTpetraMV(vec); }
     static RCP<      Tpetra::MultiVector<SC,LO,GO,NO> >     MV2NonConstTpetraMV2(MultiVector& vec)      { return Utilities::MV2NonConstTpetraMV2(vec); }
+#else
+    static RCP<const Tpetra::MultiVector<SC,NO> >     MV2TpetraMV(RCP<MultiVector> const vec)     { return Utilities::MV2TpetraMV(vec); }
+    static RCP<      Tpetra::MultiVector<SC,NO> >     MV2NonConstTpetraMV(RCP<MultiVector> vec)   { return Utilities::MV2NonConstTpetraMV(vec); }
+    static RCP<      Tpetra::MultiVector<SC,NO> >     MV2NonConstTpetraMV2(MultiVector& vec)      { return Utilities::MV2NonConstTpetraMV2(vec); }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static const Tpetra::MultiVector<SC,LO,GO,NO>&          MV2TpetraMV(const MultiVector& vec)         { return Utilities::MV2TpetraMV(vec); }
     static       Tpetra::MultiVector<SC,LO,GO,NO>&          MV2NonConstTpetraMV(MultiVector& vec)       { return Utilities::MV2NonConstTpetraMV(vec); }
+#else
+    static const Tpetra::MultiVector<SC,NO>&          MV2TpetraMV(const MultiVector& vec)         { return Utilities::MV2TpetraMV(vec); }
+    static       Tpetra::MultiVector<SC,NO>&          MV2NonConstTpetraMV(MultiVector& vec)       { return Utilities::MV2NonConstTpetraMV(vec); }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Tpetra::CrsMatrix<SC,LO,GO,NO> >       Op2TpetraCrs(RCP<const Matrix> Op)          { return Utilities::Op2TpetraCrs(Op); }
     static RCP<      Tpetra::CrsMatrix<SC,LO,GO,NO> >       Op2NonConstTpetraCrs(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraCrs(Op); }
+#else
+    static RCP<const Tpetra::CrsMatrix<SC,NO> >       Op2TpetraCrs(RCP<const Matrix> Op)          { return Utilities::Op2TpetraCrs(Op); }
+    static RCP<      Tpetra::CrsMatrix<SC,NO> >       Op2NonConstTpetraCrs(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraCrs(Op); }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static const Tpetra::CrsMatrix<SC,LO,GO,NO>&            Op2TpetraCrs(const Matrix& Op)              { return Utilities::Op2TpetraCrs(Op); }
     static       Tpetra::CrsMatrix<SC,LO,GO,NO>&            Op2NonConstTpetraCrs(Matrix& Op)            { return Utilities::Op2NonConstTpetraCrs(Op); }
+#else
+    static const Tpetra::CrsMatrix<SC,NO>&            Op2TpetraCrs(const Matrix& Op)              { return Utilities::Op2TpetraCrs(Op); }
+    static       Tpetra::CrsMatrix<SC,NO>&            Op2NonConstTpetraCrs(Matrix& Op)            { return Utilities::Op2NonConstTpetraCrs(Op); }
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<const Tpetra::RowMatrix<SC,LO,GO,NO> >       Op2TpetraRow(RCP<const Matrix> Op)          { return Utilities::Op2TpetraRow(Op); }
     static RCP<      Tpetra::RowMatrix<SC,LO,GO,NO> >       Op2NonConstTpetraRow(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraRow(Op); }
-
-    static const RCP<const Tpetra::Map<LO, GO, NO> >        Map2TpetraMap(const Map& map)               { return Utilities::Map2TpetraMap(map); }
+#else
+    static RCP<const Tpetra::RowMatrix<SC,NO> >       Op2TpetraRow(RCP<const Matrix> Op)          { return Utilities::Op2TpetraRow(Op); }
+    static RCP<      Tpetra::RowMatrix<SC,NO> >       Op2NonConstTpetraRow(RCP<Matrix> Op)        { return Utilities::Op2NonConstTpetraRow(Op); }
 #endif
+
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    static const RCP<const Tpetra::Map<LO, GO, NO> >        Map2TpetraMap(const Map& map)               { return Utilities::Map2TpetraMap(map); }
+#else
+    static const RCP<const Tpetra::Map<NO> >        Map2TpetraMap(const Map& map)               { return Utilities::Map2TpetraMap(map); }
+#endif
+#endif
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::Matrix<SC,LO,GO,NO> >                Crs2Op(RCP<CrsMatrix> Op)                   { return Utilities::Crs2Op(Op); }
+#else
+    static RCP<Xpetra::Matrix<SC,NO> >                Crs2Op(RCP<CrsMatrix> Op)                   { return Utilities::Crs2Op(Op); }
+#endif
 
     static ArrayRCP<SC> GetMatrixDiagonal(const Matrix& A) {
       return UtilitiesBase::GetMatrixDiagonal(A);
@@ -448,11 +544,21 @@ namespace MueLu {
   #ifdef HAVE_MUELU_TPETRA
   #ifdef HAVE_MUELU_TPETRA_INST_INT_INT
       try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Tpetra::CrsMatrix<SC,LO,GO,NO>& tpOp = Op2NonConstTpetraCrs(Op);
+#else
+        Tpetra::CrsMatrix<SC,NO>& tpOp = Op2NonConstTpetraCrs(Op);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         const RCP<const Tpetra::Map<LO,GO,NO> > rowMap    = tpOp.getRowMap();
         const RCP<const Tpetra::Map<LO,GO,NO> > domainMap = tpOp.getDomainMap();
         const RCP<const Tpetra::Map<LO,GO,NO> > rangeMap  = tpOp.getRangeMap();
+#else
+        const RCP<const Tpetra::Map<NO> > rowMap    = tpOp.getRowMap();
+        const RCP<const Tpetra::Map<NO> > domainMap = tpOp.getDomainMap();
+        const RCP<const Tpetra::Map<NO> > rangeMap  = tpOp.getRangeMap();
+#endif
 
         size_t maxRowSize = tpOp.getNodeMaxNumRowEntries();
         if (maxRowSize == Teuchos::as<size_t>(-1)) // hasn't been determined yet
@@ -562,11 +668,20 @@ namespace MueLu {
 #ifdef HAVE_MUELU_TPETRA
 #ifdef HAVE_MUELU_TPETRA_INST_INT_INT
         try {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           const Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>& tpetraOp = Utilities::Op2TpetraCrs(Op);
+#else
+          const Tpetra::CrsMatrix<Scalar, Node>& tpetraOp = Utilities::Op2TpetraCrs(Op);
+#endif
 
           // Compute the transpose A of the Tpetra matrix tpetraOp.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<Tpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > A;
           Tpetra::RowMatrixTransposer<SC,LO,GO,NO> transposer(rcpFromRef(tpetraOp),label);
+#else
+          RCP<Tpetra::CrsMatrix<Scalar, Node> > A;
+          Tpetra::RowMatrixTransposer<SC,NO> transposer(rcpFromRef(tpetraOp),label);
+#endif
           {
             using Teuchos::ParameterList;
             using Teuchos::rcp;
@@ -577,7 +692,11 @@ namespace MueLu {
             A = transposer.createTranspose(transposeParams);
           }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           RCP<Xpetra::TpetraCrsMatrix<SC,LO,GO,NO> > AA   = rcp(new Xpetra::TpetraCrsMatrix<SC,LO,GO,NO>(A));
+#else
+          RCP<Xpetra::TpetraCrsMatrix<SC,NO> > AA   = rcp(new Xpetra::TpetraCrsMatrix<SC,NO>(A));
+#endif
           RCP<CrsMatrix>                             AAA  = rcp_implicit_cast<CrsMatrix>(AA);
           RCP<CrsMatrixWrap>                         AAAA = rcp(new CrsMatrixWrap(AAA));
 
@@ -635,8 +754,13 @@ namespace MueLu {
 
     /*! @brief Extract coordinates from parameter list and return them in a Xpetra::MultiVector
     */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     static RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > ExtractCoordinatesFromParameterList(ParameterList& paramList) {
       RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> > coordinates = Teuchos::null;
+#else
+    static RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > ExtractCoordinatesFromParameterList(ParameterList& paramList) {
+      RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> > coordinates = Teuchos::null;
+#endif
 
       // check whether coordinates are contained in parameter list
       if(paramList.isParameter ("Coordinates") == false)
@@ -650,14 +774,22 @@ namespace MueLu {
       // * ETI is turned off, since then the compiler will instantiate it automatically OR
       // * Tpetra is instantiated on Scalar=float
 #if !defined(HAVE_TPETRA_EXPLICIT_INSTANTIATION) || defined(HAVE_TPETRA_INST_FLOAT)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::MultiVector<float, LO,GO,NO> tfMV;
+#else
+      typedef Tpetra::MultiVector<float,NO> tfMV;
+#endif
       RCP<tfMV> floatCoords = Teuchos::null;
 #endif
 
       // define Tpetra::MultiVector type with Scalar=double only if
       // * ETI is turned off, since then the compiler will instantiate it automatically OR
       // * Tpetra is instantiated on Scalar=double
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       typedef Tpetra::MultiVector<SC,LO,GO,NO> tdMV;
+#else
+      typedef Tpetra::MultiVector<SC,NO> tdMV;
+#endif
       RCP<tdMV> doubleCoords = Teuchos::null;
       if (paramList.isType<RCP<tdMV> >("Coordinates")) {
         // Coordinates are stored as a double vector
@@ -675,7 +807,11 @@ namespace MueLu {
 #endif
       // We have the coordinates in a Tpetra double vector
       if(doubleCoords != Teuchos::null) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         coordinates = Teuchos::rcp(new Xpetra::TpetraMultiVector<SC,LO,GO,NO>(doubleCoords));
+#else
+        coordinates = Teuchos::rcp(new Xpetra::TpetraMultiVector<SC,NO>(doubleCoords));
+#endif
         TEUCHOS_TEST_FOR_EXCEPT(doubleCoords->getNumVectors() != coordinates->getNumVectors());
       }
 #endif // Tpetra instantiated on GO=int and EpetraNode
@@ -687,7 +823,11 @@ namespace MueLu {
         doubleEpCoords = paramList.get<RCP<Epetra_MultiVector> >("Coordinates");
         paramList.remove("Coordinates");
         RCP<Xpetra::EpetraMultiVectorT<GO,NO> > epCoordinates = Teuchos::rcp(new Xpetra::EpetraMultiVectorT<GO,NO>(doubleEpCoords));
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         coordinates = rcp_dynamic_cast<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> >(epCoordinates);
+#else
+        coordinates = rcp_dynamic_cast<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> >(epCoordinates);
+#endif
         TEUCHOS_TEST_FOR_EXCEPT(doubleEpCoords->NumVectors() != Teuchos::as<int>(coordinates->getNumVectors()));
       }
 #endif

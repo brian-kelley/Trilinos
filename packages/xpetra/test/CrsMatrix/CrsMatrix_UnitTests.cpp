@@ -98,10 +98,19 @@ namespace {
   // UNIT TESTS
   //
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, Apply, M, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, Apply, M, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+#endif
 
     // get a comm and node
     RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -113,8 +122,13 @@ namespace {
     LO nEle = 63;
     const RCP<const MapClass> map = MapFactoryClass::Build(lib, nEle, 0, comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > matrix =
         Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 10);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > matrix =
+        Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 10);
+#endif
 
     LO NumMyElements = map->getNodeNumElements();
     Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
@@ -127,13 +141,23 @@ namespace {
 
     matrix->fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > vec =
         Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(map);
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > vec =
+        Xpetra::VectorFactory<Scalar, Node>::Build(map);
+#endif
 
     vec->putScalar(1.0);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > vec_sol =
         Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(matrix->getRangeMap());
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > vec_sol =
+        Xpetra::VectorFactory<Scalar, Node>::Build(matrix->getRangeMap());
+#endif
 
     vec_sol->putScalar(0.0);
 
@@ -146,10 +170,19 @@ namespace {
     TEUCHOS_TEST_COMPARE(vec_sol->norm2(), <, 1e-16, out, success);
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, ReplaceGlobalAndLocalValues, M, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, ReplaceGlobalAndLocalValues, M, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+#endif
 
     // get a comm and node
     RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -165,8 +198,13 @@ namespace {
     GO NumGlobalElements = map->getGlobalNumElements();
     Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
         Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 3);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+        Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 3);
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == true || A->isFillActive() == false, std::runtime_error, "");
 
     for (size_t i = 0; i < static_cast<size_t> (NumMyElements); i++) {
@@ -238,12 +276,23 @@ namespace {
     TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == false || A->isFillActive() == true, std::runtime_error, "");
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, leftScale, M, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, leftScale, M, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
     typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
     typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+    typedef Xpetra::Vector<Scalar, Node> VectorClass;
+    typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+#endif
 
     // get a comm and node
     RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -261,8 +310,13 @@ namespace {
     GO NumGlobalElements = map->getGlobalNumElements();
     Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
         Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 3);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+        Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 3);
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == true || A->isFillActive() == false, std::runtime_error, "");
 
     for (size_t i = 0; i < static_cast<size_t> (NumMyElements); i++) {
@@ -328,12 +382,23 @@ namespace {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, rightScale, M, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, rightScale, M, Scalar, Node )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
     typedef Xpetra::Vector<Scalar, LO, GO, Node> VectorClass;
     typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> VectorFactoryClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+    typedef Xpetra::Vector<Scalar, Node> VectorClass;
+    typedef Xpetra::VectorFactory<Scalar, Node> VectorFactoryClass;
+#endif
 
     // get a comm and node
     RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -351,8 +416,13 @@ namespace {
     GO NumGlobalElements = map->getGlobalNumElements();
     Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
         Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 3);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+        Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 3);
+#endif
     TEUCHOS_TEST_FOR_EXCEPTION(A->isFillComplete() == true || A->isFillActive() == false, std::runtime_error, "");
 
     for (size_t i = 0; i < static_cast<size_t> (NumMyElements); i++) {
@@ -418,7 +488,11 @@ namespace {
 
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, replaceDiagonal, M, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, replaceDiagonal, M, Scalar, Node )
+#endif
   {
     typedef Teuchos::ScalarTraits<Scalar> STS;
     typedef typename STS::magnitudeType MT;
@@ -432,11 +506,21 @@ namespace {
 
     // generate problem
     GO nEle = Teuchos::as<GO>(2*comm->getSize());
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     const RCP<const Xpetra::Map<LO, GO, Node> > map =
       Xpetra::MapFactory<LO, GO, Node>::Build(lib, nEle, 2, 0, comm);
+#else
+    const RCP<const Xpetra::Map<Node> > map =
+      Xpetra::MapFactory<Node>::Build(lib, nEle, 2, 0, comm);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
       Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 3);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+      Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 3);
+#endif
     const Scalar rankAsScalar = static_cast<Scalar>(static_cast<MT>(comm->getRank()));
 
     Teuchos::Array<Scalar> vals = {{SC_ONE, rankAsScalar + SC_ONE, SC_ONE}};
@@ -469,8 +553,13 @@ namespace {
        */
 
       // Create vector with new diagonal values
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<Scalar, LO, GO, Node> > newDiag =
         Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(A->getRowMap(), true);
+#else
+      RCP<Xpetra::Vector<Scalar, Node> > newDiag =
+        Xpetra::VectorFactory<Scalar, Node>::Build(A->getRowMap(), true);
+#endif
       newDiag->putScalar(rankAsScalar);
 
       // Replace the diagonal
@@ -478,8 +567,13 @@ namespace {
 
       // Tests
       {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         RCP<Xpetra::Vector<Scalar, LO, GO, Node> > diagCopy =
           Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(A->getRowMap(), true);
+#else
+        RCP<Xpetra::Vector<Scalar, Node> > diagCopy =
+          Xpetra::VectorFactory<Scalar, Node>::Build(A->getRowMap(), true);
+#endif
         A->getLocalDiagCopy(*diagCopy);
 
         Teuchos::ArrayRCP<const Scalar> diagCopyData = diagCopy->getData(0);
@@ -491,7 +585,11 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, Constructor_Epetra, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, Constructor_Epetra, Scalar, Node )
+#endif
   {
 #ifdef HAVE_XPETRA_EPETRA
 
@@ -525,12 +623,21 @@ namespace {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, Epetra_ReplaceLocalValues, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, Epetra_ReplaceLocalValues, Scalar, Node )
+#endif
   {
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+#endif
 
     // get a comm and node
     RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -541,8 +648,13 @@ namespace {
     LO nEle = 63;
     const RCP<const MapClass> map = MapFactoryClass::Build(lib, nEle, 0, comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > matrix =
         Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 10);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > matrix =
+        Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 10);
+#endif
 
     LO NumMyElements = map->getNodeNumElements();
     Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
@@ -561,20 +673,35 @@ namespace {
     matrix->replaceLocalValues(0, indout.view(0,indout.size()), valout.view(0,valout.size()));
     matrix->fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > vec =
         Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(map);
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > vec =
+        Xpetra::VectorFactory<Scalar, Node>::Build(map);
+#endif
 
     vec->putScalar(1.0);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > vec_sol =
         Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(matrix->getRangeMap());
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > vec_sol =
+        Xpetra::VectorFactory<Scalar, Node>::Build(matrix->getRangeMap());
+#endif
 
     vec_sol->putScalar(0.0);
 
     matrix->apply(*vec, *vec_sol, Teuchos::NO_TRANS, 1.0, 0.0);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > vectest =
         Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(map);
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > vectest =
+        Xpetra::VectorFactory<Scalar, Node>::Build(map);
+#endif
     vectest->putScalar(1.0);
     Teuchos::ArrayRCP<Scalar> vectestData = vectest->getDataNonConst(0);
     vectestData[0] = 5.0;
@@ -586,19 +713,32 @@ namespace {
   }
 
   // just a copy of the Epetra_ReplaceLocalValues test for Tpetra
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, Tpetra_ReplaceLocalValues, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, Tpetra_ReplaceLocalValues, Scalar, Node )
+#endif
   {
 #ifdef HAVE_XPETRA_TPETRA
     using Teuchos::outArg;
     using Teuchos::REDUCE_MIN;
     using Teuchos::reduceAll;
     using std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> map_type;
     typedef Xpetra::MapFactory<LO, GO, Node> map_factory_type;
     typedef Xpetra::CrsMatrixFactory<Scalar, LO, GO, Node> crs_matrix_factory_type;
     typedef Xpetra::CrsMatrix<Scalar, LO, GO, Node> crs_matrix_type;
     typedef Xpetra::VectorFactory<Scalar, LO, GO, Node> vec_factory_type;
     typedef Xpetra::Vector<Scalar, LO, GO, Node> vec_type;
+#else
+    typedef Xpetra::Map<Node> map_type;
+    typedef Xpetra::MapFactory<Node> map_factory_type;
+    typedef Xpetra::CrsMatrixFactory<Scalar, Node> crs_matrix_factory_type;
+    typedef Xpetra::CrsMatrix<Scalar, Node> crs_matrix_type;
+    typedef Xpetra::VectorFactory<Scalar, Node> vec_factory_type;
+    typedef Xpetra::Vector<Scalar, Node> vec_type;
+#endif
     typedef typename Teuchos::Array<LO>::size_type size_type;
     typedef Teuchos::ScalarTraits<Scalar> STS;
     typedef typename STS::magnitudeType MT;
@@ -814,11 +954,20 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, TpetraDeepCopy, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, TpetraDeepCopy, Scalar, Node )
+#endif
   {
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+#endif
     typedef Teuchos::ScalarTraits<Scalar> STS;
     typedef typename STS::magnitudeType magnitude_type;
     typedef Teuchos::ScalarTraits<magnitude_type> STM;
@@ -852,8 +1001,13 @@ namespace {
       cerr << os.str ();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
         Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build (map, 10);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+        Xpetra::CrsMatrixFactory<Scalar,Node>::Build (map, 10);
+#endif
 
     LO NumMyElements = map->getNodeNumElements();
     Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
@@ -897,7 +1051,11 @@ namespace {
       cerr << os.str ();
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > v = Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build (A->getRangeMap ());
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > v = Xpetra::VectorFactory<Scalar, Node>::Build (A->getRangeMap ());
+#endif
     v->setSeed (8675309);
     v->randomize (true);
 
@@ -915,8 +1073,13 @@ namespace {
     const magnitude_type v_norm = v->norm2 ();
 
     // Keep a copy of v, to test that neither apply() call changes it.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > vcopy =
       Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build (map);
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > vcopy =
+      Xpetra::VectorFactory<Scalar, Node>::Build (map);
+#endif
     // Xpetra's operator= does a deep copy, like Epetra, but unlike
     // Tpetra (as of early 2014).
     *vcopy = *v;
@@ -966,10 +1129,17 @@ namespace {
 
     // r and rcopy are distinct Vectors with the same Map, namely the
     // range Map of A.  All the Vectors v, r, and rcopy are distinct.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > r =
       Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build (A->getRangeMap ());
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > rcopy =
       Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build (A->getRangeMap ());
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > r =
+      Xpetra::VectorFactory<Scalar, Node>::Build (A->getRangeMap ());
+    RCP<Xpetra::Vector<Scalar, Node> > rcopy =
+      Xpetra::VectorFactory<Scalar, Node>::Build (A->getRangeMap ());
+#endif
 
     {
       using std::cerr;
@@ -988,8 +1158,13 @@ namespace {
     // r and v should be exactly equal.  This should be true even in
     // finite-precision arithmetic.  Test this here.
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<Scalar, LO, GO, Node> > diff =
         Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build (A->getRangeMap ());
+#else
+      RCP<Xpetra::Vector<Scalar, Node> > diff =
+        Xpetra::VectorFactory<Scalar, Node>::Build (A->getRangeMap ());
+#endif
 
       // diff := 1*v + (-1)*r.
       diff->update (STS::one (), *v, -STS::one (), *r, STS::zero ());
@@ -1002,8 +1177,13 @@ namespace {
     // Make sure that the above apply() call didn't change v, by
     // testing against vcopy.
     {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<Scalar, LO, GO, Node> > diff =
         Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build (A->getRangeMap ());
+#else
+      RCP<Xpetra::Vector<Scalar, Node> > diff =
+        Xpetra::VectorFactory<Scalar, Node>::Build (A->getRangeMap ());
+#endif
 
       // diff := 1*v + (-1)*vcopy.
       diff->update (STS::one (), *v, -STS::one (), *vcopy, STS::zero ());
@@ -1030,8 +1210,13 @@ namespace {
     // Xpetra::TpetraCrsMatrix copy constructor, on line 329 of
     // Xpetra_TpetraCrsMatrix.hpp (as of 24 Apr 2014).  That in turn
     // calls Tpetra::CrsMatrix::clone().
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > Acopy =
       rcp (new Xpetra::TpetraCrsMatrix<Scalar,LO,GO,Node> (* (rcp_static_cast<Xpetra::TpetraCrsMatrix<Scalar,LO,GO,Node> > (A))));
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > Acopy =
+      rcp (new Xpetra::TpetraCrsMatrix<Scalar,Node> (* (rcp_static_cast<Xpetra::TpetraCrsMatrix<Scalar,Node> > (A))));
+#endif
 
     // Make sure that A and Acopy have the same gross properties.  For
     // example, they must be both fill complete and locally indexed,
@@ -1144,8 +1329,13 @@ namespace {
       // after this line finishes, rcopy and v should be exactly
       // equal.  This should be true even in finite-precision
       // arithmetic.  Test this here.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       RCP<Xpetra::Vector<Scalar, LO, GO, Node> > diff =
         Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build (Acopy->getRangeMap ());
+#else
+      RCP<Xpetra::Vector<Scalar, Node> > diff =
+        Xpetra::VectorFactory<Scalar, Node>::Build (Acopy->getRangeMap ());
+#endif
 
       // diff := 1*v + (-1)*rcopy.
       diff->update (STS::one (), *v, -STS::one (), *rcopy, STS::zero ());
@@ -1166,12 +1356,21 @@ namespace {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, EpetraDeepCopy, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, EpetraDeepCopy, Scalar, Node )
+#endif
   {
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+#endif
 
     // get a comm and node
     RCP<const Teuchos::Comm<int> > comm = getDefaultComm();
@@ -1182,8 +1381,13 @@ namespace {
     LO nEle = 63;
     const RCP<const MapClass> map = MapFactoryClass::Build(lib, nEle, 0, comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
         Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 10);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+        Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 10);
+#endif
 
     LO NumMyElements = map->getNodeNumElements();
     Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
@@ -1196,16 +1400,29 @@ namespace {
 
     A->fillComplete();
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > v = Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(map);
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > v = Xpetra::VectorFactory<Scalar, Node>::Build(map);
+#endif
     v->setSeed(8675309);
     v->randomize(true);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > r = Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(A->getRangeMap());
     RCP<Xpetra::Vector<Scalar, LO, GO, Node> > rcopy = Xpetra::VectorFactory<Scalar, LO, GO, Node>::Build(A->getRangeMap());
+#else
+    RCP<Xpetra::Vector<Scalar, Node> > r = Xpetra::VectorFactory<Scalar, Node>::Build(A->getRangeMap());
+    RCP<Xpetra::Vector<Scalar, Node> > rcopy = Xpetra::VectorFactory<Scalar, Node>::Build(A->getRangeMap());
+#endif
 
     A->apply(*v, *r, Teuchos::NO_TRANS, 1.0, 0.0);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > Acopy(new Xpetra::EpetraCrsMatrixT<GO,Node>(*(Teuchos::rcp_static_cast<Xpetra::EpetraCrsMatrixT<GO,Node> >(A))));
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > Acopy(new Xpetra::EpetraCrsMatrixT<GO,Node>(*(Teuchos::rcp_static_cast<Xpetra::EpetraCrsMatrixT<GO,Node> >(A))));
+#endif
     A = Teuchos::null;
 
     Acopy->apply(*v, *rcopy, Teuchos::NO_TRANS, 1.0, 0.0);
@@ -1219,12 +1436,22 @@ namespace {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, GetLocalMatrix, M, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, GetLocalMatrix, M, Scalar, Node )
+#endif
   {
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
     typedef typename Xpetra::CrsMatrix<Scalar, LO, GO, Node>::local_matrix_type local_matrix_type;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+    typedef typename Xpetra::CrsMatrix<Scalar, Node>::local_matrix_type local_matrix_type;
+#endif
     //typedef typename local_matrix_type::size_type size_type;
     typedef typename local_matrix_type::value_type value_type;
     typedef typename local_matrix_type::ordinal_type ordinal_type;
@@ -1239,8 +1466,13 @@ namespace {
     LO nEle = 63;
     const RCP<const MapClass> map = MapFactoryClass::Build(lib, nEle, 0, comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Xpetra::CrsMatrix<Scalar, LO, GO, Node> > A =
         Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node>::Build(map, 10);
+#else
+    RCP<Xpetra::CrsMatrix<Scalar, Node> > A =
+        Xpetra::CrsMatrixFactory<Scalar,Node>::Build(map, 10);
+#endif
 
     LO NumMyElements = map->getNodeNumElements();
     Teuchos::ArrayView<const GO> MyGlobalElements = map->getNodeElementList();
@@ -1316,16 +1548,27 @@ namespace {
 #endif
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, ConstructMatrixKokkos, M, Scalar, LO, GO, Node )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_DECL( CrsMatrix, ConstructMatrixKokkos, M, Scalar, Node )
+#endif
   {
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA  // Note: get Kokkos interface for Epetra is only available if Tpetra is also enabled!
     std::cout << "Run ConstructMatrixKokkos test" << std::endl;
     //Kokkos::initialize();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Xpetra::Map<LO, GO, Node> MapClass;
     typedef Xpetra::MapFactory<LO, GO, Node> MapFactoryClass;
     typedef typename Xpetra::CrsMatrix<Scalar, LO, GO, Node> CrsMatrixClass;
     typedef typename Xpetra::CrsMatrixFactory<Scalar,LO,GO,Node> CrsMatrixFactoryClass;
+#else
+    typedef Xpetra::Map<Node> MapClass;
+    typedef Xpetra::MapFactory<Node> MapFactoryClass;
+    typedef typename Xpetra::CrsMatrix<Scalar, Node> CrsMatrixClass;
+    typedef typename Xpetra::CrsMatrixFactory<Scalar,Node> CrsMatrixFactoryClass;
+#endif
     typedef typename CrsMatrixClass::local_matrix_type local_matrix_type;
 
     // get a comm and node
@@ -1513,38 +1756,75 @@ namespace {
 
 #ifdef HAVE_XPETRA_TPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_TPETRA_TYPES( SC, LO, GO, Node) \
       typedef typename Xpetra::TpetraMap<LO,GO,Node> M##LO##GO##Node; \
+#else
+  #define XPETRA_TPETRA_TYPES( SC, Node) \
+      typedef typename Xpetra::TpetraMap<Node> M##LO##GO##Node; \
+#endif
 
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   #define XPETRA_EPETRA_TYPES( SC, LO, GO, Node) \
+#else
+  #define XPETRA_EPETRA_TYPES( SC, Node) \
+#endif
       typedef typename Xpetra::EpetraMapT<GO,Node> M##LO##GO##Node; \
 
 #endif
 
 // for common tests (Epetra and Tpetra...)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_ORDINAL( SC, LO, GO, Node )                     \
   TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, Apply , M##LO##GO##Node , SC, LO, GO, Node ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, ReplaceGlobalAndLocalValues, M##LO##GO##Node , SC, LO, GO, Node ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, leftScale, M##LO##GO##Node , SC, LO, GO, Node ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, rightScale, M##LO##GO##Node , SC, LO, GO, Node ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, replaceDiagonal, M##LO##GO##Node, SC, LO, GO, Node )
+#else
+#define UNIT_TEST_GROUP_ORDINAL( SC, Node )                     \
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, Apply , M##LO##GO##Node , SC, Node ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, ReplaceGlobalAndLocalValues, M##LO##GO##Node , SC, Node ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, leftScale, M##LO##GO##Node , SC, Node ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, rightScale, M##LO##GO##Node , SC, Node ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT(   CrsMatrix, replaceDiagonal, M##LO##GO##Node, SC, Node )
+#endif
 // for Tpetra tests only
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_ORDINAL_TPETRAONLY( SC, LO, GO, Node )                     \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, TpetraDeepCopy, SC, LO, GO, Node ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, Tpetra_ReplaceLocalValues, SC, LO, GO, Node )
+#else
+#define UNIT_TEST_GROUP_ORDINAL_TPETRAONLY( SC, Node )                     \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, TpetraDeepCopy, SC, Node ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, Tpetra_ReplaceLocalValues, SC, Node )
+#endif
 // for Epetra tests only
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_ORDINAL_EPETRAONLY( SC, LO, GO, Node )                     \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, Constructor_Epetra, SC, LO, GO, Node ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, Epetra_ReplaceLocalValues, SC, LO, GO, Node ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, EpetraDeepCopy, SC, LO, GO, Node )
+#else
+#define UNIT_TEST_GROUP_ORDINAL_EPETRAONLY( SC, Node )                     \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, Constructor_Epetra, SC, Node ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, Epetra_ReplaceLocalValues, SC, Node ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT( CrsMatrix, EpetraDeepCopy, SC, Node )
+#endif
 // for Kokkos-specific tests
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define UNIT_TEST_GROUP_ORDINAL_KOKKOS( SC, LO, GO, Node )                     \
   TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT( CrsMatrix, GetLocalMatrix, M##LO##GO##Node, SC, LO, GO, Node ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT( CrsMatrix, ConstructMatrixKokkos, M##LO##GO##Node, SC, LO, GO, Node )
+#else
+#define UNIT_TEST_GROUP_ORDINAL_KOKKOS( SC, Node )                     \
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT( CrsMatrix, GetLocalMatrix, M##LO##GO##Node, SC, Node ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_5_INSTANT( CrsMatrix, ConstructMatrixKokkos, M##LO##GO##Node, SC, Node )
+#endif
 
 
 #if defined(HAVE_XPETRA_TPETRA)

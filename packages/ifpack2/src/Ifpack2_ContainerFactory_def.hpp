@@ -149,7 +149,12 @@ bool ContainerFactory<MatrixType>::registeredDefaults;     //this will initially
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_CONTAINERFACTORY_INSTANT(S,LO,GO,N) \
 template struct Ifpack2::ContainerFactory<Tpetra::RowMatrix<S, LO, GO, N>>;
+#else
+#define IFPACK2_CONTAINERFACTORY_INSTANT(S,N) \
+template struct Ifpack2::ContainerFactory<Tpetra::RowMatrix<S, N>>;
+#endif
 
 #endif // IFPACK2_DETAILS_CONTAINERFACTORY_H

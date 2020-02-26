@@ -50,10 +50,19 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     AlgebraicOverlappingOperator<SC,LO,GO,NO>::AlgebraicOverlappingOperator(ConstXMatrixPtr k,
+#else
+    template <class SC,class NO>
+    AlgebraicOverlappingOperator<SC,NO>::AlgebraicOverlappingOperator(ConstXMatrixPtr k,
+#endif
                                                                             ParameterListPtr parameterList) :
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     OverlappingOperator<SC,LO,GO,NO> (k,parameterList)
+#else
+    OverlappingOperator<SC,NO> (k,parameterList)
+#endif
     {
         FROSCH_TIMER_START_LEVELID(algebraicOverlappingOperatorTime,"AlgebraicOverlappingOperator::AlgebraicOverlappingOperator");
         if (!this->ParameterList_->get("Adding Layers Strategy","CrsGraph").compare("CrsGraph")) {
@@ -67,8 +76,13 @@ namespace FROSch {
         }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingOperator<SC,LO,GO,NO>::initialize(int overlap,
+#else
+    template <class SC,class NO>
+    int AlgebraicOverlappingOperator<SC,NO>::initialize(int overlap,
+#endif
                                                               ConstXMapPtr repeatedMap)
     {
         FROSCH_TIMER_START_LEVELID(initializeTime,"AlgebraicOverlappingOperator::initialize");
@@ -88,8 +102,13 @@ namespace FROSch {
         return 0; // RETURN VALUE!!!
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingOperator<SC,LO,GO,NO>::compute()
+#else
+    template <class SC,class NO>
+    int AlgebraicOverlappingOperator<SC,NO>::compute()
+#endif
     {
         FROSCH_TIMER_START_LEVELID(computeTime,"AlgebraicOverlappingOperator::compute");
         FROSCH_ASSERT(this->IsInitialized_,"ERROR: AlgebraicOverlappingOperator has to be initialized before calling compute()");
@@ -97,21 +116,36 @@ namespace FROSch {
         return 0; // RETURN VALUE!!!
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     void AlgebraicOverlappingOperator<SC,LO,GO,NO>::describe(FancyOStream &out,
+#else
+    template <class SC,class NO>
+    void AlgebraicOverlappingOperator<SC,NO>::describe(FancyOStream &out,
+#endif
                                                              const EVerbosityLevel verbLevel) const
     {
         FROSCH_ASSERT(false,"describe() has to be implemented properly...");
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     std::string AlgebraicOverlappingOperator<SC,LO,GO,NO>::description() const
+#else
+    template <class SC,class NO>
+    std::string AlgebraicOverlappingOperator<SC,NO>::description() const
+#endif
     {
         return "Algebraic Overlapping Operator";
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingOperator<SC,LO,GO,NO>::buildOverlappingMatrices(int overlap,
+#else
+    template <class SC,class NO>
+    int AlgebraicOverlappingOperator<SC,NO>::buildOverlappingMatrices(int overlap,
+#endif
                                                                             ConstXMapPtr repeatedMap)
     {
         FROSCH_TIMER_START_LEVELID(buildOverlappingMatricesTime,"AlgebraicOverlappingOperator::buildOverlappingMatrices");
@@ -210,8 +244,13 @@ namespace FROSch {
         return 0;
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingOperator<SC,LO,GO,NO>::updateLocalOverlappingMatrices()
+#else
+    template <class SC,class NO>
+    int AlgebraicOverlappingOperator<SC,NO>::updateLocalOverlappingMatrices()
+#endif
     {
         if (this->IsComputed_) { // already computed once and we want to recycle the information. That is why we reset OverlappingMatrix_ to K_, because K_ has been reset at this point
             this->OverlappingMatrix_ = this->K_;

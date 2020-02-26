@@ -77,9 +77,15 @@ namespace { // (anonymous)
   {
     using LO = Tpetra::Map<>::local_ordinal_type;
     using GO = Tpetra::Map<>::global_ordinal_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using crs_matrix_type = Tpetra::CrsMatrix<Scalar, LO, GO, Node>;
     using import_type = Tpetra::Import<LO, GO, Node>;
     using map_type = Tpetra::Map<LO, GO, Node>;
+#else
+    using crs_matrix_type = Tpetra::CrsMatrix<Scalar, Node>;
+    using import_type = Tpetra::Import<Node>;
+    using map_type = Tpetra::Map<Node>;
+#endif
     using STS = Teuchos::ScalarTraits<Scalar>;
 
     RCP<const Comm<int> > comm = getDefaultComm();
@@ -222,9 +228,15 @@ namespace { // (anonymous)
     using LO = Tpetra::Map<>::local_ordinal_type;
     using GO = Tpetra::Map<>::global_ordinal_type;
     using Node = Tpetra::Map<>::node_type;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     using crs_matrix_type = Tpetra::CrsMatrix<Scalar, LO, GO, Node>;
     using import_type = Tpetra::Import<LO, GO, Node>;
     using map_type = Tpetra::Map<LO, GO, Node>;
+#else
+    using crs_matrix_type = Tpetra::CrsMatrix<Scalar, Node>;
+    using import_type = Tpetra::Import<Node>;
+    using map_type = Tpetra::Map<Node>;
+#endif
     using STS = Teuchos::ScalarTraits<Scalar>;
     int lclSuccess = 1;
     int gblSuccess = 0;

@@ -62,7 +62,11 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node_type;
 
 #define UNIT_TEST_GROUP_SERIAL( SCALAR, LO, GO ) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   UNIT_TEST_GROUP( SCALAR, LO, GO, serial_node_type )
+#else
+  UNIT_TEST_GROUP( SCALAR, serial_node_type )
+#endif
 
 TPETRA_INSTANTIATE_SLG_NO_ORDINAL_SCALAR( UNIT_TEST_GROUP_SERIAL )
 

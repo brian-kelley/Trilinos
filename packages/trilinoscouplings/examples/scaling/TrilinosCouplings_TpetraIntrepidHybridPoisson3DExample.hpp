@@ -89,10 +89,17 @@ typedef Tpetra::Map<>::node_type Node;
 // mfh 19 Apr 2012: If you want to change the template parameters of
 // these typedefs, modify the typedefs (ST, LO, GO, Node) above.
 //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 typedef Tpetra::CrsMatrix<ST, LO, GO, Node>    sparse_matrix_type;
 typedef Tpetra::Operator<ST, LO, GO, Node>     operator_type;
 typedef Tpetra::MultiVector<ST, LO, GO, Node>  multivector_type;
 typedef Tpetra::Vector<ST, LO, GO, Node>       vector_type;
+#else
+typedef Tpetra::CrsMatrix<ST, Node>    sparse_matrix_type;
+typedef Tpetra::Operator<ST, Node>     operator_type;
+typedef Tpetra::MultiVector<ST, Node>  multivector_type;
+typedef Tpetra::Vector<ST, Node>       vector_type;
+#endif
 
 /// \brief Create the mesh and build the linear system to solve.
 ///

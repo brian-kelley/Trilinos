@@ -83,13 +83,21 @@ namespace Xpetra {
   };
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class LocalOrdinal,
             class GlobalOrdinal,
             class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#else
+  template <class Node = KokkosClassic::DefaultNode::DefaultNodeType>
+#endif
   class Map
     : public Teuchos::Describable
   {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     typedef LocalOrdinal local_ordinal_type;
     typedef GlobalOrdinal global_ordinal_type;
     typedef Node node_type;
@@ -168,10 +176,18 @@ namespace Xpetra {
     virtual bool isDistributed() const = 0;
 
     //! True if and only if map is compatible with this Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual bool isCompatible(const Map< LocalOrdinal, GlobalOrdinal, Node > &map) const = 0;
+#else
+    virtual bool isCompatible(const Map<Node > &map) const = 0;
+#endif
 
     //! True if and only if map is identical to this Map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual bool isSameAs(const Map< LocalOrdinal, GlobalOrdinal, Node > &map) const = 0;
+#else
+    virtual bool isSameAs(const Map<Node > &map) const = 0;
+#endif
 
     //@}
 
@@ -200,10 +216,18 @@ namespace Xpetra {
     //@{
 
     //! Return a new Map with processes with zero elements removed.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > > removeEmptyProcesses() const = 0;
+#else
+    virtual RCP< const Map<Node > > removeEmptyProcesses() const = 0;
+#endif
 
     //! Replace this Map's communicator with a subset communicator.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP< const Map< LocalOrdinal, GlobalOrdinal, Node > >
+#else
+    virtual RCP< const Map<Node > >
+#endif
         replaceCommWithSubset(const Teuchos::RCP< const Teuchos::Comm< int > > &newComm) const = 0;
 
     //@}
@@ -219,11 +243,19 @@ namespace Xpetra {
     // need to understand the type of underlying matrix. But in src/Map we have no knowledge of StridedMaps, so
     // we cannot check for it by casting. This function allows us to avoid the restriction, as StridedMap redefines
     // it to return the base map.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     virtual RCP<const Xpetra::Map<LocalOrdinal, GlobalOrdinal, Node> > getMap() const;
+#else
+    virtual RCP<const Xpetra::Map<Node> > getMap() const;
+#endif
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef typename Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node>::local_map_type local_map_type;
+#else
+    typedef typename Tpetra::Map<Node>::local_map_type local_map_type;
+#endif
 
     /// \brief Get the local Map for Kokkos kernels.
     virtual local_map_type getLocalMap () const = 0;

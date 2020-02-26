@@ -227,7 +227,12 @@ OneLevelFactory<MatrixType>::create (const std::string& precType,
 } // namespace Details
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_ONELEVELFACTORY_INSTANT(S,LO,GO,N)              \
   template class Ifpack2::Details::OneLevelFactory< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_DETAILS_ONELEVELFACTORY_INSTANT(S,N)              \
+  template class Ifpack2::Details::OneLevelFactory< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif // IFPACK2_DETAILS_ONELEVELFACTORY_DEF_HPP

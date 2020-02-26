@@ -445,8 +445,13 @@ namespace MueLu {
 
   } // namespace
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   RCP<const ParameterList> CoalesceDropFactory_kokkos<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::GetValidParameterList() const {
+#else
+  template <class Scalar, class DeviceType>
+  RCP<const ParameterList> CoalesceDropFactory_kokkos<Scalar,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::GetValidParameterList() const {
+#endif
     RCP<ParameterList> validParamList = rcp(new ParameterList());
 
 #define SET_VALID_ENTRY(name) validParamList->setEntry(name, MasterList::getEntry(name))
@@ -471,8 +476,13 @@ namespace MueLu {
     return validParamList;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   void CoalesceDropFactory_kokkos<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::DeclareInput(Level &currentLevel) const {
+#else
+  template <class Scalar, class DeviceType>
+  void CoalesceDropFactory_kokkos<Scalar,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::DeclareInput(Level &currentLevel) const {
+#endif
     Input(currentLevel, "A");
     Input(currentLevel, "UnAmalgamationInfo");
 
@@ -483,8 +493,13 @@ namespace MueLu {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class DeviceType>
   void CoalesceDropFactory_kokkos<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::
+#else
+  template <class Scalar, class DeviceType>
+  void CoalesceDropFactory_kokkos<Scalar,Kokkos::Compat::KokkosDeviceWrapperNode<DeviceType>>::
+#endif
   Build(Level& currentLevel) const {
     FactoryMonitor m(*this, "Build", currentLevel);
 
@@ -607,7 +622,11 @@ namespace MueLu {
           }
 
         } else if (algo == "distance laplacian") {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
           typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO> doubleMultiVector;
+#else
+          typedef Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO> doubleMultiVector;
+#endif
           auto coords = Get<RCP<doubleMultiVector> >(currentLevel, "Coordinates");
 
           auto uniqueMap    = A->getRowMap();
@@ -622,7 +641,11 @@ namespace MueLu {
           RCP<doubleMultiVector> ghostedCoords;
           {
             SubFactoryMonitor m2(*this, "Ghosted coords construction", currentLevel);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
             ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,LO,GO,NO>::Build(nonUniqueMap, coords->getNumVectors());
+#else
+            ghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::magnitudeType,NO>::Build(nonUniqueMap, coords->getNumVectors());
+#endif
             ghostedCoords->doImport(*coords, *importer, Xpetra::INSERT);
           }
 

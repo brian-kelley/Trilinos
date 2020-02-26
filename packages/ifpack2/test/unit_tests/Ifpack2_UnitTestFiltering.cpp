@@ -73,20 +73,39 @@ using Teuchos::rcp;
 using Teuchos::rcpFromRef;
 
 //this macro declares the unit-test-class:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Filtering, Test0, Scalar, LocalOrdinal, GlobalOrdinal)
+#else
+TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Filtering, Test0, Scalar)
+#endif
 {
   std::string version = Ifpack2::Version();
   out << "Ifpack2::Version(): " << version << std::endl;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> CRS;
   typedef Tpetra::RowMatrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> ROW;
+#else
+  typedef Tpetra::CrsMatrix<Scalar,Node> CRS;
+  typedef Tpetra::RowMatrix<Scalar,Node> ROW;
+#endif
 
   // Useful matrices and such (tridiagonal test)
   global_size_t num_rows_per_proc = 5;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > rowmap =
     tif_utest::create_tpetra_map<LocalOrdinal,GlobalOrdinal,Node>(num_rows_per_proc);
+#else
+  RCP<const Tpetra::Map<Node> > rowmap =
+    tif_utest::create_tpetra_map<Node>(num_rows_per_proc);
+#endif
   RCP<const CRS> Matrix =
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     tif_utest::create_test_matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>(rowmap);
   Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> x(rowmap), y(rowmap), z(rowmap), b(rowmap);
+#else
+    tif_utest::create_test_matrix<Scalar,Node>(rowmap);
+  Tpetra::Vector<Scalar,Node> x(rowmap), y(rowmap), z(rowmap), b(rowmap);
+#endif
 
 
   Matrix->describe(out,Teuchos::VERB_EXTREME);
@@ -117,9 +136,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Filtering, Test0, Scalar, LocalOrdinal,
   // create a new matrix, locally filtered  //
   // ====================================== //
   Ifpack2::LocalFilter<ROW> LocalA(Matrix);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   RCP<const Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > localrowmap =
+#else
+  RCP<const Tpetra::Map<Node> > localrowmap =
+#endif
     LocalA.getRowMap ();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> lx(rowmap),
+#else
+  Tpetra::Vector<Scalar,Node> lx(rowmap),
+#endif
     ly(rowmap), lz(rowmap), la(rowmap),lb(rowmap);
   lx.randomize ();
 
@@ -235,7 +262,11 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Filtering, Test0, Scalar, LocalOrdinal,
 
 
 #define UNIT_TEST_GROUP_SC_LO_GO(Scalar,LocalOrdinal,GlobalOrdinal) \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Filtering, Test0, Scalar, LocalOrdinal,GlobalOrdinal)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Ifpack2Filtering, Test0, Scalar)
+#endif
 
 #include "Ifpack2_ETIHelperMacros.h"
 

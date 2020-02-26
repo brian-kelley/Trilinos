@@ -63,46 +63,84 @@ namespace FROSch {
     enum CommunicationStrategy {CommCrsMatrix,CommCrsGraph,CreateOneToOneMap};
 
     template <class SC = double,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
               class LO = int,
               class GO = DefaultGlobalOrdinal,
+#endif
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
     class DDInterface {
 
     protected:
 
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+        using LO = typename Tpetra::Map<>::local_ordinal_type;
+        using GO = typename Tpetra::Map<>::global_ordinal_type;
+#endif
         using CommPtr                   = RCP<const Comm<int> >;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMap                      = Map<LO,GO,NO>;
+#else
+        using XMap                      = Map<NO>;
+#endif
         using XMapPtr                   = RCP<XMap>;
         using ConstXMapPtr              = RCP<const XMap>;
         using XMapPtrVecPtr             = ArrayRCP<XMapPtr>;
         using ConstXMapPtrVecPtr        = ArrayRCP<ConstXMapPtr>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMatrix                   = Matrix<SC,LO,GO,NO>;
+#else
+        using XMatrix                   = Matrix<SC,NO>;
+#endif
         using XMatrixPtr                = RCP<XMatrix>;
         using ConstXMatrixPtr           = RCP<const XMatrix>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XCrsGraph                 = CrsGraph<LO,GO,NO>;
+#else
+        using XCrsGraph                 = CrsGraph<NO>;
+#endif
         using XCrsGraphPtr              = RCP<XCrsGraph>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XMultiVector              = MultiVector<SC,LO,GO,NO>;
+#else
+        using XMultiVector              = MultiVector<SC,NO>;
+#endif
         using XMultiVectorPtr           = RCP<XMultiVector>;
         using ConstXMultiVectorPtr      = RCP<const XMultiVector>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XImport                   = Import<LO,GO,NO>;
+#else
+        using XImport                   = Import<NO>;
+#endif
         using XImportPtr                = RCP<XImport>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using XExport                   = Export<LO,GO,NO>;
+#else
+        using XExport                   = Export<NO>;
+#endif
         using XExportPtr                = RCP<XExport>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using EntitySetPtr              = RCP<EntitySet<SC,LO,GO,NO> >;
+#else
+        using EntitySetPtr              = RCP<EntitySet<SC,NO> >;
+#endif
         using EntitySetConstPtr         = const EntitySetPtr;
         using EntitySetPtrVecPtr        = ArrayRCP<EntitySetPtr>;
         using EntitySetPtrConstVecPtr   = const EntitySetPtrVecPtr;
 
         using EntityFlagVecPtr          = ArrayRCP<EntityFlag>;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         using InterfaceEntityPtr        = RCP<InterfaceEntity<SC,LO,GO,NO> >;
+#else
+        using InterfaceEntityPtr        = RCP<InterfaceEntity<SC,NO> >;
+#endif
         using InterfaceEntityPtrVecPtr  = ArrayRCP<InterfaceEntityPtr>;
 
         using UN                        = unsigned;
@@ -223,6 +261,7 @@ namespace FROSch {
         UN DofsPerNode_ = 1;
         LO NumMyNodes_ = 0;
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         EntitySetPtr Vertices_ = EntitySetPtr(new EntitySet<SC,LO,GO,NO>(VertexType));
         EntitySetPtr ShortEdges_ = EntitySetPtr(new EntitySet<SC,LO,GO,NO>(EdgeType));
         EntitySetPtr StraightEdges_ = EntitySetPtr(new EntitySet<SC,LO,GO,NO>(EdgeType));
@@ -233,6 +272,18 @@ namespace FROSch {
         EntitySetPtr Roots_ = EntitySetPtr(new EntitySet<SC,LO,GO,NO>(DefaultType));
         EntitySetPtr Leafs_ = EntitySetPtr(new EntitySet<SC,LO,GO,NO>(DefaultType));
         EntitySetPtr ConnectivityEntities_ = EntitySetPtr(new EntitySet<SC,LO,GO,NO>(DefaultType));
+#else
+        EntitySetPtr Vertices_ = EntitySetPtr(new EntitySet<SC,NO>(VertexType));
+        EntitySetPtr ShortEdges_ = EntitySetPtr(new EntitySet<SC,NO>(EdgeType));
+        EntitySetPtr StraightEdges_ = EntitySetPtr(new EntitySet<SC,NO>(EdgeType));
+        EntitySetPtr Edges_ = EntitySetPtr(new EntitySet<SC,NO>(EdgeType));
+        EntitySetPtr Faces_ = EntitySetPtr(new EntitySet<SC,NO>(FaceType));
+        EntitySetPtr Interface_ = EntitySetPtr(new EntitySet<SC,NO>(InterfaceType));
+        EntitySetPtr Interior_ = EntitySetPtr(new EntitySet<SC,NO>(InteriorType));
+        EntitySetPtr Roots_ = EntitySetPtr(new EntitySet<SC,NO>(DefaultType));
+        EntitySetPtr Leafs_ = EntitySetPtr(new EntitySet<SC,NO>(DefaultType));
+        EntitySetPtr ConnectivityEntities_ = EntitySetPtr(new EntitySet<SC,NO>(DefaultType));
+#endif
         EntitySetPtrVecPtr EntitySetVector_;
 
         ConstXMapPtr NodesMap_;

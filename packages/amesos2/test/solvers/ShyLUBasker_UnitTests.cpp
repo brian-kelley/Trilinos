@@ -146,7 +146,11 @@ namespace {
    * UNIT TESTS
    */
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, Initialization, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, Initialization, SCALAR )
+#endif
   {
     /* Test correct initialization of the Solver instance
      *
@@ -155,8 +159,13 @@ namespace {
      * - Correct typedefs ( using Amesos2::is_same<> )
      */
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
     //typedef ShyLUBasker<MAT,MV> SOLVER;
 
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
@@ -165,7 +174,11 @@ namespace {
     const size_t rank     = comm->getRank();
     // create a Map
     const size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,Node> > map = rcp( new Map<LO,GO,Node>(INVALID,numLocal,0,comm) );
+#else
+    RCP<Map<Node> > map = rcp( new Map<Node>(INVALID,numLocal,0,comm) );
+#endif
     RCP<MAT> eye = rcp( new MAT(map,1) );
     GO base = numLocal*rank;
     for( size_t i = 0; i < numLocal; ++i ){
@@ -200,11 +213,20 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, SymbolicFactorization, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, SymbolicFactorization, SCALAR )
+#endif
   {
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
     //typedef ShyLUBasker<MAT,MV> SOLVER;
 
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
@@ -213,7 +235,11 @@ namespace {
     const size_t rank     = comm->getRank();
     // create a Map
     const size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,Node> > map = rcp( new Map<LO,GO,Node>(INVALID,numLocal,0,comm) );
+#else
+    RCP<Map<Node> > map = rcp( new Map<Node>(INVALID,numLocal,0,comm) );
+#endif
     RCP<MAT> eye = rcp( new MAT(map,1) );
     GO base = numLocal*rank;
     for( size_t i = 0; i < numLocal; ++i ){
@@ -235,11 +261,20 @@ namespace {
     solver->symbolicFactorization();
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, NumericFactorization, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, NumericFactorization, SCALAR )
+#endif
   {
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
     //typedef ShyLUBasker<MAT,MV> SOLVER;
 
     const global_size_t INVALID = OrdinalTraits<global_size_t>::invalid();
@@ -248,7 +283,11 @@ namespace {
     const size_t rank     = comm->getRank();
     // create a Map
     const size_t numLocal = 10;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Map<LO,GO,Node> > map = rcp( new Map<LO,GO,Node>(INVALID,numLocal,0,comm) );
+#else
+    RCP<Map<Node> > map = rcp( new Map<Node>(INVALID,numLocal,0,comm) );
+#endif
     RCP<MAT> eye = rcp( new MAT(map,1) );
     GO base = numLocal*rank;
     for( size_t i = 0; i < numLocal; ++i ){
@@ -276,11 +315,23 @@ namespace {
     }
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, Solve, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, Solve, SCALAR )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+#endif
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     //typedef ScalarTraits<Mag> MT;
     const size_t numVecs = 1;
@@ -325,8 +376,13 @@ namespace {
       Tpetra::MatrixMarket::Reader<MAT>::readSparseFile("../matrices/amesos2_test_mat1.mtx",comm);
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > dmnmap = A->getDomainMap();
     RCP<const Map<LO,GO,Node> > rngmap = A->getRangeMap();
+#else
+    RCP<const Map<Node> > dmnmap = A->getDomainMap();
+    RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
     RCP<MV> X = rcp(new MV(dmnmap,numVecs));
     RCP<MV> B = rcp(new MV(rngmap,numVecs));
@@ -422,11 +478,23 @@ namespace {
    */
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, NonContgGID, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, NonContgGID, SCALAR )
+#endif
   {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<SCALAR,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<SCALAR,Node> MAT;
+#endif
     typedef ScalarTraits<SCALAR> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<SCALAR,LO,GO,Node> MV;
+#else
+    typedef MultiVector<SCALAR,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
 
     using Tpetra::global_size_t;
@@ -584,12 +652,24 @@ namespace {
   }
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, ComplexSolve, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, ComplexSolve, SCALAR )
+#endif
   {
     typedef std::complex<SCALAR> cmplx;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<cmplx,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<cmplx,Node> MAT;
+#endif
     typedef ScalarTraits<cmplx> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<cmplx,LO,GO,Node> MV;
+#else
+    typedef MultiVector<cmplx,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     //typedef ScalarTraits<Mag> MT;
 
@@ -598,8 +678,13 @@ namespace {
     RCP<MAT> A =
       Tpetra::MatrixMarket::Reader<MAT>::readSparseFile("../matrices/amesos2_test_mat4.mtx",comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > dmnmap = A->getDomainMap();
     RCP<const Map<LO,GO,Node> > rngmap = A->getRangeMap();
+#else
+    RCP<const Map<Node> > dmnmap = A->getDomainMap();
+    RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
     // Create the know-solution vector
     std::map<GO,cmplx> xValues;
@@ -653,12 +738,24 @@ namespace {
     TEST_COMPARE_FLOATING_ARRAYS( xhatnorms, xnorms, 0.005 );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, ComplexSolve2, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, ComplexSolve2, SCALAR )
+#endif
   {
     typedef std::complex<SCALAR> cmplx;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<cmplx,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<cmplx,Node> MAT;
+#endif
     typedef ScalarTraits<cmplx> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<cmplx,LO,GO,Node> MV;
+#else
+    typedef MultiVector<cmplx,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     //typedef ScalarTraits<Mag> MT;
     const size_t numVecs = 7;
@@ -668,8 +765,13 @@ namespace {
     RCP<MAT> A =
       Tpetra::MatrixMarket::Reader<MAT>::readSparseFile("../matrices/amesos2_test_mat2.mtx",comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > dmnmap = A->getDomainMap();
     RCP<const Map<LO,GO,Node> > rngmap = A->getRangeMap();
+#else
+    RCP<const Map<Node> > dmnmap = A->getDomainMap();
+    RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
     RCP<MV> X = rcp(new MV(dmnmap,numVecs));
     RCP<MV> B = rcp(new MV(rngmap,numVecs));
@@ -699,12 +801,24 @@ namespace {
     TEST_COMPARE_FLOATING_ARRAYS( xhatnorms, xnorms, 0.005 );
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, ComplexSolve2Trans, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL( ShyLUBasker, ComplexSolve2Trans, SCALAR )
+#endif
   {
     typedef std::complex<SCALAR> cmplx;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef CrsMatrix<cmplx,LO,GO,Node> MAT;
+#else
+    typedef CrsMatrix<cmplx,Node> MAT;
+#endif
     typedef ScalarTraits<cmplx> ST;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef MultiVector<cmplx,LO,GO,Node> MV;
+#else
+    typedef MultiVector<cmplx,Node> MV;
+#endif
     typedef typename ST::magnitudeType Mag;
     //typedef ScalarTraits<Mag> MT;
     const size_t numVecs = 7;
@@ -714,8 +828,13 @@ namespace {
     RCP<MAT> A =
       Tpetra::MatrixMarket::Reader<MAT>::readSparseFile("../matrices/amesos2_test_mat3.mtx",comm);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<const Map<LO,GO,Node> > dmnmap = A->getDomainMap();
     RCP<const Map<LO,GO,Node> > rngmap = A->getRangeMap();
+#else
+    RCP<const Map<Node> > dmnmap = A->getDomainMap();
+    RCP<const Map<Node> > rngmap = A->getRangeMap();
+#endif
 
     RCP<MV> X = rcp(new MV(dmnmap,numVecs));
     RCP<MV> B = rcp(new MV(rngmap,numVecs));
@@ -777,8 +896,13 @@ namespace {
 
 
 #define UNIT_TEST_GROUP_ORDINAL_SCALAR( LO, GO, SCALAR )                \
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ShyLUBasker, NumericFactorization, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ShyLUBasker, Solve, SCALAR, LO, GO )
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ShyLUBasker, NumericFactorization, SCALAR ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( ShyLUBasker, Solve, SCALAR )
+#endif
 
 
 #define UNIT_TEST_GROUP_ORDINAL( ORDINAL )              \

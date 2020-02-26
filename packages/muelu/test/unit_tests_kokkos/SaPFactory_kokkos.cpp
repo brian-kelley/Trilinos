@@ -62,7 +62,11 @@
 namespace MueLuTests {
 
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SaPFactory_kokkos, Constructor, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SaPFactory_kokkos, Constructor, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -75,7 +79,11 @@ namespace MueLuTests {
     out << *sapFactory << std::endl;
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SaPFactory_kokkos, Build, Scalar, LocalOrdinal, GlobalOrdinal, Node)
+#else
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL(SaPFactory_kokkos, Build, Scalar, Node)
+#endif
   {
 #   include "MueLu_UseShortNames.hpp"
     MUELU_TESTING_SET_OSTREAM;
@@ -86,13 +94,25 @@ namespace MueLuTests {
 
     // construct two levels
     Level fineLevel, coarseLevel;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     TestHelpers_kokkos::TestFactory<SC, LO, GO, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#else
+    TestHelpers_kokkos::TestFactory<SC, NO>::createTwoLevelHierarchy(fineLevel, coarseLevel);
+#endif
 
     // construct matrices
     const SC lambdaMax = 5;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::Build2DPoisson(27*comm->getSize());
+#else
+    RCP<Matrix> A = TestHelpers_kokkos::TestFactory<SC,NO>::Build2DPoisson(27*comm->getSize());
+#endif
     A->SetMaxEigenvalueEstimate(lambdaMax);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> Ptent = TestHelpers_kokkos::TestFactory<SC,LO,GO,NO>::Build2DPoisson(27*comm->getSize());
+#else
+    RCP<Matrix> Ptent = TestHelpers_kokkos::TestFactory<SC,NO>::Build2DPoisson(27*comm->getSize());
+#endif
 
     // set level matrices
     fineLevel  .Set("A", A);
@@ -118,7 +138,11 @@ namespace MueLuTests {
     SC omega = dampingFactor / lambdaMax;
     RCP<Vector> invDiag = Utilities_kokkos::GetMatrixDiagonalInverse(*A);
     RCP<ParameterList> APparams = rcp(new ParameterList);
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Matrix> Ptest   = Xpetra::IteratorOps<SC,LO,GO,NO>::Jacobi(omega, *invDiag, *A, *Ptent, Teuchos::null, out, "label", APparams);
+#else
+    RCP<Matrix> Ptest   = Xpetra::IteratorOps<SC,NO>::Jacobi(omega, *invDiag, *A, *Ptent, Teuchos::null, out, "label", APparams);
+#endif
 
     // compare matrices by multiplying them by a random vector
     RCP<MultiVector> X = MultiVectorFactory::Build(A->getDomainMap(), 1);
@@ -311,7 +335,11 @@ namespace MueLuTests {
         TEST_EQUALITY(R2->getGlobalNumRows(), 7);
         TEST_EQUALITY(R2->getGlobalNumCols(), 21);
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         Teuchos::RCP<Xpetra::Matrix<Scalar,LO,GO> > PtentTPtent = Xpetra::MatrixMatrix<Scalar,LO,GO>::Multiply(*P1,true,*P1,false,out);
+#else
+        Teuchos::RCP<Xpetra::Matrix<Scalar> > PtentTPtent = Xpetra::MatrixMatrix<Scalar>::Multiply(*P1,true,*P1,false,out);
+#endif
         TEST_EQUALITY(PtentTPtent->getGlobalMaxNumRowEntries()-3<1e-12, true);
         TEST_EQUALITY(P1->getGlobalMaxNumRowEntries()-2<1e-12, true);
         TEST_EQUALITY(P2->getGlobalMaxNumRowEntries()-2<1e-12, true);
@@ -347,9 +375,15 @@ namespace MueLuTests {
 #endif
 #endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SaPFactory_kokkos, Constructor, SC, LO, GO, NO) \
   TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SaPFactory_kokkos, Build,       SC, LO, GO, NO)
+#else
+#define MUELU_ETI_GROUP(SC,NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SaPFactory_kokkos, Constructor, SC, NO) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_4_INSTANT(SaPFactory_kokkos, Build,       SC, NO)
+#endif
 
 #include <MueLu_ETI_4arg.hpp>
 

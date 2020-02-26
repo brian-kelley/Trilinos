@@ -600,12 +600,21 @@ describe (Teuchos::FancyOStream& out,
 // preconditioners can and should do dynamic casts if they need a type
 // more specific than RowMatrix.
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_AMESOS2WRAPPER_INSTANT(S,LO,GO,N) \
   template class Ifpack2::Details::Amesos2Wrapper< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_DETAILS_AMESOS2WRAPPER_INSTANT(S,N) \
+  template class Ifpack2::Details::Amesos2Wrapper< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #else
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_DETAILS_AMESOS2WRAPPER_INSTANT(S,LO,GO,N)
+#else
+#define IFPACK2_DETAILS_AMESOS2WRAPPER_INSTANT(S,N)
+#endif
 
 #endif // HAVE_IFPACK2_AMESOS2
 #endif // IFPACK2_DETAILS_AMESOS2WRAPPER_DEF_HPP

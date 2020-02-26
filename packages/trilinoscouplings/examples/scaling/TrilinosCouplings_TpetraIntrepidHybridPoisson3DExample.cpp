@@ -215,10 +215,19 @@ makeMatrixAndRightHandSide (Teuchos::RCP<sparse_matrix_type>& A,
   // these typedefs, modify the typedefs (ST, LO, GO, Node) near the
   // top of this file.
   //
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::Map<LO, GO, Node>         map_type;
   typedef Tpetra::Export<LO, GO, Node>      export_type;
+#else
+  typedef Tpetra::Map<Node>         map_type;
+  typedef Tpetra::Export<Node>      export_type;
+#endif
   //typedef Tpetra::Import<LO, GO, Node>      import_type; // unused
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   typedef Tpetra::CrsGraph<LO, GO, Node>    sparse_graph_type;
+#else
+  typedef Tpetra::CrsGraph<Node>    sparse_graph_type;
+#endif
 
   // Number of independent variables fixed at 3
   //typedef Sacado::Fad::SFad<ST, 3>     Fad3; // unused
@@ -1097,11 +1106,21 @@ makeMatrixAndRightHandSide (Teuchos::RCP<sparse_matrix_type>& A,
     RCP<const export_type> bdyExporter =
       rcp (new export_type (ColMap, globalMap));
     // Create a vector of global column indices to which we will export
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Vector<int, LO, GO, Node> > globColsToZeroT =
       rcp (new Tpetra::Vector<int, LO, GO, Node> (globalMap));
+#else
+    RCP<Tpetra::Vector<int, Node> > globColsToZeroT =
+      rcp (new Tpetra::Vector<int, Node> (globalMap));
+#endif
     // Create a vector of local column indices from which we will export
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     RCP<Tpetra::Vector<int, LO, GO, Node> > myColsToZeroT =
       rcp (new Tpetra::Vector<int, LO, GO, Node> (ColMap));
+#else
+    RCP<Tpetra::Vector<int, Node> > myColsToZeroT =
+      rcp (new Tpetra::Vector<int, Node> (ColMap));
+#endif
     myColsToZeroT->putScalar (0);
 
     // Flag (set to 1) all local columns corresponding to the local

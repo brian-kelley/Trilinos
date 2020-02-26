@@ -409,7 +409,12 @@ namespace Ifpack2 {
   BlockTriDiContainer<MatrixType, BlockTriDiContainerDetails::ImplSimdTag>
   ::getName() { return "Ifpack2::BlockTriDiContainer::ImplSimdTag"; }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_BLOCKTRIDICONTAINER_INSTANT(S,LO,GO,N)                  \
   template class Ifpack2::BlockTriDiContainer< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_BLOCKTRIDICONTAINER_INSTANT(S,N)                  \
+  template class Ifpack2::BlockTriDiContainer< Tpetra::RowMatrix<S, N> >;
+#endif
 }
 #endif

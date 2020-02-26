@@ -81,7 +81,11 @@ template <class Real,
 class PDE_DualSimVector;
 
 template <class Real, class LO, class GO, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class PDE_PrimalSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
+#else
+class PDE_PrimalSimVector : public ROL::TpetraMultiVector<Real,Node> {
+#endif
   private:
     ROL::Ptr<Tpetra::CrsMatrix<> > RieszMap_;
     ROL::Ptr<Tpetra::MultiVector<> > lumpedRiesz_;
@@ -94,8 +98,13 @@ class PDE_PrimalSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     mutable bool isDualInitialized_;
 
     void lumpRiesz(void) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       lumpedRiesz_ = ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),1);
       Tpetra::MultiVector<Real,LO,GO,Node> ones(ROL::TpetraMultiVector<Real>::getMap(),1);
+#else
+      lumpedRiesz_ = ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),1);
+      Tpetra::MultiVector<Real,Node> ones(ROL::TpetraMultiVector<Real>::getMap(),1);
+#endif
       ones.putScalar(static_cast<Real>(1));
       RieszMap_->apply(ones, *lumpedRiesz_);
     }
@@ -121,17 +130,33 @@ class PDE_PrimalSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
   public:
     virtual ~PDE_PrimalSimVector() {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<PDE<Real> > &pde,
                         const ROL::Ptr<Assembler<Real> > &assembler)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#endif
         useRiesz_(false), useLumpedRiesz_(false), isDualInitialized_(false) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<PDE<Real> > &pde,
                         const ROL::Ptr<Assembler<Real> > &assembler,
                         Teuchos::ParameterList &parlist)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         isDualInitialized_(false) {
       #ifdef ROL_TIMERS
         Teuchos::TimeMonitor LocalTimer(*ROL::PDEOPT::PDEVectorSimRieszConstruct);
@@ -151,17 +176,33 @@ class PDE_PrimalSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<DynamicPDE<Real> > &pde,
                         Assembler<Real> &assembler)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#endif
         useRiesz_(false), useLumpedRiesz_(false), isDualInitialized_(false) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<DynamicPDE<Real> > &pde,
                         Assembler<Real> &assembler,
                         Teuchos::ParameterList &parlist)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         isDualInitialized_(false) {
       #ifdef ROL_TIMERS
         Teuchos::TimeMonitor LocalTimer(*ROL::PDEOPT::PDEVectorSimRieszConstruct);
@@ -181,11 +222,20 @@ class PDE_PrimalSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<Tpetra::CrsMatrix<> > &RieszMap,
                         const ROL::Ptr<Solver<Real> > &solver,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &lumpedRiesz)
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), RieszMap_(RieszMap),
+#else
+                        const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &lumpedRiesz)
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), RieszMap_(RieszMap),
+#endif
         lumpedRiesz_(lumpedRiesz), solver_(solver), isDualInitialized_(false) {
       if (RieszMap_ != ROL::nullPtr) {
         useLumpedRiesz_ = (lumpedRiesz_ != ROL::nullPtr);
@@ -198,17 +248,33 @@ class PDE_PrimalSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     }
 
     Real dot( const ROL::Vector<Real> &x ) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       TEUCHOS_TEST_FOR_EXCEPTION( (ROL::TpetraMultiVector<Real,LO,GO,Node>::dimension() != x.dimension()),
+#else
+      TEUCHOS_TEST_FOR_EXCEPTION( (ROL::TpetraMultiVector<Real,Node>::dimension() != x.dimension()),
+#endif
                                   std::invalid_argument,
                                   "Error: Vectors must have the same dimension." );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const ROL::Ptr<const Tpetra::MultiVector<Real,LO,GO,Node> > ex
         = dynamic_cast<const ROL::TpetraMultiVector<Real,LO,GO,Node>&>(x).getVector();
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
         = *(ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      const ROL::Ptr<const Tpetra::MultiVector<Real,Node> > ex
+        = dynamic_cast<const ROL::TpetraMultiVector<Real,Node>&>(x).getVector();
+      const Tpetra::MultiVector<Real,Node> &ey
+        = *(ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       size_t n = ey.getNumVectors();
       // Scale x with scale_vec_
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > wex
         = ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(), n);
+#else
+      ROL::Ptr<Tpetra::MultiVector<Real,Node> > wex
+        = ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(), n);
+#endif
       applyRiesz(wex,ex);
       // Perform Euclidean dot between *this and scaled x for each vector
       Teuchos::Array<Real> val(n,0);
@@ -222,31 +288,55 @@ class PDE_PrimalSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     }
 
     ROL::Ptr<ROL::Vector<Real> > clone() const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
         = *(ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      const Tpetra::MultiVector<Real,Node> &ey
+        = *(ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       size_t n = ey.getNumVectors();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return ROL::makePtr<PDE_PrimalSimVector<Real,LO,GO,Node>>(
              ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#else
+      return ROL::makePtr<PDE_PrimalSimVector<Real,Node>>(
+             ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#endif
              RieszMap_, solver_, lumpedRiesz_);
     }
 
     const ROL::Vector<Real> & dual() const {
       if ( !isDualInitialized_ ) {
         // Create new memory for dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         size_t n = ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector()->getNumVectors();
         dual_vec_ = ROL::makePtr<PDE_DualSimVector<Real,LO,GO,Node>>(
                     ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#else
+        size_t n = ROL::TpetraMultiVector<Real,Node>::getVector()->getNumVectors();
+        dual_vec_ = ROL::makePtr<PDE_DualSimVector<Real,Node>>(
+                    ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#endif
                     RieszMap_, solver_, lumpedRiesz_);
         isDualInitialized_ = true;
       }
       // Scale *this with scale_vec_ and place in dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       applyRiesz(dual_vec_->getVector(),ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      applyRiesz(dual_vec_->getVector(),ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       return *dual_vec_;
     }
 }; // class PDE_PrimalSimVector
 
 template <class Real, class LO, class GO, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class PDE_DualSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
+#else
+class PDE_DualSimVector : public ROL::TpetraMultiVector<Real,Node> {
+#endif
   private:
     ROL::Ptr<Tpetra::CrsMatrix<Real> > RieszMap_;
     ROL::Ptr<Tpetra::MultiVector<> > lumpedRiesz_;
@@ -260,14 +350,23 @@ class PDE_DualSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     mutable bool isDualInitialized_;
 
     void lumpRiesz(void) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       lumpedRiesz_ = ROL::makePtr<Tpetra::Vector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap());
       Tpetra::MultiVector<Real,LO,GO,Node> ones(ROL::TpetraMultiVector<Real>::getMap(),1);
+#else
+      lumpedRiesz_ = ROL::makePtr<Tpetra::Vector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap());
+      Tpetra::MultiVector<Real,Node> ones(ROL::TpetraMultiVector<Real>::getMap(),1);
+#endif
       ones.putScalar(static_cast<Real>(1));
       RieszMap_->apply(ones, *lumpedRiesz_);
     }
 
     void invertLumpedRiesz(void) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       recipLumpedRiesz_ = ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),1);
+#else
+      recipLumpedRiesz_ = ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),1);
+#endif
       recipLumpedRiesz_->reciprocal(*lumpedRiesz_);
     }
 
@@ -292,17 +391,33 @@ class PDE_DualSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
   public:
     virtual ~PDE_DualSimVector() {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<PDE<Real> > &pde,
                       const ROL::Ptr<Assembler<Real> > &assembler)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#endif
         useRiesz_(false), useLumpedRiesz_(false), isDualInitialized_(false) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<PDE<Real> > &pde,
                       const ROL::Ptr<Assembler<Real> > &assembler,
                       Teuchos::ParameterList &parlist)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         isDualInitialized_(false) {
       #ifdef ROL_TIMERS
         Teuchos::TimeMonitor LocalTimer(*ROL::PDEOPT::PDEVectorSimRieszConstruct);
@@ -323,17 +438,33 @@ class PDE_DualSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<DynamicPDE<Real> > &pde,
                       Assembler<Real> &assembler)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#endif
         useRiesz_(false), useLumpedRiesz_(false), isDualInitialized_(false) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<DynamicPDE<Real> > &pde,
                       Assembler<Real> &assembler,
                       Teuchos::ParameterList &parlist)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         isDualInitialized_(false) {
       #ifdef ROL_TIMERS
         Teuchos::TimeMonitor LocalTimer(*ROL::PDEOPT::PDEVectorSimRieszConstruct);
@@ -354,11 +485,20 @@ class PDE_DualSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualSimVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<Tpetra::CrsMatrix<> > &RieszMap,
                       const ROL::Ptr<Solver<Real> > &solver,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &lumpedRiesz)
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), RieszMap_(RieszMap),
+#else
+                      const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &lumpedRiesz)
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), RieszMap_(RieszMap),
+#endif
         lumpedRiesz_(lumpedRiesz), solver_(solver), isDualInitialized_(false) {
       if (RieszMap_ != ROL::nullPtr) {
         useLumpedRiesz_ = (lumpedRiesz_ != ROL::nullPtr);
@@ -374,17 +514,32 @@ class PDE_DualSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     }
 
     Real dot( const ROL::Vector<Real> &x ) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       TEUCHOS_TEST_FOR_EXCEPTION( (ROL::TpetraMultiVector<Real,LO,GO,Node>::dimension() != x.dimension()),
+#else
+      TEUCHOS_TEST_FOR_EXCEPTION( (ROL::TpetraMultiVector<Real,Node>::dimension() != x.dimension()),
+#endif
                                   std::invalid_argument,
                                   "Error: Vectors must have the same dimension." );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const ROL::Ptr<const Tpetra::MultiVector<Real,LO,GO,Node> > &ex
         = dynamic_cast<const ROL::TpetraMultiVector<Real,LO,GO,Node>&>(x).getVector();
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
+#else
+      const ROL::Ptr<const Tpetra::MultiVector<Real,Node> > &ex
+        = dynamic_cast<const ROL::TpetraMultiVector<Real,Node>&>(x).getVector();
+      const Tpetra::MultiVector<Real,Node> &ey
+#endif
         = *(ROL::TpetraMultiVector<Real>::getVector());
       size_t n = ey.getNumVectors();
       // Scale x with 1/scale_vec_
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > wex
         = ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(), n);
+#else
+      ROL::Ptr<Tpetra::MultiVector<Real,Node> > wex
+        = ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(), n);
+#endif
       applyRiesz(wex,ex);
       // Perform Euclidean dot between *this and scaled x for each vector
       Teuchos::Array<Real> val(n,0);
@@ -398,25 +553,45 @@ class PDE_DualSimVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     }
 
     ROL::Ptr<ROL::Vector<Real> > clone() const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
         = *(ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      const Tpetra::MultiVector<Real,Node> &ey
+        = *(ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       size_t n = ey.getNumVectors();  
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return ROL::makePtr<PDE_DualSimVector<Real,LO,GO,Node>>(
              ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#else
+      return ROL::makePtr<PDE_DualSimVector<Real,Node>>(
+             ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#endif
              RieszMap_, solver_, lumpedRiesz_);
     }
 
     const ROL::Vector<Real> & dual() const {
       if ( !isDualInitialized_ ) {
         // Create new memory for dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         size_t n = ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector()->getNumVectors();
         primal_vec_ = ROL::makePtr<PDE_PrimalSimVector<Real,LO,GO,Node>>(
                       ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#else
+        size_t n = ROL::TpetraMultiVector<Real,Node>::getVector()->getNumVectors();
+        primal_vec_ = ROL::makePtr<PDE_PrimalSimVector<Real,Node>>(
+                      ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#endif
                       RieszMap_, solver_, lumpedRiesz_);
         isDualInitialized_ = true;
       }
       // Scale *this with scale_vec_ and place in dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       applyRiesz(primal_vec_->getVector(),ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      applyRiesz(primal_vec_->getVector(),ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       return *primal_vec_;
     }
 }; // class PDE_DualSimVector
@@ -434,7 +609,11 @@ template <class Real,
 class PDE_DualOptVector;
 
 template <class Real, class LO, class GO, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class PDE_PrimalOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
+#else
+class PDE_PrimalOptVector : public ROL::TpetraMultiVector<Real,Node> {
+#endif
   private:
     ROL::Ptr<Tpetra::CrsMatrix<> > RieszMap_;
     ROL::Ptr<Tpetra::MultiVector<> > lumpedRiesz_;
@@ -447,8 +626,13 @@ class PDE_PrimalOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     mutable bool isDualInitialized_;
 
     void lumpRiesz(void) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       lumpedRiesz_ = ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),1);
       Tpetra::MultiVector<Real,LO,GO,Node> ones(ROL::TpetraMultiVector<Real>::getMap(),1);
+#else
+      lumpedRiesz_ = ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),1);
+      Tpetra::MultiVector<Real,Node> ones(ROL::TpetraMultiVector<Real>::getMap(),1);
+#endif
       ones.putScalar(static_cast<Real>(1));
       RieszMap_->apply(ones, *lumpedRiesz_);
     }
@@ -474,17 +658,33 @@ class PDE_PrimalOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
   public:
     virtual ~PDE_PrimalOptVector() {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<PDE<Real> > &pde,
                         const ROL::Ptr<Assembler<Real> > &assembler)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#endif
         useRiesz_(false), useLumpedRiesz_(false), isDualInitialized_(false) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<PDE<Real> > &pde,
                         const ROL::Ptr<Assembler<Real> > &assembler,
                         Teuchos::ParameterList &parlist)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         isDualInitialized_(false) {
       #ifdef ROL_TIMERS
         Teuchos::TimeMonitor LocalTimer(*ROL::PDEOPT::PDEVectorOptRieszConstruct);
@@ -504,17 +704,33 @@ class PDE_PrimalOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<DynamicPDE<Real> > &pde,
                         Assembler<Real> &assembler)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#endif
         useRiesz_(false), useLumpedRiesz_(false), isDualInitialized_(false) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<DynamicPDE<Real> > &pde,
                         Assembler<Real> &assembler,
                         Teuchos::ParameterList &parlist)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         isDualInitialized_(false) {
       #ifdef ROL_TIMERS
         Teuchos::TimeMonitor LocalTimer(*ROL::PDEOPT::PDEVectorOptRieszConstruct);
@@ -534,11 +750,20 @@ class PDE_PrimalOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_PrimalOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                         const ROL::Ptr<Tpetra::CrsMatrix<> > &RieszMap,
                         const ROL::Ptr<Solver<Real> > &solver,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                         const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &lumpedRiesz)
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), RieszMap_(RieszMap),
+#else
+                        const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &lumpedRiesz)
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), RieszMap_(RieszMap),
+#endif
         lumpedRiesz_(lumpedRiesz), solver_(solver), isDualInitialized_(false) {
       if (RieszMap_ != ROL::nullPtr) {
         useLumpedRiesz_ = (lumpedRiesz_ != ROL::nullPtr);
@@ -551,17 +776,33 @@ class PDE_PrimalOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     }
 
     Real dot( const ROL::Vector<Real> &x ) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       TEUCHOS_TEST_FOR_EXCEPTION( (ROL::TpetraMultiVector<Real,LO,GO,Node>::dimension() != x.dimension()),
+#else
+      TEUCHOS_TEST_FOR_EXCEPTION( (ROL::TpetraMultiVector<Real,Node>::dimension() != x.dimension()),
+#endif
                                   std::invalid_argument,
                                   "Error: Vectors must have the same dimension." );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const ROL::Ptr<const Tpetra::MultiVector<Real,LO,GO,Node> > ex
         = dynamic_cast<const ROL::TpetraMultiVector<Real,LO,GO,Node>&>(x).getVector();
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
         = *(ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      const ROL::Ptr<const Tpetra::MultiVector<Real,Node> > ex
+        = dynamic_cast<const ROL::TpetraMultiVector<Real,Node>&>(x).getVector();
+      const Tpetra::MultiVector<Real,Node> &ey
+        = *(ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       size_t n = ey.getNumVectors();
       // Scale x with scale_vec_
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > wex
         = ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(), n);
+#else
+      ROL::Ptr<Tpetra::MultiVector<Real,Node> > wex
+        = ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(), n);
+#endif
       applyRiesz(wex,ex);
       // Perform Euclidean dot between *this and scaled x for each vector
       Teuchos::Array<Real> val(n,0);
@@ -575,31 +816,55 @@ class PDE_PrimalOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     }
 
     ROL::Ptr<ROL::Vector<Real> > clone() const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
         = *(ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      const Tpetra::MultiVector<Real,Node> &ey
+        = *(ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       size_t n = ey.getNumVectors();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return ROL::makePtr<PDE_PrimalOptVector<Real,LO,GO,Node>>(
              ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#else
+      return ROL::makePtr<PDE_PrimalOptVector<Real,Node>>(
+             ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#endif
              RieszMap_, solver_, lumpedRiesz_);
     }
 
     const ROL::Vector<Real> & dual() const {
       if ( !isDualInitialized_ ) {
         // Create new memory for dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         size_t n = ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector()->getNumVectors();
         dual_vec_ = ROL::makePtr<PDE_DualOptVector<Real,LO,GO,Node>>(
                     ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#else
+        size_t n = ROL::TpetraMultiVector<Real,Node>::getVector()->getNumVectors();
+        dual_vec_ = ROL::makePtr<PDE_DualOptVector<Real,Node>>(
+                    ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#endif
                     RieszMap_, solver_, lumpedRiesz_);
         isDualInitialized_ = true;
       }
       // Scale *this with scale_vec_ and place in dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       applyRiesz(dual_vec_->getVector(),ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      applyRiesz(dual_vec_->getVector(),ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       return *dual_vec_;
     }
 }; // class PDE_PrimalOptVector
 
 template <class Real, class LO, class GO, class Node>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 class PDE_DualOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
+#else
+class PDE_DualOptVector : public ROL::TpetraMultiVector<Real,Node> {
+#endif
   private:
     ROL::Ptr<Tpetra::CrsMatrix<Real> > RieszMap_;
     ROL::Ptr<Tpetra::MultiVector<> > lumpedRiesz_;
@@ -613,14 +878,23 @@ class PDE_DualOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     mutable bool isDualInitialized_;
 
     void lumpRiesz(void) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       lumpedRiesz_ = ROL::makePtr<Tpetra::Vector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap());
       Tpetra::MultiVector<Real,LO,GO,Node> ones(ROL::TpetraMultiVector<Real>::getMap(),1);
+#else
+      lumpedRiesz_ = ROL::makePtr<Tpetra::Vector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap());
+      Tpetra::MultiVector<Real,Node> ones(ROL::TpetraMultiVector<Real>::getMap(),1);
+#endif
       ones.putScalar(static_cast<Real>(1));
       RieszMap_->apply(ones, *lumpedRiesz_);
     }
 
     void invertLumpedRiesz(void) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       recipLumpedRiesz_ = ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),1);
+#else
+      recipLumpedRiesz_ = ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),1);
+#endif
       recipLumpedRiesz_->reciprocal(*lumpedRiesz_);
     }
 
@@ -645,17 +919,33 @@ class PDE_DualOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
   public:
     virtual ~PDE_DualOptVector() {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<PDE<Real> > &pde,
                       const ROL::Ptr<Assembler<Real> > &assembler)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#endif
         useRiesz_(false), useLumpedRiesz_(false), isDualInitialized_(false) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<PDE<Real> > &pde,
                       const ROL::Ptr<Assembler<Real> > &assembler,
                       Teuchos::ParameterList &parlist)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         isDualInitialized_(false) {
       #ifdef ROL_TIMERS
         Teuchos::TimeMonitor LocalTimer(*ROL::PDEOPT::PDEVectorOptRieszConstruct);
@@ -676,17 +966,33 @@ class PDE_DualOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<DynamicPDE<Real> > &pde,
                       Assembler<Real> &assembler)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), solver_(ROL::nullPtr),
+#endif
         useRiesz_(false), useLumpedRiesz_(false), isDualInitialized_(false) {}
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<DynamicPDE<Real> > &pde,
                       Assembler<Real> &assembler,
                       Teuchos::ParameterList &parlist)
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec),
+#else
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec),
+#endif
         isDualInitialized_(false) {
       #ifdef ROL_TIMERS
         Teuchos::TimeMonitor LocalTimer(*ROL::PDEOPT::PDEVectorOptRieszConstruct);
@@ -707,11 +1013,20 @@ class PDE_DualOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
       }
     }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &tpetra_vec,
+#else
+    PDE_DualOptVector(const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &tpetra_vec,
+#endif
                       const ROL::Ptr<Tpetra::CrsMatrix<> > &RieszMap,
                       const ROL::Ptr<Solver<Real> > &solver,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       const ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > &lumpedRiesz)
       : ROL::TpetraMultiVector<Real,LO,GO,Node>(tpetra_vec), RieszMap_(RieszMap),
+#else
+                      const ROL::Ptr<Tpetra::MultiVector<Real,Node> > &lumpedRiesz)
+      : ROL::TpetraMultiVector<Real,Node>(tpetra_vec), RieszMap_(RieszMap),
+#endif
         lumpedRiesz_(lumpedRiesz), solver_(solver), isDualInitialized_(false) {
       if (RieszMap_ != ROL::nullPtr) {
         useLumpedRiesz_ = (lumpedRiesz_ != ROL::nullPtr);
@@ -727,17 +1042,32 @@ class PDE_DualOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     }
 
     Real dot( const ROL::Vector<Real> &x ) const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       TEUCHOS_TEST_FOR_EXCEPTION( (ROL::TpetraMultiVector<Real,LO,GO,Node>::dimension() != x.dimension()),
+#else
+      TEUCHOS_TEST_FOR_EXCEPTION( (ROL::TpetraMultiVector<Real,Node>::dimension() != x.dimension()),
+#endif
                                   std::invalid_argument,
                                   "Error: Vectors must have the same dimension." );
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const ROL::Ptr<const Tpetra::MultiVector<Real,LO,GO,Node> > &ex
         = dynamic_cast<const ROL::TpetraMultiVector<Real,LO,GO,Node>&>(x).getVector();
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
+#else
+      const ROL::Ptr<const Tpetra::MultiVector<Real,Node> > &ex
+        = dynamic_cast<const ROL::TpetraMultiVector<Real,Node>&>(x).getVector();
+      const Tpetra::MultiVector<Real,Node> &ey
+#endif
         = *(ROL::TpetraMultiVector<Real>::getVector());
       size_t n = ey.getNumVectors();
       // Scale x with 1/scale_vec_
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       ROL::Ptr<Tpetra::MultiVector<Real,LO,GO,Node> > wex
         = ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(), n);
+#else
+      ROL::Ptr<Tpetra::MultiVector<Real,Node> > wex
+        = ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(), n);
+#endif
       applyRiesz(wex,ex);
       // Perform Euclidean dot between *this and scaled x for each vector
       Teuchos::Array<Real> val(n,0);
@@ -751,25 +1081,45 @@ class PDE_DualOptVector : public ROL::TpetraMultiVector<Real,LO,GO,Node> {
     }
 
     ROL::Ptr<ROL::Vector<Real> > clone() const {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const Tpetra::MultiVector<Real,LO,GO,Node> &ey
         = *(ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      const Tpetra::MultiVector<Real,Node> &ey
+        = *(ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       size_t n = ey.getNumVectors();  
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return ROL::makePtr<PDE_DualOptVector<Real,LO,GO,Node>>(
              ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#else
+      return ROL::makePtr<PDE_DualOptVector<Real,Node>>(
+             ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#endif
              RieszMap_, solver_, lumpedRiesz_);
     }
 
     const ROL::Vector<Real> & dual() const {
       if ( !isDualInitialized_ ) {
         // Create new memory for dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
         size_t n = ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector()->getNumVectors();
         primal_vec_ = ROL::makePtr<PDE_PrimalOptVector<Real,LO,GO,Node>>(
                       ROL::makePtr<Tpetra::MultiVector<Real,LO,GO,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#else
+        size_t n = ROL::TpetraMultiVector<Real,Node>::getVector()->getNumVectors();
+        primal_vec_ = ROL::makePtr<PDE_PrimalOptVector<Real,Node>>(
+                      ROL::makePtr<Tpetra::MultiVector<Real,Node>>(ROL::TpetraMultiVector<Real>::getMap(),n),
+#endif
                       RieszMap_, solver_, lumpedRiesz_);
         isDualInitialized_ = true;
       }
       // Scale *this with scale_vec_ and place in dual vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       applyRiesz(primal_vec_->getVector(),ROL::TpetraMultiVector<Real,LO,GO,Node>::getVector());
+#else
+      applyRiesz(primal_vec_->getVector(),ROL::TpetraMultiVector<Real,Node>::getVector());
+#endif
       return *primal_vec_;
     }
 }; // class PDE_DualOptVector
@@ -780,27 +1130,55 @@ template <class Real,
           class Node=Tpetra::Map<>::node_type >
 class PDE_OptVector : public ROL::Vector<Real> {
 private:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   ROL::Ptr<ROL::TpetraMultiVector<Real,LO,GO,Node> > vec1_;
+#else
+  ROL::Ptr<ROL::TpetraMultiVector<Real,Node> > vec1_;
+#endif
   ROL::Ptr<ROL::StdVector<Real> >                    vec2_;
   const int rank_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   mutable ROL::Ptr<ROL::TpetraMultiVector<Real,LO,GO,Node> > dual_vec1_;
+#else
+  mutable ROL::Ptr<ROL::TpetraMultiVector<Real,Node> > dual_vec1_;
+#endif
   mutable ROL::Ptr<ROL::StdVector<Real> >                    dual_vec2_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   mutable ROL::Ptr<PDE_OptVector<Real,LO,GO,Node> >          dual_vec_;
+#else
+  mutable ROL::Ptr<PDE_OptVector<Real,Node> >          dual_vec_;
+#endif
   mutable bool isDualInitialized_;
 
 public:
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   PDE_OptVector(const ROL::Ptr<ROL::TpetraMultiVector<Real,LO,GO,Node> > &vec1,
+#else
+  PDE_OptVector(const ROL::Ptr<ROL::TpetraMultiVector<Real,Node> > &vec1,
+#endif
                 const ROL::Ptr<ROL::StdVector<Real> >                    &vec2,
                 const int rank = 0 ) 
     : vec1_(vec1), vec2_(vec2), rank_(rank), isDualInitialized_(false) {
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     dual_vec1_ = ROL::dynamicPtrCast<ROL::TpetraMultiVector<Real,LO,GO,Node> >(vec1_->dual().clone());
+#else
+    dual_vec1_ = ROL::dynamicPtrCast<ROL::TpetraMultiVector<Real,Node> >(vec1_->dual().clone());
+#endif
     dual_vec2_ = ROL::dynamicPtrCast<ROL::StdVector<Real> >(vec2_->dual().clone());
   }
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   PDE_OptVector(const ROL::Ptr<ROL::TpetraMultiVector<Real,LO,GO,Node> > &vec)
+#else
+  PDE_OptVector(const ROL::Ptr<ROL::TpetraMultiVector<Real,Node> > &vec)
+#endif
     : vec1_(vec), vec2_(ROL::nullPtr), rank_(0), dual_vec2_(ROL::nullPtr), isDualInitialized_(false) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     dual_vec1_ = ROL::dynamicPtrCast<ROL::TpetraMultiVector<Real,LO,GO,Node> >(vec1_->dual().clone());
+#else
+    dual_vec1_ = ROL::dynamicPtrCast<ROL::TpetraMultiVector<Real,Node> >(vec1_->dual().clone());
+#endif
   }
 
   PDE_OptVector(const ROL::Ptr<ROL::StdVector<Real> > &vec,
@@ -875,15 +1253,29 @@ public:
 
   ROL::Ptr<ROL::Vector<Real> > clone(void) const {
     if ( vec2_ == ROL::nullPtr ) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return ROL::makePtr<PDE_OptVector<Real,LO,GO,Node>>(
              ROL::dynamicPtrCast<ROL::TpetraMultiVector<Real,LO,GO,Node> >(vec1_->clone()));
+#else
+      return ROL::makePtr<PDE_OptVector<Real,Node>>(
+             ROL::dynamicPtrCast<ROL::TpetraMultiVector<Real,Node> >(vec1_->clone()));
+#endif
     }
     if ( vec1_ == ROL::nullPtr ) {
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       return ROL::makePtr<PDE_OptVector<Real,LO,GO,Node>>(
+#else
+      return ROL::makePtr<PDE_OptVector<Real,Node>>(
+#endif
              ROL::dynamicPtrCast<ROL::StdVector<Real> >(vec2_->clone()));
     }
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     return ROL::makePtr<PDE_OptVector<Real,LO,GO,Node>>(
            ROL::dynamicPtrCast<ROL::TpetraMultiVector<Real,LO,GO,Node> >(vec1_->clone()),
+#else
+    return ROL::makePtr<PDE_OptVector<Real,Node>>(
+           ROL::dynamicPtrCast<ROL::TpetraMultiVector<Real,Node> >(vec1_->clone()),
+#endif
            ROL::dynamicPtrCast<ROL::StdVector<Real> >(vec2_->clone()));
   }
 

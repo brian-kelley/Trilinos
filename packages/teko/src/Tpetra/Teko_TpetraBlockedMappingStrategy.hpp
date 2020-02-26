@@ -88,7 +88,11 @@ public:
      * \param[in]      comm   Teuchos::RCP<Teuchos::Comm<int> > object related to the map
      */
    TpetraBlockedMappingStrategy(const std::vector<std::vector<GO> > & vars,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > & baseMap, const Teuchos::Comm<int> & comm);
+#else
+         const Teuchos::RCP<const Tpetra::Map<NT> > & baseMap, const Teuchos::Comm<int> & comm);
+#endif
    //@}
 
    //!\name Member functions inherited from Teko::Tpetra::MappingStrategy
@@ -101,7 +105,11 @@ public:
      * \param[in]     tpetra_X  source Tpetra::MultiVector<ST,LO,GO,NT>
      * \param[in,out]     thyra_X   destination Thyra::MultiVectorBase
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,LO,GO,NT>& tpetra_X, 
+#else
+   virtual void copyTpetraIntoThyra(const Tpetra::MultiVector<ST,NT>& tpetra_X, 
+#endif
                                     const Teuchos::Ptr<Thyra::MultiVectorBase<ST> > & thyra_X) const;
 
    /** Virtual function defined in MappingStrategy.  This copies
@@ -112,7 +120,11 @@ public:
      * \param[in,out]     tpetra_Y destination Tpetra::MultiVector<ST,LO,GO,NT>
      */
    virtual void copyThyraIntoTpetra(const Teuchos::RCP<const Thyra::MultiVectorBase<ST> > & thyra_Y, 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                                     Tpetra::MultiVector<ST,LO,GO,NT>& tpetra_Y) const;
+#else
+                                    Tpetra::MultiVector<ST,NT>& tpetra_Y) const;
+#endif
 
    /** Returns the domain and range maps used by this class.
      * This faciliates building an Tpetra_Operator around this
@@ -121,7 +133,11 @@ public:
      *
      * \returns Range map corresponding to this class
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > domainMap() const
+#else
+   virtual const Teuchos::RCP<const Tpetra::Map<NT> > domainMap() const
+#endif
    { return domainMap_; }
 
    /** Returns the domain and range maps used by this class.
@@ -131,7 +147,11 @@ public:
      *
      * \returns Range map corresponding to this class
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    virtual const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > rangeMap() const
+#else
+   virtual const Teuchos::RCP<const Tpetra::Map<NT> > rangeMap() const
+#endif
    { return rangeMap_; }
 
    /** A function for my sanity
@@ -161,7 +181,11 @@ public:
      * \param[in]      comm      Teuchos::RCP<Teuchos::Comm<int> > object
      */
    void buildBlockTransferData(const std::vector<std::vector<GO> > & vars,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
          const Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > & baseMap, const Teuchos::Comm<int> & comm);
+#else
+         const Teuchos::RCP<const Tpetra::Map<NT> > & baseMap, const Teuchos::Comm<int> & comm);
+#endif
 
    /** \brief  Get the individual block maps underlying that
      * make up a strided vector/operator.
@@ -189,7 +213,11 @@ public:
      *          defined by this mapping strategy
      */
    const Teuchos::RCP<Thyra::BlockedLinearOpBase<ST> > 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    buildBlockedThyraOp(const Teuchos::RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > & mat,const std::string & label="<ANYM>") const;
+#else
+   buildBlockedThyraOp(const Teuchos::RCP<const Tpetra::CrsMatrix<ST,NT> > & mat,const std::string & label="<ANYM>") const;
+#endif
 
    /** Rebuilds a block Thyra operator using the strided mapping
      * strategy to define sub blocks.
@@ -200,7 +228,11 @@ public:
      * \param[in] A Destination block linear op composed of blocks of
      *            Tpetra::CrsMatrix<ST,LO,GO,NT>  at all relevant locations
      */
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    void rebuildBlockedThyraOp(const RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > & mat,
+#else
+   void rebuildBlockedThyraOp(const RCP<const Tpetra::CrsMatrix<ST,NT> > & mat,
+#endif
                               const RCP<Thyra::BlockedLinearOpBase<ST> > & A) const;
 
    //@}
@@ -210,15 +242,25 @@ protected:
 
    //! \name storage for sanity
    //@{
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > domainMap_; 
    Teuchos::RCP<const Tpetra::Map<LO,GO,NT> > rangeMap_;
+#else
+   Teuchos::RCP<const Tpetra::Map<NT> > domainMap_; 
+   Teuchos::RCP<const Tpetra::Map<NT> > rangeMap_;
+#endif
    //@}
 
    //! \name block transfer data
    //@{
    std::vector<Blocking::MapPair> blockMaps_;
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    std::vector<Teuchos::RCP<Tpetra::Import<LO,GO,NT> > > blockImport_;
    std::vector<Teuchos::RCP<Tpetra::Export<LO,GO,NT> > > blockExport_;
+#else
+   std::vector<Teuchos::RCP<Tpetra::Import<NT> > > blockImport_;
+   std::vector<Teuchos::RCP<Tpetra::Export<NT> > > blockExport_;
+#endif
    //@}
 };
 

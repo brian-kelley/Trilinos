@@ -133,14 +133,22 @@ Hiptmair<MatrixType>::getComm () const {
 
 
 template <class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type,typename MatrixType::local_ordinal_type,typename MatrixType::global_ordinal_type,typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::RowMatrix<typename MatrixType::scalar_type,typename MatrixType::node_type> >
+#endif
 Hiptmair<MatrixType>::getMatrix () const {
   return A_;
 }
 
 
 template <class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,typename MatrixType::global_ordinal_type,typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 Hiptmair<MatrixType>::getDomainMap () const
 {
   TEUCHOS_TEST_FOR_EXCEPTION(
@@ -152,7 +160,11 @@ Hiptmair<MatrixType>::getDomainMap () const
 
 
 template <class MatrixType>
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 Teuchos::RCP<const Tpetra::Map<typename MatrixType::local_ordinal_type,typename MatrixType::global_ordinal_type,typename MatrixType::node_type> >
+#else
+Teuchos::RCP<const Tpetra::Map<typename MatrixType::node_type> >
+#endif
 Hiptmair<MatrixType>::getRangeMap () const
 {
   TEUCHOS_TEST_FOR_EXCEPTION(
@@ -272,12 +284,16 @@ void Hiptmair<MatrixType>::compute ()
 template <class MatrixType>
 void Hiptmair<MatrixType>::
 apply (const Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
        typename MatrixType::local_ordinal_type,
        typename MatrixType::global_ordinal_type,
+#endif
        typename MatrixType::node_type>& X,
        Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                            typename MatrixType::local_ordinal_type,
                            typename MatrixType::global_ordinal_type,
+#endif
                            typename MatrixType::node_type>& Y,
        Teuchos::ETransp mode,
        typename MatrixType::scalar_type alpha,
@@ -342,12 +358,16 @@ apply (const Tpetra::MultiVector<typename MatrixType::scalar_type,
 template <class MatrixType>
 void Hiptmair<MatrixType>::
 applyHiptmairSmoother(const Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       typename MatrixType::local_ordinal_type,
                       typename MatrixType::global_ordinal_type,
+#endif
                       typename MatrixType::node_type>& X,
                       Tpetra::MultiVector<typename MatrixType::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
                       typename MatrixType::local_ordinal_type,
                       typename MatrixType::global_ordinal_type,
+#endif
                       typename MatrixType::node_type>& Y) const
 {
   using Teuchos::RCP;
@@ -461,7 +481,12 @@ describe (Teuchos::FancyOStream &out,
 
 } // namespace Ifpack2
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
 #define IFPACK2_HIPTMAIR_INSTANT(S,LO,GO,N) \
   template class Ifpack2::Hiptmair< Tpetra::RowMatrix<S, LO, GO, N> >;
+#else
+#define IFPACK2_HIPTMAIR_INSTANT(S,N) \
+  template class Ifpack2::Hiptmair< Tpetra::RowMatrix<S, N> >;
+#endif
 
 #endif /* IFPACK2_HIPTMAIR_DEF_HPP */

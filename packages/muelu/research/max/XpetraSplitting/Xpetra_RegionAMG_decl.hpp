@@ -81,6 +81,7 @@ namespace Xpetra{
  *  */
 
 template<class Scalar					= MultiVector<>::scalar_type,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     class LocalOrdinal   				= typename MultiVector<Scalar>::local_ordinal_type,
     class GlobalOrdinal  				= typename MultiVector<Scalar, LocalOrdinal>::global_ordinal_type,
     class Node           				= typename MultiVector<Scalar, LocalOrdinal, GlobalOrdinal>::node_type>
@@ -93,6 +94,20 @@ class RegionAMG : Operator<Scalar, LocalOrdinal, GlobalOrdinal, Node> {
   typedef MueLu::Hierarchy<Scalar,LocalOrdinal,GlobalOrdinal,Node> Hierarchy;
   typedef MultiVectorFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node> mv_factory_type;
   typedef Level<Scalar,LocalOrdinal,GlobalOrdinal,Node> level;
+#else
+    class Node           				= typename MultiVector<Scalar>::node_type>
+class RegionAMG : Operator<Scalar, Node> {
+
+  using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+  using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+  typedef Map<Node> map_type;
+  typedef MultiVector<Scalar> multivector_type;
+  typedef Matrix< Scalar, Node > matrix_type;
+  typedef MatrixSplitting<Scalar,Node,Xpetra::UseTpetra, false> tpetra_splitting;
+  typedef MueLu::Hierarchy<Scalar,Node> Hierarchy;
+  typedef MultiVectorFactory<Scalar, Node> mv_factory_type;
+  typedef Level<Scalar,Node> level;
+#endif
 
 public:
 
@@ -106,7 +121,11 @@ public:
 
   //! This is the actual constructor we are interested in calling
   RegionAMG(Teuchos::RCP<tpetra_splitting> matrixSplitting,
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       Teuchos::RCP<Xpetra::RegionHandler<Scalar, LocalOrdinal, GlobalOrdinal, Node> > regionHandler,
+#else
+      Teuchos::RCP<Xpetra::RegionHandler<Scalar, Node> > regionHandler,
+#endif
       RCP<const Teuchos::Comm<int> > comm, Teuchos::ParameterList muelu,
       GlobalOrdinal num_levels, GlobalOrdinal coarsening_factor);
 

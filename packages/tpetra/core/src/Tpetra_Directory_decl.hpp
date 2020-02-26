@@ -120,13 +120,25 @@ namespace Tpetra {
   ///   already exists.  Epetra_Directory is an abstract interface
   ///   with one implementation (Epetra_BasicDirectory);
   ///   Tpetra::Directory is a concrete implementation.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
   template<class LocalOrdinal,
            class GlobalOrdinal,
            class Node>
+#else
+  template<class Node>
+#endif
   class Directory : public Teuchos::Describable {
   public:
+#ifndef TPETRA_ENABLE_TEMPLATE_ORDINALS
+    using LocalOrdinal = typename Tpetra::Map<>::local_ordinal_type;
+    using GlobalOrdinal = typename Tpetra::Map<>::global_ordinal_type;
+#endif
     //! Type of the Map specialization to give to the constructor.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef Map<LocalOrdinal, GlobalOrdinal, Node> map_type;
+#else
+    typedef Map<Node> map_type;
+#endif
 
     //! @name Constructors/Destructor.
     //@{
@@ -267,7 +279,11 @@ namespace Tpetra {
     ///   implementations, depending on characteristics of the input
     ///   Map (e.g., locally replicated or globally distributed,
     ///   contiguous or noncontiguous).
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     typedef ::Tpetra::Details::Directory<LocalOrdinal, GlobalOrdinal, Node> base_type;
+#else
+    typedef ::Tpetra::Details::Directory<Node> base_type;
+#endif
 
     /// \brief Implementation of this object.
     ///
@@ -276,13 +292,26 @@ namespace Tpetra {
     const base_type* impl_;
 
     //! Copy constructor: declared private but not defined on purpose.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Directory (const Directory<LocalOrdinal, GlobalOrdinal, Node>& directory);
+#else
+    Directory (const Directory<Node>& directory);
+#endif
 
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     template <class LO, class GO, class N> friend class Directory;
+#else
+    template <class N> friend class Directory;
+#endif
 
     //! Assignment operator: declared private but not defined on purpose.
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
     Directory<LocalOrdinal, GlobalOrdinal, Node>&
     operator= (const Directory<LocalOrdinal, GlobalOrdinal, Node>& source);
+#else
+    Directory<Node>&
+    operator= (const Directory<Node>& source);
+#endif
   }; // class Directory
 
 } // namespace Tpetra

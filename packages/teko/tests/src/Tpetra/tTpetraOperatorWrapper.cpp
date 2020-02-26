@@ -141,40 +141,68 @@ bool tTpetraOperatorWrapper::test_functionality(int verbosity,std::ostream & os)
    FGallery.Set("nx",nx);
    FGallery.Set("ny",ny);
    Epetra_CrsMatrix & epetraF = FGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraF = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraF),comm_tpetra);
+#else
+   RCP<const Tpetra::CrsMatrix<ST,NT> > tpetraF = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraF),comm_tpetra);
+#endif
 
    Trilinos_Util::CrsMatrixGallery CGallery("laplace_2d",comm_epetra,false);
    CGallery.Set("nx",nx);
    CGallery.Set("ny",ny);
    Epetra_CrsMatrix & epetraC = CGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraC = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraC),comm_tpetra);
+#else
+   RCP<const Tpetra::CrsMatrix<ST,NT> > tpetraC = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraC),comm_tpetra);
+#endif
 
    Trilinos_Util::CrsMatrixGallery BGallery("diag",comm_epetra,false);
    BGallery.Set("nx",nx*ny);
    BGallery.Set("a",5.0);
    Epetra_CrsMatrix & epetraB = BGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraB = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraB),comm_tpetra);
+#else
+   RCP<const Tpetra::CrsMatrix<ST,NT> > tpetraB = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraB),comm_tpetra);
+#endif
 
    Trilinos_Util::CrsMatrixGallery BtGallery("diag",comm_epetra,false);
    BtGallery.Set("nx",nx*ny);
    BtGallery.Set("a",3.0);
    Epetra_CrsMatrix & epetraBt = BtGallery.GetMatrixRef();
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    RCP<const Tpetra::CrsMatrix<ST,LO,GO,NT> > tpetraBt = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraBt),comm_tpetra);
+#else
+   RCP<const Tpetra::CrsMatrix<ST,NT> > tpetraBt = Teko::TpetraHelpers::epetraCrsMatrixToTpetra(rcpFromRef(epetraBt),comm_tpetra);
+#endif
 
    // load'em up in a thyra operator
    TEST_MSG("   tTpetraOperatorWrapper::test_functionality: "
          << " Building block2x2 Thyra matrix ... wrapping in TpetraOperatorWrapper");
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const LinearOpBase<double> > A = Thyra::block2x2<double>(Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraF->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraF->getRangeMap()),tpetraF),
                                                                       Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraBt->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraBt->getRangeMap()),tpetraBt),
                                                                       Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraB->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraB->getRangeMap()),tpetraB),
                                                                       Thyra::constTpetraLinearOp<ST,LO,GO,NT>(Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraC->getDomainMap()),Thyra::tpetraVectorSpace<ST,LO,GO,NT>(tpetraC->getRangeMap()),tpetraC),"A");
+#else
+   const RCP<const LinearOpBase<double> > A = Thyra::block2x2<double>(Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraF->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraF->getRangeMap()),tpetraF),
+                                                                      Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraBt->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraBt->getRangeMap()),tpetraBt),
+                                                                      Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraB->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraB->getRangeMap()),tpetraB),
+                                                                      Thyra::constTpetraLinearOp<ST,NT>(Thyra::tpetraVectorSpace<ST,NT>(tpetraC->getDomainMap()),Thyra::tpetraVectorSpace<ST,NT>(tpetraC->getRangeMap()),tpetraC),"A");
+#endif
 
    // const RCP<Thyra::TpetraOperatorWrapper> epetra_A = rcp(new Thyra::TpetraOperatorWrapper(A));
    const RCP<Teko::TpetraHelpers::TpetraOperatorWrapper> tpetra_A = rcp(new Teko::TpetraHelpers::TpetraOperatorWrapper(A));
 
    // begin the tests!
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
    const RCP<const Tpetra::Map<LO,GO,NT> > & rangeMap  = tpetra_A->getRangeMap();
    const RCP<const Tpetra::Map<LO,GO,NT> >& domainMap = tpetra_A->getDomainMap();
+#else
+   const RCP<const Tpetra::Map<NT> > & rangeMap  = tpetra_A->getRangeMap();
+   const RCP<const Tpetra::Map<NT> >& domainMap = tpetra_A->getDomainMap();
+#endif
 
    // check to see that the number of global elements is correct
    TEST_EQUALITY(rangeMap->getGlobalNumElements(),(Tpetra::global_size_t) 2*nx*ny, 
@@ -221,7 +249,11 @@ bool tTpetraOperatorWrapper::test_functionality(int verbosity,std::ostream & os)
       LO off_1 = vv_1.globalOffset();
       
       // create its Tpetra counter part
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const RCP<Tpetra::Vector<ST,LO,GO,NT> > ev = rcp(new Tpetra::Vector<ST,LO,GO,NT>(tpetra_A->getDomainMap()));
+#else
+      const RCP<Tpetra::Vector<ST,NT> > ev = rcp(new Tpetra::Vector<ST,NT>(tpetra_A->getDomainMap()));
+#endif
       ms->copyThyraIntoTpetra(tv,*ev);
 
       // compare tv to ev!
@@ -252,7 +284,11 @@ TEST_MSG("domainMap->getNodeNumElements() = " << domainMap->getNodeNumElements()
    //////////////////////////////////////////////////////////////
    {
       // create an Tpetra vector
+#ifdef TPETRA_ENABLE_TEMPLATE_ORDINALS
       const RCP<Tpetra::Vector<ST,LO,GO,NT> > ev = rcp(new Tpetra::Vector<ST,LO,GO,NT>(tpetra_A->getDomainMap()));
+#else
+      const RCP<Tpetra::Vector<ST,NT> > ev = rcp(new Tpetra::Vector<ST,NT>(tpetra_A->getDomainMap()));
+#endif
       ev->randomize();
 
       // create its thyra counterpart
