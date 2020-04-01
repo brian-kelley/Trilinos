@@ -605,6 +605,33 @@ StackedTimer::printLevel (std::string prefix, int print_level, std::ostream &os,
   return total_time;
 }
 
+static void printXMLEscapedString(ostream& os, const std::string& str)
+{
+  for(char c : str)
+  {
+    switch(c)
+    {
+      case '"':
+        os << "&quot;";
+        break;
+      case '\'':
+        os << "&apos;";
+        break;
+      case '<':
+        os << "&lt;";
+        break;
+      case '>':
+        os << "&gt;";
+        break;
+      case '&':
+        os << "&amp;";
+        break;
+      default:
+        os << c;
+    }
+  }
+}
+
 double
 StackedTimer::printLevelXML (std::string prefix, int print_level, std::ostream& os, std::vector<bool> &printed, double parent_time)
 {
@@ -626,7 +653,9 @@ StackedTimer::printLevelXML (std::string prefix, int print_level, std::ostream& 
     for (int j = 0; j < indent; j++)
       os << " ";
     bool leaf = split_names.first.length() > 0;
-    os << "<timing name=\"" << split_names.second << "\" value=\"" << sum_[i]/active_[i] << "\"";
+    os << "<timing name=\"";
+    printXMLEscapedString(os, split_names.second);
+    os << "\" value=\"" << sum_[i]/active_[i] << "\"";
     if(leaf)
       os << "/>\n";
     else
@@ -703,12 +732,22 @@ StackedTimer::reportXML(std::ostream &os, const std::string& datestamp, const st
 std::string
 StackedTimer::reportWatchrXML(const std::string& name, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
   const char* rawWatchrDir = getenv("WATCHR_PERF_DIR");
-  if(!rawWatchrDir)
+  const char* rawBuildPrefix = getenv("WATCHR_BUILD_PREFIX");
+  if(!rawWatchrDir || !rawBuildPrefix)
+  {
+    std::cerr << "*** Warning: to call StackedTimer::reportWatchrXML(),\n";
+    std::cerr << "environment variables WATCHR_PERF_DIR and WATCHR_BUILD_PREFIX must be set.\n";
+    std::cerr << "No XML file will be produced.\n";
     return "";
+  }
   std::string watchrDir = rawWatchrDir;
+  std::string buildPrefix = rawBuildPrefix;
   if(!watchrDir.length())
   {
-    //Output directory has not been set, so don't produce output.
+    //Output directory is set but empty: still can't produce output.
+    std::cerr << "*** Warning: to call StackedTimer::reportWatchrXML(),\n";
+    std::cerr << "environment variable WATCHR_PERF_DIR must be set to the path of an existing directory.\n";
+    std::cerr << "No XML file will be produced.\n";
     return "";
   }
   std::string datestamp;

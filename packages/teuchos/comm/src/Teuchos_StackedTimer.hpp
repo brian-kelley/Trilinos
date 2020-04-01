@@ -663,7 +663,7 @@ public:
    * Dump all the data from all the MPI ranks to <code>$WATCHR_PERF_DIR/name_$DATESTAMP.xml</code>,
    *  if the environment variable WATCHR_PERF_DIR is defined and non-empty (otherwise, do nothing).
    *  DATESTAMP is calculated from the current UTC time, in the format YYYY_MM_DD.
-   * @param [in] name - Name of performance test
+   * @param [in] name - Name of performance test (will be included in top-level title, and also the filename)
    * @param [in] comm - Teuchos comm pointer
    * @return If on rank 0 and output was produced, the complete output filename. Otherwise the empty string.
    */
