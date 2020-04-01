@@ -730,7 +730,7 @@ StackedTimer::reportXML(std::ostream &os, const std::string& datestamp, const st
 }
 
 std::string
-StackedTimer::reportWatchrXML(const std::string& name, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
+StackedTimer::reportWatchrXML(const std::string& testName, Teuchos::RCP<const Teuchos::Comm<int> > comm) {
   const char* rawWatchrDir = getenv("WATCHR_PERF_DIR");
   const char* rawBuildPrefix = getenv("WATCHR_BUILD_PREFIX");
   if(!rawWatchrDir || !rawBuildPrefix)
@@ -750,6 +750,10 @@ StackedTimer::reportWatchrXML(const std::string& name, Teuchos::RCP<const Teucho
     std::cerr << "No XML file will be produced.\n";
     return "";
   }
+  //buildPrefix is allowed to be empty
+  //Make a version of buildPrefixFname without spaces, for use in filenames
+  std::string buildPrefixFname = buildPrefix;
+  std::replace(buildPrefixFname.begin(), buildPrefixFname.end(), ' ', '_');
   std::string datestamp;
   std::string timestamp;
   {
@@ -763,6 +767,8 @@ StackedTimer::reportWatchrXML(const std::string& name, Teuchos::RCP<const Teucho
     strftime(buf, 256, "%FT%H:%M:%S", tstruct);
     timestamp = buf;
   }
+  //Prepend the build prefix to the top-level timer name
+  //This will appear in the chart title on the main Jenkins page
   flatten();
   merge(comm);
   OutputOptions defaultOptions;
@@ -770,12 +776,13 @@ StackedTimer::reportWatchrXML(const std::string& name, Teuchos::RCP<const Teucho
   std::string fullFile;
   //only open the file on rank 0
   if(rank(*comm) == 0) {
-    fullFile = watchrDir + '/' + name + '_' + datestamp + ".xml";
+    fullFile = watchrDir + '/' + buildPrefixFname + '_' + testName + '_' + datestamp + ".xml";
     std::ofstream os(fullFile);
     std::vector<bool> printed(flat_names_.size(), false);
     os << "<?xml version=\"1.0\"?>\n";
     os << "<performance-report date=\"" << timestamp << "\" name=\"nightly_run_" << datestamp << "\" time-units=\"seconds\">\n";
-    printLevelXML("", 0, os, printed, 0.0);
+    std::string generalPrefix = buildPrefix + ": " + name + ' ';
+    printLevelXML(generalPrefix, 0, os, printed, 0.0);
     os << "</performance-report>\n";
   }
   return fullFile;
