@@ -82,6 +82,7 @@
 #include <Kokkos_HIP.hpp>
 #endif
 
+#include <Kokkos_LogicalMemorySpace.hpp>
 #include <Kokkos_AnonymousSpace.hpp>
 #include <Kokkos_Pair.hpp>
 #include <Kokkos_MemoryPool.hpp>

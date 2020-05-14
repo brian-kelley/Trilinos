@@ -161,7 +161,7 @@ namespace {
     // The typedef below is also a test.  BlockCrsMatrix must have
     // this typedef, or this test won't compile.
     typedef typename BCM::little_block_type little_block_type;
-    typedef typename BV::little_vec_type little_vec_type;
+    typedef typename BV::little_vec_type::HostMirror little_vec_type;
     typedef Teuchos::ScalarTraits<Scalar> STS;
     typedef typename STS::magnitudeType MT;
 
@@ -1341,7 +1341,7 @@ namespace {
     const LO myMinLclMeshRow = Y.getMap ()->getMinLocalIndex ();
     const LO myMaxLclMeshRow = Y.getMap ()->getMaxLocalIndex ();
     for (LO lclMeshRow = myMinLclMeshRow; lclMeshRow <= myMaxLclMeshRow; ++lclMeshRow) {
-      typename BMV::little_vec_type Y_lcl = Y.getLocalBlock (lclMeshRow, 0);
+      typename BMV::little_vec_type::HostMirror Y_lcl = Y.getLocalBlock (lclMeshRow, 0);
       for (LO i = 0; i < blockSize; ++i) {
         TEST_EQUALITY( static_cast<Scalar> (Y_lcl(i)), requiredValue );
       }
@@ -1352,7 +1352,7 @@ namespace {
     Kokkos::fence ();
 
     for (LO lclMeshRow = myMinLclMeshRow; lclMeshRow <= myMaxLclMeshRow; ++lclMeshRow) {
-      typename BMV::little_vec_type Y_lcl = Y.getLocalBlock (lclMeshRow, 0);
+      typename BMV::little_vec_type::HostMirror Y_lcl = Y.getLocalBlock (lclMeshRow, 0);
       for (LO i = 0; i < blockSize; ++i) {
         TEST_EQUALITY( static_cast<Scalar> (Y_lcl(i)), STS::zero () );
       }
@@ -1507,7 +1507,7 @@ namespace {
     const LO myMaxLclMeshRow = Y.getMap ()->getMaxLocalIndex ();
     bool valsMatch = true;
     for (LO lclMeshRow = myMinLclMeshRow; lclMeshRow <= myMaxLclMeshRow; ++lclMeshRow) {
-      typename BMV::little_vec_type Y_lcl = Y.getLocalBlock (lclMeshRow, 0);
+      typename BMV::little_vec_type::HostMirror Y_lcl = Y.getLocalBlock (lclMeshRow, 0);
       for (LO i = 0; i < blockSize; ++i) {
         if (static_cast<Scalar> (Y_lcl(i)) != requiredValue) {
           valsMatch = false;
@@ -1935,7 +1935,7 @@ namespace {
 
     for (LO lclRowInd = meshRowMap.getMinLocalIndex ();
          lclRowInd <= meshRowMap.getMaxLocalIndex (); ++lclRowInd) {
-      typename BV::little_vec_type xlcl = solution.getLocalBlock (lclRowInd);
+      typename BV::little_vec_type::HostMirror xlcl = solution.getLocalBlock (lclRowInd);
       ST* x = reinterpret_cast<ST*> (xlcl.data ());
       out << "row = " << lclRowInd << endl;
       for (LO k = 0; k < blockSize; ++k) {
@@ -1948,7 +1948,7 @@ namespace {
                                STS::one (), Tpetra::Backward);
     for (LO lclRowInd = meshRowMap.getMinLocalIndex ();
          lclRowInd <= meshRowMap.getMaxLocalIndex (); ++lclRowInd) {
-      typename BV::little_vec_type xlcl = solution.getLocalBlock (lclRowInd);
+      typename BV::little_vec_type::HostMirror xlcl = solution.getLocalBlock (lclRowInd);
       ST* x = reinterpret_cast<ST*> (xlcl.data ());
       for (LO k = 0; k < blockSize; ++k) {
         TEST_FLOATING_EQUALITY( x[k], exactSolution[k], tol );
@@ -2133,7 +2133,7 @@ namespace {
     for (LO lclRowInd = meshRowMap.getMinLocalIndex ();
          lclRowInd <= meshRowMap.getMaxLocalIndex(); ++lclRowInd) {
       const LO rowOffset = lclRowInd - meshRowMap.getMinLocalIndex ();
-      typename BV::little_vec_type xlcl = solution.getLocalBlock (lclRowInd);
+      typename BV::little_vec_type::HostMirror xlcl = solution.getLocalBlock (lclRowInd);
       ST* x = reinterpret_cast<ST*> (xlcl.data ());
       for (LO k = 0; k < blockSize; ++k) {
         TEST_FLOATING_EQUALITY( x[k], exactSolution[rowOffset], tol );
@@ -2200,7 +2200,7 @@ namespace {
     for (LO lclRowInd = meshRowMap.getMinLocalIndex ();
          lclRowInd <= meshRowMap.getMaxLocalIndex(); ++lclRowInd) {
       const LO rowOffset = lclRowInd - meshRowMap.getMinLocalIndex ();
-      typename BV::little_vec_type xlcl = solution.getLocalBlock (lclRowInd);
+      typename BV::little_vec_type::HostMirror xlcl = solution.getLocalBlock (lclRowInd);
       ST* x = reinterpret_cast<ST*> (xlcl.data ());
       for (LO k = 0; k < blockSize; ++k) {
         TEST_FLOATING_EQUALITY( x[k], exactSolution[rowOffset], tol );

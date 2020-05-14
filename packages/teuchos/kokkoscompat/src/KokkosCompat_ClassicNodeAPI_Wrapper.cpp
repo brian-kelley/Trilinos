@@ -31,6 +31,12 @@ namespace Kokkos {
     std::string KokkosDeviceWrapperNode<Kokkos::Cuda>::name() {
       return std::string("Cuda/Wrapper");
     }
+
+    template<>
+    std::string KokkosDeviceWrapperNode<Kokkos::Serial, FakeCudaSpace>::name() {
+      return std::string("FAKE_Cuda/Wrapper");
+    }
+
 #endif // KOKKOS_ENABLE_CUDA
 
   } // namespace Compat

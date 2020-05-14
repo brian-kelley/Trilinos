@@ -561,12 +561,6 @@ namespace TSQR {
         if(actor.wants_device_memory()) {
           Scalar* A_copy_d_raw =
             reinterpret_cast<Scalar*>(A_copy_d.data());
-          TEUCHOS_ASSERT( nrows == 0 || ncols == 0 ||
-                          A_copy_d_raw != nullptr );
-          TEUCHOS_ASSERT( size_t(A_copy_d.extent(0)) ==
-                          size_t(nrows) );
-          TEUCHOS_ASSERT( size_t(A_copy_d.extent(1)) ==
-                          size_t(ncols) );
           auto result =
             actor.factor(nrows, ncols, A_copy_d_raw,
                          A_copy_d.stride(1),
@@ -896,12 +890,6 @@ namespace TSQR {
           Scalar* A_copy_d_raw =
             reinterpret_cast<Scalar*>(A_copy_d.data());
           const int A_copy_d_lda(A_copy_d.stride(1));
-          TEUCHOS_ASSERT( nrows == 0 || ncols == 0 ||
-                          A_copy_d_raw != nullptr );
-          TEUCHOS_ASSERT( size_t(A_copy_d.extent(0)) ==
-                          size_t(nrows) );
-          TEUCHOS_ASSERT( size_t(A_copy_d.extent(1)) ==
-                          size_t(ncols) );
           return lapack.compute_QR_lwork(nrows, ncols, A_copy_d_raw,
                                          A_copy_d_lda);
         }

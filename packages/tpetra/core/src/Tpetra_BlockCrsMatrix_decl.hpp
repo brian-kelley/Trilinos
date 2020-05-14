@@ -880,6 +880,7 @@ private:
 
   template<class Device>
   struct is_cuda {
+    /*
 #if defined(KOKKOS_ENABLE_CUDA)
     // CudaHostPinnedSpace::execution_space ==
     // HostSpace::execution_space.  That's OK; it's host memory, that
@@ -891,6 +892,8 @@ private:
 #else
     static constexpr bool value = false;
 #endif // defined(KOKKOS_ENABLE_CUDA)
+*/
+    static constexpr bool value = true;
   };
 
 public:

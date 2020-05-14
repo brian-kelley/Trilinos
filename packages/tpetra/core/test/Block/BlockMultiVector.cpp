@@ -288,7 +288,7 @@ namespace {
     // has 48 rows on each process: 12 mesh points, and 4 degrees of
     // freedom per mesh point ("block size").  Rows 20-23 thus
     // correspond to local mesh point 5.
-    typedef typename BMV::little_vec_type little_vec_type;
+    typedef typename BMV::little_vec_type::HostMirror little_vec_type;
     little_vec_type X_5_1 = X.getLocalBlock (5, colToModify);
 
     // All entries of X_5_1 must be zero.  First make a block with all
@@ -380,7 +380,7 @@ namespace {
     using Teuchos::reduceAll;
     using Teuchos::RCP;
     typedef Tpetra::BlockMultiVector<Scalar, LO, GO, Node> BMV;
-    typedef typename BMV::little_vec_type little_vec_type;
+    typedef typename BMV::little_vec_type::HostMirror little_vec_type;
     typedef Tpetra::Map<LO, GO, Node> map_type;
     typedef Tpetra::Import<LO, GO, Node> import_type;
     typedef Tpetra::global_size_t GST;

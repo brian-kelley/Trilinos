@@ -353,7 +353,7 @@ public:
   /// different types to implement little_vec_type.  This gives us a
   /// porting strategy to move from "classic" Tpetra to the Kokkos
   /// refactor version.
-  little_vec_type getLocalBlock (const LO localRowIndex) const;
+  typename little_vec_type::HostMirror getLocalBlock (const LO localRowIndex) const;
   //@}
 };
 

@@ -1028,9 +1028,11 @@ namespace TSQR {
               //
               auto factorOutput = [&] () {
                 if (tsqr->wants_device_memory()) {
-                  Scalar* A_raw = contiguousCacheBlocks ?
-                    reinterpret_cast<Scalar*>(A_copy_d.data()) :
-                    reinterpret_cast<Scalar*>(A_d.data());
+                  Scalar* A_raw;
+                  if(contiguousCacheBlocks)
+                    A_raw = (Scalar*) A_copy_d.data();
+                  else
+                    A_raw = (Scalar*) A_d.data();
                   auto result =
                     tsqr->factor(numRowsLocal, numCols,
                                  A_raw, A_copy_d.stride(1),
@@ -1040,9 +1042,11 @@ namespace TSQR {
                   return result;
                 }
                 else {
-                  Scalar* A_raw = contiguousCacheBlocks ?
-                    A_copy.data() :
-                    A_local.data();
+                  Scalar* A_raw;
+                  if(contiguousCacheBlocks)
+                    A_raw = (Scalar*) A_copy.data();
+                  else
+                    A_raw = (Scalar*) A_local.data();
                   return tsqr->factor(numRowsLocal, numCols,
                                       A_raw, A_copy.stride(1),
                                       R.data(), R.stride(1),

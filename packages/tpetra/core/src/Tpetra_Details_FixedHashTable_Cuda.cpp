@@ -53,12 +53,14 @@ namespace Details {
 
   TPETRA_ETI_MANGLING_TYPEDEFS()
 
-  typedef Kokkos::Device<Kokkos::Cuda, Kokkos::CudaSpace> cuda_device_type;
+  typedef Kokkos::Device<Kokkos::Serial, Kokkos::Compat::FakeCudaSpace> fake_cuda_device_type;
 
+  typedef Kokkos::Device<Kokkos::Cuda, Kokkos::CudaSpace> cuda_device_type;
   typedef Kokkos::Device<Kokkos::Cuda, Kokkos::CudaUVMSpace> cuda_uvm_device_type;
 
 #define TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT_CUDA( LO, GO ) \
-  TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT( LO, GO, cuda_device_type )
+  TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT( LO, GO, cuda_device_type ) \
+  TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT( LO, GO, fake_cuda_device_type )
 
   TPETRA_INSTANTIATE_LG( TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT_CUDA )
 
@@ -75,7 +77,10 @@ namespace Details {
 #ifndef HAVE_TPETRA_INST_INT_INT
 #  define TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT_CUDA_INT( LO ) \
   TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT( LO, int, cuda_device_type ) \
+  TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT( LO, int, fake_cuda_device_type ) \
   TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT( LO, int, cuda_uvm_device_type )
+
+  //BMK: hacking for debug memspace: fake CUDA and fake UVM are treated as the same, so don't duplicate instantiations
 
   TPETRA_INSTANTIATE_L( TPETRA_DETAILS_FIXEDHASHTABLE_INSTANT_CUDA_INT )
 

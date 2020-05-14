@@ -3,6 +3,7 @@
 
 #include "Teuchos_config.h"
 #include "TeuchosKokkosCompat_config.h"
+#include <Kokkos_LogicalMemorySpace.hpp>
 #include "Kokkos_Core.hpp"
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -52,7 +53,15 @@ public:
 };
 
 #ifdef KOKKOS_ENABLE_CUDA
-  typedef KokkosDeviceWrapperNode<Kokkos::Cuda> KokkosCudaWrapperNode;
+  //typedef KokkosDeviceWrapperNode<Kokkos::Cuda> KokkosCudaWrapperNode;
+
+  //define fake CUDA device: Serial execution space, and debug memory space with HostSpace underlying
+  struct DebugSpaceNamer
+  {
+    constexpr static const char* name() { return "FakeCuda"; }
+  };
+  using FakeCudaSpace = Kokkos::LogicalMemorySpace<DebugSpaceNamer, Kokkos::HostSpace, Kokkos::Serial, false>;
+  typedef KokkosDeviceWrapperNode<Kokkos::Serial, FakeCudaSpace> KokkosCudaWrapperNode;
 #endif
 
 #ifdef KOKKOS_ENABLE_OPENMP

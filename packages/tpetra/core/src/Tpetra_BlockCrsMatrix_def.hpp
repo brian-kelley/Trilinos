@@ -1073,6 +1073,7 @@ public:
                     const ESweepDirection direction) const
   {
     using Kokkos::ALL;
+    using little_host_vec_type = typename little_vec_type::HostMirror;
     const impl_scalar_type zero =
       Kokkos::Details::ArithTraits<impl_scalar_type>::zero ();
     const impl_scalar_type one =
@@ -1088,7 +1089,7 @@ public:
     const LO blockSize = getBlockSize ();
     Teuchos::Array<impl_scalar_type> localMem (blockSize);
     Teuchos::Array<impl_scalar_type> localMat (blockSize*blockSize);
-    little_vec_type X_lcl (localMem.getRawPtr (), blockSize);
+    little_host_vec_type X_lcl (localMem.getRawPtr (), blockSize);
 
     // FIXME (mfh 12 Aug 2014) This probably won't work if LO is unsigned.
     LO rowBegin = 0, rowEnd = 0, rowStride = 0;
@@ -1117,7 +1118,7 @@ public:
       for (LO lclRow = rowBegin; lclRow != rowEnd; lclRow += rowStride) {
         const LO actlRow = lclRow - 1;
 
-        little_vec_type B_cur = B.getLocalBlock (actlRow, 0);
+        little_host_vec_type B_cur = B.getLocalBlock (actlRow, 0);
         COPY (B_cur, X_lcl);
         SCAL (static_cast<impl_scalar_type> (omega), X_lcl);
 
@@ -1127,7 +1128,7 @@ public:
           const LO meshCol = indHost_[absBlkOff];
           const_little_block_type A_cur =
             getConstLocalBlockFromAbsOffset (absBlkOff);
-          little_vec_type X_cur = X.getLocalBlock (meshCol, 0);
+          little_host_vec_type X_cur = X.getLocalBlock (meshCol, 0);
 
           // X_lcl += alpha*A_cur*X_cur
           const Scalar alpha = meshCol == actlRow ? one_minus_omega : minus_omega;
@@ -1139,7 +1140,7 @@ public:
         // unmanaged already, so we don't have to take unmanaged
         // subviews first.
         auto D_lcl = Kokkos::subview (D_inv, actlRow, ALL (), ALL ());
-        little_vec_type X_update = X.getLocalBlock (actlRow, 0);
+        little_host_vec_type X_update = X.getLocalBlock (actlRow, 0);
         FILL (X_update, zero);
         GEMV (one, D_lcl, X_lcl, X_update); // overwrite X_update
       } // for each local row of the matrix
@@ -1149,7 +1150,7 @@ public:
         for (LO j = 0; j < numVecs; ++j) {
           LO actlRow = lclRow-1;
 
-          little_vec_type B_cur = B.getLocalBlock (actlRow, j);
+          little_host_vec_type B_cur = B.getLocalBlock (actlRow, j);
           COPY (B_cur, X_lcl);
           SCAL (static_cast<impl_scalar_type> (omega), X_lcl);
 
@@ -1159,7 +1160,7 @@ public:
             const LO meshCol = indHost_[absBlkOff];
             const_little_block_type A_cur =
               getConstLocalBlockFromAbsOffset (absBlkOff);
-            little_vec_type X_cur = X.getLocalBlock (meshCol, j);
+            little_host_vec_type X_cur = X.getLocalBlock (meshCol, j);
 
             // X_lcl += alpha*A_cur*X_cur
             const Scalar alpha = meshCol == actlRow ? one_minus_omega : minus_omega;

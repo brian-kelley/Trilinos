@@ -88,7 +88,7 @@ namespace DefaultTypes {
   /// \typedef execution_space
   /// \brief Default Tpetra execution space.
 #if defined(HAVE_TPETRA_DEFAULTNODE_CUDAWRAPPERNODE)
-  using execution_space = ::Kokkos::Cuda;
+  using execution_space = ::Kokkos::Serial;
 #elif defined(HAVE_TPETRA_DEFAULTNODE_OPENMPWRAPPERNODE)
   using execution_space = ::Kokkos::OpenMP;
 #elif defined(HAVE_TPETRA_DEFAULTNODE_THREADSWRAPPERNODE)
@@ -100,13 +100,15 @@ namespace DefaultTypes {
 #endif
 
   //! Default value of Node template parameter.
-  using node_type = ::Kokkos::Compat::KokkosDeviceWrapperNode<execution_space>;
+  //using node_type = ::Kokkos::Compat::KokkosDeviceWrapperNode<execution_space>;
+  using node_type = ::Kokkos::Compat::KokkosCudaWrapperNode;
 
   /// \brief Memory space used for MPI communication buffers.
   ///
   /// See #1088 for why this is not just ExecutionSpace::memory_space.
-  template<class ExecutionSpace>
-  using comm_buffer_memory_space =
+  template<class Device>
+  using comm_buffer_memory_space = typename Device::memory_space;
+  /*
 #ifdef KOKKOS_ENABLE_CUDA
     typename std::conditional<
       std::is_same<typename ExecutionSpace::execution_space, Kokkos::Cuda>::value,
@@ -115,6 +117,7 @@ namespace DefaultTypes {
 #else
     typename ExecutionSpace::memory_space;
 #endif // KOKKOS_ENABLE_CUDA
+*/
 
 } // namespace DefaultTypes
 
