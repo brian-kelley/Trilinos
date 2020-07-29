@@ -35,17 +35,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Questions? Contact Michael A. Heroux (maherou@sandia.gov)
+// Questions? Contact Brian Kelley (bmkelle@sandia.gov)
 //
 // ***********************************************************************
 //@HEADER
 */
-
-#ifndef _build_problem_hpp_
-#define _build_problem_hpp_
-
-#include <string>
-#include <sstream>
 
 #include "Teuchos_ParameterList.hpp"
 #include "Teuchos_RefCountPtr.hpp"
@@ -55,11 +49,36 @@
 #include "Ifpack2_BorderedOperator.hpp"
 #include "Ifpack2_Preconditioner.hpp"
 
+#include "Galeri_XpetraParameters.hpp"
+#include "Galeri_XpetraProblemFactory.hpp"
+#include "Galeri_XpetraUtils.hpp"
+#include "Galeri_XpetraMaps.hpp"
+
+#include "AztecOO.h"
+
 #include "BelosLinearProblem.hpp"
 #include "BelosTpetraAdapter.hpp"
 
-#include "read_matrix.hpp"
-#include "build_precond.hpp"
+void process_command_line(
+    bool& printedHelp,
+    std::string& galeri_xml,
+    std::string& aztec_xml,
+    std::string& belos_xml,
+    int argc,
+    char*argv[])
+{
+  Teuchos::CommandLineProcessor cmdp(false,true);
+  cmdp.setOption("galeri_xml", &galeri_xml, "Galeri XML Parameters file");
+  cmdp.setOption("aztec_xml", &aztec_xml, "AztecOO XML Parameters file");
+  cmdp.setOption("belos_xml", &belos_xml, "Belos XML Parameters file");
+  const auto result = cmdp.parse (argc, argv);
+  if (result == Teuchos::CommandLineProcessor::PARSE_HELP_PRINTED) {
+    printedHelp = true;
+  }
+  else if (result == Teuchos::CommandLineProcessor::PARSE_ERROR) {
+    throw std::runtime_error ("Error parsing command-line.");
+  }
+}
 
 template< class Scalar,class LocalOrdinal,class GlobalOrdinal,class Node >
 Teuchos::RCP<Belos::LinearProblem<
@@ -221,6 +240,121 @@ build_problem (Teuchos::ParameterList& test_params,
   return build_problem_mm<Scalar,LO,GO,Node> (test_params, A, b, nullVec);
 }
 
+int main (int argc, char* argv[])
+{
+  Tpetra::ScopeGuard tpetraScope (&argc, &argv);
 
-#endif
+  bool success = true;
+
+  Teuchos::RCP<Teuchos::FancyOStream>
+    out = Teuchos::VerboseObjectBase::getDefaultOStream();
+
+  try {
+
+    Teuchos::Time timer("total");
+    timer.start();
+
+    Teuchos::RCP<const Teuchos::Comm<int> > comm =
+      Tpetra::getDefaultComm();
+
+    typedef double Scalar;
+    typedef Tpetra::Map<>::local_ordinal_type    LO;
+    typedef Tpetra::Map<>::global_ordinal_type   GO;
+    typedef Tpetra::Map<>::node_type             Node;
+    typedef Tpetra::MultiVector<Scalar,LO,GO>    TMV;
+    typedef Tpetra::Operator<Scalar,LO,GO>       TOP;
+    typedef Belos::LinearProblem<Scalar,TMV,TOP> BLinProb;
+    typedef Belos::SolverManager<Scalar,TMV,TOP> BSolverMgr;
+
+    //Just get one parameter from the command-line: the name of an xml file
+    //to get parameters from.
+
+    std::string galeriXML, aztecXML, belosXML;
+    bool printedHelp = false;
+    process_command_line (printedHelp, galeriXML, aztecXML, belosXML, argc, argv);
+    if (printedHelp) {
+      return EXIT_SUCCESS;
+    }
+
+    //Read the contents of the xml file into a ParameterList. That parameter list
+    //should specify a matrix-file and optionally which Belos solver to use, and
+    //which Ifpack2 preconditioner to use, etc. If there are sublists of parameters
+    //for Belos and Ifpack2, those will be passed to the respective destinations
+    //from within the build_problem and build_solver functions.
+
+    *out << "Every proc reading parameters from XML files: \n";
+    *out << galeriXML << "\n";
+    *out << aztecXML << "\n";
+    *out << belosXML << "\n";
+    Teuchos::ParameterList galeriParams =
+      Teuchos::ParameterXMLFileReader(galeriXML).getParameters();
+    Teuchos::ParameterList aztecParams =
+      Teuchos::ParameterXMLFileReader(aztecXML).getParameters();
+    Teuchos::ParameterList belosParams =
+      Teuchos::ParameterXMLFileReader(belosXML).getParameters();
+
+    //Use Galeri to generate both Epetra and Tpetra versions of the problems
+
+    Teuchos::RCP<BLinProb> problem =
+      build_problem<Scalar,LO,GO,Node>(test_params, comm);
+
+    //The build_solver function is located in build_solver.hpp:
+
+    Teuchos::RCP<BSolverMgr> solver = build_solver<Scalar,TMV,TOP>(test_params, problem);
+
+    Belos::ReturnType ret = solver->solve();
+
+    *out << "Converged in " << solver->getNumIters() << " iterations." << std::endl;
+
+    Teuchos::RCP<const TOP> prec = problem->getLeftPrec();
+    if (prec !=Teuchos::null) {
+      *out << "Preconditioner attributes:" << std::endl;
+      prec->describe (*out, Teuchos::VERB_LOW);
+    }
+
+    Teuchos::RCP<TMV> R = Teuchos::rcp(new TMV(*problem->getRHS()));
+    problem->computeCurrResVec(&*R, &*problem->getLHS(), &*problem->getRHS());
+    Teuchos::Array<Teuchos::ScalarTraits<Scalar>::magnitudeType> norms(R->getNumVectors());
+    R->norm2(norms);
+
+    if (norms.size() < 1) {
+      throw std::runtime_error("ERROR: norms.size()==0 indicates R->getNumVectors()==0.");
+    }
+
+    *out << "2-Norm of 0th residual vec: " << norms[0] << std::endl;
+    *out << "Achieved tolerance: " << solver->achievedTol() << std::endl;
+
+    //If the xml file specified a number of iterations to expect, then we will
+    //use that as a test pass/fail criteria.
+
+    if (test_params.isParameter("expectNumIters")) {
+      int expected_iters = 0;
+      Ifpack2::getParameter(test_params, "expectNumIters", expected_iters);
+      int actual_iters = solver->getNumIters();
+      if (ret == Belos::Converged && actual_iters <= expected_iters && norms[0] < 1.e-7) {
+      }
+      else {
+        success = false;
+        *out << "Actual iters("<<actual_iters
+             <<") > expected number of iterations ("
+             <<expected_iters<<"), or resid-norm(" << norms[0] << ") >= 1.e-7"<<std::endl;
+      }
+    }
+
+    timer.stop();
+    *out << "proc 0 total program time: " << timer.totalElapsedTime()
+         << std::endl;
+
+  }
+  TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success)
+
+  if (success) {
+    *out << "End Result: TEST PASSED\n";
+  }
+  else {
+    *out << "End Result: TEST FAILED\n";
+  }
+
+  return ( success ? 0 : 1 );
+}
 
