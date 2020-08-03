@@ -786,8 +786,10 @@ private:
   bool checkDiagEntries_ = false;
   //! Whether to use sparse-triangular solve instead of inner-iterations
   bool InnerSpTrsv_ = false;
-  //! For MTSGS, the cluster size (use point coloring if equal to 1)
+  //! For cluster GS/SGS, the cluster size (use point coloring if equal to 1)
   int clusterSize_ = 1;
+  //! For cluster GS/SGS, the apply algorithm to use: "[mixed] [permuted] range|team"
+  std::string clusterApplyAlgo_;
 
   //!Wheter the provided matrix is structurally symmetric or not.
   bool is_matrix_structurally_symmetric_ = false;

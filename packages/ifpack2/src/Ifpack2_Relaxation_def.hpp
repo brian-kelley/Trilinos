@@ -317,6 +317,16 @@ Relaxation<MatrixType>::getValidParameters () const
     const int cluster_size = 1;
     pl->set("relaxation: mtgs cluster size", cluster_size);
 
+    //The real default algorithm for cluster GS depends on the execution space
+    std::string cluster_algo;
+#ifdef KOKKOS_ENABLE_CUDA
+    if(std::is_same<typename node_type::execution_space, Kokkos::Cuda>::value)
+      cluster_algo = "mixed permuted team";
+    else
+#endif
+      cluster_algo = "permuted range";
+    pl->set("relaxation: mtgs cluster algorithm", cluster_algo);
+
     validParams_ = rcp_const_cast<const ParameterList> (pl);
   }
   return validParams_;
@@ -359,6 +369,10 @@ void Relaxation<MatrixType>::setParametersImpl (Teuchos::ParameterList& pl)
   int cluster_size = 1;
   if(pl.isParameter ("relaxation: mtgs cluster size")) //optional parameter
     cluster_size = pl.get<int> ("relaxation: mtgs cluster size");
+  std::string cluster_algo = "range";
+  if(pl.isParameter ("relaxation: mtgs cluster algorithm")) //optional parameter
+    cluster_algo = pl.get<std::string> ("relaxation: mtgs cluster algorithm");
+
 
   Teuchos::ArrayRCP<local_ordinal_type> localSmoothingIndices = pl.get<Teuchos::ArrayRCP<local_ordinal_type> >("relaxation: local smoothing indices");
 
@@ -377,6 +391,9 @@ void Relaxation<MatrixType>::setParametersImpl (Teuchos::ParameterList& pl)
   fixTinyDiagEntries_    = fixTinyDiagEntries;
   checkDiagEntries_      = checkDiagEntries;
   clusterSize_           = cluster_size;
+  for(size_t i = 0; i < cluster_algo.size(); i++)
+    cluster_algo[i] = tolower(cluster_algo[i]);
+  clusterApplyAlgo_      = cluster_algo;
   is_matrix_structurally_symmetric_ = is_matrix_structurally_symmetric;
   ifpack2_dump_matrix_ = ifpack2_dump_matrix;
   localSmoothingIndices_ = localSmoothingIndices;
@@ -703,7 +720,28 @@ void Relaxation<MatrixType>::initialize ()
         else if(this->clusterSize_ == 1)
           mtKernelHandle_->create_gs_handle ();
         else
-          mtKernelHandle_->create_gs_handle (KokkosSparse::CLUSTER_DEFAULT, this->clusterSize_);
+        {
+          //NOTE: clusterApplyAlgo_ has already been converted to all lower case
+          bool permuted = this->clusterApplyAlgo_.find("permuted") != std::string::npos;
+          bool team = this->clusterApplyAlgo_.find("team") != std::string::npos;
+          bool mixedPrec = this->clusterApplyAlgo_.find("mixed") != std::string::npos;
+          KokkosSparse::CGSAlgorithm algo = KokkosSparse::CGS_DEFAULT;
+          if(permuted)
+          {
+            if(team)
+              algo = KokkosSparse::CGS_PERMUTED_TEAM;
+            else
+              algo = KokkosSparse::CGS_PERMUTED_RANGE;
+          }
+          else
+          {
+            if(team)
+              algo = KokkosSparse::CGS_TEAM;
+            else
+              algo = KokkosSparse::CGS_RANGE;
+          }
+          mtKernelHandle_->create_gs_handle (algo, KokkosSparse::CLUSTER_DEFAULT, mixedPrec, this->clusterSize_);
+        }
       }
       local_matrix_type kcsr = crsMat->getLocalMatrix ();
       if (PrecType_ == Details::GS2 || PrecType_ == Details::SGS2) {

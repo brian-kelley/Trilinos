@@ -130,6 +130,9 @@ void getValidParameters(Teuchos::ParameterList& params)
   params.set("relaxation: banded container superdiagonals", -1);
   params.set("relaxation: banded container subdiagonals", -1);
   params.set("relaxation: mtgs cluster size", 1);
+  //note BMK: 'range' is not really the default algorithm. That depends on
+  //the execution space and is chosen when Relaxation parses parameters.
+  params.set("relaxation: mtgs cluster algorithm", "range");
 
   // Ifpack2_SPARSKIT.cpp
   // ap 25 May 2016: all SPARSKIT for backwards compatibility ONLY

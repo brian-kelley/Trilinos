@@ -562,15 +562,46 @@ public:
     return cgs;
   }
   void create_gs_handle(KokkosSparse::GSAlgorithm gs_algorithm = KokkosSparse::GS_DEFAULT) {
+    // Use point multicolor as the default
+    if(gs_algorithm == KokkosSparse::GS_DEFAULT)
+      gs_algorithm = KokkosSparse::GS_POINT;
     this->destroy_gs_handle();
     this->is_owner_of_the_gs_handle = true;
     // ---------------------------------------- //
     // Two-stage Gauss-Seidel
-    if (gs_algorithm == KokkosSparse::GS_TWOSTAGE)
-      this->gsHandle = new TwoStageGaussSeidelHandleType();
-    else
-      this->gsHandle = new PointGaussSeidelHandleType(gs_algorithm);
+    switch(gs_algorithm)
+    {
+      case KokkosSparse::GS_POINT:
+        this->gsHandle = new PointGaussSeidelHandleType();
+        break;
+      case KokkosSparse::GS_TWOSTAGE:
+        this->gsHandle = new TwoStageGaussSeidelHandleType();
+        break;
+      case KokkosSparse::GS_CLUSTER:
+        throw std::logic_error("Algorithm GS_CLUSTER requires more parameters.\nPlease use other overload of create_gs_handle().");
+      default:;
+    }
   }
+  void create_gs_handle(
+      KokkosSparse::CGSAlgorithm apply_algo,
+      KokkosSparse::CoarseningAlgorithm coarse_algo,
+      bool force_single_precision,
+      nnz_lno_t verts_per_cluster) {
+    this->destroy_gs_handle();
+    this->is_owner_of_the_gs_handle = true;
+    this->gsHandle = new ClusterGaussSeidelHandleType(apply_algo, coarse_algo, verts_per_cluster, force_single_precision);
+  }
+  void destroy_gs_handle(){
+    if (is_owner_of_the_gs_handle && this->gsHandle != NULL){
+      if (this->gsHandle->is_owner_of_coloring()){
+        this->destroy_graph_coloring_handle();
+      }
+      delete this->gsHandle;
+      this->gsHandle = NULL;
+    }
+  }
+
+
   // ---------------------------------------- //
   // Two-stage Gauss-Seidel handle
   TwoStageGaussSeidelHandleType *get_twostage_gs_handle() {
@@ -607,23 +638,8 @@ public:
         this->create_gs_sptrsvU_handle (SPTRSVAlgorithm::SEQLVLSCHD_TP1, nrows);
       }
     }
+    this->gsHandle = new PointGaussSeidelHandleType();
   }
-
-  void create_gs_handle(KokkosSparse::ClusteringAlgorithm clusterAlgo, nnz_lno_t verts_per_cluster) {
-    this->destroy_gs_handle();
-    this->is_owner_of_the_gs_handle = true;
-    this->gsHandle = new ClusterGaussSeidelHandleType(clusterAlgo, verts_per_cluster);
-  }
-  void destroy_gs_handle(){
-    if (is_owner_of_the_gs_handle && this->gsHandle != NULL){
-      if (this->gsHandle->is_owner_of_coloring()){
-        this->destroy_graph_coloring_handle();
-      }
-      delete this->gsHandle;
-      this->gsHandle = NULL;
-    }
-  }
-
 
   // ---------------------------------------- //
   // Handles for Classical GS (inner SpTRSV)
@@ -716,6 +732,10 @@ public:
   void set_sptrsv_diag_supernode_sizes (int unblocked, int blocked) {
     this->sptrsvHandle->set_supernode_size_unblocked(unblocked);
     this->sptrsvHandle->set_supernode_size_blocked(blocked);
+  }
+
+  void set_sptrsv_unit_diagonal(bool flag) {
+    this->sptrsvHandle->set_unit_diagonal (flag);
   }
 
   void set_sptrsv_merge_supernodes (bool flag) {
