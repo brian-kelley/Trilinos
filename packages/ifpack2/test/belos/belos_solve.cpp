@@ -47,6 +47,7 @@
 #include "Teuchos_ParameterXMLFileReader.hpp"
 #include "Teuchos_Time.hpp"
 #include "Teuchos_Comm.hpp"
+#include "Teuchos_StackedTimer.hpp"
 
 #include "Ifpack2_Parameters.hpp"
 
@@ -65,6 +66,11 @@ process_command_line (bool& printedHelp,
 
 int main (int argc, char* argv[])
 {
+  using Teuchos::RCP;
+  using Teuchos::rcp;
+  using Teuchos::StackedTimer;
+  using Teuchos::TimeMonitor;
+
   Tpetra::ScopeGuard tpetraScope (&argc, &argv);
 
   bool success = true;
@@ -73,6 +79,10 @@ int main (int argc, char* argv[])
     out = Teuchos::VerboseObjectBase::getDefaultOStream();
 
   try {
+#ifdef HAVE_IFPACK2_STACKED_TIMERS
+    RCP<StackedTimer> mainTimer = rcp(new StackedTimer("Belos+Ifpack2 Preconditioned Solve"));
+    TimeMonitor::setStackedTimer(mainTimer);
+#endif
 
     Teuchos::Time timer("total");
     timer.start();
@@ -166,6 +176,14 @@ int main (int argc, char* argv[])
     *out << "proc 0 total program time: " << timer.totalElapsedTime()
          << std::endl;
 
+#ifdef HAVE_IFPACK2_STACKED_TIMERS
+    if(comm->getRank() == 0)
+      std::cout << "\n\n\n";
+    mainTimer->stopBaseTimer();
+    StackedTimer::OutputOptions options;
+    options.print_warnings = false;
+    mainTimer->report(std::cout, comm, options);
+#endif
   }
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success)
 

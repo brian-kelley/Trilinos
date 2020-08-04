@@ -108,16 +108,22 @@ TRIBITS_ADD_OPTION_AND_DEFINE(
   )
 
 TRIBITS_ADD_OPTION_AND_DEFINE(
+  ${PACKAGE_NAME}_ENABLE_STACKED_TIMERS
+  HAVE_IFPACK2_STACKED_TIMERS
+  "Enables fine-grained nested Teuchos timers in some performance sensitive preconditioners"
+  OFF)
+
+TRIBITS_ADD_OPTION_AND_DEFINE(
   ${PACKAGE_NAME}_ENABLE_IFPACK2_TIMER_BARRIER
   HAVE_IFPACK2_TIMER_BARRIER
   "Enables a barrier in Ifpack2 Additive Schwarz so that timing information is useful"
-  NO )
+  OFF)
 
 TRIBITS_ADD_OPTION_AND_DEFINE(
   ${PACKAGE_NAME}_ENABLE_BlockTriDiContainer_Timers
   HAVE_IFPACK2_BLOCKTRIDICONTAINER_TIMERS
   "Turn on timers in Ifpack2::BlockTriDiContainer."
-  NO )
+  OFF)
 
 TRIBITS_ADD_OPTION_AND_DEFINE(
   ${PACKAGE_NAME}_ENABLE_BlockTriDiContainer_Small_Scalar

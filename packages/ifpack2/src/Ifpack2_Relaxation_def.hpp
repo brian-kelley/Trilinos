@@ -1956,6 +1956,7 @@ MTGaussSeidel (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_o
   using Teuchos::rcpFromRef;
   using Teuchos::rcp_const_cast;
   using Teuchos::as;
+  using Teuchos::TimeMonitor;
 
   typedef scalar_type Scalar;
   typedef local_ordinal_type LocalOrdinal;
@@ -2018,12 +2019,12 @@ MTGaussSeidel (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_o
     "the matrix has a nontrivial Export object.");
 
   RCP<const map_type> domainMap = crsMat->getDomainMap ();
-  RCP<const map_type> rangeMap = crsMat->getRangeMap ();
-  RCP<const map_type> rowMap = crsMat->getGraph ()->getRowMap ();
   RCP<const map_type> colMap = crsMat->getGraph ()->getColMap ();
+  RCP<const map_type> rowMap = crsMat->getGraph ()->getRowMap ();
 
 #ifdef HAVE_IFPACK2_DEBUG
   {
+    RCP<const map_type> rangeMap = crsMat->getRangeMap ();
     // The relation 'isSameAs' is transitive.  It's also a
     // collective, so we don't have to do a "shared" test for
     // exception (i.e., a global reduction on the test value).
@@ -2048,10 +2049,6 @@ MTGaussSeidel (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_o
       "Ifpack2::Relaxation::MTGaussSeidel requires that the domain Map and "
       "the range Map of the matrix be the same.");
   }
-#else
-  // Forestall any compiler warnings for unused variables.
-  (void) rangeMap;
-  (void) rowMap;
 #endif // HAVE_IFPACK2_DEBUG
 
   // Fetch a (possibly cached) temporary column Map multivector
@@ -2061,6 +2058,10 @@ MTGaussSeidel (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_o
   // requires that the row Map, domain Map, and range Map are all
   // the same, and that each process owns all of its own diagonal
   // entries of the matrix.
+#ifdef HAVE_IFPACK2_STACKED_TIMERS
+  //This timer lives to the end of the function
+  TimeMonitor mtgsTimer(*TimeMonitor::getNewTimer("MTGaussSeidel"));
+#endif
 
   RCP<MV> X_colMap;
   RCP<MV> X_domainMap;
@@ -2081,6 +2082,9 @@ MTGaussSeidel (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_o
       // No need to copy back to X at end.
     }
     else {
+#ifdef HAVE_IFPACK2_STACKED_TIMERS
+      TimeMonitor t(*TimeMonitor::getNewTimer("MTGaussSeidel: copy X to constant stride"));
+#endif
       // We must copy X into a constant stride multivector.
       // Just use the cached column Map multivector for that.
       // force=true means fill with zeros, so no need to fill
@@ -2116,6 +2120,9 @@ MTGaussSeidel (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_o
     }
   }
   else { // Column Map and domain Map are _not_ the same.
+#ifdef HAVE_IFPACK2_STACKED_TIMERS
+    TimeMonitor t(*TimeMonitor::getNewTimer("MTGaussSeidel: import X to col map"));
+#endif
     updateCachedMultiVector(colMap,as<size_t>(X.getNumVectors()));
     X_colMap = cachedMV_;
 
@@ -2185,6 +2192,9 @@ MTGaussSeidel (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_o
     B_in = rcpFromRef (B);
   }
   else {
+#ifdef HAVE_IFPACK2_STACKED_TIMERS
+    TimeMonitor t(*TimeMonitor::getNewTimer("MTGaussSeidel: copy B to constant stride"));
+#endif
     // Range Map and row Map are the same in this case, so we can
     // use the cached row Map multivector to store a constant stride
     // copy of B.
@@ -2219,47 +2229,60 @@ MTGaussSeidel (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_o
   //false as it was done up already, and we dont want to zero it in each sweep.
   bool zero_x_vector = false;
 
-  for (int sweep = 0; sweep < NumSweeps_; ++sweep) {
-    if (! importer.is_null () && sweep > 0) {
-      // We already did the first Import for the zeroth sweep above,
-      // if it was necessary.
-      X_colMap->doImport (*X_domainMap, *importer, Tpetra::CombineMode::INSERT);
+  for (int sweep = 0; sweep < NumSweeps_; ++sweep)
+  {
+    {
+#ifdef HAVE_IFPACK2_STACKED_TIMERS
+      TimeMonitor loopImportTimer(*TimeMonitor::getNewTimer("MTGaussSeidel: import X between sweeps"));
+#endif
+      if (! importer.is_null () && sweep > 0) {
+        // We already did the first Import for the zeroth sweep above,
+        // if it was necessary.
+        X_colMap->doImport (*X_domainMap, *importer, Tpetra::CombineMode::INSERT);
+      }
     }
-
-    if (direction == Tpetra::Symmetric) {
-      KokkosSparse::Experimental::symmetric_gauss_seidel_apply
-      (mtKernelHandle_.getRawPtr(), A_->getNodeNumRows(), A_->getNodeNumCols(),
-          kcsr.graph.row_map, kcsr.graph.entries, kcsr.values,
-          X_colMap->getLocalViewDevice(),
-          B_in->getLocalViewDevice(),
-          zero_x_vector, update_y_vector, DampingFactor_, 1);
+    {
+#ifdef HAVE_IFPACK2_STACKED_TIMERS
+      TimeMonitor localApplyTimer(*TimeMonitor::getNewTimer("MTGaussSeidel: local apply"));
+#endif
+      if (direction == Tpetra::Symmetric) {
+        KokkosSparse::Experimental::symmetric_gauss_seidel_apply
+        (mtKernelHandle_.getRawPtr(), A_->getNodeNumRows(), A_->getNodeNumCols(),
+            kcsr.graph.row_map, kcsr.graph.entries, kcsr.values,
+            X_colMap->getLocalViewDevice(),
+            B_in->getLocalViewDevice(),
+            zero_x_vector, update_y_vector, DampingFactor_, 1);
+      }
+      else if (direction == Tpetra::Forward) {
+        KokkosSparse::Experimental::forward_sweep_gauss_seidel_apply
+        (mtKernelHandle_.getRawPtr(), A_->getNodeNumRows(), A_->getNodeNumCols(),
+            kcsr.graph.row_map,kcsr.graph.entries, kcsr.values,
+            X_colMap->getLocalViewDevice (),
+            B_in->getLocalViewDevice(),
+            zero_x_vector, update_y_vector, DampingFactor_, 1);
+      }
+      else if (direction == Tpetra::Backward) {
+        KokkosSparse::Experimental::backward_sweep_gauss_seidel_apply
+        (mtKernelHandle_.getRawPtr(), A_->getNodeNumRows(), A_->getNodeNumCols(),
+            kcsr.graph.row_map,kcsr.graph.entries, kcsr.values,
+            X_colMap->getLocalViewDevice(),
+            B_in->getLocalViewDevice(),
+            zero_x_vector, update_y_vector, DampingFactor_, 1);
+      }
+      else {
+        TEUCHOS_TEST_FOR_EXCEPTION(
+            true, std::invalid_argument,
+            prefix << "The 'direction' enum does not have any of its valid "
+            "values: Forward, Backward, or Symmetric.");
+      }
+      update_y_vector = false;
     }
-    else if (direction == Tpetra::Forward) {
-      KokkosSparse::Experimental::forward_sweep_gauss_seidel_apply
-      (mtKernelHandle_.getRawPtr(), A_->getNodeNumRows(), A_->getNodeNumCols(),
-          kcsr.graph.row_map,kcsr.graph.entries, kcsr.values,
-          X_colMap->getLocalViewDevice (),
-          B_in->getLocalViewDevice(),
-          zero_x_vector, update_y_vector, DampingFactor_, 1);
-    }
-    else if (direction == Tpetra::Backward) {
-      KokkosSparse::Experimental::backward_sweep_gauss_seidel_apply
-      (mtKernelHandle_.getRawPtr(), A_->getNodeNumRows(), A_->getNodeNumCols(),
-          kcsr.graph.row_map,kcsr.graph.entries, kcsr.values,
-          X_colMap->getLocalViewDevice(),
-          B_in->getLocalViewDevice(),
-          zero_x_vector, update_y_vector, DampingFactor_, 1);
-    }
-    else {
-      TEUCHOS_TEST_FOR_EXCEPTION(
-          true, std::invalid_argument,
-          prefix << "The 'direction' enum does not have any of its valid "
-          "values: Forward, Backward, or Symmetric.");
-    }
-    update_y_vector = false;
   }
 
   if (copyBackOutput) {
+#ifdef HAVE_IFPACK2_STACKED_TIMERS
+    TimeMonitor t(*TimeMonitor::getNewTimer("MTGaussSeidel: copy back X"));
+#endif
     try {
       deep_copy (X , *X_domainMap); // Copy result back into X.
     } catch (std::exception& e) {

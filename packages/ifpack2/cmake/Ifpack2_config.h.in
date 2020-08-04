@@ -111,6 +111,9 @@
 /* Define if we have ShyLU FastILU (an inner preconditioner for Additive Schwarz) */
 #cmakedefine HAVE_IFPACK2_SHYLU_NODEFASTILU
 
+/* Define if we have stacked timers */
+#cmakedefine HAVE_IFPACK2_STACKED_TIMERS
+
 /*
  * If deprecated warnings are on, and the compiler supports them, then
  * define IFPACK2_DEPRECATED to emit deprecated warnings.  Otherwise,
