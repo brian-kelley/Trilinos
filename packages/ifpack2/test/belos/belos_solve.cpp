@@ -128,6 +128,7 @@ int main (int argc, char* argv[])
     *out << "Converged in " << solver->getNumIters() << " iterations." << std::endl;
 
     Teuchos::RCP<const TOP> prec = problem->getLeftPrec();
+
     if (prec !=Teuchos::null) {
       *out << "Preconditioner attributes:" << std::endl;
       prec->describe (*out, Teuchos::VERB_LOW);

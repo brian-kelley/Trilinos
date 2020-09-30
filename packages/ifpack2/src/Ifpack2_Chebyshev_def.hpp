@@ -362,6 +362,7 @@ describe (Teuchos::FancyOStream& out,
           const Teuchos::EVerbosityLevel verbLevel) const
 {
   using Teuchos::TypeNameTraits;
+  using Teuchos::OSTab;
   using std::endl;
 
   // Default verbosity level is VERB_LOW
@@ -378,7 +379,7 @@ describe (Teuchos::FancyOStream& out,
   // 'out'.  However, it does not actually print spaces to 'out'
   // unless operator<< gets called, so it's safe to use on all
   // processes.
-  Teuchos::OSTab tab0 (out);
+  OSTab tab0 (out);
   const int myRank = this->getComm ()->getRank ();
   if (myRank == 0) {
     // Output is a valid YAML dictionary.
@@ -386,11 +387,11 @@ describe (Teuchos::FancyOStream& out,
     out << "\"Ifpack2::Chebyshev\":" << endl;
   }
 
-  Teuchos::OSTab tab1 (out);
+  OSTab tab1 (out);
   if (vl >= Teuchos::VERB_LOW && myRank == 0) {
     out << "Template parameters:" << endl;
     {
-      Teuchos::OSTab tab2 (out);
+      OSTab tab2 (out);
       out << "Scalar: " << TypeNameTraits<scalar_type>::name () << endl
           << "LocalOrdinal: " << TypeNameTraits<local_ordinal_type>::name () << endl
           << "GlobalOrdinal: " << TypeNameTraits<global_ordinal_type>::name () << endl
@@ -408,6 +409,28 @@ describe (Teuchos::FancyOStream& out,
           << impl_.getMatrix ()->getGlobalNumRows () << ", "
           << impl_.getMatrix ()->getGlobalNumCols () << "]" << endl
           << "Global nnz: " << impl_.getMatrix ()->getGlobalNumEntries() << endl;
+    }
+    out << "Call counts and total times (in seconds): " << endl;
+    {
+      OSTab tab3 (out);
+      out << "initialize: " << endl;
+      {
+        OSTab tab4 (out);
+        out << "Call count: " << NumInitialize_ << endl;
+        out << "Total time: " << InitializeTime_ << endl;
+      }
+      out << "compute: " << endl;
+      {
+        OSTab tab4 (out);
+        out << "Call count: " << NumCompute_ << endl;
+        out << "Total time: " << ComputeTime_ << endl;
+      }
+      out << "apply: " << endl;
+      {
+        OSTab tab4 (out);
+        out << "Call count: " << NumApply_ << endl;
+        out << "Total time: " << ApplyTime_ << endl;
+      }
     }
   }
 }

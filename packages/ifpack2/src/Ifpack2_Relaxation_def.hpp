@@ -605,7 +605,7 @@ apply (const Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal
       }
     }
   }
-  ApplyTime_ += timer->totalElapsedTime ();
+  ApplyTime_ = timer->totalElapsedTime ();
   ++NumApply_;
 }
 
@@ -699,11 +699,20 @@ void Relaxation<MatrixType>::initialize ()
       this->mtKernelHandle_ = Teuchos::rcp (new mt_kernel_handle_type ());
       if (mtKernelHandle_->get_gs_handle () == nullptr) {
         if (PrecType_ == Details::GS2 || PrecType_ == Details::SGS2)
+        {
+          std::cout << "*** Setting up two-stage GS handle.\n";
           mtKernelHandle_->create_gs_handle (KokkosSparse::GS_TWOSTAGE);
+        }
         else if(this->clusterSize_ == 1)
+        {
+          std::cout << "*** Setting up point GS handle.\n";
           mtKernelHandle_->create_gs_handle ();
+        }
         else
-          mtKernelHandle_->create_gs_handle (KokkosSparse::CLUSTER_DEFAULT, this->clusterSize_);
+        {
+          std::cout << "*** Setting up cluster GS handle.\n";
+          mtKernelHandle_->create_gs_handle (KokkosSparse::CGS_PERMUTED_TEAM, KokkosSparse::CLUSTER_MIS2, true, this->clusterSize_);
+        }
       }
       local_matrix_type kcsr = crsMat->getLocalMatrix ();
       if (PrecType_ == Details::GS2 || PrecType_ == Details::SGS2) {
@@ -724,7 +733,7 @@ void Relaxation<MatrixType>::initialize ()
     }
   } // timing of initialize stops here
 
-  InitializeTime_ += timer->totalElapsedTime ();
+  InitializeTime_ = timer->totalElapsedTime ();
   ++NumInitialize_;
   isInitialized_ = true;
 }
@@ -928,7 +937,7 @@ void Relaxation<MatrixType>::computeBlockCrs ()
 #endif // HAVE_IFPACK2_DEBUG
   } // end TimeMonitor scope
 
-  ComputeTime_ += timer->totalElapsedTime ();
+  ComputeTime_ = timer->totalElapsedTime ();
   ++NumCompute_;
   IsComputed_ = true;
 }
@@ -1344,7 +1353,7 @@ void Relaxation<MatrixType>::compute ()
     }
   } // end TimeMonitor scope
 
-  ComputeTime_ += timer->totalElapsedTime ();
+  ComputeTime_ = timer->totalElapsedTime ();
   ++NumCompute_;
   IsComputed_ = true;
 }

@@ -42,7 +42,6 @@
 //@HEADER
 */
 
-
 #include <Kokkos_MemoryTraits.hpp>
 #include <Kokkos_Core.hpp>
 #include <KokkosKernels_Utils.hpp>
@@ -55,25 +54,41 @@
 
 namespace KokkosSparse{
 
-  enum GSAlgorithm{GS_DEFAULT, GS_PERMUTED, GS_TEAM, GS_CLUSTER, GS_TWOSTAGE};
+  enum GSAlgorithm{GS_DEFAULT, GS_POINT, GS_CLUSTER, GS_TWOSTAGE, NUM_GS_ALGORITHMS};
   enum GSDirection{GS_FORWARD, GS_BACKWARD, GS_SYMMETRIC};
-  enum ClusteringAlgorithm{CLUSTER_DEFAULT, CLUSTER_BALLOON, CLUSTER_CUTHILL_MCKEE, CLUSTER_DO_NOTHING, NUM_CLUSTERING_ALGORITHMS};
+  enum CoarseningAlgorithm{CLUSTER_DEFAULT, CLUSTER_MIS2, CLUSTER_BALLOON, NUM_CLUSTERING_ALGORITHMS};
+  enum CGSAlgorithm{CGS_DEFAULT, CGS_RANGE, CGS_TEAM, CGS_PERMUTED_RANGE, CGS_PERMUTED_TEAM, CGS_SHARED};
 
-  inline const char* getClusterAlgoName(ClusteringAlgorithm ca)
+  inline const char* getCoarseningAlgoName(CoarseningAlgorithm ca)
   {
     switch(ca)
     {
-      case CLUSTER_DEFAULT:
-        return "Default";
       case CLUSTER_BALLOON:
         return "Balloon";
-      case CLUSTER_CUTHILL_MCKEE:
-        return "Cuthill-McKee";
-      case CLUSTER_DO_NOTHING:
-        return "No-op";
+      case CLUSTER_MIS2:
+        return "MIS(2)";
       default:;
     }
     return "INVALID CLUSTERING ALGORITHM";
+  }
+
+  inline const char* getCGSAlgoName(CGSAlgorithm a)
+  {
+    switch(a)
+    {
+      case CGS_DEFAULT:
+        return "Default";
+      case CGS_RANGE:
+        return "Range";
+      case CGS_TEAM:
+        return "Team";
+      case CGS_PERMUTED_RANGE:
+        return "Permuted,Range";
+      case CGS_PERMUTED_TEAM:
+        return "Permuted,Team";
+      default:;
+    }
+    return "INVALID CGS ALGORITHM";
   }
 
   template <class size_type_, class lno_t_, class scalar_t_,
@@ -110,8 +125,6 @@ namespace KokkosSparse{
 
 
   protected:
-    GSAlgorithm algorithm_type;
-
     nnz_lno_persistent_work_host_view_t color_xadj;
     nnz_lno_persistent_work_view_t color_adj;
     nnz_lno_t numColors;
@@ -128,7 +141,6 @@ namespace KokkosSparse{
      * \brief Default constructor.
      */
     GaussSeidelHandle(GSAlgorithm gs) :
-      algorithm_type(gs),
       color_xadj(), color_adj(), numColors(0),
       called_symbolic(false), called_numeric(false),
       suggested_vector_size(0), suggested_team_size(0)
@@ -137,7 +149,44 @@ namespace KokkosSparse{
     virtual ~GaussSeidelHandle() = default;
 
     //getters
-    GSAlgorithm get_algorithm_type() const {return this->algorithm_type;}
+
+    //Is this handle for GS_POINT or GS_CLUSTER?
+    virtual GSAlgorithm get_algorithm_type() const = 0;
+
+    //Always use TeamPolicy on GPU, and RangePolicy on CPU
+    virtual bool use_teams() const
+    {
+#if defined( KOKKOS_ENABLE_SERIAL )
+      if (std::is_same< Kokkos::Serial , ExecutionSpace >::value)
+        return false;
+#endif
+
+#if defined( KOKKOS_ENABLE_THREADS )
+      if (std::is_same< Kokkos::Threads , ExecutionSpace >::value)
+        return false;
+#endif
+
+#if defined( KOKKOS_ENABLE_OPENMP )
+      if (std::is_same< Kokkos::OpenMP, ExecutionSpace >::value)
+        return false;
+#endif
+
+#if defined( KOKKOS_ENABLE_QTHREAD)
+      if (std::is_same< Kokkos::Qthread, ExecutionSpace >::value)
+        return false;
+#endif
+
+#if defined( KOKKOS_ENABLE_CUDA )
+      if (std::is_same<Kokkos::Cuda, ExecutionSpace >::value)
+        return true;
+#endif
+
+#if defined( KOKKOS_ENABLE_ROCM )
+      if (std::is_same<Kokkos::Experimental::ROCm, ExecutionSpace >::value)
+        return true;
+#endif
+      throw std::runtime_error(std::string("GaussSeidelHandle::use_teams(): exec space ") + ExecutionSpace::name() + " is not registered");
+    }
 
     virtual bool is_owner_of_coloring() const {return false;}
 
@@ -263,75 +312,23 @@ namespace KokkosSparse{
     /**
      * \brief Default constructor.
      */
-    PointGaussSeidelHandle(GSAlgorithm gs = GS_DEFAULT) :
-      GSHandle(gs),
+    PointGaussSeidelHandle() :
+      GSHandle(GS_POINT),
       permuted_xadj(), permuted_adj(), permuted_adj_vals(), old_to_new_map(),
       permuted_y_vector(), permuted_x_vector(),
       permuted_inverse_diagonal(), block_size(1),
       max_nnz_input_row(-1),
       num_values_in_l1(-1), num_values_in_l2(-1),num_big_rows(0), level_1_mem(0), level_2_mem(0),
       owner_of_coloring(false)
-    {
-      if (gs == GS_DEFAULT)
-        this->choose_default_algorithm();
-    }
+    {}
+
+    GSAlgorithm get_algorithm_type() const override {return GS_POINT;}
 
     bool is_owner_of_coloring() const override {return this->owner_of_coloring;}
     void set_owner_of_coloring(bool owner = true) {this->owner_of_coloring = owner;}
 
     void set_block_size(nnz_lno_t bs){this->block_size = bs; }
     nnz_lno_t get_block_size() const {return this->block_size;}
-
-    /** \brief Chooses best algorithm based on the execution space. COLORING_EB if cuda, COLORING_VB otherwise.
-     */
-    void choose_default_algorithm(){
-#if defined( KOKKOS_ENABLE_SERIAL )
-      if (std::is_same< Kokkos::Serial , ExecutionSpace >::value){
-        this->algorithm_type = GS_PERMUTED;
-#ifdef VERBOSE
-        std::cout << "Serial Execution Space, Default Algorithm: GS_PERMUTED" << std::endl;
-#endif
-      }
-#endif
-
-#if defined( KOKKOS_ENABLE_THREADS )
-      if (std::is_same< Kokkos::Threads , ExecutionSpace >::value){
-        this->algorithm_type = GS_PERMUTED;
-#ifdef VERBOSE
-        std::cout << "PTHREAD Execution Space, Default Algorithm: GS_PERMUTED" << std::endl;
-#endif
-      }
-#endif
-
-#if defined( KOKKOS_ENABLE_OPENMP )
-      if (std::is_same< Kokkos::OpenMP, ExecutionSpace >::value){
-        this->algorithm_type = GS_PERMUTED;
-#ifdef VERBOSE
-        std::cout << "OpenMP Execution Space, Default Algorithm: GS_PERMUTED" << std::endl;
-#endif
-      }
-#endif
-
-#if defined( KOKKOS_ENABLE_CUDA )
-      if (std::is_same<Kokkos::Cuda, ExecutionSpace >::value){
-        this->algorithm_type = GS_TEAM;
-#ifdef VERBOSE
-        std::cout << "Cuda Execution Space, Default Algorithm: GS_TEAM" << std::endl;
-#endif
-      }
-#endif
-
-#if defined( KOKKOS_ENABLE_QTHREAD)
-      if (std::is_same< Kokkos::Qthread, ExecutionSpace >::value){
-        this->algorithm_type = GS_PERMUTED;
-#ifdef VERBOSE
-        std::cout << "Qthread Execution Space, Default Algorithm: GS_PERMUTED" << std::endl;
-#endif
-      }
-#endif
-    }
-
-    ~PointGaussSeidelHandle() = default;
 
     //getters
     row_lno_persistent_work_view_t get_new_xadj() const {
@@ -413,11 +410,13 @@ namespace KokkosSparse{
       return this->num_big_rows;
     }
 
+#ifdef KOKKOS_ENABLE_DEPRECATED_CODE
     nnz_lno_t get_max_nnz() const {
       if(max_nnz_input_row == static_cast<nnz_lno_t>(-1))
         throw std::runtime_error("Requested max nnz per input row, but this has not been set in the PointGS handle.");
       return this->max_nnz_input_row;
     }
+#endif
 
     void set_max_nnz(nnz_lno_t num_result_nnz_) {
       this->max_nnz_input_row = num_result_nnz_;
@@ -471,51 +470,77 @@ namespace KokkosSparse{
   : public GaussSeidelHandle<size_type_, lno_t_, scalar_t_, ExecutionSpace, TemporaryMemorySpace, PersistentMemorySpace>
   {
   public:
-    typedef GaussSeidelHandle<size_type_, lno_t_, scalar_t_, ExecutionSpace, TemporaryMemorySpace, PersistentMemorySpace> GSHandle;
-    typedef ExecutionSpace HandleExecSpace;
-    typedef TemporaryMemorySpace HandleTempMemorySpace;
-    typedef PersistentMemorySpace HandlePersistentMemorySpace;
+    using GSHandle = GaussSeidelHandle<size_type_, lno_t_, scalar_t_, ExecutionSpace, TemporaryMemorySpace, PersistentMemorySpace>;
+    using exec_space = ExecutionSpace;
+    using mem_space = PersistentMemorySpace;
 
-    typedef typename std::remove_const<size_type_>::type  size_type;
-    typedef const size_type const_size_type;
+    using size_type = typename std::remove_const<size_type_>::type;
+    using lno_t = typename std::remove_const<lno_t_>::type;
+    using scalar_t = typename std::remove_const<scalar_t_>::type;
 
-    typedef typename std::remove_const<lno_t_>::type  nnz_lno_t;
-    typedef const nnz_lno_t const_nnz_lno_t;
+    using offset_view_t = typename GSHandle::row_lno_persistent_work_view_t;
+    using unmanaged_offset_view_t = Kokkos::View<const size_type*, typename offset_view_t::device_type, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+    using host_offset_view_t = typename offset_view_t::HostMirror;
 
-    typedef typename std::remove_const<scalar_t_>::type  nnz_scalar_t;
-    typedef const nnz_scalar_t const_nnz_scalar_t;
+    using ordinal_view_t = typename GSHandle::nnz_lno_persistent_work_view_t;
+    using unmanaged_ordinal_view_t = Kokkos::View<const lno_t*, typename ordinal_view_t::device_type, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+    using host_ordinal_view_t = typename ordinal_view_t::HostMirror;
 
-    typedef typename Kokkos::View<size_type *, HandleTempMemorySpace> row_lno_temp_work_view_t;
-    typedef typename Kokkos::View<size_type *, HandlePersistentMemorySpace> row_lno_persistent_work_view_t;
-    typedef typename row_lno_persistent_work_view_t::HostMirror row_lno_persistent_work_host_view_t; //Host view type
+    using scalar_view_t = typename GSHandle::scalar_persistent_work_view_t;
+    using unmanaged_scalar_view_t = Kokkos::View<const scalar_t*, typename scalar_view_t::device_type, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+    using host_scalar_view_t = typename scalar_view_t::HostMirror;
+    //Internal space for storing the permuted vectors.
+    //Internally, LHS (x) accesses coalesce better when column-major.
+    //RHS (y) access coalesce better when row-major.
+    using rowmajor_vector_t = Kokkos::View<scalar_t**, Kokkos::LayoutRight, typename scalar_view_t::device_type>;
+    using colmajor_vector_t = Kokkos::View<scalar_t**, Kokkos::LayoutLeft, typename scalar_view_t::device_type>;
 
-    typedef typename Kokkos::View<nnz_scalar_t *, HandleTempMemorySpace> scalar_temp_work_view_t;
-    typedef typename Kokkos::View<nnz_scalar_t *, HandlePersistentMemorySpace> scalar_persistent_work_view_t;
-    typedef typename scalar_persistent_work_view_t::HostMirror scalar_persistent_work_host_view_t; //Host view type
+    //Const versions for viewing the input matrix
+    using const_rowmap_t = typename offset_view_t::const_type;
+    using const_entries_t = typename ordinal_view_t::const_type;
+    using const_values_t = typename scalar_view_t::const_type;
 
-    typedef typename Kokkos::View<nnz_lno_t *, HandleTempMemorySpace> nnz_lno_temp_work_view_t;
-    typedef typename Kokkos::View<nnz_lno_t *, HandlePersistentMemorySpace> nnz_lno_persistent_work_view_t;
-    typedef typename nnz_lno_persistent_work_view_t::HostMirror nnz_lno_persistent_work_host_view_t; //Host view type
+    //The memory unit type used for the compact memory stream
+    //This type's size should be as big as possible, while evenly dividing the sizes of both lno_t and scalar_t.
+    //Unless we start supporting fp16/bfloat or short as ordinal, 32 bits is the correct choice.
+    typedef int32_t unit_t;
+    typedef Kokkos::View<unit_t*, mem_space, Kokkos::MemoryTraits<Kokkos::Aligned>> unit_view_t;
 
   private:
 
-    ClusteringAlgorithm cluster_algo;
+    CGSAlgorithm apply_algo;
+    CoarseningAlgorithm coarse_algo;
 
     //This is the user-configurable target cluster size.
     //Some clusters may be slightly larger or smaller,
     //but cluster_xadj always has the exact size of each.
-    nnz_lno_t cluster_size;
+    lno_t cluster_size;
 
     int suggested_vector_size;
     int suggested_team_size;
 
-    scalar_persistent_work_view_t inverse_diagonal;
-
     //cluster_xadj and cluster_adj encode the vertices in each cluster
-    nnz_lno_persistent_work_view_t cluster_xadj;
-    nnz_lno_persistent_work_view_t cluster_adj;
+    ordinal_view_t cluster_xadj;
+    ordinal_view_t cluster_adj;
     //vert_clusters(i) is the cluster that vertex i belongs to
-    nnz_lno_persistent_work_view_t vert_clusters;
+    ordinal_view_t vert_clusters;
+
+    //If using an apply algorithm with permutation,
+    //the list of input rows in permuted order.
+    //Otherwise empty/not allocated.
+    ordinal_view_t permutation;
+
+    //Likewise, perm_x and perm_y are only allocated if using permuted algorithm
+    colmajor_vector_t perm_x;
+    rowmajor_vector_t perm_y;
+
+    //offsets of compact and reordered matrix,
+    //and the actual data (units) that the offsets index into
+    offset_view_t stream_offsets;
+    unit_view_t stream_data;
+
+    //whether to use a lower-precision version of the matrix (32-bit instead of 64-bit)
+    bool compact_scalars;
 
   public:
 
@@ -524,86 +549,96 @@ namespace KokkosSparse{
      */
 
     //Constructor for cluster-coloring based GS and SGS
-    ClusterGaussSeidelHandle(ClusteringAlgorithm cluster_algo_, nnz_lno_t cluster_size_)
-      : GSHandle(GS_CLUSTER), cluster_algo(cluster_algo_), cluster_size(cluster_size_),
-      inverse_diagonal(), cluster_xadj(), cluster_adj(), vert_clusters()
+    ClusterGaussSeidelHandle(CGSAlgorithm apply_algo_, CoarseningAlgorithm coarse_algo_, lno_t cluster_size_, bool compact_scalars_ = true)
+      : GSHandle(GS_CLUSTER), apply_algo(apply_algo_), coarse_algo(coarse_algo_), cluster_size(cluster_size_), compact_scalars(compact_scalars_)
     {}
 
-    void set_cluster_size(nnz_lno_t cs) {this->cluster_size = cs;}
-    nnz_lno_t get_cluster_size() const {return this->cluster_size;}
+    GSAlgorithm get_algorithm_type() const {return GS_CLUSTER;}
+    CGSAlgorithm get_cgs_algorithm() const {return this->apply_algo;}
+    CoarseningAlgorithm get_clustering_algo() const {return this->coarse_algo;}
 
-    void set_vert_clusters(nnz_lno_persistent_work_view_t& vert_clusters_) {
+    void set_cluster_size(lno_t cs) {this->cluster_size = cs;}
+    lno_t get_cluster_size() const {return this->cluster_size;}
+
+    void set_vert_clusters(const ordinal_view_t& vert_clusters_) {
       this->vert_clusters = vert_clusters_;
     }
-    void set_cluster_xadj(nnz_lno_persistent_work_view_t& cluster_xadj_) {
-      this->cluster_xadj = cluster_xadj_;
-    }
-    void set_cluster_adj(nnz_lno_persistent_work_view_t& cluster_adj_) {
-      this->cluster_adj = cluster_adj_;
-    }
-
-    nnz_lno_persistent_work_view_t get_vert_clusters() const {
+    ordinal_view_t get_vert_clusters() const {
       if(!this->is_symbolic_called())
         throw std::runtime_error("vert_clusters does not exist until after symbolic setup.");
       return vert_clusters;
     }
 
-    nnz_lno_persistent_work_view_t get_cluster_xadj() const {
+    void set_cluster_xadj(const ordinal_view_t& cluster_xadj_) {
+      this->cluster_xadj = cluster_xadj_;
+    }
+    ordinal_view_t get_cluster_xadj() const {
       if(!this->is_symbolic_called())
         throw std::runtime_error("cluster_xadj does not exist until after symbolic setup.");
       return cluster_xadj;
     }
 
-    nnz_lno_persistent_work_view_t get_cluster_adj() const {
+    void set_cluster_adj(const ordinal_view_t& cluster_adj_) {
+      this->cluster_adj = cluster_adj_;
+    }
+    ordinal_view_t get_cluster_adj() const {
       if(!this->is_symbolic_called())
         throw std::runtime_error("cluster_adj does not exist until after symbolic setup.");
       return cluster_adj;
     }
 
-    void set_inverse_diagonal(scalar_persistent_work_view_t& inv_diag) {
-      this->inverse_diagonal = inv_diag;
+    //(Copied from PointGaussSeidelHandle)
+    //Lazily allocate permuted x/y to the correct size, based on the vectors passed in to apply.
+    void allocate_perm_xy(lno_t num_rows, lno_t num_cols, lno_t num_vecs) {
+      if(perm_x.extent(0) != size_t(num_cols) || perm_x.extent(1) != size_t(num_vecs))
+        perm_x = colmajor_vector_t("CGS Permuted X", num_cols, num_vecs);
+      if(perm_y.extent(0) != size_t(num_rows) || perm_y.extent(1) != size_t(num_vecs))
+        perm_y = rowmajor_vector_t("CGS Permuted Y", num_rows, num_vecs);
+    }
+    void get_perm_xy(colmajor_vector_t& x, rowmajor_vector_t& y) const {
+      x = perm_x;
+      y = perm_y;
+    }
+    void set_perm_xy(const colmajor_vector_t& x, const rowmajor_vector_t& y) {
+      perm_x = x;
+      perm_y = y;
     }
 
-    scalar_persistent_work_view_t get_inverse_diagonal() const {
-      if(!this->is_symbolic_called())
-        throw std::runtime_error("inverse diagonal does not exist until after numeric setup.");
-      return inverse_diagonal;
+    void set_stream_offsets(const offset_view_t& offsets) {
+      this->stream_offsets = offsets;
     }
-    
-    bool use_teams() const
-    {
-      bool return_value = false;
-#if defined( KOKKOS_ENABLE_SERIAL )
-      if (std::is_same< Kokkos::Serial , ExecutionSpace >::value) {
-        return_value = false;
-      }
-#endif
-#if defined( KOKKOS_ENABLE_THREADS )
-      if (std::is_same< Kokkos::Threads , ExecutionSpace >::value){
-        return_value = false;
-      }
-#endif
-#if defined( KOKKOS_ENABLE_OPENMP )
-      if (std::is_same< Kokkos::OpenMP, ExecutionSpace >::value){
-        return_value = false;
-      }
-#endif
-#if defined( KOKKOS_ENABLE_CUDA )
-      if (std::is_same<Kokkos::Cuda, ExecutionSpace >::value){
-        return_value = true;
-      }
-#endif
-#if defined( KOKKOS_ENABLE_QTHREAD)
-      if (std::is_same< Kokkos::Qthread, ExecutionSpace >::value){
-        return_value = false;
-      }
-#endif
-      return return_value;
+    offset_view_t get_stream_offsets() const {
+      return this->stream_offsets;
     }
 
-    ~ClusterGaussSeidelHandle() = default;
+    void set_stream_data(const unit_view_t& data) {
+      this->stream_data = data;
+    }
+    unit_view_t get_stream_data() const {
+      return this->stream_data;
+    }
 
-    ClusteringAlgorithm get_clustering_algo() const {return this->cluster_algo;}
+    void set_apply_permutation(const ordinal_view_t& perm) {
+      this->permutation = perm;
+    }
+    ordinal_view_t get_apply_permutation() const {
+      return this->permutation;
+    }
+
+    //note: no setter for use_compact_scalars. It can't be changed after the first setup.
+    bool use_compact_scalars() const {
+      return this->compact_scalars;
+    }
+
+    bool use_teams() const {
+      return (apply_algo == CGS_TEAM) ||
+        (apply_algo == CGS_PERMUTED_TEAM);
+    }
+
+    bool use_permutation() const {
+      return (apply_algo == CGS_PERMUTED_RANGE) ||
+        (apply_algo == CGS_PERMUTED_TEAM);
+    }
   };
 
 
@@ -656,6 +691,8 @@ namespace KokkosSparse{
     two_stage (true),
     num_inner_sweeps (1)
     {}
+
+    GSAlgorithm get_algorithm_type() const override {return GS_TWOSTAGE;}
 
     // Sweep direction
     void setSweepDirection (GSDirection direction_) {
