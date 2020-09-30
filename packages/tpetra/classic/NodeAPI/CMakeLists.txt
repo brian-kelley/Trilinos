@@ -106,9 +106,9 @@ ELSEIF (Tpetra_DefaultNode STREQUAL "")
   # The user didn't set Tpetra_DefaultNode, so we need to pick it.
   #
   IF (Tpetra_INST_CUDA)
-    IF(NOT Kokkos_ENABLE_CUDA)
-      MESSAGE(FATAL_ERROR "Tpetra_INST_CUDA is ON, but Kokkos_ENABLE_CUDA is OFF.")
-    ENDIF()
+    #IF(NOT Kokkos_ENABLE_CUDA)
+    #  MESSAGE(FATAL_ERROR "Tpetra_INST_CUDA is ON, but Kokkos_ENABLE_CUDA is OFF.")
+    #ENDIF()
     MESSAGE(STATUS "Setting default Node to Kokkos::Compat::KokkosCudaWrapperNode.")
     SET(Tpetra_DefaultNode "Kokkos::Compat::KokkosCudaWrapperNode")
     SET(HAVE_TPETRA_DEFAULTNODE_CUDAWRAPPERNODE ON CACHE BOOL "")  

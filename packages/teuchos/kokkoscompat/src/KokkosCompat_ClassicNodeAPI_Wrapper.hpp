@@ -52,7 +52,7 @@ public:
   static std::string name ();
 };
 
-#ifdef KOKKOS_ENABLE_CUDA
+//#ifdef KOKKOS_ENABLE_CUDA
   //typedef KokkosDeviceWrapperNode<Kokkos::Cuda> KokkosCudaWrapperNode;
 
   //define fake CUDA device: Serial execution space, and debug memory space with HostSpace underlying
@@ -62,7 +62,7 @@ public:
   };
   using FakeCudaSpace = Kokkos::LogicalMemorySpace<DebugSpaceNamer, Kokkos::HostSpace, Kokkos::Serial, false>;
   typedef KokkosDeviceWrapperNode<Kokkos::Serial, FakeCudaSpace> KokkosCudaWrapperNode;
-#endif
+//#endif
 
 #ifdef KOKKOS_ENABLE_OPENMP
   typedef KokkosDeviceWrapperNode<Kokkos::OpenMP> KokkosOpenMPWrapperNode;

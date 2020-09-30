@@ -496,9 +496,9 @@ TRIBITS_ADD_OPTION_AND_DEFINE(
   )
 GLOBAL_SET(HAVE_TPETRA_CUDA ${Tpetra_INST_CUDA})
 IF (Tpetra_INST_CUDA)
-  IF (NOT Kokkos_ENABLE_CUDA)
-    MESSAGE(FATAL_ERROR "Tpetra: The Kokkos::Cuda execution space is disabled, but you enabled the corresponding Tpetra Node type by setting Tpetra_INST_CUDA=ON.  If you want to enable instantiation and use of Kokkos::Cuda in Tpetra, you must enable the Kokkos::Cuda execution space by setting Kokkos_ENABLE_CUDA=ON.")
-  ENDIF ()
+  #IF (NOT Kokkos_ENABLE_CUDA)
+  #  MESSAGE(FATAL_ERROR "Tpetra: The Kokkos::Cuda execution space is disabled, but you enabled the corresponding Tpetra Node type by setting Tpetra_INST_CUDA=ON.  If you want to enable instantiation and use of Kokkos::Cuda in Tpetra, you must enable the Kokkos::Cuda execution space by setting Kokkos_ENABLE_CUDA=ON.")
+  #ENDIF ()
 ELSE () # NOT Tpetra_INST_CUDA
   IF (HAVE_TPETRA_DEFAULTNODE_CUDAWRAPPERNODE)
     MESSAGE(FATAL_ERROR "Tpetra: Node = Kokkos::Compat::KokkosCudaWrapperNode is disabled (since Tpetra_INST_CUDA=OFF), but you set it as the default Node type.  Try setting the CMake options Kokkos_ENABLE_CUDA:BOOL=ON and Tpetra_INST_CUDA:BOOL=ON.  If you are building with a CUDA-capable compiler and Kokkos can detect that, then you are unlikely to see this message, since both Kokkos and Tpetra enable CUDA support by default in that case.")
