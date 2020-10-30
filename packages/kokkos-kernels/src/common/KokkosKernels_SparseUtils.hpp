@@ -858,11 +858,82 @@ inline size_t kk_is_d1_coloring_valid(
 
   struct ColorChecker <in_row_view_t, in_nnz_view_t, in_color_view_t, team_member_t>  cc(num_rows, xadj, adj, v_colors, team_work_chunk_size);
   size_t num_conf = 0;
-  Kokkos::parallel_reduce( "KokkosKernels::Common::IsD1ColoringValie", dynamic_team_policy(num_rows / team_work_chunk_size + 1 ,
+  Kokkos::parallel_reduce( "KokkosKernels::Common::IsD1ColoringValid", dynamic_team_policy(num_rows / team_work_chunk_size + 1 ,
       suggested_team_size, vector_size), cc, num_conf);
 
   MyExecSpace().fence();
   return num_conf;
+}
+
+template<typename Reducer, typename ordinal_t, typename rowmap_t>
+struct MinMaxDegreeFunctor
+{
+  using ReducerVal = typename Reducer::value_type;
+  MinMaxDegreeFunctor(const rowmap_t& rowmap_)
+    : rowmap(rowmap_) {}
+  KOKKOS_INLINE_FUNCTION void operator()(ordinal_t i, ReducerVal& lminmax) const
+  {
+    ordinal_t deg = rowmap(i + 1) - rowmap(i);
+    if(deg < lminmax.min_val)
+      lminmax.min_val = deg;
+    if(deg > lminmax.max_val)
+      lminmax.max_val = deg;
+  }
+  rowmap_t rowmap;
+};
+
+template<typename Reducer, typename ordinal_t, typename rowmap_t>
+struct MaxDegreeFunctor
+{
+  using ReducerVal = typename Reducer::value_type;
+  MaxDegreeFunctor(const rowmap_t& rowmap_)
+    : rowmap(rowmap_) {}
+  KOKKOS_INLINE_FUNCTION void operator()(ordinal_t i, ReducerVal& lmax) const
+  {
+    ordinal_t deg = rowmap(i + 1) - rowmap(i);
+    if(deg > lmax)
+      lmax = deg;
+  }
+  rowmap_t rowmap;
+};
+
+template<typename device_t, typename ordinal_t, typename rowmap_t>
+ordinal_t graph_max_degree(const rowmap_t& rowmap)
+{
+  using Reducer = Kokkos::Max<ordinal_t>;
+  ordinal_t nrows = rowmap.extent(0);
+  if(nrows)
+    nrows--;
+  if(nrows == 0)
+    return 0;
+  ordinal_t val;
+  Kokkos::parallel_reduce(
+      Kokkos::RangePolicy<typename device_t::execution_space>(0, nrows),
+      MaxDegreeFunctor<Reducer, ordinal_t, rowmap_t>(rowmap),
+      Reducer(val));
+  return val;
+}
+
+template<typename device_t, typename ordinal_t, typename rowmap_t>
+void graph_min_max_degree(const rowmap_t& rowmap, ordinal_t& min_degree, ordinal_t& max_degree)
+{
+  using Reducer = Kokkos::MinMax<ordinal_t>;
+  ordinal_t nrows = rowmap.extent(0);
+  if(nrows)
+    nrows--;
+  if(nrows == 0)
+  {
+    min_degree = 0;
+    max_degree = 0;
+    return;
+  }
+  typename Reducer::value_type result;
+  Kokkos::parallel_reduce(
+      Kokkos::RangePolicy<typename device_t::execution_space>(0, nrows),
+      MinMaxDegreeFunctor<Reducer, ordinal_t, rowmap_t>(rowmap),
+      Reducer(result));
+  min_degree = result.min_val;
+  max_degree = result.max_val;
 }
 
 template<typename execution_space, typename rowmap_t, typename entries_t, typename values_t>
@@ -1097,14 +1168,14 @@ struct MergedRowmapFunctor
 };
 
 template<typename rowmap_t, typename entries_t, typename values_t>
-struct MergedEntriesFunctor
+struct MatrixMergedEntriesFunctor
 {
   using size_type = typename rowmap_t::non_const_value_type;
   using lno_t = typename entries_t::non_const_value_type;
   using scalar_t = typename values_t::non_const_value_type;
 
   //Precondition: entries are sorted within each row
-  MergedEntriesFunctor(
+  MatrixMergedEntriesFunctor(
       const rowmap_t& rowmap_, const entries_t& entries_, const values_t& values_,
       const rowmap_t& mergedRowmap_, const entries_t& mergedEntries_, const values_t& mergedValues_)
     : rowmap(rowmap_), entries(entries_), values(values_),
@@ -1154,6 +1225,52 @@ struct MergedEntriesFunctor
   values_t mergedValues;
 };
 
+template<typename rowmap_t, typename entries_t>
+struct GraphMergedEntriesFunctor
+{
+  using size_type = typename rowmap_t::non_const_value_type;
+  using lno_t = typename entries_t::non_const_value_type;
+
+  //Precondition: entries are sorted within each row
+  GraphMergedEntriesFunctor(
+      const rowmap_t& rowmap_, const entries_t& entries_,
+      const rowmap_t& mergedRowmap_, const entries_t& mergedEntries_)
+    : rowmap(rowmap_), entries(entries_),
+    mergedRowmap(mergedRowmap_), mergedEntries(mergedEntries_)
+  {}
+
+  KOKKOS_INLINE_FUNCTION void operator()(lno_t row) const
+  {
+    size_type rowBegin = rowmap(row);
+    size_type rowEnd = rowmap(row + 1);
+    if(rowEnd == rowBegin)
+    {
+      //Row was empty to begin with, nothing to do
+      return;
+    }
+    //Otherwise, accumulate the value for each column
+    lno_t accumCol = entries(rowBegin);
+    size_type insertPos = mergedRowmap(row);
+    for(size_type j = rowBegin + 1; j < rowEnd; j++)
+    {
+      if(accumCol != entries(j))
+      {
+        //write out and reset
+        mergedEntries(insertPos) = accumCol;
+        insertPos++;
+        accumCol = entries(j);
+      }
+    }
+    //always left with the last unique entry
+    mergedEntries(insertPos) = accumCol;
+  }
+
+  rowmap_t rowmap;
+  entries_t entries;
+  rowmap_t mergedRowmap;
+  entries_t mergedEntries;
+};
+
 //Sort the rows of matrix, and merge duplicate entries.
 template<typename crsMat_t>
 crsMat_t sort_and_merge_matrix(const crsMat_t& A)
@@ -1177,12 +1294,47 @@ crsMat_t sort_and_merge_matrix(const crsMat_t& A)
   values_t mergedValues("SortedMerged values", numCompressedEntries);
   //Compute merged entries and values
   Kokkos::parallel_for(range_t(0, A.numRows()),
-      MergedEntriesFunctor<c_rowmap_t, entries_t, values_t>
+      MatrixMergedEntriesFunctor<c_rowmap_t, entries_t, values_t>
       (A.graph.row_map, A.graph.entries, A.values,
        mergedRowmap, mergedEntries, mergedValues));
   //Finally, construct the new compressed matrix
   return crsMat_t("SortedMerged", A.numRows(), A.numCols(), numCompressedEntries,
       mergedValues, mergedRowmap, mergedEntries);
+}
+
+template<typename exec_space, typename rowmap_t, typename entries_t>
+void sort_and_merge_graph(
+    const typename rowmap_t::const_type& rowmap_in, const entries_t& entries_in,
+    rowmap_t& rowmap_out, entries_t& entries_out)
+{
+  using size_type = typename rowmap_t::non_const_value_type;
+  using lno_t = typename entries_t::non_const_value_type;
+  using range_t = Kokkos::RangePolicy<exec_space>;
+  using const_rowmap_t = typename rowmap_t::const_type;
+  lno_t numRows = rowmap_in.extent(0);
+  if(numRows <= 1)
+  {
+    //Matrix has zero rows
+    rowmap_out = rowmap_t();
+    entries_out = entries_t();
+    return;
+  }
+  numRows--;
+  //Sort in place
+  sort_crs_graph<exec_space, const_rowmap_t, entries_t>(rowmap_in, entries_in);
+  //Count entries per row into a new rowmap, in terms of merges that can be done
+  rowmap_out = rowmap_t(Kokkos::ViewAllocateWithoutInitializing("SortedMerged rowmap"), numRows + 1);
+  size_type numCompressedEntries = 0;
+  Kokkos::parallel_reduce(range_t(0, numRows),
+      MergedRowmapFunctor<rowmap_t, entries_t>(rowmap_out, rowmap_in, entries_in), numCompressedEntries);
+  //Prefix sum to get rowmap
+  kk_exclusive_parallel_prefix_sum<rowmap_t, exec_space>(numRows + 1, rowmap_out);
+  entries_out = entries_t("SortedMerged entries", numCompressedEntries);
+  //Compute merged entries and values
+  Kokkos::parallel_for(range_t(0, numRows),
+      GraphMergedEntriesFunctor<const_rowmap_t, entries_t>
+      (rowmap_in, entries_in,
+       rowmap_out, entries_out));
 }
 
 template <typename lno_view_t,

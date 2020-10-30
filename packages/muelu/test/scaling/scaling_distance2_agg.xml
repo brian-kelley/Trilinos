@@ -6,6 +6,7 @@
 
   <!-- ===========  GENERAL ================ -->
     <Parameter        name="verbosity"                            type="string"   value="high"/>
+    <Parameter        name="use kokkos refactor"                  type="bool"     value="true"/>
 
     <Parameter        name="coarse: max size"                     type="int"      value="1000"/>
 
@@ -23,7 +24,7 @@
   <!-- ===========  AGGREGATION  =========== -->
     <Parameter        name="aggregation: type"                    type="string"   value="uncoupled"/>
     <Parameter        name="aggregation: drop scheme"             type="string"   value="classical"/>
-    <Parameter        name="aggregation: phase 1 algorithm"       type="string"   value="Distance2"/>
+    <Parameter        name="aggregation: coloring algorithm"      type="string"   value="net based bit set"/>
     <!-- Uncomment the next line to enable dropping of weak connections, which can help AMG convergence
          for anisotropic problems.  The exact value is problem dependent. -->
     <!-- <Parameter        name="aggregation: drop tol"                type="double"   value="0.02"/> -->

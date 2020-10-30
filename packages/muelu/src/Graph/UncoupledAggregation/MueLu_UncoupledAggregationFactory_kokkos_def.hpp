@@ -76,6 +76,8 @@
 
 #include "KokkosGraph_Distance2ColorHandle.hpp"
 #include "KokkosGraph_Distance2Color.hpp"
+#include "KokkosGraph_Matching.hpp"
+#include "KokkosGraph_MIS2.hpp"
 
 namespace MueLu {
 
@@ -233,12 +235,53 @@ namespace MueLu {
       Kokkos::deep_copy(aggStat, aggStatHost);
     }
 
-
     const RCP<const Teuchos::Comm<int> > comm = graph->GetComm();
     GO numGlobalRows = 0;
     if (IsPrint(Statistics1))
       MueLu_sumAll(comm, as<GO>(numRows), numGlobalRows);
 
+    LO numNonAggregatedNodes = numRows;
+    std::string aggAlgo = pL.get<std::string>("aggregation: coloring algorithm");
+    if(aggAlgo == "mis2" || aggAlgo == "matching")
+    {
+      using graph_t = typename LWGraph_kokkos::local_graph_type;
+      using device_t = typename graph_t::device_type;
+      using exec_space = typename device_t::execution_space;
+      using rowmap_t = typename graph_t::row_map_type;
+      using colinds_t = typename graph_t::entries_type;
+      using lno_t = typename colinds_t::non_const_value_type;
+      using KernelHandle = KokkosKernels::Experimental::
+        KokkosKernelsHandle<typename graph_t::row_map_type::value_type,
+                            typename graph_t::entries_type::value_type,
+                            typename graph_t::entries_type::value_type,
+                            typename graph_t::device_type::execution_space,
+                            typename graph_t::device_type::memory_space,
+                            typename graph_t::device_type::memory_space>;
+      rowmap_t  aRowptrs = graph->getRowPtrs();
+      colinds_t aColinds = graph->getEntries();
+      lno_t numAggs = 0;
+      typename colinds_t::non_const_type labels;
+      if(aggAlgo == "mis2")
+        labels = KokkosGraph::Experimental::graph_mis2_coarsen<device_t, rowmap_t, colinds_t>(aRowptrs, aColinds, numAggs);
+      else if(aggAlgo == "matching")
+        labels = KokkosGraph::Experimental::graph_match_coarsen<device_t, rowmap_t, colinds_t, typename colinds_t::non_const_type>(aRowptrs, aColinds, 4, numAggs);
+      auto vertex2AggId  = aggregates->GetVertex2AggId()->getDeviceLocalView();
+      auto procWinner    = aggregates->GetProcWinner()  ->getDeviceLocalView();
+      int rank = comm->getRank();
+      Kokkos::parallel_for(Kokkos::RangePolicy<exec_space>(0, numRows),
+        KOKKOS_LAMBDA(lno_t i)
+        {
+          procWinner(i, 0) = rank;
+          if(aggStat(i) == READY)
+          {
+            aggStat(i) = AGGREGATED;
+            vertex2AggId(i, 0) = labels(i);
+          }
+        });
+      numNonAggregatedNodes = 0;
+      aggregates->SetNumAggregates(numAggs);
+    }
+    else
     {
       SubFactoryMonitor sfm(*this, "Algo \"Graph Coloring\"", currentLevel);
 
@@ -273,22 +316,22 @@ namespace MueLu {
       if(pL.get<bool>("aggregation: deterministic") == true) {
         coloringHandle->set_algorithm( KokkosGraph::COLORING_D2_SERIAL );
         if(IsPrint(Statistics1)) GetOStream(Statistics1) << "  algorithm: serial" << std::endl;
-      } else if(pL.get<std::string>("aggregation: coloring algorithm") == "serial") {
+      } else if(aggAlgo == "serial") {
         coloringHandle->set_algorithm( KokkosGraph::COLORING_D2_SERIAL );
         if(IsPrint(Statistics1)) GetOStream(Statistics1) << "  algorithm: serial" << std::endl;
-      } else if(pL.get<std::string>("aggregation: coloring algorithm") == "default") {
+      } else if(aggAlgo == "default") {
         coloringHandle->set_algorithm( KokkosGraph::COLORING_D2_DEFAULT );
         if(IsPrint(Statistics1)) GetOStream(Statistics1) << "  algorithm: default" << std::endl;
-      } else if(pL.get<std::string>("aggregation: coloring algorithm") == "vertex based") {
+      } else if(aggAlgo == "vertex based") {
         coloringHandle->set_algorithm( KokkosGraph::COLORING_D2_VB );
         if(IsPrint(Statistics1)) GetOStream(Statistics1) << "  algorithm: vertex based" << std::endl;
-      } else if(pL.get<std::string>("aggregation: coloring algorithm") == "vertex based bit set") {
+      } else if(aggAlgo == "vertex based bit set") {
         coloringHandle->set_algorithm( KokkosGraph::COLORING_D2_VB_BIT );
         if(IsPrint(Statistics1)) GetOStream(Statistics1) << "  algorithm: vertex based bit set" << std::endl;
-      } else if(pL.get<std::string>("aggregation: coloring algorithm") == "edge filtering") {
+      } else if(aggAlgo == "edge filtering") {
         coloringHandle->set_algorithm( KokkosGraph::COLORING_D2_VB_BIT_EF );
         if(IsPrint(Statistics1)) GetOStream(Statistics1) << "  algorithm: edge filtering" << std::endl;
-      } else if(pL.get<std::string>("aggregation: coloring algorithm") == "net based bit set") {
+      } else if(aggAlgo == "net based bit set") {
         coloringHandle->set_algorithm( KokkosGraph::COLORING_D2_NB_BIT );
         if(IsPrint(Statistics1)) GetOStream(Statistics1) << "  algorithm: net based bit set" << std::endl;
       } else {
@@ -313,38 +356,36 @@ namespace MueLu {
       if (IsPrint(Statistics1)) {
         GetOStream(Statistics1) << "  num colors: " << aggregates->GetGraphNumColors() << std::endl;
       }
-    }
+      GO numGlobalAggregatedPrev = 0, numGlobalAggsPrev = 0;
+      for (size_t a = 0; a < algos_.size(); a++) {
+        std::string phase = algos_[a]->description();
+        SubFactoryMonitor sfm(*this, "Algo \"" + phase + "\"", currentLevel);
 
-    LO numNonAggregatedNodes = numRows;
-    GO numGlobalAggregatedPrev = 0, numGlobalAggsPrev = 0;
-    for (size_t a = 0; a < algos_.size(); a++) {
-      std::string phase = algos_[a]->description();
-      SubFactoryMonitor sfm(*this, "Algo \"" + phase + "\"", currentLevel);
+        int oldRank = algos_[a]->SetProcRankVerbose(this->GetProcRankVerbose());
+        algos_[a]->BuildAggregates(pL, *graph, *aggregates, aggStat, numNonAggregatedNodes);
+        algos_[a]->SetProcRankVerbose(oldRank);
 
-      int oldRank = algos_[a]->SetProcRankVerbose(this->GetProcRankVerbose());
-      algos_[a]->BuildAggregates(pL, *graph, *aggregates, aggStat, numNonAggregatedNodes);
-      algos_[a]->SetProcRankVerbose(oldRank);
+        if (IsPrint(Statistics1)) {
+          GO numLocalAggregated = numRows - numNonAggregatedNodes, numGlobalAggregated = 0;
+          GO numLocalAggs       = aggregates->GetNumAggregates(),  numGlobalAggs = 0;
+          MueLu_sumAll(comm, numLocalAggregated, numGlobalAggregated);
+          MueLu_sumAll(comm, numLocalAggs,       numGlobalAggs);
 
-      if (IsPrint(Statistics1)) {
-        GO numLocalAggregated = numRows - numNonAggregatedNodes, numGlobalAggregated = 0;
-        GO numLocalAggs       = aggregates->GetNumAggregates(),  numGlobalAggs = 0;
-        MueLu_sumAll(comm, numLocalAggregated, numGlobalAggregated);
-        MueLu_sumAll(comm, numLocalAggs,       numGlobalAggs);
-
-        double aggPercent = 100*as<double>(numGlobalAggregated)/as<double>(numGlobalRows);
-        if (aggPercent > 99.99 && aggPercent < 100.00) {
-          // Due to round off (for instance, for 140465733/140466897), we could
-          // get 100.00% display even if there are some remaining nodes. This
-          // is bad from the users point of view. It is much better to change
-          // it to display 99.99%.
-          aggPercent = 99.99;
+          double aggPercent = 100*as<double>(numGlobalAggregated)/as<double>(numGlobalRows);
+          if (aggPercent > 99.99 && aggPercent < 100.00) {
+            // Due to round off (for instance, for 140465733/140466897), we could
+            // get 100.00% display even if there are some remaining nodes. This
+            // is bad from the users point of view. It is much better to change
+            // it to display 99.99%.
+            aggPercent = 99.99;
+          }
+          GetOStream(Statistics1) << "  aggregated : " << (numGlobalAggregated - numGlobalAggregatedPrev) << " (phase), " << std::fixed
+                                  << std::setprecision(2) << numGlobalAggregated << "/" << numGlobalRows << " [" << aggPercent << "%] (total)\n"
+                                  << "  remaining  : " << numGlobalRows - numGlobalAggregated << "\n"
+                                  << "  aggregates : " << numGlobalAggs-numGlobalAggsPrev << " (phase), " << numGlobalAggs << " (total)" << std::endl;
+          numGlobalAggregatedPrev = numGlobalAggregated;
+          numGlobalAggsPrev       = numGlobalAggs;
         }
-        GetOStream(Statistics1) << "  aggregated : " << (numGlobalAggregated - numGlobalAggregatedPrev) << " (phase), " << std::fixed
-                                << std::setprecision(2) << numGlobalAggregated << "/" << numGlobalRows << " [" << aggPercent << "%] (total)\n"
-                                << "  remaining  : " << numGlobalRows - numGlobalAggregated << "\n"
-                                << "  aggregates : " << numGlobalAggs-numGlobalAggsPrev << " (phase), " << numGlobalAggs << " (total)" << std::endl;
-        numGlobalAggregatedPrev = numGlobalAggregated;
-        numGlobalAggsPrev       = numGlobalAggs;
       }
     }
 
