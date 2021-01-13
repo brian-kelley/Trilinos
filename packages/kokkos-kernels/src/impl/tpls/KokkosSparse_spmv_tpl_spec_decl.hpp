@@ -160,7 +160,7 @@ namespace Impl {
     KOKKOS_CUSPARSE_SAFE_CALL(cusparseCreateDnVec(&vecY, y.extent_int(0), (void*) y.data(), myCudaDataType));
 
     size_t bufferSize     = 0;
-    void*  dBuffer        = NULL;
+    //void*  dBuffer        = NULL;
     cusparseSpMVAlg_t alg = CUSPARSE_MV_ALG_DEFAULT;
     if(controls.isParameter("algorithm"))
     {
@@ -173,14 +173,14 @@ namespace Impl {
     KOKKOS_CUSPARSE_SAFE_CALL(cusparseSpMV_bufferSize(cusparseHandle, myCusparseOperation,
 						      &alpha, A_cusparse, vecX, &beta, vecY, myCudaDataType,
 						      alg, &bufferSize));
-    CUDA_SAFE_CALL(cudaMalloc(&dBuffer, bufferSize));
+    {
+      Kokkos::View<char*, Kokkos::CudaSpace> dBuffer(Kokkos::ViewAllocateWithoutInitializing("cuSPARSE-SpMV-buffer"), bufferSize);
+      /* perform SpMV */
+      KOKKOS_CUSPARSE_SAFE_CALL(cusparseSpMV(cusparseHandle, myCusparseOperation,
+                                             &alpha, A_cusparse, vecX, &beta, vecY, myCudaDataType,
+                                             alg, (void*) dBuffer.data()));
 
-    /* perform SpMV */
-    KOKKOS_CUSPARSE_SAFE_CALL(cusparseSpMV(cusparseHandle, myCusparseOperation,
-					   &alpha, A_cusparse, vecX, &beta, vecY, myCudaDataType,
-					   alg, dBuffer));
-
-    CUDA_SAFE_CALL(cudaFree(dBuffer));
+    }
     KOKKOS_CUSPARSE_SAFE_CALL(cusparseDestroyDnVec(vecX));
     KOKKOS_CUSPARSE_SAFE_CALL(cusparseDestroyDnVec(vecY));
     KOKKOS_CUSPARSE_SAFE_CALL(cusparseDestroySpMat(A_cusparse));

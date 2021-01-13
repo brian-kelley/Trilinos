@@ -44,6 +44,7 @@
 
 #include <new>
 #include <cstring>
+#include <iostream>
 
 #include "Kokkos_Core_fwd.hpp"
 
@@ -446,6 +447,7 @@ namespace Stokhos {
       T* m = 0;
       if (sz > 0) {
 #if defined( CUDA_VERSION ) && ( 6000 <= CUDA_VERSION ) && defined(KOKKOS_ENABLE_CUDA_UVM) && !defined( __CUDA_ARCH__ )
+        std::cout << "Stokhos/Sacado (#1): Allocating " << sz * sizeof(T) << " bytes of UVM\n";
         cudaMallocManaged( (void**) &m, sz*sizeof(T), cudaMemAttachGlobal );
 #else
         m = static_cast<T* >(operator new(sz*sizeof(T)));
@@ -467,6 +469,7 @@ namespace Stokhos {
       T* m = 0;
       if (sz > 0) {
 #if defined( CUDA_VERSION ) && ( 6000 <= CUDA_VERSION ) && defined(KOKKOS_ENABLE_CUDA_UVM) && !defined( __CUDA_ARCH__ )
+        std::cout << "Stokhos/Sacado (#2): Allocating " << sz * sizeof(T) << " bytes of UVM\n";
         cudaMallocManaged( (void**) &m, sz*sizeof(T), cudaMemAttachGlobal );
 #else
         m = static_cast<T* >(operator new(sz*sizeof(T)));
@@ -487,6 +490,7 @@ namespace Stokhos {
       T* m = 0;
       if (sz > 0) {
 #if defined( CUDA_VERSION ) && ( 6000 <= CUDA_VERSION ) && defined(KOKKOS_ENABLE_CUDA_UVM) && !defined( __CUDA_ARCH__ )
+        std::cout << "Stokhos/Sacado (#3): Allocating " << sz * sizeof(T) << " bytes of UVM\n";
         cudaMallocManaged( (void**) &m, sz*sizeof(T), cudaMemAttachGlobal );
 #else
         m = static_cast<T* >(operator new(sz*sizeof(T)));
@@ -602,6 +606,7 @@ namespace Stokhos {
       T* m = 0;
       if (sz > 0) {
 #if defined( CUDA_VERSION ) && ( 6000 <= CUDA_VERSION ) && defined(KOKKOS_ENABLE_CUDA_UVM) && !defined( __CUDA_ARCH__ )
+        std::cout << "Stokhos/Sacado (#4): Allocating " << sz * sizeof(T) << " bytes of UVM\n";
         cudaMallocManaged( (void**) &m, sz*sizeof(T), cudaMemAttachGlobal );
 #else
         m = static_cast<T* >(operator new(sz*sizeof(T)));
@@ -623,6 +628,7 @@ namespace Stokhos {
       T* m = 0;
       if (sz > 0) {
 #if defined( CUDA_VERSION ) && ( 6000 <= CUDA_VERSION ) && defined(KOKKOS_ENABLE_CUDA_UVM) && !defined( __CUDA_ARCH__ )
+        std::cout << "Stokhos/Sacado (#5): Allocating " << sz * sizeof(T) << " bytes of UVM\n";
         cudaMallocManaged( (void**) &m, sz*sizeof(T), cudaMemAttachGlobal );
 #else
         m = static_cast<T* >(operator new(sz*sizeof(T)));
@@ -644,6 +650,7 @@ namespace Stokhos {
       T* m = 0;
       if (sz > 0) {
 #if defined( CUDA_VERSION ) && ( 6000 <= CUDA_VERSION ) && defined(KOKKOS_ENABLE_CUDA_UVM) && !defined( __CUDA_ARCH__ )
+        std::cout << "Stokhos/Sacado (#6): Allocating " << sz * sizeof(T) << " bytes of UVM\n";
         cudaMallocManaged( (void**) &m, sz*sizeof(T), cudaMemAttachGlobal );
 #else
         m = static_cast<T* >(operator new(sz*sizeof(T)));

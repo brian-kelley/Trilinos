@@ -193,7 +193,10 @@ namespace Sacado {
 #if defined( CUDA_VERSION ) && ( 6000 <= CUDA_VERSION ) && defined(KOKKOS_ENABLE_CUDA_UVM) && !defined( __CUDA_ARCH__ )
       T* m = 0;
       if (sz > 0)
+      {
+        std::cout << "Sacado: Allocating " << sz * sizeof(T) << " bytes of UVM\n";
         CUDA_SAFE_CALL( cudaMallocManaged( (void**) &m, sz*sizeof(T), cudaMemAttachGlobal ) );
+      }
 #elif defined(HAVE_SACADO_KOKKOSCORE) && defined(SACADO_KOKKOS_USE_MEMORY_POOL) && !defined(SACADO_DISABLE_CUDA_IN_KOKKOS) && defined(__CUDA_ARCH__)
       // This code assumes all threads enter ds_alloc, even those with sz == 0
       T* m = 0;

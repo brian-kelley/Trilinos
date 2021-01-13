@@ -111,13 +111,7 @@ namespace Impl{
       h->info,
       &pBufferSize);
 
-
-      // pBuffer returned by cudaMalloc is automatically aligned to 128 bytes.
-      cudaError_t my_error;
-      my_error = cudaMalloc((void**)&(h->pBuffer), pBufferSize);
-
-      if (cudaSuccess != my_error)
-        std::cout << "cudmalloc pBuffer error_t error name " << cudaGetErrorString(my_error) << std::endl;
+      h->pBuffer = Kokkos::View<char*, Kokkos::CudaSpace>(Kokkos::ViewAllocateWithoutInitializing("cuSPARSE-SpTRSV-buffer"), pBufferSize);
 
       status = cusparseDcsrsv2_analysis(
         h->handle,
@@ -130,7 +124,7 @@ namespace Impl{
         (int*)ent,
         h->info,
         h->policy,
-        h->pBuffer);
+        h->pBuffer.data());
 
       if (CUSPARSE_STATUS_SUCCESS != status)
         std::cout << "analysis status error name " << (status) << std::endl;
@@ -148,13 +142,7 @@ namespace Impl{
       h->info,
       &pBufferSize);
 
-
-      // pBuffer returned by cudaMalloc is automatically aligned to 128 bytes.
-      cudaError_t my_error;
-      my_error = cudaMalloc((void**)&(h->pBuffer), pBufferSize);
-
-      if (cudaSuccess != my_error)
-        std::cout << "cudmalloc pBuffer error_t error name " << cudaGetErrorString(my_error) << std::endl;
+      h->pBuffer = Kokkos::View<char*, Kokkos::CudaSpace>(Kokkos::ViewAllocateWithoutInitializing("cuSPARSE-SpTRSV-buffer"), pBufferSize);
 
       status = cusparseScsrsv2_analysis(
         h->handle,
@@ -167,7 +155,7 @@ namespace Impl{
         (int*)ent,
         h->info,
         h->policy,
-        h->pBuffer);
+        h->pBuffer.data());
 
       if (CUSPARSE_STATUS_SUCCESS != status)
         std::cout << "analysis status error name " << (status) << std::endl;
@@ -185,12 +173,7 @@ namespace Impl{
       h->info,
       &pBufferSize);
 
-      // pBuffer returned by cudaMalloc is automatically aligned to 128 bytes.
-      cudaError_t my_error;
-      my_error = cudaMalloc((void**)&(h->pBuffer), pBufferSize);
-
-      if (cudaSuccess != my_error)
-        std::cout << "cudmalloc pBuffer error_t error name " << cudaGetErrorString(my_error) << std::endl;
+      h->pBuffer = Kokkos::View<char*, Kokkos::CudaSpace>(Kokkos::ViewAllocateWithoutInitializing("cuSPARSE-SpTRSV-buffer"), pBufferSize);
 
       status = cusparseZcsrsv2_analysis(
         h->handle,
@@ -203,7 +186,7 @@ namespace Impl{
         (int*)ent,
         h->info,
         h->policy,
-        h->pBuffer);
+        h->pBuffer.data());
 
       if (CUSPARSE_STATUS_SUCCESS != status)
         std::cout << "analysis status error name " << (status) << std::endl;
@@ -221,12 +204,7 @@ namespace Impl{
       h->info,
       &pBufferSize);
 
-      // pBuffer returned by cudaMalloc is automatically aligned to 128 bytes.
-      cudaError_t my_error;
-      my_error = cudaMalloc((void**)&(h->pBuffer), pBufferSize);
-
-      if (cudaSuccess != my_error)
-        std::cout << "cudmalloc pBuffer error_t error name " << cudaGetErrorString(my_error) << std::endl;
+      h->pBuffer = Kokkos::View<char*, Kokkos::CudaSpace>(Kokkos::ViewAllocateWithoutInitializing("cuSPARSE-SpTRSV-buffer"), pBufferSize);
 
       status = cusparseCcsrsv2_analysis(
         h->handle,
@@ -239,7 +217,7 @@ namespace Impl{
         (int*)ent,
         h->info,
         h->policy,
-        h->pBuffer);
+        h->pBuffer.data());
 
       if (CUSPARSE_STATUS_SUCCESS != status)
         std::cout << "analysis status error name " << (status) << std::endl;
@@ -305,7 +283,7 @@ namespace Impl{
 
     if (std::is_same<scalar_type,double>::value) {
 
-      if (h->pBuffer == nullptr) { std::cout << "  pBuffer invalid" << std::endl; }
+      if (!h->pBuffer.data()) { std::cout << "  pBuffer invalid" << std::endl; }
       const double alpha = double(1);
 
       status = cusparseDcsrsv2_solve(
@@ -322,14 +300,14 @@ namespace Impl{
         (double*)bv,
         (double*)xv,
         h->policy,
-        h->pBuffer);
+        h->pBuffer.data());
 
       if (CUSPARSE_STATUS_SUCCESS != status)
         std::cout << "solve status error name " << (status) << std::endl;
     }
     else if (std::is_same<scalar_type,float>::value) {
 
-      if (h->pBuffer == nullptr) { std::cout << "  pBuffer invalid" << std::endl; }
+      if (!h->pBuffer.data()) { std::cout << "  pBuffer invalid" << std::endl; }
       const float alpha = float(1);
 
       status = cusparseScsrsv2_solve(
@@ -346,7 +324,7 @@ namespace Impl{
         (float*)bv,
         (float*)xv,
         h->policy,
-        h->pBuffer);
+        h->pBuffer.data());
 
       if (CUSPARSE_STATUS_SUCCESS != status)
         std::cout << "solve status error name " << (status) << std::endl;
@@ -369,7 +347,7 @@ namespace Impl{
         (cuDoubleComplex*)bv,
         (cuDoubleComplex*)xv,
         h->policy,
-        h->pBuffer);
+        h->pBuffer.data());
 
       if (CUSPARSE_STATUS_SUCCESS != status)
         std::cout << "solve status error name " << (status) << std::endl;
@@ -392,7 +370,7 @@ namespace Impl{
         (cuComplex*)bv,
         (cuComplex*)xv,
         h->policy,
-        h->pBuffer);
+        h->pBuffer.data());
 
       if (CUSPARSE_STATUS_SUCCESS != status)
         std::cout << "solve status error name " << (status) << std::endl;

@@ -131,7 +131,7 @@ public:
     csrsv2Info_t info {0};
     cusparseMatDescr_t descr;
     cusparseSolvePolicy_t policy;
-    void *pBuffer {nullptr};
+    Kokkos::View<char*, Kokkos::CudaSpace> pBuffer;
 
     cuSparseHandleType(bool transpose_, bool is_lower){
       cusparseStatus_t status;
@@ -166,10 +166,6 @@ public:
     }
 
     ~cuSparseHandleType() {
-      if (pBuffer != nullptr) {
-        cudaFree(pBuffer);
-        pBuffer = nullptr;
-      }
       cusparseDestroyMatDescr(descr);
       cusparseDestroy(handle);
     }
