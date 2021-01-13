@@ -72,6 +72,7 @@
 #include "Kokkos_ArithTraits.hpp"
 #include <memory>
 #include <sstream>
+#include "/ascldap/users/bmkelle/BMK_DebugUtils.hpp"
 
 #ifdef HAVE_TPETRA_INST_FLOAT128
 namespace Kokkos {
@@ -3159,6 +3160,8 @@ namespace Tpetra {
                << ") > X.getOrigNumLocalRows() (=" << X.getOrigNumLocalRows ()
                << ")." << endl;
       lclGood = 0;
+      std::cout << "Hit the MV tooManyElts, in offset view constructor\n";
+      bmk_backtrace();
       TEUCHOS_TEST_FOR_EXCEPTION
         (! debug && tooManyElts, std::invalid_argument,
          prefix << errStrm->str () << suffix);

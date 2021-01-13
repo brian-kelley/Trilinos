@@ -533,12 +533,16 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2BlockRelaxation, OverlappingPartition, 
 
   for (int i=1; i<6; ++i) {
 
+    std::cout << "Setting up Relaxation.\n";
     pList.set("relaxation: sweeps",i);
     pPrec->setParameters(pList);
     pPrec->initialize();
+    std::cout << "Compuintg Relaxation.\n";
     pPrec->compute();
+    std::cout << "Applying Relaxation (" << i << " sweeps).\n";
     X->putScalar(zero);
     pPrec->apply(*B,*X);
+    std::cout << "Done!\n";
 
     A->apply(*X, *Res, Teuchos::NO_TRANS, one, zero); //Res = A*X
     Res->update(one,*B,-one);                         //Res = B-Res

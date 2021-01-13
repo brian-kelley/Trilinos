@@ -666,6 +666,16 @@ private:
           Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& Y,
           const Tpetra::ESweepDirection direction) const;
 
+  void ApplyInverseSerialGS_RowMatrix(
+      const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& X,
+      Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& Y,
+      const Tpetra::ESweepDirection direction) const;
+
+  void ApplyInverseSerialGS_CrsMatrix(
+      const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& X,
+      Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& Y,
+      const Tpetra::ESweepDirection direction) const;
+
   //! Apply parallel (multicolor, two-stage, or cluster) Gauss-Seidel.
   void ApplyInverseParallelGS(
     const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& B,

@@ -655,6 +655,8 @@ void Relaxation<MatrixType>::initialize ()
 
     Teuchos::RCP<const block_crs_matrix_type> A_bcrs =
       Teuchos::rcp_dynamic_cast<const block_crs_matrix_type> (A_);
+    Teuchos::RCP<const crs_matrix_type> A_crs =
+      Teuchos::rcp_dynamic_cast<const crs_matrix_type> (A_);
     hasBlockCrsMatrix_ = ! A_bcrs.is_null ();
     if(hasBlockCrsMatrix_ && A_bcrs->getGraph()->getImporter())
     {
@@ -666,10 +668,14 @@ void Relaxation<MatrixType>::initialize ()
       //build the (point) importer
       Importer_ = Teuchos::rcp(new import_type(pointDomainMap, pointColMapRCP));
     }
-    else
+    else if(!A_crs.is_null())
     {
       //Non-block matrix. This may be null, if the domain/col maps are the same.
       Importer_ = A_->getGraph()->getImporter();
+    }
+    else
+    {
+      Importer_ = Teuchos::null;
     }
 
     if (PrecType_ == Details::MTGS || PrecType_ == Details::MTSGS ||
@@ -1632,7 +1638,7 @@ ApplyInverseParallelGS(
       "Ifpack2::Relaxation::MTGaussSeidel requires that the input "
       "B be in the range Map of the matrix.");
     TEUCHOS_TEST_FOR_EXCEPTION(
-      ! D.getMap ()->isSameAs (*rowMap), std::runtime_error,
+      ! Diagonal_->getMap ()->isSameAs (*rowMap), std::runtime_error,
       "Ifpack2::Relaxation::MTGaussSeidel requires that the input "
       "D be in the row Map of the matrix.");
     TEUCHOS_TEST_FOR_EXCEPTION(
@@ -1876,7 +1882,6 @@ ApplyInverseParallelGS(
   if (direction == Tpetra::Symmetric)
     ApplyFlops *= 2.0;
   ApplyFlops_ += ApplyFlops;
-
 }
 
 template<class MatrixType>
@@ -1897,17 +1902,32 @@ ApplyInverseSerialGS(const Tpetra::MultiVector<scalar_type,local_ordinal_type,gl
     return; // Nothing to do.
   }
 
+  auto Acrs = Teuchos::rcp_dynamic_cast<const crs_matrix_type> (A_);
+  if(Acrs.is_null() && !hasBlockCrsMatrix_)
+  {
+    //Row matrix
+    std::cout << "** Taking RowMatrix path for serial GS.\n";
+    ApplyInverseSerialGS_RowMatrix(X, Y, direction);
+    return;
+  }
+  else if(Acrs.get())
+  {
+    //CRS matrix
+    std::cout << "** Taking CrsMatrix path for serial GS.\n";
+    ApplyInverseSerialGS_CrsMatrix(X, Y, direction);
+    return;
+  }
+  //else: block (this path seems to work)
+
   // We don't need the Export object because this method assumes
   // that the row, domain, and range Maps are the same.  We do need
   // the Import object, if there is one, though.
-  RCP<const import_type> importer = A_->getGraph()->getImporter();
+  //RCP<const import_type> importer = A_->getGraph()->getImporter();
   TEUCHOS_TEST_FOR_EXCEPTION(
     !A_->getGraph()->getExporter().is_null(), std::runtime_error,
     "Ifpack2 GS/SGS require that the row, domain, "
     "and range Maps be the same.  This cannot be the case, because the "
     "matrix has a nontrivial Export object.");
-
-  //Point importer
 
   Teuchos::RCP<const block_crs_matrix_type> A_bcrs =
     Teuchos::rcp_dynamic_cast<const block_crs_matrix_type> (A_);
@@ -1920,13 +1940,16 @@ ApplyInverseSerialGS(const Tpetra::MultiVector<scalar_type,local_ordinal_type,gl
 
   Y.sync_host();
   bool copyBackOutput = false;
+  bool doImport = !Importer_.is_null() && A_->getRowMap()->isDistributed();
 
-  if (Importer_.is_null ()) { // Domain and column Maps are the same.
+  //std::cout << "GS: importer is " << Importer_.get() << '\n';
+
+  if (!doImport) { // Domain and column Maps are the same.
     Y_colMap = rcpFromRef(Y);
     Y_domainMap = rcpFromRef(Y);
-    if (ZeroStartingSolution_)
-      // No need for an Import, since we're filling with zeros.
+    if (ZeroStartingSolution_) {
       Y.putScalar (STS::zero());
+    }
   }
   else { // We will be doing Import operations in the sweeps.
     // This kernel assumes that X is a domain Map view of a column
@@ -1947,14 +1970,15 @@ ApplyInverseSerialGS(const Tpetra::MultiVector<scalar_type,local_ordinal_type,gl
       // here, and skip the first Import in the first sweep.
       // Importing directly from X effects the copy into X_domainMap
       // (which is a view of X_colMap).
-      Y_colMap->doImport (Y, *importer, Tpetra::CombineMode::INSERT);
+      Y_colMap->doImport (Y, *Importer_, Tpetra::CombineMode::INSERT);
     }
     copyBackOutput = true;
   }
 
   for (int sweep = 0; sweep < NumSweeps_; ++sweep) {
-    if (!Importer_.is_null ()) {
-      Y_colMap->doImport (*Y_domainMap, *Importer_, Tpetra::CombineMode::INSERT);
+    if(doImport && sweep > 0)
+    {
+      Y_colMap->doImport (*Y_domainMap, *Importer_, Tpetra::INSERT);
     }
     Y_colMap->sync_host();
     serialGaussSeidel_->apply(*Y_colMap, X, direction);
@@ -1986,6 +2010,401 @@ ApplyInverseSerialGS(const Tpetra::MultiVector<scalar_type,local_ordinal_type,gl
   if(direction == Tpetra::Symmetric)
     applyFlops *= 2;
   ApplyFlops_ += applyFlops;
+}
+
+template<class MatrixType>
+void
+Relaxation<MatrixType>::
+ApplyInverseSerialGS_CrsMatrix(
+    const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& B,
+    Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& X,
+    const Tpetra::ESweepDirection direction) const
+{
+  using Teuchos::null;
+  using Teuchos::RCP;
+  using Teuchos::rcp;
+  using Teuchos::rcp_const_cast;
+  using Teuchos::rcpFromRef;
+  using ST = scalar_type;
+  using MV = multivector_type;
+
+  auto numSweeps = this->NumSweeps_;
+  Teuchos::RCP<const crs_matrix_type> Acrs = Teuchos::rcp_dynamic_cast<const crs_matrix_type>(A_);
+  bool fc = Acrs->isFillComplete();
+
+  TEUCHOS_TEST_FOR_EXCEPTION(
+    !fc, std::runtime_error,
+    "Tpetra::CrsMatrix::gaussSeidel: cannot call this method until "
+    "fillComplete() has been called.");
+  TEUCHOS_TEST_FOR_EXCEPTION(
+    numSweeps < 0,
+    std::invalid_argument,
+    "Tpetra::CrsMatrix::gaussSeidel: The number of sweeps must be , "
+    "nonnegative but you provided numSweeps = " << numSweeps << " < 0.");
+
+  if (numSweeps == 0) {
+    return; // Nothing to do.
+  }
+
+  // We don't need the Export object because this method assumes
+  // that the row, domain, and range Maps are the same.  We do need
+  // the Import object, if there is one, though.
+  RCP<const import_type> importer = Acrs->getGraph()->getImporter();
+
+  RCP<const map_type> domainMap = Acrs->getDomainMap ();
+  RCP<const map_type> rangeMap = Acrs->getRangeMap ();
+  RCP<const map_type> rowMap = Acrs->getGraph ()->getRowMap ();
+  RCP<const map_type> colMap = Acrs->getGraph ()->getColMap ();
+
+  {
+    // The relation 'isSameAs' is transitive.  It's also a
+    // collective, so we don't have to do a "shared" test for
+    // exception (i.e., a global reduction on the test value).
+    TEUCHOS_TEST_FOR_EXCEPTION(
+      ! X.getMap ()->isSameAs (*domainMap),
+      std::runtime_error,
+      "Tpetra::CrsMatrix::gaussSeidel requires that the input "
+      "multivector X be in the domain Map of the matrix.");
+    TEUCHOS_TEST_FOR_EXCEPTION(
+      ! B.getMap ()->isSameAs (*rangeMap),
+      std::runtime_error,
+      "Tpetra::CrsMatrix::gaussSeidel requires that the input "
+      "B be in the range Map of the matrix.");
+    TEUCHOS_TEST_FOR_EXCEPTION(
+      ! Diagonal_->getMap ()->isSameAs (*rowMap),
+      std::runtime_error,
+      "Tpetra::CrsMatrix::gaussSeidel requires that the input "
+      "D be in the row Map of the matrix.");
+    TEUCHOS_TEST_FOR_EXCEPTION(
+      ! rowMap->isSameAs (*rangeMap),
+      std::runtime_error,
+      "Tpetra::CrsMatrix::gaussSeidel requires that the row Map and the "
+      "range Map be the same (in the sense of Tpetra::Map::isSameAs).");
+    TEUCHOS_TEST_FOR_EXCEPTION(
+      ! domainMap->isSameAs (*rangeMap),
+      std::runtime_error,
+      "Tpetra::CrsMatrix::gaussSeidel requires that the domain Map and "
+      "the range Map of the matrix be the same.");
+  }
+
+  // If B is not constant stride, copy it into a constant stride
+  // multivector.  We'l handle the right-hand side B first and deal
+  // with X right before the sweeps, to improve locality of the
+  // first sweep.  (If the problem is small enough, then that will
+  // hopefully keep more of the entries of X in cache.  This
+  // optimizes for the typical case of a small number of sweeps.)
+  RCP<const MV> B_in;
+  if (B.isConstantStride()) {
+    B_in = rcpFromRef (B);
+  }
+  else {
+    // The range Map and row Map are the same in this case, so we
+    // can use the (possibly cached) row Map multivector to store a
+    // constant stride copy of B.  We don't have to copy back, since
+    // Gauss-Seidel won't modify B.
+    RCP<MV> B_in_nonconst = Acrs->getRowMapMultiVector (B, true);
+    deep_copy (*B_in_nonconst, B); // Copy from B into B_in(_nonconst).
+    B_in = rcp_const_cast<const MV> (B_in_nonconst);
+
+    TPETRA_EFFICIENCY_WARNING(
+      ! B.isConstantStride (),
+      std::runtime_error,
+      "gaussSeidel: The current implementation of the Gauss-Seidel kernel "
+      "requires that X and B both have constant stride.  Since B does not "
+      "have constant stride, we had to make a copy.  This is a limitation of "
+      "the current implementation and not your fault, but we still report it "
+      "as an efficiency warning for your information.");
+  }
+
+  // If X is not constant stride, copy it into a constant stride
+  // multivector.  Also, make the column Map multivector X_colMap,
+  // and its domain Map view X_domainMap.  (X actually must be a
+  // domain Map view of a column Map multivector; exploit this, if X
+  // has constant stride.)
+
+  RCP<MV> X_domainMap;
+  RCP<MV> X_colMap;
+  bool copiedInput = false;
+
+  if (importer.is_null ()) { // Domain and column Maps are the same.
+    if (X.isConstantStride ()) {
+      X_domainMap = rcpFromRef (X);
+      X_colMap = X_domainMap;
+      copiedInput = false;
+    }
+    else {
+      // Get a temporary column Map multivector, make a domain Map
+      // view of it, and copy X into the domain Map view.  We have
+      // to copy here because we won't be doing Import operations.
+      X_colMap = Acrs->getColumnMapMultiVector (X, true);
+      X_domainMap = X_colMap; // Domain and column Maps are the same.
+      deep_copy (*X_domainMap, X); // Copy X into the domain Map view.
+      copiedInput = true;
+      TPETRA_EFFICIENCY_WARNING(
+        ! X.isConstantStride (), std::runtime_error,
+        "Tpetra::CrsMatrix::gaussSeidel: The current implementation of the "
+        "Gauss-Seidel kernel requires that X and B both have constant "
+        "stride.  Since X does not have constant stride, we had to make a "
+        "copy.  This is a limitation of the current implementation and not "
+        "your fault, but we still report it as an efficiency warning for "
+        "your information.");
+    }
+  }
+  else { // We will be doing Import operations in the sweeps.
+    if (X.isConstantStride ()) {
+      X_domainMap = rcpFromRef (X);
+      // This kernel assumes that X is a domain Map view of a column
+      // Map multivector.  We will only check if this is valid if
+      // the CMake configure Teuchos_ENABLE_DEBUG is ON.
+      X_colMap = X_domainMap->offsetViewNonConst (colMap, 0);
+
+      // FIXME (mfh 19 Mar 2013) Do we need to fill the remote
+      // entries of X_colMap with zeros?  Do we need to fill all of
+      // X_domainMap initially with zeros?  Ifpack
+      // (Ifpack_PointRelaxation.cpp, line 906) creates an entirely
+      // new MultiVector each time.
+
+      // Do the first Import for the first sweep.  This simplifies
+      // the logic in the sweeps.
+      X_colMap->doImport (X, *importer, Tpetra::INSERT);
+      copiedInput = false;
+    }
+    else {
+      // Get a temporary column Map multivector X_colMap, and make a
+      // domain Map view X_domainMap of it.  Instead of copying, we
+      // do an Import from X into X_domainMap.  This saves us a
+      // copy, since the Import has to copy the data anyway.
+      X_colMap = Acrs->getColumnMapMultiVector (X, true);
+      X_domainMap = X_colMap->offsetViewNonConst (domainMap, 0);
+      X_colMap->doImport (X, *importer, Tpetra::INSERT);
+      copiedInput = true;
+      TPETRA_EFFICIENCY_WARNING(
+        ! X.isConstantStride (), std::runtime_error,
+        "Tpetra::CrsMatrix::gaussSeidel: The current implementation of the "
+        "Gauss-Seidel kernel requires that X and B both have constant stride.  "
+        "Since X does not have constant stride, we had to make a copy.  "
+        "This is a limitation of the current implementation and not your fault, "
+        "but we still report it as an efficiency warning for your information.");
+    }
+  }
+
+  for (int sweep = 0; sweep < numSweeps; ++sweep) {
+    if (! importer.is_null () && sweep > 0) {
+      // We already did the first Import for the zeroth sweep.
+      X_colMap->doImport (*X_domainMap, *importer, Tpetra::INSERT);
+    }
+
+    serialGaussSeidel_->apply(*X_colMap, *B_in, direction);
+  }
+
+  if (copiedInput) {
+    deep_copy (X, *X_domainMap); // Copy back from X_domainMap to X.
+  }
+}
+
+template<class MatrixType>
+void
+Relaxation<MatrixType>::
+ApplyInverseSerialGS_RowMatrix(
+    const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& X,
+    Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>& Y,
+    const Tpetra::ESweepDirection direction) const
+{
+  using Teuchos::Array;
+  using Teuchos::ArrayRCP;
+  using Teuchos::ArrayView;
+  using Teuchos::as;
+  using Teuchos::RCP;
+  using Teuchos::rcp;
+  using Teuchos::rcpFromRef;
+  typedef Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_type,node_type> MV;
+
+  // Tpetra's GS implementation for CrsMatrix handles zeroing out the
+  // starting multivector itself.  The generic RowMatrix version here
+  // does not, so we have to zero out Y here.
+  if (ZeroStartingSolution_) {
+    Y.putScalar (STS::zero ());
+  }
+
+  const size_t NumVectors = X.getNumVectors ();
+  const size_t maxLength = A_->getNodeMaxNumRowEntries ();
+  Array<local_ordinal_type> Indices (maxLength);
+  Array<scalar_type> Values (maxLength);
+
+  // Local smoothing stuff
+  const size_t numMyRows = A_->getNodeNumRows();
+  const local_ordinal_type* rowInd  = 0;
+  size_t numActive = numMyRows;
+  bool do_local = ! localSmoothingIndices_.is_null ();
+  if (do_local) {
+    rowInd = localSmoothingIndices_.getRawPtr ();
+    numActive = localSmoothingIndices_.size ();
+  }
+
+  RCP<MV> Y2;
+  if (IsParallel_) {
+    if (Importer_.is_null ()) { // domain and column Maps are the same.
+      updateCachedMultiVector (Y.getMap (), NumVectors);
+    }
+    else {
+      updateCachedMultiVector (Importer_->getTargetMap (), NumVectors);
+    }
+    Y2 = cachedMV_;
+  }
+  else {
+    Y2 = rcpFromRef (Y);
+  }
+
+  // Diagonal
+  ArrayRCP<const scalar_type> d_rcp = Diagonal_->get1dView ();
+  ArrayView<const scalar_type> d_ptr = d_rcp();
+
+  // Constant stride check
+  bool constant_stride = X.isConstantStride() && Y2->isConstantStride();
+
+  if (constant_stride) {
+    std::cout << "** In old RowMatrix GS, x/y constant stride path.\n";
+    // extract 1D RCPs
+    size_t                    x_stride = X.getStride();
+    size_t                   y2_stride = Y2->getStride();
+    ArrayRCP<scalar_type>       y2_rcp = Y2->get1dViewNonConst();
+    ArrayRCP<const scalar_type>  x_rcp = X.get1dView();
+    ArrayView<scalar_type>      y2_ptr = y2_rcp();
+    ArrayView<const scalar_type> x_ptr = x_rcp();
+    Array<scalar_type> dtemp(NumVectors,STS::zero());
+
+    for (int j = 0; j < NumSweeps_; ++j) {
+      // data exchange is here, once per sweep
+      if (IsParallel_) {
+        if (Importer_.is_null ()) {
+          // FIXME (mfh 27 May 2019) This doesn't deep copy -- not
+          // clear if this is correct.  Reevaluate at some point.
+
+          *Y2 = Y; // just copy, since domain and column Maps are the same
+        } else {
+          Y2->doImport (Y, *Importer_, Tpetra::INSERT);
+        }
+      }
+
+      if (direction == Tpetra::Forward || direction == Tpetra::Symmetric) { // Forward sweep
+        for (size_t ii = 0; ii < numActive; ++ii) {
+          local_ordinal_type i = as<local_ordinal_type> (do_local ? rowInd[ii] : ii);
+          size_t NumEntries;
+          A_->getLocalRowCopy (i, Indices (), Values (), NumEntries);
+          dtemp.assign(NumVectors,STS::zero());
+
+          for (size_t k = 0; k < NumEntries; ++k) {
+            const local_ordinal_type col = Indices[k];
+            for (size_t m = 0; m < NumVectors; ++m) {
+              dtemp[m] += Values[k] * y2_ptr[col + y2_stride*m];
+            }
+          }
+
+          for (size_t m = 0; m < NumVectors; ++m) {
+            y2_ptr[i + y2_stride*m] += DampingFactor_ * d_ptr[i] * (x_ptr[i + x_stride*m] - dtemp[m]);
+          }
+        }
+      }
+      if (direction == Tpetra::Backward || direction == Tpetra::Symmetric) { // Backward sweep
+        // ptrdiff_t is the same size as size_t, but is signed.  Being
+        // signed is important so that i >= 0 is not trivially true.
+        for (ptrdiff_t ii = as<ptrdiff_t> (numActive) - 1; ii >= 0; --ii) {
+          local_ordinal_type i = as<local_ordinal_type> (do_local ? rowInd[ii] : ii);
+          size_t NumEntries;
+          A_->getLocalRowCopy (i, Indices (), Values (), NumEntries);
+          dtemp.assign (NumVectors, STS::zero ());
+
+          for (size_t k = 0; k < NumEntries; ++k) {
+            const local_ordinal_type col = Indices[k];
+            for (size_t m = 0; m < NumVectors; ++m) {
+              dtemp[m] += Values[k] * y2_ptr[col + y2_stride*m];
+            }
+          }
+
+          for (size_t m = 0; m < NumVectors; ++m) {
+            y2_ptr[i + y2_stride*m] += DampingFactor_ * d_ptr[i] * (x_ptr[i + x_stride*m] - dtemp[m]);
+          }
+        }
+      }
+      // FIXME (mfh 02 Jan 2013) This is only correct if row Map == range Map.
+      if (IsParallel_) {
+        Tpetra::deep_copy (Y, *Y2);
+      }
+    }
+  }
+  else {
+    std::cout << "** In old RowMatrix GS, non-constant stride path.\n";
+    // extract 2D RCPS
+    ArrayRCP<ArrayRCP<scalar_type> > y2_ptr = Y2->get2dViewNonConst ();
+    ArrayRCP<ArrayRCP<const scalar_type> > x_ptr = X.get2dView ();
+
+    for (int j = 0; j < NumSweeps_; ++j) {
+      // data exchange is here, once per sweep
+      if (IsParallel_) {
+        if (Importer_.is_null ()) {
+          *Y2 = Y; // just copy, since domain and column Maps are the same
+        } else {
+          Y2->doImport (Y, *Importer_, Tpetra::INSERT);
+        }
+      }
+
+      if (! DoBackwardGS_) { // Forward sweep
+        for (size_t ii = 0; ii < numActive; ++ii) {
+          local_ordinal_type i = as<local_ordinal_type> (do_local ? rowInd[ii] : ii);
+          size_t NumEntries;
+          A_->getLocalRowCopy (i, Indices (), Values (), NumEntries);
+
+          for (size_t m = 0; m < NumVectors; ++m) {
+            scalar_type dtemp = STS::zero ();
+            ArrayView<const scalar_type> x_local = (x_ptr())[m]();
+            ArrayView<scalar_type>      y2_local = (y2_ptr())[m]();
+
+            for (size_t k = 0; k < NumEntries; ++k) {
+              const local_ordinal_type col = Indices[k];
+              dtemp += Values[k] * y2_local[col];
+            }
+            y2_local[i] += DampingFactor_ * d_ptr[i] * (x_local[i] - dtemp);
+          }
+        }
+      }
+      else { // Backward sweep
+        // ptrdiff_t is the same size as size_t, but is signed.  Being
+        // signed is important so that i >= 0 is not trivially true.
+        for (ptrdiff_t ii = as<ptrdiff_t> (numActive) - 1; ii >= 0; --ii) {
+          local_ordinal_type i = as<local_ordinal_type> (do_local ? rowInd[ii] : ii);
+
+          size_t NumEntries;
+          A_->getLocalRowCopy (i, Indices (), Values (), NumEntries);
+
+          for (size_t m = 0; m < NumVectors; ++m) {
+            scalar_type dtemp = STS::zero ();
+            ArrayView<const scalar_type> x_local = (x_ptr())[m]();
+            ArrayView<scalar_type>      y2_local = (y2_ptr())[m]();
+
+            for (size_t k = 0; k < NumEntries; ++k) {
+              const local_ordinal_type col = Indices[k];
+              dtemp += Values[k] * y2_local[col];
+            }
+            y2_local[i] += DampingFactor_ * d_ptr[i] * (x_local[i] - dtemp);
+          }
+        }
+      }
+
+      // FIXME (mfh 02 Jan 2013) This is only correct if row Map == range Map.
+      if (IsParallel_) {
+        Tpetra::deep_copy (Y, *Y2);
+      }
+    }
+  }
+
+
+  // See flop count discussion in implementation of ApplyInverseGS_CrsMatrix().
+  const double dampingFlops = (DampingFactor_ == STS::one()) ? 0.0 : 1.0;
+  const double numVectors = as<double> (X.getNumVectors ());
+  const double numGlobalRows = as<double> (A_->getGlobalNumRows ());
+  const double numGlobalNonzeros = as<double> (A_->getGlobalNumEntries ());
+  ApplyFlops_ += 2.0 * NumSweeps_ * numVectors *
+    (2.0 * numGlobalRows + 2.0 * numGlobalNonzeros + dampingFlops);
 }
 
 template<class MatrixType>

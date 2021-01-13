@@ -68,6 +68,8 @@ namespace Details
     //Setup for CrsMatrix
     GaussSeidel(const crs_matrix_type& A, Teuchos::RCP<vector_type>& inverseDiagVec_, Teuchos::ArrayRCP<LO>& applyRows_, Scalar omega_)
     {
+      std::cout << "|||||||| In crs matrix constructor for local GaussSeidel." << std::endl;
+      std::cout << "Matrix local/global rows: " << A.getNodeNumRows() << "/" << A.getGlobalNumRows() << std::endl;
       numRows = A.getNodeNumRows();
       inverseDiagVec = inverseDiagVec_;
       inverseDiagVec->sync_host();
@@ -85,7 +87,8 @@ namespace Details
 
     GaussSeidel(const row_matrix_type& A, Teuchos::RCP<vector_type>& inverseDiagVec_, Teuchos::ArrayRCP<LO>& applyRows_, Scalar omega_)
     {
-      std::cout << "In row matrix constructor for local GaussSeidel." << std::endl;
+      std::cout << "|||||||| In row matrix constructor for local GaussSeidel." << std::endl;
+      std::cout << "Matrix local/global rows: " << A.getNodeNumRows() << "/" << A.getGlobalNumRows() << std::endl;
       numRows = A.getNodeNumRows();
       inverseDiagVec = inverseDiagVec_;
       inverseDiagVec->sync_host();
@@ -115,11 +118,12 @@ namespace Details
           Avalues(rowBegin + j) = rowValues[j];
         }
       }
-      std::cout << "Rank " << A.getRowMap()->getComm()->getRank() << " constructed local CRS matrix with " << numRows << " rows and " << Arowmap(numRows) << " entries.\n";
+      //std::cout << "Rank " << A.getComm()->getRank() << " constructed local CRS matrix with " << numRows << " rows and " << Arowmap(numRows) << " entries.\n";
     }
 
     GaussSeidel(const bcrs_matrix_type& A, const InverseBlocks& inverseBlockDiag_, Teuchos::ArrayRCP<LO>& applyRows_, Scalar omega_)
     {
+      std::cout << "|||||||| In block matrix constructor for local GaussSeidel." << std::endl;
       numRows = A.getNodeNumRows();
       //note: next 2 lines are no-ops if inverseBlockDiag_ is already host-accessible
       inverseBlockDiag = Kokkos::create_mirror_view(inverseBlockDiag_);
@@ -139,6 +143,7 @@ namespace Details
     template<bool useApplyRows, bool multipleRHS, bool omegaNotOne>
     void applyImpl(multivector_type& x, const multivector_type& b, Tpetra::ESweepDirection direction)
     {
+      //std::cout << "** Applying row/crs version of GS.\n";
       //note: direction is either Forward or Backward (Symmetric is handled in apply())
       LO numApplyRows = useApplyRows ? (LO) applyRows.size() : numRows;
       //note: inverseDiagMV always has only one column

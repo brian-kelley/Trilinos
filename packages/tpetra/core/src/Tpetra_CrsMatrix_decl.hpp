@@ -3693,7 +3693,7 @@ namespace Tpetra {
     void computeGlobalConstants();
     //! Returns true if globalConstants have been computed; false otherwise
     bool haveGlobalConstants() const;
-  protected:
+  //protected:
     /// \brief Column Map MultiVector used in apply().
     ///
     /// This is a column Map MultiVector.  It is used as the target of
