@@ -351,14 +351,17 @@ iallreduce (const int localValue,
             const ::Teuchos::Comm<int>& comm)
 {
   using input_view_type =
-    Kokkos::View<const int*, Kokkos::HostSpace,
-      Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+    Kokkos::View<int, Kokkos::HostSpace>;
   using output_view_type =
-    Kokkos::View<int*, Kokkos::HostSpace,
+    Kokkos::View<int, Kokkos::HostSpace,
       Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
-  input_view_type localView (&localValue, 1);
-  output_view_type globalView (&globalValue, 1);
+  //BMK: Create a persistent view containing localValue - its lifetime will be until the end of wait() on
+  //the CommRequest. Otherwise, the lifetime of &localValue is just this function, so MPI could
+  //read the wrong input.
+  input_view_type localView(Kokkos::ViewAllocateWithoutInitializing("iallreduce input"));
+  localView() = localValue;
+  output_view_type globalView (&globalValue);
   return ::Tpetra::Details::iallreduce (localView, globalView, op, comm);
 }
 

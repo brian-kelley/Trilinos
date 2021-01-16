@@ -170,58 +170,6 @@ void idotLocal(const ResultView& localResult,
   }
 }
 
-//Fallback version: produces same result, but is synchronous.
-//Used only when MPI is not CUDA-aware, and the global result lives on device.
-//It's not allowed to use a CudaSpace or CudaUVMSpace view as a target buffer for MPI
-//unless CUDA-aware.
-template<class SC, class LO, class GO, class NT, class ResultView>
-void blockingDotImpl(
-    const ResultView& globalResult,
-    const ::Tpetra::MultiVector<SC, LO, GO, NT>& X,
-    const ::Tpetra::MultiVector<SC, LO, GO, NT>& Y,
-    bool mpiReduceInPlace)
-{
-  using MV = ::Tpetra::MultiVector<SC, LO, GO, NT>;
-  using dot_type = typename MV::dot_type;
-  using result_dev_view_type = Kokkos::View<dot_type*, typename NT::device_type>;
-  using result_mirror_view_type = typename result_dev_view_type::HostMirror;
-  using result_host_view_type = Kokkos::View<dot_type*, Kokkos::HostSpace>;
-  using dev_mem_space = typename result_dev_view_type::memory_space;
-  using mirror_mem_space = typename result_mirror_view_type::memory_space;
-  using unmanaged_result_host_view_type = Kokkos::View<dot_type*, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
-  const size_t numVecs = globalResult.extent(0);
-  //Logic to compute the local dot is no different than when CUDA-aware MPI.
-  result_host_view_type localHostResult(Kokkos::ViewAllocateWithoutInitializing("HostLocalDotResult"), numVecs);
-  if(X.template need_sync<dev_mem_space>())
-  {
-    //compute local result on host.
-    //NOTE: UVM never takes this branch because then dev_mem_space == mirror_mem_space.
-    //This means that the dot is actually computed on host.
-    idotLocal<SC, LO, GO, NT, result_host_view_type, mirror_mem_space>(localHostResult, X, Y);
-  }
-  else
-  {
-    //compute local result on temporary device view, then copy that to host.
-    result_dev_view_type localDeviceResult(Kokkos::ViewAllocateWithoutInitializing("DeviceLocalDotResult"), numVecs);
-    idotLocal<SC, LO, GO, NT, result_dev_view_type, dev_mem_space>(localDeviceResult, X, Y);
-    //NOTE: no fence is required: deep_copy will fence.
-    Kokkos::deep_copy(localHostResult, localDeviceResult);
-  }
-  result_host_view_type globalHostResultOwning;
-  unmanaged_result_host_view_type globalHostResultNonowning;
-  if(mpiReduceInPlace)
-  {
-    globalHostResultNonowning = unmanaged_result_host_view_type(localHostResult.data(), numVecs);
-  }
-  else
-  {
-    globalHostResultOwning = result_host_view_type(Kokkos::ViewAllocateWithoutInitializing("HostGlobalDotResult"), numVecs);
-    globalHostResultNonowning = unmanaged_result_host_view_type(globalHostResultOwning.data(), numVecs);
-  }
-  Teuchos::reduceAll<int, dot_type> (*X.getMap()->getComm(), Teuchos::REDUCE_SUM, numVecs, localHostResult.data(), globalHostResultNonowning.data());
-  Kokkos::deep_copy(globalResult, globalHostResultNonowning);
-}
-
 /// \brief Internal (common) version of idot, a global dot product
 /// that uses a non-blocking MPI reduction.
 ///
@@ -246,44 +194,23 @@ idotImpl(const ResultView& globalResult,
   using unmanaged_result_dev_view_type = Kokkos::View<dot_type*, dev_mem_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
   using unmanaged_result_host_view_type = Kokkos::View<dot_type*, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
   auto comm = X.getMap()->getComm();
-  bool mpiReduceInPlace = !Details::isInterComm(*comm);
   //note: numVecs is verified in idotLocal
   const size_t numVecs = globalResult.extent(0);
-  //BMK: If either local or global results live in a CUDA device space but
-  //MPI is not CUDA-aware, we are forced to perform (synchronous) communication
-  //using temporary HostSpace view(s).
-#ifdef KOKKOS_ENABLE_CUDA
-  //If globalResult's memory space is a Cuda space, then the user's global result lives on device.
-  //For this case, there is currently no way to do the asynchronous MPI reduction to a temporary HostSpace
-  //view, and then deep copy to the original globalResult. 
-  //However, this could also be solved
-  //(and still be globally asynchronous) by adding a
-  //deep_copy callback to CommRequest.
-  if(!Tpetra::Details::Behavior::assumeMpiIsCudaAware() &&
-     (std::is_same<global_result_memspace, Kokkos::CudaSpace>::value || 
-     std::is_same<global_result_memspace, Kokkos::CudaUVMSpace>::value))
-  {
-    blockingDotImpl<SC, LO, GO, NT, ResultView>(globalResult, X, Y, mpiReduceInPlace);
-    return Tpetra::Details::Impl::emptyCommRequest();
-  }
-#endif
   bool X_latestOnHost = X.template need_sync<dev_mem_space>();
   bool runOnHost = !std::is_same<dev_mem_space, mirror_mem_space>::value && X_latestOnHost;
   //Wherever the kernel runs, allocate a separate local result if either:
   //  * comm is an "InterComm" (can't do in-place collectives)
   //  * globalResult is not accessible from the space of X's latest data
-  const bool allocateLocalResult = !mpiReduceInPlace ||
-    (X_latestOnHost ?
+  const bool allocateLocalResult = X_latestOnHost ?
       !Kokkos::Impl::MemorySpaceAccess<mirror_mem_space, global_result_memspace>::accessible :
-      !Kokkos::Impl::MemorySpaceAccess<dev_mem_space, global_result_memspace>::accessible);
+      !Kokkos::Impl::MemorySpaceAccess<dev_mem_space, global_result_memspace>::accessible;
   if(runOnHost) {
-    //Note BMK: cannot get here if the device memory space is CudaUVMSpace,
-    //because in that case the mirror space of MV's DualView is also CudaUVMSpace. Verified this by printing typeid.
     unmanaged_result_host_view_type nonowningLocalResult;
     result_host_view_type localResult;
     if(allocateLocalResult) {
       localResult = result_host_view_type(Kokkos::ViewAllocateWithoutInitializing("localResult"), numVecs);
-      nonowningLocalResult = unmanaged_result_host_view_type(localResult.data(), numVecs);
+      idotLocal<SC, LO, GO, NT, unmanaged_result_host_view_type, mirror_mem_space>(nonowningLocalResult, X, Y);
+      return iallreduce(nonowningLocalResult, globalResult, ::Teuchos::REDUCE_SUM, *comm);
     }
     else
       nonowningLocalResult = unmanaged_result_host_view_type(globalResult.data(), numVecs);

@@ -221,58 +221,29 @@ private:
 ///   reasonable assumption with CUDA-enabled MPI implementations.)
 /// \tparam rank Integer rank of the send and receive buffers.  Must
 ///   be either 0 or 1.
-template<class PacketType,
-         class SendLayoutType,
-         class SendDeviceType,
-         class RecvLayoutType,
-         class RecvDeviceType,
-         const int rank>
-class IallreduceCommRequest;
-
-//! Partial pecialization for rank-1 send and receive buffers.
-template<class PacketType,
-         class SendLayoutType,
-         class SendDeviceType,
-         class RecvLayoutType,
-         class RecvDeviceType>
-class IallreduceCommRequest<PacketType,
-                            SendLayoutType,
-                            SendDeviceType,
-                            RecvLayoutType,
-                            RecvDeviceType,
-                            1> :
+template<class SendView,
+         class RecvView,
+         class ResultView>
+class IallreduceCommRequest :
     public CommRequest {
 public:
   //! Default constructor.
   IallreduceCommRequest ()
   {}
 
-  //! Type of the send buffer.
-  typedef ::Kokkos::View<const PacketType*, SendLayoutType,
-                         SendDeviceType> send_buffer_type;
-  //! Type of the receive buffer.
-  typedef ::Kokkos::View<PacketType*, RecvLayoutType,
-                         RecvDeviceType> recv_buffer_type;
-
   /// \brief Constructor that takes a wrapped request (representing
   ///   the pending MPI_Iallreduce operation itself), and saved
-  ///   buffers.
+  ///   buffers. If recvBuf and resultBuf are not the same, then
+  ///   wait() will copy the result to resultBuf.
   IallreduceCommRequest (const std::shared_ptr<CommRequest>& req,
-                         const send_buffer_type& sendbuf,
-                         const recv_buffer_type& recvbuf) :
+                         const SendView& sendBuf,
+                         const RecvView& recvBuf,
+                         const ResultView& resultBuf) :
     req_ (req),
-    sendbuf_ (sendbuf),
-    recvbuf_ (recvbuf)
-  {
-    static_assert (std::is_same<SendLayoutType, ::Kokkos::LayoutLeft>::value ||
-                   std::is_same<SendLayoutType, ::Kokkos::LayoutRight>::value,
-                   "SendLayoutType must be either Kokkos::LayoutLeft or "
-                   "Kokkos::LayoutRight.");
-    static_assert (std::is_same<RecvLayoutType, ::Kokkos::LayoutLeft>::value ||
-                   std::is_same<RecvLayoutType, ::Kokkos::LayoutRight>::value,
-                   "RecvLayoutType must be either Kokkos::LayoutLeft or "
-                   "Kokkos::LayoutRight.");
-  }
+    sendBuf_ (sendBuf),
+    recvBuf_ (recvBuf),
+    resultBuf_ (resultBuf)
+  {}
 
   //! Destructor (virtual for memory safety).
   virtual ~IallreduceCommRequest () {
@@ -302,11 +273,14 @@ public:
       req_->wait ();
       // Relinquish request handle.
       req_ = std::shared_ptr<CommRequest> ();
+      if(recvBuf_.data() != resultBuf_.data())
+        Kokkos::deep_copy(resultBuf_, recvBuf_);
     }
     // Relinquish references to saved buffers, if we have not already
     // done so.  This operation is idempotent.
-    sendbuf_ = send_buffer_type ();
-    recvbuf_ = recv_buffer_type ();
+    sendBuf_ = SendView();
+    recvBuf_ = RecvView();
+    resultBuf_ = ResultView();
   }
 
   /// \brief Cancel the pending communication request.
@@ -322,8 +296,9 @@ public:
     }
     // Relinquish references to saved buffers, if we have not already
     // done so.  This operation is idempotent.
-    sendbuf_ = send_buffer_type ();
-    recvbuf_ = recv_buffer_type ();
+    sendBuf_ = SendView();
+    recvBuf_ = RecvView();
+    resultBuf_ = ResultView();
   }
 
 private:
@@ -331,118 +306,13 @@ private:
   std::shared_ptr<CommRequest> req_;
 
   //! Saved send buffer from iallreduce call
-  send_buffer_type sendbuf_;
+  SendView sendBuf_;
 
   //! Saved recv buffer from iallreduce call
-  recv_buffer_type recvbuf_;
-};
+  RecvView recvBuf_;
 
-//! Partial pecialization for rank-0 (single-value) send and receive buffers.
-template<class PacketType,
-         class SendLayoutType,
-         class SendDeviceType,
-         class RecvLayoutType,
-         class RecvDeviceType>
-class IallreduceCommRequest<PacketType,
-                            SendLayoutType,
-                            SendDeviceType,
-                            RecvLayoutType,
-                            RecvDeviceType,
-                            0> :
-    public CommRequest {
-public:
-  //! Default constructor.
-  IallreduceCommRequest ()
-  {}
-
-  //! Type of the send buffer.
-  typedef ::Kokkos::View<const PacketType, SendLayoutType,
-                         SendDeviceType> send_buffer_type;
-  //! Type of the receive buffer.
-  typedef ::Kokkos::View<PacketType, RecvLayoutType,
-                         RecvDeviceType> recv_buffer_type;
-
-  /// \brief Constructor that takes a wrapped request (representing
-  ///   the pending MPI_Iallreduce operation itself), and saved
-  ///   buffers.
-  IallreduceCommRequest (const std::shared_ptr<CommRequest>& req,
-                         const send_buffer_type& sendbuf,
-                         const recv_buffer_type& recvbuf) :
-    req_ (req),
-    sendbuf_ (sendbuf),
-    recvbuf_ (recvbuf)
-  {
-    static_assert (std::is_same<SendLayoutType, ::Kokkos::LayoutLeft>::value ||
-                   std::is_same<SendLayoutType, ::Kokkos::LayoutRight>::value,
-                   "SendLayoutType must be either Kokkos::LayoutLeft or "
-                   "Kokkos::LayoutRight.");
-    static_assert (std::is_same<RecvLayoutType, ::Kokkos::LayoutLeft>::value ||
-                   std::is_same<RecvLayoutType, ::Kokkos::LayoutRight>::value,
-                   "RecvLayoutType must be either Kokkos::LayoutLeft or "
-                   "Kokkos::LayoutRight.");
-  }
-
-  //! Destructor (virtual for memory safety).
-  virtual ~IallreduceCommRequest () {
-    if (req_.get () != NULL) {
-      // We're in a destructor, so don't throw.  We'll just try our best
-      // to handle whatever happens here without throwing.
-      try {
-        req_->cancel ();
-      }
-      catch (...) {}
-
-      try {
-        req_ = std::shared_ptr<CommRequest> ();
-      }
-      catch (...) {}
-    }
-  }
-
-  /// \brief Wait on this communication request to complete.
-  ///
-  /// This is a blocking operation.  The user is responsible for
-  /// avoiding deadlock.
-  void
-  wait ()
-  {
-    if (req_.get () != NULL) {
-      req_->wait ();
-      // Relinquish request handle.
-      req_ = std::shared_ptr<CommRequest> ();
-    }
-    // Relinquish references to saved buffers, if we have not already
-    // done so.  This operation is idempotent.
-    sendbuf_ = send_buffer_type ();
-    recvbuf_ = recv_buffer_type ();
-  }
-
-  /// \brief Cancel the pending communication request.
-  ///
-  /// This operation must be idempotent.
-  void
-  cancel ()
-  {
-    if (req_.get () != NULL) {
-      req_->cancel ();
-      // Relinquish request handle.
-      req_ = std::shared_ptr<CommRequest> ();
-    }
-    // Relinquish references to saved buffers, if we have not already
-    // done so.  This operation is idempotent.
-    sendbuf_ = send_buffer_type ();
-    recvbuf_ = recv_buffer_type ();
-  }
-
-private:
-  //! The wrapped request
-  std::shared_ptr<CommRequest> req_;
-
-  //! Saved send buffer from iallreduce call
-  send_buffer_type sendbuf_;
-
-  //! Saved recv buffer from iallreduce call
-  recv_buffer_type recvbuf_;
+  //! Saved buffer where user expects result (may be the same as recvBuf_)
+  ResultView resultBuf_;
 };
 
 /// \brief Function for wrapping the CommRequest to be returned from
@@ -819,17 +689,24 @@ iallreduce (const InputViewType& sendbuf,
             const ::Teuchos::EReductionType op,
             const ::Teuchos::Comm<int>& comm)
 {
+  constexpr int rank = static_cast<int> (OutputViewType::rank);
+  static_assert (rank == 0 || rank == 1,
+                 "InputViewType and OutputViewType must both have "
+                 "rank 0 or rank 1.");
+
+  using packet_type = typename OutputViewType::non_const_value_type;
+  using packet_with_rank_type = typename std::conditional<rank == 0, packet_type, packet_type*>::type;
+  using send_layout_type = typename InputViewType::array_layout;
+  using recv_layout_type = typename OutputViewType::array_layout;
+  using send_space = typename InputViewType::memory_space;
+  using recv_space = typename OutputViewType::memory_space;
+
   static_assert (Kokkos::Impl::is_view<InputViewType>::value,
                  "InputViewType must be a Kokkos::View specialization.");
   static_assert (Kokkos::Impl::is_view<OutputViewType>::value,
                  "OutputViewType must be a Kokkos::View specialization.");
-  constexpr int rank = static_cast<int> (OutputViewType::rank);
   static_assert (static_cast<int> (InputViewType::rank) == rank,
                  "InputViewType and OutputViewType must have the same rank.");
-  static_assert (rank == 0 || rank == 1,
-                 "InputViewType and OutputViewType must both have "
-                 "rank 0 or rank 1.");
-  typedef typename OutputViewType::non_const_value_type packet_type;
   static_assert (std::is_same<typename OutputViewType::value_type,
                    packet_type>::value,
                  "OutputViewType must be a nonconst Kokkos::View.");
@@ -837,16 +714,62 @@ iallreduce (const InputViewType& sendbuf,
                    packet_type>::value,
                  "InputViewType and OutputViewType must be Views "
                  "whose entries have the same type.");
-  typedef typename InputViewType::array_layout send_layout_type;
-  typedef typename OutputViewType::array_layout recv_layout_type;
-  typedef typename InputViewType::device_type send_device_type;
-  typedef typename OutputViewType::device_type recv_device_type;
+
+  //Only support contiguous layouts 
+  static_assert(std::is_same<send_layout_type, Kokkos::LayoutLeft>::value || std::is_same<send_layout_type, Kokkos::LayoutRight>::value,
+      "Send buffer must have contiguous layout (LayoutLeft or LayoutRight)");
+  static_assert(std::is_same<recv_layout_type, Kokkos::LayoutLeft>::value || std::is_same<recv_layout_type, Kokkos::LayoutRight>::value,
+      "Send buffer must have contiguous layout (LayoutLeft or LayoutRight)");
+
+  //The send and recv buffers can be the same (an in-place allreduce) if comm is an intra-communicator.
+  //If it is not, make a copy of the input 
+  if(sendbuf.data() == recvbuf.data() && Tpetra::Details::isInterComm(comm))
+  {
+    Kokkos::View<packet_with_rank_type, send_space, send_layout_type> tempInputView(Kokkos::ViewAllocateWithoutInitializing("iallreduce temp input"), 
+  }
+
+  //Use blocking all-reduce if MPI is not CUDA-aware and
+  //send and/or recv buffer is not in HostSpace or CudaHostPinnedSpace.
+  //Assuming CudaUVMSpace not safe to use with non-CUDA aware MPI.
+  bool sendHostAccessible = std::is_same<send_space, Kokkos::HostSpace>::value;
+  bool recvHostAccessible = std::is_same<recv_space, Kokkos::HostSpace>::value;
+#ifdef KOKKOS_ENABLE_CUDA
+  sendHostAccessible = sendHostAccessible || std::is_same<send_space, Kokkos::CudaHostPinnedSpace>::value;
+  recvHostAccessible = recvHostAccessible || std::is_same<recv_space, Kokkos::CudaHostPinnedSpace>::value;
+#endif
+  //TODO BMK: add HIPHostPinnedSpace as an option later
+  if(!Details::Behavior::assumeMpiIsCudaAware() && (!sendHostAccessible || !recvHostAccessible))
+  {
+    if(!sendHostAccessible && !recvHostAccessible)
+    {
+      auto sendHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), sendbuf);
+      auto recvHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), recvbuf);
+      //Wait on the request immediately - otherwise sendHost/recvHost can go out of scope before completion
+      iallreduce(sendHost, recvHost, op, comm)->wait();
+      Kokkos::deep_copy(recvbuf, recvHost);
+    }
+    else if(!sendHostAccessible)
+    {
+      auto sendHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), sendbuf);
+      iallreduce(sendHost, recvbuf, op, comm)->wait();
+    }
+    else if(!recvHostAccessible)
+    {
+      auto recvHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), recvbuf);
+      iallreduce(sendbuf, recvHost, op, comm)->wait();
+      Kokkos::deep_copy(recvbuf, recvHost);
+    }
+    //allreduce completed, so nothing for original caller to wait on
+    return emptyCommRequest();
+  }
 
   typedef Impl::Iallreduce<packet_type, send_layout_type, send_device_type,
     recv_layout_type, recv_device_type, rank> impl_type;
+
   return impl_type::iallreduce (sendbuf, recvbuf, op, comm);
 }
 
+// Special case which operates on a single int. Internally calls the general version above.
 std::shared_ptr<CommRequest>
 iallreduce (const int localValue,
             int& globalValue,
