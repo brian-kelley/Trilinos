@@ -844,6 +844,7 @@ iallreduce (const InputViewType& sendbuf,
 
   typedef Impl::Iallreduce<packet_type, send_layout_type, send_device_type,
     recv_layout_type, recv_device_type, rank> impl_type;
+  std::cout << "Hello from iallreduce: send buf space is " << InputViewType::memory_space::name() << ", recv space is " << OutputViewType::memory_space::name() << std::endl;
   return impl_type::iallreduce (sendbuf, recvbuf, op, comm);
 }
 

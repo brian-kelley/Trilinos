@@ -55,6 +55,15 @@ TRIBITS_ADD_TEST(
 # This exercises a different code path in idot.
 IF (Tpetra_ENABLE_CUDA AND Tpetra_INST_CUDA AND TPETRA_ASSUME_CUDA_AWARE_MPI)
   TRIBITS_ADD_TEST(
+    iallreduce
+    NAME iallreduce_no_cuda_aware
+    COMM serial mpi
+    STANDARD_PASS_OUTPUT
+    NUM_MPI_PROCS 1-4
+    ENVIRONMENT TPETRA_ASSUME_CUDA_AWARE_MPI=OFF
+    )
+
+  TRIBITS_ADD_TEST(
     idot
     NAME idot_no_cuda_aware
     COMM serial mpi
