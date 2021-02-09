@@ -5,7 +5,7 @@
 #
 #   mkdir <build-dir>/
 #   cd <build-dir>/
-#   source <trilinos-dir>/cmake/std/atdm/load-env.sh <buld-name>
+#   source <trilinos-dir>/load-tril-env.sh <buld-name>
 #   <trilinos-dir>/do-cmake_trilinos.sh full \
 #     -GNinja \
 #     -DCMAKE_INSTALL_PREFIX=<install-prefix>
@@ -19,14 +19,13 @@
 #
 
 # Get the base Trilinos directory for the location of this script
-TRILINOS_BASE_DIR=$(readlink -f \
-  $(echo $BASH_SOURCE | sed "s/\(.*\)\/.*\.sh/\1/g"))
-#echo "TRILINOS_BASE_DIR = '${TRILINOS_BASE_DIR}'"
+THIS_TRILINOS_DIR=$(readlink -f $BASH_SOURCE | sed "s/\(.*\)\/.*\.sh/\1/g")
+TRILINOS_DIR=${TRILINOS_REPO_DIR:-${THIS_TRILINOS_DIR}}
 
 # Assert that ATDM Trilinos env is already set
 if [[ "${ATDM_CONFIG_COMPLETED_ENV_SETUP}" != "TRUE" ]] ; then
   echo "ERROR, ATDM_CONFIG_COMPLETED_ENV_SETUP is not set to TRUE." \
-   " Must source ${TRILINOS_BASE_DIR}/cmake/std/atdm/load-env.sh <build-name> first!"
+   " Must 'source ${THIS_TRILINOS_DIR}/load-tril-env.sh <build-name>' first!"
   exit 1
 fi
 
@@ -50,4 +49,4 @@ fi
 cmake \
 -D Trilinos_CONFIGURE_OPTIONS_FILE:STRING=${pre_config_option_files},cmake/std/atdm/ATDMDevEnv.cmake \
 "$@" \
-${TRILINOS_BASE_DIR}
+${TRILINOS_DIR}
