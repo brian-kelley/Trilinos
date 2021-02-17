@@ -59,9 +59,6 @@ if [[ "${LINKTYPE:?}" == "static" ]]
 then
   LINK_SHARED=OFF
   LINK_SUFFIX=static
-  BUILD_C_FLAGS="$BUILD_C_FLAGS -fPIC"
-  BUILD_CXX_FLAGS="$BUILD_CXX_FLAGS -fPIC"
-  BUILD_F_FLAGS="$BUILD_F_FLAGS -fPIC"
 elif [[ "${LINKTYPE:?}" == "shared" ]]
 then
   LINK_SHARED=ON
@@ -132,6 +129,7 @@ cmake \
    -D CMAKE_CXX_FLAGS="$BUILD_CXX_FLAGS" \
    -D CMAKE_Fortran_FLAGS="$BUILD_F_FLAGS" \
    -D CMAKE_EXE_LINKER_FLAGS="$BUILD_LINK_FLAGS" \
+   -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
    -D Trilinos_CXX11_FLAGS="-std=c++11 --expt-extended-lambda" \
    \
    -D Trilinos_VERBOSE_CONFIGURE=FALSE \
