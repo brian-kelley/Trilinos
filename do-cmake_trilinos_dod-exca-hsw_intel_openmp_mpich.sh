@@ -53,10 +53,12 @@ fi
 
 if [[ "${LINKTYPE:?}" == "static" ]]
 then
+  LINK_STATIC=ON
   LINK_SHARED=OFF
   LINK_SUFFIX=static
 elif [[ "${LINKTYPE:?}" == "shared" ]]
 then
+  LINK_STATIC=OFF
   LINK_SHARED=ON
   LINK_SUFFIX=shared
 else
@@ -128,7 +130,7 @@ cmake \
    -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
    \
    -D TPL_FIND_SHARED_LIBS=${LINK_SHARED:?} \
-   -D Trilinos_LINK_SEARCH_START_STATIC=ON \
+   -D Trilinos_LINK_SEARCH_START_STATIC=${LINK_STATIC:?} \
    -D CMAKE_SKIP_INSTALL_RPATH=ON \
    \
    -D Trilinos_VERBOSE_CONFIGURE=FALSE \
