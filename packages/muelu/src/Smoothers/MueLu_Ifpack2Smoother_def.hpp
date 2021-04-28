@@ -65,15 +65,20 @@
 #include <Xpetra_BlockedCrsMatrix.hpp>
 #include <Xpetra_CrsMatrix.hpp>
 #include <Xpetra_CrsMatrixWrap.hpp>
+#include <Xpetra_TpetraBlockCrsMatrix.hpp>
 #include <Xpetra_Matrix.hpp>
 #include <Xpetra_MultiVectorFactory.hpp>
 #include <Xpetra_TpetraMultiVector.hpp>
+
+#include <Tpetra_BlockCrsMatrix_Helpers.hpp>
 
 #include "MueLu_Ifpack2Smoother_decl.hpp"
 #include "MueLu_Level.hpp"
 #include "MueLu_FactoryManagerBase.hpp"
 #include "MueLu_Utilities.hpp"
 #include "MueLu_Monitor.hpp"
+
+
 
 #ifdef HAVE_MUELU_INTREPID2
 #include "MueLu_IntrepidPCoarsenFactory_decl.hpp"
@@ -82,7 +87,6 @@
 #include "Kokkos_DynRankView.hpp"
 #endif
 
-// #define IFPACK2_HAS_PROPER_REUSE
 
 namespace MueLu {
 
@@ -122,7 +126,10 @@ namespace MueLu {
 
   template <class Scalar,class LocalOrdinal, class GlobalOrdinal, class Node>
   void Ifpack2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::SetPrecParameters(const Teuchos::ParameterList& list) const {
+    std::string prefix = this->ShortClassName() + ": SetPrecParameters";
+    RCP<TimeMonitor> tM = rcp(new TimeMonitor(*this, prefix, Timings0));
     ParameterList& paramList = const_cast<ParameterList&>(this->GetParameterList());
+
     paramList.setParameters(list);
 
     RCP<ParameterList> precList = this->RemoveFactoriesFromList(this->GetParameterList());
@@ -189,6 +196,31 @@ namespace MueLu {
   void Ifpack2Smoother<Scalar, LocalOrdinal, GlobalOrdinal, Node>::Setup(Level& currentLevel) {
     FactoryMonitor m(*this, "Setup Smoother", currentLevel);
     A_ = Factory::Get< RCP<Matrix> >(currentLevel, "A");
+    ParameterList& paramList = const_cast<ParameterList&>(this->GetParameterList());
+
+    // If the user asked us to convert the matrix into BlockCrsMatrix form, we do that now
+    if(paramList.isParameter("smoother: use blockcrsmatrix storage") && paramList.get<bool>("smoother: use blockcrsmatrix storage") && A_->GetFixedBlockSize()) {
+      // NOTE: Don't think you can move this out of the if block.  You can't. The test MueLu_MeshTyingBlocked_SimpleSmoother_2dof_medium_MPI_1 will fail
+      int blocksize = A_->GetFixedBlockSize();
+      using TpetraBlockCrsMatrix = Xpetra::TpetraBlockCrsMatrix<SC,LO,GO,NO>;
+      RCP<CrsMatrixWrap> AcrsWrap = rcp_dynamic_cast<CrsMatrixWrap>(A_);
+      if(AcrsWrap.is_null()) 
+        throw std::runtime_error("Ifpack2Smoother: Cannot convert matrix A to CrsMatrixWrap object.");
+      RCP<CrsMatrix> Acrs =  AcrsWrap->getCrsMatrix();
+      if(Acrs.is_null()) 
+        throw std::runtime_error("Ifpack2Smoother: Cannot extract CrsMatrix from matrix A.");
+      RCP<TpetraCrsMatrix> At = rcp_dynamic_cast<TpetraCrsMatrix>(Acrs);
+      if(At.is_null()) 
+        throw std::runtime_error("Ifpack2Smoother: Cannot extract TpetraCrsMatrix from matrix A.");
+
+      RCP<Tpetra::BlockCrsMatrix<Scalar, LO, GO, Node> > blockCrs = Tpetra::convertToBlockCrsMatrix(*At->getTpetra_CrsMatrix(),blocksize);
+      RCP<CrsMatrix> blockCrs_as_crs  = rcp(new TpetraBlockCrsMatrix(blockCrs));
+      RCP<CrsMatrixWrap> blockWrap = rcp(new CrsMatrixWrap(blockCrs_as_crs));
+      A_ = blockWrap;
+      this->GetOStream(Statistics0) << "Ifpack2Smoother: Using BlockCrsMatrix storage with blocksize "<<blocksize<<std::endl;
+
+      paramList.remove("smoother: use blockcrsmatrix storage");
+    }
 
     if      (type_ == "SCHWARZ")
       SetupSchwarz(currentLevel);
@@ -263,13 +295,8 @@ namespace MueLu {
 
       RCP<Ifpack2::Details::CanChangeMatrix<tRowMatrix> > prec = rcp_dynamic_cast<Ifpack2::Details::CanChangeMatrix<tRowMatrix> >(prec_);
       if (!prec.is_null() && isTRowMatrix) {
-#ifdef IFPACK2_HAS_PROPER_REUSE
-        prec->resetMatrix(tA);
+        prec->setMatrix(tA);
         reusePreconditioner = true;
-#else
-        this->GetOStream(Errors) << "Ifpack2 does not have proper reuse yet." << std::endl;
-#endif
-
       } else {
         this->GetOStream(Warnings0) << "MueLu::Ifpack2Smoother::SetupSchwarz(): reuse of this type is not available "
             "(either failed cast to CanChangeMatrix, or to Tpetra Row Matrix), reverting to full construction" << std::endl;
@@ -540,13 +567,8 @@ namespace MueLu {
 
       RCP<Ifpack2::Details::CanChangeMatrix<tRowMatrix> > prec = rcp_dynamic_cast<Ifpack2::Details::CanChangeMatrix<tRowMatrix> >(prec_);
       if (!prec.is_null()) {
-#ifdef IFPACK2_HAS_PROPER_REUSE
-        prec->resetMatrix(tA);
+        prec->setMatrix(tA);
         reusePreconditioner = true;
-#else
-        this->GetOStream(Errors) << "Ifpack2 does not have proper reuse yet." << std::endl;
-#endif
-
       } else {
         this->GetOStream(Warnings0) << "MueLu::Ifpack2Smoother::SetupBlockRelaxation(): reuse of this type is not available (failed cast to CanChangeMatrix), "
             "reverting to full construction" << std::endl;
@@ -640,8 +662,18 @@ namespace MueLu {
         bool doScale = false;
         doScale = paramList.get<bool>("chebyshev: use rowsumabs diagonal scaling");
         paramList.remove("chebyshev: use rowsumabs diagonal scaling");
+        double chebyReplaceTol = Teuchos::ScalarTraits<Scalar>::eps()*100;
+        if (paramList.isParameter("chebyshev: rowsumabs diagonal replacement tolerance")) {
+          paramList.get<double>("chebyshev: rowsumabs diagonal replacement tolerance",chebyReplaceTol);
+          paramList.remove("chebyshev: rowsumabs diagonal replacement tolerance");
+        }
+        double chebyReplaceVal = Teuchos::ScalarTraits<double>::zero();
+        if (paramList.isParameter("chebyshev: rowsumabs diagonal replacement value")) {
+          paramList.get<double>("chebyshev: rowsumabs diagonal replacement value",chebyReplaceVal);
+          paramList.remove("chebyshev: rowsumabs diagonal replacement value");
+        }
         if (doScale) {
-          RCP<Vector> lumpedDiagonal = Utilities::GetLumpedMatrixDiagonal(currentLevel.Get<RCP<Matrix> >("A"),true);
+          RCP<Vector> lumpedDiagonal = Utilities::GetLumpedMatrixDiagonal(*(currentLevel.Get<RCP<Matrix> >("A")),true, chebyReplaceTol, chebyReplaceVal);
           const Xpetra::TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>& tmpVec = dynamic_cast<const Xpetra::TpetraVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>&>(*lumpedDiagonal);
           paramList.set("chebyshev: operator inv diagonal",tmpVec.getTpetra_Vector());
         }
@@ -690,13 +722,8 @@ namespace MueLu {
 
       RCP<Ifpack2::Details::CanChangeMatrix<tRowMatrix> > prec = rcp_dynamic_cast<Ifpack2::Details::CanChangeMatrix<tRowMatrix> >(prec_);
       if (!prec.is_null()) {
-#ifdef IFPACK2_HAS_PROPER_REUSE
-        prec->resetMatrix(tA);
+        prec->setMatrix(tA);
         reusePreconditioner = true;
-#else
-        this->GetOStream(Errors) << "Ifpack2 does not have proper reuse yet." << std::endl;
-#endif
-
       } else {
         this->GetOStream(Warnings0) << "MueLu::Ifpack2Smoother::SetupGeneric(): reuse of this type is not available (failed cast to CanChangeMatrix), "
             "reverting to full construction" << std::endl;
@@ -727,19 +754,46 @@ namespace MueLu {
     // option is supported by current ifpack2 preconditioner
     Teuchos::ParameterList paramList;
     bool supportInitialGuess = false;
+    const Teuchos::ParameterList params = this->GetParameterList();
     if (type_ == "CHEBYSHEV") {
-      paramList.set("chebyshev: zero starting solution", InitialGuessIsZero);
-      SetPrecParameters(paramList);
+      const std::string paramName = "chebyshev: zero starting solution";
+      if (!params.isType<bool>(paramName) ||
+          (params.get<bool>(paramName) != InitialGuessIsZero)) {
+        paramList.set(paramName, InitialGuessIsZero);
+        SetPrecParameters(paramList);
+      }
       supportInitialGuess = true;
 
-    } else if (type_ == "RELAXATION") {
-      paramList.set("relaxation: zero starting solution", InitialGuessIsZero);
-      SetPrecParameters(paramList);
+    } else if (type_ == "RELAXATION"       ||
+               type_ == "BLOCK_RELAXATION" ||
+               type_ == "BLOCK RELAXATION" ||
+               type_ == "BLOCKRELAXATION"  ||
+               // Banded
+               type_ == "BANDED_RELAXATION" ||
+               type_ == "BANDED RELAXATION" ||
+               type_ == "BANDEDRELAXATION"  ||
+               // Tridiagonal
+               type_ == "TRIDI_RELAXATION"       ||
+               type_ == "TRIDI RELAXATION"       ||
+               type_ == "TRIDIRELAXATION"        ||
+               type_ == "TRIDIAGONAL_RELAXATION" ||
+               type_ == "TRIDIAGONAL RELAXATION" ||
+               type_ == "TRIDIAGONALRELAXATION") {
+      const std::string paramName = "relaxation: zero starting solution";
+      if (!params.isType<bool>(paramName) ||
+          (params.get<bool>(paramName) != InitialGuessIsZero)) {
+        paramList.set(paramName, InitialGuessIsZero);
+        SetPrecParameters(paramList);
+      }
       supportInitialGuess = true;
 
     } else if (type_ == "KRYLOV") {
-      paramList.set("krylov: zero starting solution", InitialGuessIsZero);
-      SetPrecParameters(paramList);
+      const std::string paramName = "krylov: zero starting solution";
+      if (!params.isType<bool>(paramName) ||
+          (params.get<bool>(paramName) != InitialGuessIsZero)) {
+        paramList.set(paramName, InitialGuessIsZero);
+        SetPrecParameters(paramList);
+      }
       supportInitialGuess = true;
 
     } else if (type_ == "SCHWARZ") {
@@ -765,7 +819,14 @@ namespace MueLu {
       prec_->apply(tpB, tpX);
     } else {
       typedef Teuchos::ScalarTraits<Scalar> TST;
-      RCP<MultiVector> Residual   = Utilities::Residual(*A_, X, B);
+
+      RCP<MultiVector> Residual;
+      {
+        std::string prefix = this->ShortClassName() + ": Apply: ";
+        RCP<TimeMonitor> tM = rcp(new TimeMonitor(*this, prefix + "residual calculation", Timings0));
+        Residual = Utilities::Residual(*A_, X, B);
+      }
+
       RCP<MultiVector> Correction = MultiVectorFactory::Build(A_->getDomainMap(), X.getNumVectors());
 
       Tpetra::MultiVector<SC,LO,GO,NO>&       tpX = Utilities::MV2NonConstTpetraMV(*Correction);

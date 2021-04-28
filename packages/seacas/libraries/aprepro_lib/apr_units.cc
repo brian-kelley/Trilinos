@@ -182,11 +182,11 @@ svar_init swap_label[] =
 
 var_init swap[] =
   {
-    {"m"    ,     1000.},
-    {"sec"  ,  1000000.},
-    {"kg"   , 10000000.},
-    {"degK" ,        1.},
-    {"rad"  ,        1.},
+    {"m"    ,      1'000.},
+    {"sec"  ,  1'000'000.},
+    {"kg"   , 10'000'000.},
+    {"degK" ,          1.},
+    {"rad"  ,          1.},
     {nullptr, 0}
   };
 
@@ -591,5 +591,5 @@ void load_conversion(var_init *base, svar_init *label)
   define_var("arcsec", 2.0 * PI * rad / 360.0 / 60.0 / 60.0, Aout);
   define_var("grade",  2.0 * PI * rad / 360.0 * 0.9, Aout);
 }
-}
+}  // namespace
 }  // namespace SEAMS

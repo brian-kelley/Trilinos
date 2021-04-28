@@ -146,7 +146,6 @@ TEUCHOS_UNIT_TEST(Trapezoidal, ConstructingFromDefaults)
     auto timeStepControl = rcp(new Tempus::TimeStepControl<double>());
     ParameterList tscPL = pl->sublist("Default Integrator")
                              .sublist("Time Step Control");
-    timeStepControl->setStepType (tscPL.get<std::string>("Integrator Step Type"));
     timeStepControl->setInitIndex(tscPL.get<int>   ("Initial Time Index"));
     timeStepControl->setInitTime (tscPL.get<double>("Initial Time"));
     timeStepControl->setFinalTime(tscPL.get<double>("Final Time"));
@@ -391,7 +390,7 @@ TEUCHOS_UNIT_TEST(Trapezoidal, VanDerPol)
 
     // Output finest temporal solution for plotting
     // This only works for ONE MPI process
-    if ((n == 0) or (n == nTimeStepSizes-1)) {
+    if ((n == 0) || (n == nTimeStepSizes-1)) {
       std::string fname = "Tempus_Trapezoidal_VanDerPol-Ref.dat";
       if (n == 0) fname = "Tempus_Trapezoidal_VanDerPol.dat";
       RCP<const SolutionHistory<double> > solutionHistory =

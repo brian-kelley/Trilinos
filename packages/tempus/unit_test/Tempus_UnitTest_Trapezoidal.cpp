@@ -13,7 +13,7 @@
 
 #include "Thyra_VectorStdOps.hpp"
 
-#include "Tempus_StepperFactory.hpp"
+#include "Tempus_StepperTrapezoidal.hpp"
 #include "Tempus_StepperTrapezoidalModifierBase.hpp"
 #include "Tempus_StepperTrapezoidalModifierXBase.hpp"
 #include "Tempus_StepperTrapezoidalObserverBase.hpp"
@@ -38,8 +38,6 @@ using Teuchos::rcp_dynamic_cast;
 using Teuchos::ParameterList;
 using Teuchos::sublist;
 using Teuchos::getParametersFromXmlFile;
-
-using Tempus::StepperFactory;
 
 
 // ************************************************************
@@ -93,8 +91,9 @@ TEUCHOS_UNIT_TEST(Trapezoidal, StepperFactory_Construction)
   auto model = rcp(new Tempus_Test::SinCosModel<double>());
   testFactoryConstruction("Trapezoidal Method", model);
 }
-  // ************************************************************
-  // ************************************************************
+
+// ************************************************************
+// ************************************************************
 class StepperTrapezoidalModifierTest
   : virtual public Tempus::StepperTrapezoidalModifierBase<double>
 {
@@ -112,9 +111,9 @@ public:
 
   /// Modify Trapezoidal Stepper at action location.
   virtual void modify(
-		      Teuchos::RCP<Tempus::SolutionHistory<double> > sh,
-		      Teuchos::RCP<Tempus::StepperTrapezoidal<double> > stepper,
-		      const typename Tempus::StepperTrapezoidalAppAction<double>::ACTION_LOCATION actLoc)
+    Teuchos::RCP<Tempus::SolutionHistory<double> > sh,
+    Teuchos::RCP<Tempus::StepperTrapezoidal<double> > stepper,
+    const typename Tempus::StepperTrapezoidalAppAction<double>::ACTION_LOCATION actLoc)
   {
     switch(actLoc) {
     case StepperTrapezoidalAppAction<double>::BEGIN_STEP:
@@ -147,7 +146,7 @@ public:
       }
     default:
       TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error,
-				 "Error - unknown action location.\n");
+        "Error - unknown action location.\n");
     }
   }
 
@@ -352,7 +351,7 @@ public:
     }
     default:
       TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error,
-				 "Error - unknown action location.\n");
+        "Error - unknown action location.\n");
     }
   }
   bool testX_BEGIN_STEP;

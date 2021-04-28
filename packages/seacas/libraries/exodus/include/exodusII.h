@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 1999-2020 National Technology & Engineering Solutions
+ * Copyright(C) 1999-2021 National Technology & Engineering Solutions
  * of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
  * NTESS, the U.S. Government retains certain rights in this software.
  *
@@ -12,8 +12,8 @@
  *
  *****************************************************************************/
 
-#ifndef EXODUS_II_HDR
-#define EXODUS_II_HDR
+#ifndef EXODUSII_H
+#define EXODUSII_H
 
 #include "exodus_config.h"
 
@@ -21,6 +21,15 @@
 
 #if defined(NC_HAVE_META_H)
 #include "netcdf_meta.h"
+
+/* Bug in some versions of NetCDF where the netcdf_meta.h define of NC_HAS_SZIP_WRITE is bad */
+#if !defined(NC_HAS_SZIP_WRITE)
+#define NC_HAS_SZIP_WRITE 0
+#elif ~(~NC_HAS_SZIP_WRITE + 0) == 0 && ~(~NC_HAS_SZIP_WRITE + 1) == 1
+#undef NC_HAS_SZIP_WRITE
+#define NC_HAS_SZIP_WRITE 0
+#endif
+
 #if NC_HAS_PARALLEL
 #ifndef PARALLEL_AWARE_EXODUS
 #define PARALLEL_AWARE_EXODUS
@@ -45,15 +54,13 @@
 #endif
 
 /* EXODUS version number */
-#define EXODUS_VERSION "8.08"
+#define EXODUS_VERSION "8.11"
 #define EXODUS_VERSION_MAJOR 8
-#define EXODUS_VERSION_MINOR 8
-#define EXODUS_RELEASE_DATE "September 2, 2020"
+#define EXODUS_VERSION_MINOR 11
+#define EXODUS_RELEASE_DATE "March 15, 2021"
 
-#define EX_API_VERS 8.08f
-
+#define EX_API_VERS 8.11f
 #define EX_API_VERS_NODOT (100 * EXODUS_VERSION_MAJOR + EXODUS_VERSION_MINOR)
-
 #define EX_VERS EX_API_VERS
 
 /* Retained for backward compatibility */
@@ -197,6 +204,16 @@ enum ex_inquiry {
   EX_INQ_THREADSAFE          = 59, /**< Returns 1 if library is thread-safe; 0 otherwise */
   EX_INQ_ASSEMBLY            = 60, /**< number of assemblies */
   EX_INQ_BLOB                = 61, /**< number of blobs */
+  EX_INQ_NUM_NODE_VAR        = 62, /**< number of nodal variables */
+  EX_INQ_NUM_EDGE_BLOCK_VAR  = 63, /**< number of edge block variables */
+  EX_INQ_NUM_FACE_BLOCK_VAR  = 64, /**< number of face block variables */
+  EX_INQ_NUM_ELEM_BLOCK_VAR  = 65, /**< number of element block variables */
+  EX_INQ_NUM_NODE_SET_VAR    = 66, /**< number of node set variables */
+  EX_INQ_NUM_EDGE_SET_VAR    = 67, /**< number of edge set variables */
+  EX_INQ_NUM_FACE_SET_VAR    = 68, /**< number of face set variables */
+  EX_INQ_NUM_ELEM_SET_VAR    = 69, /**< number of element set variables */
+  EX_INQ_NUM_SIDE_SET_VAR    = 70, /**< number of sideset variables */
+  EX_INQ_NUM_GLOBAL_VAR      = 71, /**< number of global variables */
   EX_INQ_INVALID             = -1
 };
 
@@ -525,7 +542,8 @@ EXODUS_EXPORT int64_t     ex_inquire_int(int exoid, ex_inquiry req_info);
 EXODUS_EXPORT int         ex_int64_status(int exoid);
 EXODUS_EXPORT int         ex_set_int64_status(int exoid, int mode);
 
-EXODUS_EXPORT void ex_print_config(void);
+EXODUS_EXPORT void        ex_print_config(void);
+EXODUS_EXPORT const char *ex_config(void);
 
 EXODUS_EXPORT int ex_set_max_name_length(int exoid, int length);
 
@@ -1131,6 +1149,16 @@ EXODUS_EXPORT int ex_put_node_cmap(int          exoid,    /**< NetCDF/Exodus fil
                                    void_int *   node_ids, /**< FEM node IDs */
                                    void_int *   proc_ids, /**< Processor IDs */
                                    int          processor /**< This processor ID */
+);
+
+EXODUS_EXPORT int
+ex_put_partial_node_cmap(int          exoid,            /**< NetCDF/Exodus file ID */
+                         ex_entity_id map_id,           /**< Nodal comm map ID */
+                         int64_t      start_entity_num, /**< Starting position to write to */
+                         int64_t      num_entities,     /**< Number of nodes to write */
+                         void_int *   node_ids,         /**< FEM node IDs */
+                         void_int *   proc_ids,         /**< Processor IDs */
+                         int          processor         /**< This processor ID */
 );
 
 EXODUS_EXPORT int ex_get_elem_cmap(int          exoid,    /**< NetCDF/Exodus file ID */

@@ -528,6 +528,13 @@ void STK_Interface::addEntityToEdgeBlock(stk::mesh::Entity entity,stk::mesh::Par
 
    bulkData_->change_entity_parts(entity,edgeblockV);
 }
+void STK_Interface::addEntitiesToEdgeBlock(std::vector<stk::mesh::Entity> entities,stk::mesh::Part * edgeblock)
+{
+   std::vector<stk::mesh::Part*> edgeblockV;
+   edgeblockV.push_back(edgeblock);
+
+   bulkData_->change_entity_parts(entities,edgeblockV);
+}
 
 void STK_Interface::addEntityToFaceBlock(stk::mesh::Entity entity,stk::mesh::Part * faceblock)
 {
@@ -535,6 +542,13 @@ void STK_Interface::addEntityToFaceBlock(stk::mesh::Entity entity,stk::mesh::Par
    faceblockV.push_back(faceblock);
 
    bulkData_->change_entity_parts(entity,faceblockV);
+}
+void STK_Interface::addEntitiesToFaceBlock(std::vector<stk::mesh::Entity> entities,stk::mesh::Part * faceblock)
+{
+   std::vector<stk::mesh::Part*> faceblockV;
+   faceblockV.push_back(faceblock);
+
+   bulkData_->change_entity_parts(entities,faceblockV);
 }
 
 void STK_Interface::addElement(const Teuchos::RCP<ElementDescriptor> & ed,stk::mesh::Part * block)
@@ -1399,7 +1413,7 @@ void STK_Interface::getSidesetNames(std::vector<std::string> & names) const
    names.clear();
 
    // fill vector with automagically ordered string values
-   std::map<std::string, stk::mesh::Part*>::const_iterator sideItr;   // Element blocks
+   std::map<std::string, stk::mesh::Part*>::const_iterator sideItr;   // Side sets
    for(sideItr=sidesets_.begin();sideItr!=sidesets_.end();++sideItr)
       names.push_back(sideItr->first);
 }
@@ -1409,9 +1423,29 @@ void STK_Interface::getNodesetNames(std::vector<std::string> & names) const
    names.clear();
 
    // fill vector with automagically ordered string values
-   std::map<std::string, stk::mesh::Part*>::const_iterator nodeItr;   // Element blocks
+   std::map<std::string, stk::mesh::Part*>::const_iterator nodeItr;   // Node sets
    for(nodeItr=nodesets_.begin();nodeItr!=nodesets_.end();++nodeItr)
       names.push_back(nodeItr->first);
+}
+
+void STK_Interface::getEdgeBlockNames(std::vector<std::string> & names) const
+{
+   names.clear();
+
+   // fill vector with automagically ordered string values
+   std::map<std::string, stk::mesh::Part*>::const_iterator edgeBlockItr;   // Edge blocks
+   for(edgeBlockItr=edgeBlocks_.begin();edgeBlockItr!=edgeBlocks_.end();++edgeBlockItr)
+      names.push_back(edgeBlockItr->first);
+}
+
+void STK_Interface::getFaceBlockNames(std::vector<std::string> & names) const
+{
+   names.clear();
+
+   // fill vector with automagically ordered string values
+   std::map<std::string, stk::mesh::Part*>::const_iterator faceBlockItr;   // Face blocks
+   for(faceBlockItr=faceBlocks_.begin();faceBlockItr!=faceBlocks_.end();++faceBlockItr)
+      names.push_back(faceBlockItr->first);
 }
 
 std::size_t STK_Interface::elementLocalId(stk::mesh::Entity elmt) const
@@ -1986,12 +2020,10 @@ void STK_Interface::refineMesh(const int numberOfLevels, const bool deleteParent
   refinedMesh_->setCoordinatesField();
 
   percept::UniformRefiner breaker(*refinedMesh_,*breakPattern_);
+  breaker.setRemoveOldElements(deleteParentElements);
 
   for (int i=0; i < numberOfLevels; ++i)
     breaker.doBreak();
-
-  if (deleteParentElements)
-    breaker.deleteParentElements();
 
 #else
   TEUCHOS_TEST_FOR_EXCEPTION(true,std::logic_error,

@@ -1,4 +1,4 @@
-// Copyright(C) 1999-2020 National Technology & Engineering Solutions
+// Copyright(C) 1999-2021 National Technology & Engineering Solutions
 // of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
 // NTESS, the U.S. Government retains certain rights in this software.
 //
@@ -20,8 +20,6 @@
 #include <utility>
 #include <vector>
 
-#include <glob.h>
-
 #include <Ionit_Initializer.h>
 #include <Ioss_Assembly.h>
 #include <Ioss_Blob.h>
@@ -40,6 +38,7 @@
 #include <Ioss_Field.h>
 #include <Ioss_FileInfo.h>
 #include <Ioss_Getline.h>
+#include <Ioss_Glob.h>
 #include <Ioss_GroupingEntity.h>
 #include <Ioss_IOFactory.h>
 #include <Ioss_NodeBlock.h>
@@ -76,7 +75,7 @@
 
 namespace {
   std::string codename;
-  std::string version = "0.94 (2020-10-12)";
+  std::string version = "1.00 (2021-03-04)";
 
   std::vector<Ioss::GroupingEntity *> attributes_modified;
 
@@ -231,10 +230,7 @@ namespace {
 
   int64_t id(const Ioss::GroupingEntity *entity)
   {
-    int64_t id = -1;
-    if (entity->property_exists("id")) {
-      id = entity->get_property("id").get_int();
-    }
+    int64_t id = entity->get_optional_property("id", -1);
     return id;
   }
 
@@ -290,7 +286,7 @@ int main(int argc, char *argv[])
   // NOTE: The "READ_RESTART" mode ensures that the node and element ids will be mapped.
   //========================================================================
   Ioss::PropertyManager properties = set_properties(interFace);
-  properties.add(Ioss::Property("APPEND_OUTPUT", Ioss::DB_APPEND));
+  properties.add(Ioss::Property("APPEND_OUTPUT", Ioss::DB_MODIFY));
 
   Ioss::DatabaseIO *dbi = Ioss::IOFactory::create(input_type, inpfile, Ioss::WRITE_RESTART,
                                                   (MPI_Comm)MPI_COMM_WORLD, properties);
@@ -314,12 +310,12 @@ int main(int argc, char *argv[])
     std::string input;
     if (from_term) {
       fmt::print(fg(fmt::terminal_color::magenta), "\n");
-      const char *cinput = getline_int("COMMAND> ");
+      const char *cinput = io_getline_int("COMMAND> ");
       if (cinput && cinput[0] == '\0') {
         break;
       }
       if (cinput) {
-        gl_histadd(cinput);
+        io_gl_histadd(cinput);
       }
       input = cinput;
     }
@@ -450,7 +446,7 @@ namespace {
   {
     int64_t num_elem = eb->entity_count();
 
-    std::string type       = eb->get_property("topology_type").get_string();
+    std::string type       = eb->topology()->name();
     int64_t     num_attrib = eb->get_property("attribute_count").get_int();
     fmt::print("\n{} id: {:6d}, topology: {:>10s}, {:14n} elements, {:3d} attributes.\n", name(eb),
                id(eb), type, num_elem, num_attrib);
@@ -518,7 +514,7 @@ namespace {
   {
     bool all = Ioss::Utils::substr_equal(topic, "help");
     if (all) {
-      fmt::print("\n\tHELP [list | assembly | graph | attribute | regex]\n");
+      fmt::print("\n\tHELP [list | assembly | graph | attribute | regex | glob]\n");
       fmt::print("\n\tEND | EXIT\n");
       fmt::print("\t\tEnd command input and output changed assembly definitions (if any).\n");
       fmt::print("\n\tQUIT\n");
@@ -614,6 +610,18 @@ namespace {
                  "\t\tSupports \"POSIX Extended Regular Expressions\" syntax\n"
                  "\t\tSee https://www.regular-expressions.info/posix.html\n"
                  "\t\tQuickStart: https://www.regular-expressions.info/quickstart.html\n");
+    }
+    if (all || Ioss::Utils::substr_equal(topic, "glob")) {
+      fmt::print(
+          "\n\tGlob help (used in ASSEMBLY GLOB and LIST GLOB and ATTRIBUTE LIST GLOB options)\n"
+          "\t\t?(pattern-list)   Matches zero or one occurrence of the given patterns\n"
+          "\t\t*(pattern-list)   Matches zero or more occurrences of the given patterns\n"
+          "\t\t+(pattern-list)   Matches one or more occurrences of the given patterns\n"
+          "\t\t@(pattern-list)   Matches one of the given patterns\n"
+          "\t\t!(pattern-list)   Matches anything except one of the given patterns\n"
+          "\tGlob Examples\n"
+          "\t\tblock*    : All names that start with 'block'\n"
+          "\t\t[A-Z]*    : All names that start with a capital letter\n");
     }
   }
 
@@ -1006,12 +1014,7 @@ namespace {
       assem = region.get_assembly(tokens[1]);
       if (assem == nullptr) {
         // New assembly...
-        assem = new Ioss::Assembly(region.get_database(), tokens[1]);
-        if (assem == nullptr) {
-          fmt::print(stderr, fg(fmt::color::red),
-                     "ERROR: Unable to create or access assembly '{}'.\n", tokens[1]);
-          return false;
-        }
+        assem      = new Ioss::Assembly(region.get_database(), tokens[1]);
         auto my_id = get_next_assembly_id(region);
         assem->property_add(Ioss::Property("id", my_id));
         assem->property_add(Ioss::Property("created", 1));
@@ -1027,7 +1030,6 @@ namespace {
     }
 
     if (assem == nullptr) {
-
       fmt::print(stderr, fg(fmt::color::red), "ERROR: Unable to create or access assembly '{}'.\n",
                  tokens[1]);
       return false;

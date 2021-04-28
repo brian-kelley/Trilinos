@@ -58,7 +58,9 @@
           
 \cbb{aggregation: ordering}{string}{"natural"}{Node ordering strategy. Possible values: "natural" (local index order), "graph" (filtered graph breadth-first order), "random" (random local index order).}
           
-\cbb{aggregation: drop scheme}{string}{"classical"}{Connectivity dropping scheme for a graph used in aggregation. Possible values: "classical", "distance laplacian", "unsupported vector smoothing".}
+\cbb{aggregation: drop scheme}{string}{"classical"}{Connectivity dropping scheme for a graph used in
+      aggregation. Possible values: "classical", "distance laplacian",
+      "unsupported vector smoothing"}
           
 \cbb{aggregation: drop tol}{double}{0.0}{Connectivity dropping threshold for a graph used in aggregation.}
           
@@ -132,9 +134,13 @@
           
 \cbb{aggregate qualities: percentiles}{Array(double)}{{}}{Percentiles of aggregate qualities to report (in a [0,1] range).}
           
+\cbb{aggregate qualities: mode}{string}{eigenvalue}{Whether to compute eigenvalues (``eigenvalue''),
+      aggregates sizes (``size'') or
+      both (``both'').}
+          
 \cba{export data}{\parameterlist}{Exporting a subset of the hierarchy data in a
       file. Currently, the list can contain any of the following parameter
-      names (``A'', ``P'', ``R'', ``Nullspace'', ``Coordinates'') of type \texttt{string}
+      names (``A'', ``P'', ``R'', ``Nullspace'', ``Coordinates'', ``Aggregates'') of type \texttt{string}
       and value ``\{levels separated by commas\}''. A
       matrix/multivector with a name ``X'' is saved in two or three
       three MatrixMarket files: a) data is saved in

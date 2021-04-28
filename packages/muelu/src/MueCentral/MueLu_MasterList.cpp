@@ -134,6 +134,10 @@ namespace MueLu {
     if (name == "sa: damping factor") { ss << "<Parameter name=\"sa: damping factor\" type=\"double\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: eigenvalue estimate num iterations") { ss << "<Parameter name=\"sa: eigenvalue estimate num iterations\" type=\"int\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: use rowsumabs diagonal scaling") { ss << "<Parameter name=\"sa: use rowsumabs diagonal scaling\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "sa: enforce constraints") { ss << "<Parameter name=\"sa: enforce constraints\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "sa: max eigenvalue") { ss << "<Parameter name=\"sa: max eigenvalue\" type=\"double\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "sa: rowsumabs diagonal replacement tolerance") { ss << "<Parameter name=\"sa: rowsumabs diagonal replacement tolerance\" type=\"double\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "sa: rowsumabs diagonal replacement value") { ss << "<Parameter name=\"sa: rowsumabs diagonal replacement value\" type=\"double\" value=" << value << "/>"; return ss.str(); }      
     if (name == "pcoarsen: element") { ss << "<Parameter name=\"pcoarsen: element\" type=\"string\" value=" << value << "/>"; return ss.str(); }      
     if (name == "pcoarsen: schedule") { ss << "<Parameter name=\"pcoarsen: schedule\" type=\"string\" value=" << value << "/>"; return ss.str(); }      
     if (name == "pcoarsen: hi basis") { ss << "<Parameter name=\"pcoarsen: hi basis\" type=\"string\" value=" << value << "/>"; return ss.str(); }      
@@ -198,9 +202,11 @@ namespace MueLu {
   "<Parameter name=\"aggregation: mode\" type=\"string\" value=\"uncoupled\"/>"
   "<Parameter name=\"aggregation: ordering\" type=\"string\" value=\"natural\"/>"
   "<Parameter name=\"aggregation: drop scheme\" type=\"string\" value=\"classical\"/>"
+  "<Parameter name=\"aggregation: block diagonal: interleaved blocksize\" type=\"int\" value=\"3\"/>"
   "<Parameter name=\"aggregation: number of random vectors\" type=\"int\" value=\"10\"/>"
   "<Parameter name=\"aggregation: number of times to pre or post smooth\" type=\"int\" value=\"10\"/>"
   "<Parameter name=\"aggregation: penalty parameters\" type=\"Array(double)\" value=\"{12.,-.2,0,0,0} \"/>"
+  "<Parameter name=\"aggregation: distance laplacian directional weights\" type=\"Array(double)\" value=\"{1,1,1}\"/>"
   "<Parameter name=\"aggregation: distance laplacian algo\" type=\"string\" value=\"default\"/>"
   "<Parameter name=\"aggregation: classical algo\" type=\"string\" value=\"default\"/>"
   "<Parameter name=\"aggregation: drop tol\" type=\"double\" value=\"0.0\"/>"
@@ -222,6 +228,7 @@ namespace MueLu {
   "<Parameter name=\"aggregation: enable phase 2b\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 3\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: phase2a include root\" type=\"bool\" value=\"true\"/>"
+  "<Parameter name=\"aggregation: phase2a agg factor\" type=\"double\" value=\"0.5\"/>"
   "<Parameter name=\"aggregation: error on nodes with no on-rank neighbors\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: phase3 avoid singletons\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: allow empty prolongator columns\" type=\"bool\" value=\"false\"/>"
@@ -252,6 +259,7 @@ namespace MueLu {
   "<Parameter name=\"aggregate qualities: algorithm\" type=\"string\" value=\"forward\"/>"
   "<Parameter name=\"aggregate qualities: zero threshold\" type=\"double\" value=\"1e-12\"/>"
   "<Parameter name=\"aggregate qualities: percentiles\" type=\"Array(double)\" value=\"{}\"/>"
+  "<Parameter name=\"aggregate qualities: mode\" type=\"string\" value=\"eigenvalue\"/>"
   "<ParameterList name=\"export data\"/>"
   "<Parameter name=\"print initial parameters\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"print unused parameters\" type=\"bool\" value=\"true\"/>"
@@ -271,6 +279,10 @@ namespace MueLu {
   "<Parameter name=\"sa: calculate eigenvalue estimate\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"sa: eigenvalue estimate num iterations\" type=\"int\" value=\"10\"/>"
   "<Parameter name=\"sa: use rowsumabs diagonal scaling\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"sa: enforce constraints\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"sa: max eigenvalue\" type=\"double\" value=\"-1.0\"/>"
+  "<Parameter name=\"sa: rowsumabs diagonal replacement tolerance\" type=\"double\" value=\"-1.0\"/>"
+  "<Parameter name=\"sa: rowsumabs diagonal replacement value\" type=\"double\" value=\"0.0\"/>"
   "<Parameter name=\"interp: interpolation order\" type=\"int\" value=\"1\"/>"
   "<Parameter name=\"interp: build coarse coordinates\" type=\"bool\" value=\"true\"/>"
   "<ParameterList name=\"transfer: params\"/>"
@@ -552,7 +564,7 @@ namespace MueLu {
       
          ("parameterlist: syntax","parameterlist: syntax")
       
-         ("hierarchy label","hierarchy label")
+         ("ML label","hierarchy label")
       
          ("matvec params","matvec params")
       
@@ -592,11 +604,15 @@ namespace MueLu {
       
          ("aggregation: drop scheme","aggregation: drop scheme")
       
+         ("aggregation: block diagonal: interleaved blocksize","aggregation: block diagonal: interleaved blocksize")
+      
          ("aggregation: number of random vectors","aggregation: number of random vectors")
       
          ("aggregation: number of times to pre or post smooth","aggregation: number of times to pre or post smooth")
       
          ("aggregation: penalty parameters","aggregation: penalty parameters")
+      
+         ("aggregation: distance laplacian directional weights","aggregation: distance laplacian directional weights")
       
          ("aggregation: distance laplacian algo","aggregation: distance laplacian algo")
       
@@ -639,6 +655,8 @@ namespace MueLu {
          ("aggregation: enable phase 3","aggregation: enable phase 3")
       
          ("aggregation: phase2a include root","aggregation: phase2a include root")
+      
+         ("aggregation: phase2a agg factor","aggregation: phase2a agg factor")
       
          ("aggregation: error on nodes with no on-rank neighbors","aggregation: error on nodes with no on-rank neighbors")
       
@@ -700,6 +718,8 @@ namespace MueLu {
       
          ("aggregate qualities: percentiles","aggregate qualities: percentiles")
       
+         ("aggregate qualities: mode","aggregate qualities: mode")
+      
          ("export data","export data")
       
          ("ML print initial list","print initial parameters")
@@ -737,6 +757,14 @@ namespace MueLu {
          ("eigen-analysis: iterations","sa: eigenvalue estimate num iterations")
       
          ("not supported by ML","sa: use rowsumabs diagonal scaling")
+      
+         ("not supported by ML","sa: enforce constraints")
+      
+         ("not supported by ML","sa: max eigenvalue")
+      
+         ("not supported by ML","sa: rowsumabs diagonal replacement tolerance")
+      
+         ("not supported by ML","sa: rowsumabs diagonal replacement value")
       
          ("interp: interpolation order","interp: interpolation order")
       

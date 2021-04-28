@@ -114,7 +114,8 @@ namespace Intrepid2 {
                              pt1 };
       
 #ifdef HAVE_INTREPID2_DEBUG
-      VT eps = 10.0*std::numeric_limits<VT>::epsilon();
+      // hard-coded epsilon to avoid CUDA issue with calling host code.  Would be nice to have a portable way to define this, but probably not worth the effort at the moment.
+      VT eps = 1e-14; // = 10.0*std::numeric_limits<VT>::epsilon();
       INTREPID2_TEST_FOR_ABORT( !( -eps <= lambda[0] && lambda[0] <= 1.0+eps ),
                                 ">>> ERROR (Intrepid::OrientationTools::getModifiedTrianglePoint): " \
                                 "Computed bicentric coordinate (lamba[0]) is out of range [0, 1].");
@@ -376,8 +377,8 @@ namespace Intrepid2 {
                                         const unsigned subcellTopoKey,
                                         const ordinal_type subcellOrd,
                                         const ordinal_type ort){
-      typename ParamViewType::value_type data[4];
-      ParamViewType jac(data, 2, 2);
+      typename ParamViewType::non_const_value_type data[4];
+      typename ParamViewType::non_const_type jac(data, 2, 2);
 
       ordinal_type cellDim = subcellParametrization.extent(1);
       ordinal_type numTans = subcellParametrization.extent(2)-1;

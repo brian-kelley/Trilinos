@@ -19,6 +19,9 @@ echo
 echo "ATDM config env vars:"
 set | grep ATDM_CONFIG_
 echo
+echo "OpenMP env vars:"
+set | grep ^OMP_
+echo
 echo "PATH=$PATH"
 
 #
@@ -30,10 +33,12 @@ if [ "${Trilinos_REPOSITORY_LOCATION}" == "" ] ; then
 fi
 
 unset http_proxy
-# NOTE: Above we have to unset http_proxy to allow the second submit to the
-# testing-dev.sandia.gov/cdash/ site which the jenkins job sets.  But we can't
-# unset https_proxy which is needed for the git operations with
-# https://github.com.
+unset HTTP_PROXY
+unset no_proxy
+unset NO_PROXY
+# NOTE: Above we have to unset http_proxy and no_proxy to allow the
+# cdash submits to go  through. Note that we can't  unset https_proxy
+# which is needed for the git operations with  https://github.com.
 
 #
 # C) Setup install-releated stuff

@@ -72,9 +72,8 @@ Ioss::NodeBlock::NodeBlock(Ioss::DatabaseIO *io_database, const std::string &my_
                          node_count));
 }
 
-Ioss::NodeBlock::NodeBlock(const Ioss::NodeBlock &other) : Ioss::EntityBlock(other) {}
-
-Ioss::NodeBlock::~NodeBlock() = default;
+Ioss::NodeBlock::NodeBlock(const Ioss::NodeBlock &other) = default;
+Ioss::NodeBlock::~NodeBlock()                            = default;
 
 Ioss::Property Ioss::NodeBlock::get_implicit_property(const std::string &my_name) const
 {
@@ -91,4 +90,16 @@ int64_t Ioss::NodeBlock::internal_put_field_data(const Ioss::Field &field, void 
                                                  size_t data_size) const
 {
   return get_database()->put_field(this, field, data, data_size);
+}
+
+bool Ioss::NodeBlock::operator==(const Ioss::NodeBlock &rhs) const
+{
+  return Ioss::EntityBlock::operator==(rhs);
+}
+
+bool Ioss::NodeBlock::operator!=(const Ioss::NodeBlock &rhs) const { return !(*this == rhs); }
+
+bool Ioss::NodeBlock::equal(const Ioss::NodeBlock &rhs) const
+{
+  return Ioss::EntityBlock::equal(rhs);
 }

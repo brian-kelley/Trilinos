@@ -2,6 +2,7 @@
 #include "Thyra_ModelEvaluator.hpp"
 #include "Thyra_TpetraThyraWrappers.hpp"
 #include "Thyra_VectorStdOps.hpp"
+#include "Thyra_DefaultScaledAdjointLinearOp.hpp"
 #include "NOX_Thyra_MultiVector.H"
 #include "NOX_Thyra_Vector.H"
 #include "NOX_TpetraTypedefs.hpp"
@@ -31,14 +32,17 @@ namespace LOCA {
       const auto pNames = pVec_.getNamesVector();
       for (size_t i=0; i < pNames.size(); ++i) {
         const auto& p_name = pNames[i];
+        bool found = false;
         for (int j=0; j < model_->Np(); ++j) {
           const auto& names_vec = model_->get_p_names(j);
           const auto search = std::find(names_vec->begin(),names_vec->end(),p_name);
           if (search != names_vec->end()) {
             meParameterIndices_.push_back(j);
+            found = true;
             break;
           }
         }
+        TEUCHOS_TEST_FOR_EXCEPTION(!found,std::runtime_error,"ERROR LOCA::TpetraConstraintModelEvaluator::CTOR - could not find parameter named \"" << p_name << "\" in the model evaluator!");
       }
       TEUCHOS_ASSERT(pNames.size() == meParameterIndices_.size());
 
@@ -46,14 +50,17 @@ namespace LOCA {
       meResponseIndices_.clear();
       for (size_t i=0; i < gNames_.size(); ++i) {
         const auto& g_name = gNames_[i];
+        bool found = false;
         for (int j=0; j < model_->Ng(); ++j) {
           const auto& names_vec = model_->get_g_names(j);
           const auto search = std::find(names_vec.begin(),names_vec.end(),g_name);
           if (search != names_vec.end()) {
             meResponseIndices_.push_back(j);
+            found = true;
             break;
           }
         }
+        TEUCHOS_TEST_FOR_EXCEPTION(!found,std::runtime_error,"ERROR LOCA::TpetraConstraintModelEvaluator::CTOR - could not find response named \"" << g_name << "\" in the model evaluator!");
       }
       TEUCHOS_ASSERT(gNames_.size() == meResponseIndices_.size());
 
@@ -71,7 +78,12 @@ namespace LOCA {
         i.resize(me_p_.size());
       for (size_t j=0; j < numResponses; ++j) {
         me_g_[j] = ::Thyra::createMember(*model->get_g_space(meResponseIndices_[j]),"g_j");
-        me_dgdx_[j] = Teuchos::rcp_dynamic_cast<::Thyra::MultiVectorBase<double>>(model->create_DgDx_op(meResponseIndices_[j]),true);
+        me_dgdx_[j] = Teuchos::rcp_dynamic_cast<::Thyra::MultiVectorBase<double>>(model->create_DgDx_op(meResponseIndices_[j]),false);
+        if (me_dgdx_[j].is_null()) {
+          // It might be wrapped in an Adjoint linear op for the transpose.
+          auto ptr = Teuchos::rcp_dynamic_cast<::Thyra::DefaultScaledAdjointLinearOp<double>>(model->create_DgDx_op(meResponseIndices_[j]),true);
+          me_dgdx_[j] = Teuchos::rcp_dynamic_cast<::Thyra::MultiVectorBase<double>>(ptr->getNonconstOp(),true);
+        }
         for (size_t l=0; l < me_p_.size(); ++l)
           me_dgdp_[j][l] = Teuchos::rcp_dynamic_cast<::Thyra::MultiVectorBase<double>>(model->create_DgDp_op(meResponseIndices_[j],
                                                                                                              meParameterIndices_[l]),
@@ -194,7 +206,7 @@ namespace LOCA {
 
       auto outArgs = model_->createOutArgs();
       for (size_t i=0; i < me_dgdx_.size(); ++i)
-        outArgs.set_DgDx(meResponseIndices_[i],::Thyra::ModelEvaluatorBase::Derivative<NOX::Scalar>(me_dgdx_[i]));
+        outArgs.set_DgDx(meResponseIndices_[i],::Thyra::ModelEvaluatorBase::Derivative<NOX::Scalar>(me_dgdx_[i],::Thyra::ModelEvaluatorBase::DERIV_MV_GRADIENT_FORM));
 
       model_->evalModel(inArgs,outArgs);
 

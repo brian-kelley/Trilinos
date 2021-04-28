@@ -66,8 +66,7 @@ namespace Intrepid2
   // TODO: make this a subclass of TensorBasis3 instead, following what we've done for H(curl) and H(div)
   template<class HGRAD_LINE>
   class Basis_Derived_HGRAD_HEX
-  : public Basis_TensorBasis<Intrepid2::Basis_Derived_HGRAD_QUAD<HGRAD_LINE>,
-                             HGRAD_LINE>
+  : public Basis_TensorBasis<typename HGRAD_LINE::BasisBase>
   {
   public:
     using ExecutionSpace  = typename HGRAD_LINE::ExecutionSpace;
@@ -80,7 +79,8 @@ namespace Intrepid2
     
     using LineBasis = HGRAD_LINE;
     using QuadBasis = Intrepid2::Basis_Derived_HGRAD_QUAD<HGRAD_LINE>;
-    using TensorBasis = Basis_TensorBasis<QuadBasis,LineBasis>;
+    using BasisBase = typename HGRAD_LINE::BasisBase;
+    using TensorBasis = Basis_TensorBasis<BasisBase>;
 
     std::string name_;
     ordinal_type order_x_;
@@ -96,8 +96,8 @@ namespace Intrepid2
      */
     Basis_Derived_HGRAD_HEX(int polyOrder_x, int polyOrder_y, int polyOrder_z, const EPointType pointType=POINTTYPE_DEFAULT)
     :
-    TensorBasis(QuadBasis(polyOrder_x,polyOrder_y, pointType),
-                LineBasis(polyOrder_z, pointType))
+    TensorBasis(Teuchos::rcp( new QuadBasis(polyOrder_x,polyOrder_y, pointType)),
+                Teuchos::rcp( new LineBasis(polyOrder_z, pointType)))
     {
       this->functionSpace_ = FUNCTION_SPACE_HGRAD;
 
@@ -125,8 +125,38 @@ namespace Intrepid2
     virtual bool requireOrientation() const override {
       return (this->getDofCount(1,0) > 1); //if it has more than 1 DOF per edge, than it needs orientations
     }
+    
+    /** \brief Returns a simple decomposition of the specified operator: what operator(s) should be applied to basis1, and what operator(s) to basis2.  A one-element vector corresponds to a single TensorData entry; a multiple-element vector corresponds to a VectorData object with axialComponents = false.
+    */
+    virtual OperatorTensorDecomposition getSimpleOperatorDecomposition(const EOperator operatorType) const override
+    {
+      const EOperator VALUE = Intrepid2::OPERATOR_VALUE;
+      const EOperator GRAD  = Intrepid2::OPERATOR_GRAD;
+      
+      if (operatorType == VALUE)
+      {
+        return OperatorTensorDecomposition(VALUE,VALUE);
+      }
+      else if (operatorType == GRAD)
+      {
+        // to evaluate gradient, we need both OP_VALUE and OP_GRAD (thanks to product rule)
+        // for quad x line, we will put derivative * value in first component, and value * derivative in second
+        
+        std::vector< std::vector<EOperator> > ops;
+        ops.push_back(std::vector<EOperator>{GRAD,  VALUE});
+        ops.push_back(std::vector<EOperator>{VALUE, GRAD});
+        
+        std::vector<double> weights(ops.size(), 1.0);
+        
+        return OperatorTensorDecomposition(ops, weights);
+      }
+      else
+      {
+        INTREPID2_TEST_FOR_EXCEPTION(true,std::invalid_argument,"operator not yet supported");
+      }
+    }
 
-    using Basis<ExecutionSpace,OutputValueType,PointValueType>::getValues;
+    using BasisBase::getValues;
     
     /** \brief  multi-component getValues() method (required/called by TensorBasis)
         \param [out] outputValues - the view into which to place the output values
@@ -202,7 +232,7 @@ namespace Intrepid2
         \param [in] subCellOrd - position of the subCell among of the subCells having the same dimension
         \return pointer to the subCell basis of dimension subCellDim and position subCellOrd
      */
-    BasisPtr<ExecutionSpace, OutputValueType, PointValueType>
+    Teuchos::RCP<BasisBase>
       getSubCellRefBasis(const ordinal_type subCellDim, const ordinal_type subCellOrd) const override{
       if(subCellDim == 1) {
         switch(subCellOrd) {
@@ -240,6 +270,19 @@ namespace Intrepid2
       }
 
       INTREPID2_TEST_FOR_EXCEPTION(true,std::invalid_argument,"Input parameters out of bounds");
+    }
+    
+    /** \brief Creates and returns a Basis object whose DeviceType template argument is Kokkos::HostSpace::device_type, but is otherwise identical to this.
+     
+        \return Pointer to the new Basis object.
+     */
+    virtual HostBasisPtr<OutputValueType, PointValueType>
+    getHostBasis() const override {
+      using HostBasis  = Basis_Derived_HGRAD_HEX<typename HGRAD_LINE::HostBasis>;
+      
+      auto hostBasis = Teuchos::rcp(new HostBasis(order_x_, order_y_, order_z_, pointType_));
+      
+      return hostBasis;
     }
   };
 } // end namespace Intrepid2

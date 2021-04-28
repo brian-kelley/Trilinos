@@ -15,6 +15,7 @@
 
 #include "Tempus_IntegratorBasic.hpp"
 #include "Tempus_StepperFactory.hpp"
+#include "Tempus_StepperExplicitRK.hpp"
 
 #include "../TestModels/SinCosModel.hpp"
 #include "../TestModels/VanDerPolModel.hpp"
@@ -167,7 +168,6 @@ TEUCHOS_UNIT_TEST(ExplicitRK, ConstructingFromDefaults)
     auto timeStepControl = rcp(new Tempus::TimeStepControl<double>());
     ParameterList tscPL = pl->sublist("Demo Integrator")
                              .sublist("Time Step Control");
-    timeStepControl->setStepType (tscPL.get<std::string>("Integrator Step Type"));
     timeStepControl->setInitIndex(tscPL.get<int>   ("Initial Time Index"));
     timeStepControl->setInitTime (tscPL.get<double>("Initial Time"));
     timeStepControl->setFinalTime(tscPL.get<double>("Final Time"));
@@ -262,7 +262,6 @@ TEUCHOS_UNIT_TEST(ExplicitRK, useFSAL_false)
 
     // Setup TimeStepControl ------------------------------------
     auto timeStepControl = rcp(new Tempus::TimeStepControl<double>());
-    timeStepControl->setStepType ("Constant");
     timeStepControl->setInitTime (0.0);
     timeStepControl->setFinalTime(1.0);
     timeStepControl->setInitTimeStep(dt);
@@ -311,8 +310,8 @@ TEUCHOS_UNIT_TEST(ExplicitRK, useFSAL_false)
     Thyra::V_StVpStV(xdiff.ptr(), 1.0, *x_exact, -1.0, *(x));
 
     // Check the order and intercept
-     std::cout << "  Stepper = " << stepper->description()
-               << "\n            with " << "useFSAL=false" << std::endl;
+    std::cout << "  Stepper = " << stepper->description()
+              << "\n            with " << "useFSAL=false" << std::endl;
     std::cout << "  =========================" << std::endl;
     std::cout << "  Exact solution   : " << get_ele(*(x_exact), 0) << "   "
                                          << get_ele(*(x_exact), 1) << std::endl;
@@ -578,7 +577,7 @@ TEUCHOS_UNIT_TEST(ExplicitRK, EmbeddedVanDerPol)
      const double L2norm = Thyra::norm_2(*xdiff);
 
      // Test number of steps, failures, and accuracy
-     if ((integratorChoice == "Embedded_Integrator_PID") or
+     if ((integratorChoice == "Embedded_Integrator_PID") ||
            (integratorChoice == "Embedded_Integrator_PID_General")) {
 
         const double absTol = pl->sublist(integratorChoice).
@@ -656,7 +655,6 @@ TEUCHOS_UNIT_TEST(ExplicitRK, stage_number)
   auto timeStepControl = rcp(new Tempus::TimeStepControl<double>());
   ParameterList tscPL = pl->sublist("Demo Integrator")
                            .sublist("Time Step Control");
-  timeStepControl->setStepType (tscPL.get<std::string>("Integrator Step Type"));
   timeStepControl->setInitIndex(tscPL.get<int>   ("Initial Time Index"));
   timeStepControl->setInitTime (tscPL.get<double>("Initial Time"));
   timeStepControl->setFinalTime(tscPL.get<double>("Final Time"));

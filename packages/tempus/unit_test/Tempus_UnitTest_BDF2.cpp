@@ -6,6 +6,9 @@
 // ****************************************************************************
 // @HEADER
 
+#include <fstream>
+#include <vector>
+
 #include "Teuchos_UnitTestHarness.hpp"
 #include "Teuchos_XMLParameterListHelpers.hpp"
 #include "Teuchos_TimeMonitor.hpp"
@@ -13,15 +16,10 @@
 
 #include "Thyra_VectorStdOps.hpp"
 
-#include "Tempus_StepperFactory.hpp"
+#include "Tempus_IntegratorBasic.hpp"
 #include "Tempus_UnitTest_Utils.hpp"
-#include "Tempus_StepperHHTAlphaModifierBase.hpp"
-#include "Tempus_StepperHHTAlphaModifierXBase.hpp"
-#include "Tempus_StepperHHTAlphaObserverBase.hpp"
-#include "Tempus_StepperHHTAlphaModifierDefault.hpp"
-#include "Tempus_StepperHHTAlphaModifierXDefault.hpp"
-#include "Tempus_StepperHHTAlphaObserverDefault.hpp"
 
+#include "Tempus_StepperBDF2.hpp"
 #include "Tempus_StepperBDF2ModifierBase.hpp"
 #include "Tempus_StepperBDF2ObserverBase.hpp"
 #include "Tempus_StepperBDF2ModifierXBase.hpp"
@@ -31,8 +29,6 @@
 #include "../TestModels/VanDerPolModel.hpp"
 #include "../TestUtils/Tempus_ConvergenceTestUtils.hpp"
 
-#include <fstream>
-#include <vector>
 
 namespace Tempus_Unit_Test {
 
@@ -44,7 +40,6 @@ namespace Tempus_Unit_Test {
   using Teuchos::sublist;
   using Teuchos::getParametersFromXmlFile;
 
-  using Tempus::StepperFactory;
 
   // Comment out any of the following tests to exclude from build/run.
 
@@ -87,7 +82,7 @@ namespace Tempus_Unit_Test {
     stepper->setZeroInitialGuess(zeroInitialGuess);      stepper->initialize();  TEUCHOS_TEST_FOR_EXCEPT(!stepper->isInitialized());
 
     stepper = rcp(new Tempus::StepperBDF2<double>(model, solver, startUpStepper, useFSAL,
-						    ICConsistency, ICConsistencyCheck, zeroInitialGuess,modifier));
+              ICConsistency, ICConsistencyCheck, zeroInitialGuess,modifier));
     TEUCHOS_TEST_FOR_EXCEPT(!stepper->isInitialized());
     // Test stepper properties.
     TEUCHOS_ASSERT(stepper->getOrder() == 2);
@@ -123,8 +118,8 @@ public:
 
   /// Modify BDF2 Stepper at end of takeStep.
   virtual void modify(Teuchos::RCP<Tempus::SolutionHistory<double> > sh,
-		      Teuchos::RCP<Tempus::StepperBDF2<double> > stepper,
-		      const typename Tempus::StepperBDF2AppAction<double>::ACTION_LOCATION actLoc)
+    Teuchos::RCP<Tempus::StepperBDF2<double> > stepper,
+    const typename Tempus::StepperBDF2AppAction<double>::ACTION_LOCATION actLoc)
   {
     switch(actLoc) {
     case StepperBDF2AppAction<double>::BEGIN_STEP:
@@ -150,8 +145,8 @@ public:
     case StepperBDF2AppAction<double>::END_STEP:
       {
         testEND_STEP = true;
-	auto x  = sh->getWorkingState()->getX();
-	testWorkingValue = get_ele(*(x), 0);
+        auto x  = sh->getWorkingState()->getX();
+        testWorkingValue = get_ele(*(x), 0);
         break;
       }
     default:
@@ -194,7 +189,6 @@ public:
 
   // Setup TimeStepControl ------------------------------------
   auto timeStepControl = rcp(new Tempus::TimeStepControl<double>());
-  timeStepControl->setStepType ("Constant");
   timeStepControl->setInitIndex(0);
   timeStepControl->setInitTime (0.0);
   timeStepControl->setFinalTime(2.0);
@@ -252,8 +246,8 @@ public:
 
   /// Modify BDF2 Stepper at end of takeStep.
   virtual void modify(Teuchos::RCP<Tempus::SolutionHistory<double> > sh,
-		      Teuchos::RCP<Tempus::StepperBDF2<double> > stepper,
-		      const typename Tempus::StepperBDF2AppAction<double>::ACTION_LOCATION actLoc)
+    Teuchos::RCP<Tempus::StepperBDF2<double> > stepper,
+    const typename Tempus::StepperBDF2AppAction<double>::ACTION_LOCATION actLoc)
   {
     switch(actLoc) {
     case StepperBDF2AppAction<double>::BEGIN_STEP:
@@ -266,7 +260,7 @@ public:
     case StepperBDF2AppAction<double>::BEFORE_SOLVE:
       {
         testBEFORE_SOLVE = true;
-	testType = stepper->getStepperType();
+        testType = stepper->getStepperType();
         break;
       }
     case StepperBDF2AppAction<double>::AFTER_SOLVE:
@@ -323,7 +317,6 @@ TEUCHOS_UNIT_TEST(BDF2, AppAction_Observer)
 
   // Setup TimeStepControl ------------------------------------
   auto timeStepControl = rcp(new Tempus::TimeStepControl<double>());
-  timeStepControl->setStepType ("Constant");
   timeStepControl->setInitIndex(0);
   timeStepControl->setInitTime (0.0);
   timeStepControl->setFinalTime(2.0);
@@ -380,9 +373,9 @@ public:
 
   /// Modify BDF2 Stepper at end of takeStep.
   virtual void modify(
-		      Teuchos::RCP<Thyra::VectorBase<double> > x,
-		      const double time, const double dt,
-		      const typename Tempus::StepperBDF2ModifierXBase<double>::MODIFIER_TYPE modType)
+    Teuchos::RCP<Thyra::VectorBase<double> > x,
+    const double time, const double dt,
+    const typename Tempus::StepperBDF2ModifierXBase<double>::MODIFIER_TYPE modType)
   {
     switch(modType) {
     case StepperBDF2ModifierXBase<double>::X_BEGIN_STEP:
@@ -448,7 +441,6 @@ TEUCHOS_UNIT_TEST(BDF2, AppAction_ModifierX)
 
   // Setup TimeStepControl ------------------------------------
   auto timeStepControl = rcp(new Tempus::TimeStepControl<double>());
-  timeStepControl->setStepType ("Constant");
   timeStepControl->setInitIndex(0);
   timeStepControl->setInitTime (0.0);
   timeStepControl->setFinalTime(2.0);

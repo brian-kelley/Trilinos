@@ -69,12 +69,12 @@ namespace Intrepid2
   template<class HVOL_LINE>
   class Basis_Derived_HVOL_HEX
   :
-  public Basis_TensorBasis<Intrepid2::Basis_Derived_HVOL_QUAD<HVOL_LINE>,
-                           HVOL_LINE>
+  public Basis_TensorBasis<typename HVOL_LINE::BasisBase>
   // TODO: make this a subclass of TensorBasis3 instead, following what we've done for H(curl) and H(div)
   {
     std::string name_;
-
+    ordinal_type polyOrder_x_, polyOrder_y_, polyOrder_z_;
+    EPointType pointType_;
   public:
     using ExecutionSpace  = typename HVOL_LINE::ExecutionSpace;
     using OutputValueType = typename HVOL_LINE::OutputValueType;
@@ -84,9 +84,11 @@ namespace Intrepid2
     using PointViewType  = typename HVOL_LINE::PointViewType ;
     using ScalarViewType = typename HVOL_LINE::ScalarViewType;
     
+    using BasisBase = typename HVOL_LINE::BasisBase;
+    
     using LineBasis = HVOL_LINE;
     using QuadBasis = Intrepid2::Basis_Derived_HVOL_QUAD<HVOL_LINE>;
-    using TensorBasis = Basis_TensorBasis<QuadBasis,LineBasis>;
+    using TensorBasis = Basis_TensorBasis<BasisBase>;
 
     /** \brief  Constructor.
         \param [in] polyOrder_x - the polynomial order in the x dimension.
@@ -96,8 +98,12 @@ namespace Intrepid2
      */
     Basis_Derived_HVOL_HEX(int polyOrder_x, int polyOrder_y, int polyOrder_z, const EPointType pointType=POINTTYPE_DEFAULT)
     :
-    TensorBasis(QuadBasis(polyOrder_x,polyOrder_y,pointType),
-                LineBasis(polyOrder_z,pointType))
+    TensorBasis(Teuchos::rcp(new QuadBasis(polyOrder_x,polyOrder_y,pointType)),
+                Teuchos::rcp(new LineBasis(polyOrder_z,pointType))),
+    polyOrder_x_(polyOrder_x),
+    polyOrder_y_(polyOrder_y),
+    polyOrder_z_(polyOrder_z),
+    pointType_(pointType)
     {
       this->functionSpace_ = FUNCTION_SPACE_HVOL;
 
@@ -124,8 +130,22 @@ namespace Intrepid2
 
     /** \brief True if orientation is required
     */
-    virtual bool requireOrientation() const {
+    virtual bool requireOrientation() const override {
       return false;
+    }
+
+    virtual OperatorTensorDecomposition getSimpleOperatorDecomposition(const EOperator operatorType) const override
+    {
+      const EOperator VALUE = Intrepid2::OPERATOR_VALUE;
+      
+      if (operatorType == VALUE)
+      {
+        return OperatorTensorDecomposition(VALUE, VALUE);
+      }
+      else
+      {
+        INTREPID2_TEST_FOR_EXCEPTION(true,std::invalid_argument,"operator not yet supported");
+      }
     }
     
     using TensorBasis::getValues;
@@ -155,6 +175,16 @@ namespace Intrepid2
       {
         INTREPID2_TEST_FOR_EXCEPTION(true,std::invalid_argument,"operator not yet supported");
       }
+    }
+    
+    /** \brief Creates and returns a Basis object whose DeviceType template argument is Kokkos::HostSpace::device_type, but is otherwise identical to this.
+     
+        \return Pointer to the new Basis object.
+     */
+    virtual BasisPtr<typename Kokkos::HostSpace::device_type, typename BasisBase::OutputValueType, typename BasisBase::PointValueType>
+    getHostBasis() const override {
+      using HostBasisType  = Basis_Derived_HVOL_HEX<typename HVOL_LINE::HostBasis>;
+      return Teuchos::rcp( new HostBasisType(polyOrder_x_, polyOrder_y_, polyOrder_z_, pointType_) );
     }
   };
 } // end namespace Intrepid2

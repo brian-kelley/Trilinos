@@ -9,10 +9,9 @@
 #ifndef Tempus_StepperExplicitRK_impl_hpp
 #define Tempus_StepperExplicitRK_impl_hpp
 
-#include "Tempus_RKButcherTableau.hpp"
-
-#include "Teuchos_VerboseObjectParameterListHelpers.hpp"
 #include "Thyra_VectorStdOps.hpp"
+
+#include "Tempus_RKButcherTableau.hpp"
 
 
 namespace Tempus {
@@ -166,7 +165,7 @@ void StepperExplicitRK<Scalar>::initialize()
     assign(stageXDot_[i].ptr(), Teuchos::ScalarTraits<Scalar>::zero());
   }
 
-  if ( this->tableau_->isEmbedded() and this->getUseEmbedded() ){
+  if ( this->tableau_->isEmbedded() && this->getUseEmbedded() ){
      this->ee_ = Thyra::createMember(this->appModel_->get_f_space());
      this->abs_u0 = Thyra::createMember(this->appModel_->get_f_space());
      this->abs_u = Thyra::createMember(this->appModel_->get_f_space());
@@ -294,7 +293,7 @@ void StepperExplicitRK<Scalar>::takeStep(
     // can change the step status
     workingState->setSolutionStatus(Status::PASSED);
 
-    if (this->tableau_->isEmbedded() and this->getUseEmbedded()) {
+    if (this->tableau_->isEmbedded() && this->getUseEmbedded()) {
 
       const Scalar tolRel = workingState->getTolRel();
       const Scalar tolAbs = workingState->getTolAbs();
