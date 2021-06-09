@@ -64,7 +64,7 @@ namespace Experimental{
 
 template <typename device_t, typename rowmap_t, typename colinds_t, typename lno_view_t = typename colinds_t::non_const_type>
 lno_view_t
-graph_d2_mis(const rowmap_t& rowmap, const colinds_t& colinds, MIS2_Algorithm algo = MIS2_FAST)
+graph_d2_mis(const rowmap_t& rowmap, const colinds_t& colinds, MIS2_Algorithm algo = MIS2_FAST, int* numRounds = nullptr)
 {
   if(rowmap.extent(0) <= 1)
   {
@@ -76,13 +76,15 @@ graph_d2_mis(const rowmap_t& rowmap, const colinds_t& colinds, MIS2_Algorithm al
     case MIS2_QUALITY:
     {
       Impl::D2_MIS_FixedPriority<device_t, rowmap_t, colinds_t, lno_view_t> mis(rowmap, colinds);
-      return mis.compute();
+      return mis.compute(numRounds);
     }
     case MIS2_FAST:
     {
-      Impl::D2_MIS_RandomPriority<device_t, rowmap_t, colinds_t, lno_view_t> mis(rowmap, colinds);
-      return mis.compute();
+      Impl::D2_MIS_RandomPriority<device_t, rowmap_t, colinds_t, lno_view_t, true> mis(rowmap, colinds);
+      return mis.compute(numRounds);
     }
+    default:
+      throw std::runtime_error("MIS2 alg not imlemented");
   }
   throw std::invalid_argument("graph_d2_mis: invalid algorithm");
 }
@@ -101,6 +103,34 @@ graph_mis2_coarsen(const rowmap_t& rowmap, const colinds_t& colinds, typename co
   numClusters = mis2.extent(0);
   Impl::D2_MIS_Coarsening<device_t, rowmap_t, colinds_t, labels_t> coarsening(rowmap, colinds, mis2);
   return coarsening.compute();
+}
+
+template <typename device_t, typename rowmap_t, typename colinds_t, typename labels_t = typename colinds_t::non_const_type>
+labels_t
+graph_mis2_aggregate(const rowmap_t& rowmap, const colinds_t& colinds, typename colinds_t::non_const_value_type& numAggregates)
+{
+  if(rowmap.extent(0) <= 1)
+  {
+    //there are no vertices to label
+    numAggregates = 0;
+    return labels_t();
+  }
+  Impl::D2_MIS_Aggregation<device_t, rowmap_t, colinds_t, labels_t> aggregation(rowmap, colinds);
+  aggregation.compute();
+  numAggregates = aggregation.numAggs;
+  return aggregation.labels;
+}
+
+inline const char* mis2_algorithm_name(MIS2_Algorithm algo)
+{
+  switch(algo)
+  {
+    case MIS2_QUALITY:
+      return "MIS2_QUALITY";
+    case MIS2_FAST:
+      return "MIS2_FAST";
+  }
+  return "*** Invalid MIS2 algo enum value.\n";
 }
 
 }  // end namespace Experimental

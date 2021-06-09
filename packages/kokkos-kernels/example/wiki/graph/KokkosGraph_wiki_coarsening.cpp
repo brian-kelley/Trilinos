@@ -15,8 +15,8 @@ int main(int argc, char* argv[])
     {
       std::cout << "Coarsened vertex labels:\n";
       Ordinal numClusters = 0;
-      auto labels = KokkosGraph::Experimental::graph_mis2_coarsen<ExecSpace, RowmapType, ColindsType>(
-          rowmapDevice, colindsDevice, numClusters, KokkosGraph::MIS2_FAST);
+      auto labels = KokkosGraph::Experimental::graph_mis2_aggregate<ExecSpace, RowmapType, ColindsType>(
+          rowmapDevice, colindsDevice, numClusters);
       //coarsening labels can be printed in the same way as colors
       GraphDemo::printColoring(labels, numClusters);
       putchar('\n');
