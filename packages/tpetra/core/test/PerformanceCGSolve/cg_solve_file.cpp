@@ -262,6 +262,15 @@ int run()
   // On output, it is the approximate solution.
   RCP<vec_type> x (new vec_type (A->getDomainMap ()));
 
+  {
+    //Do a warmup matvec on a copy of the matrix.
+    //The first call to cuSPARSE SpMV takes much longer,
+    //but for KokkosKernels SpMV this isn't an isuse.
+    RCP<vec_type> temp (new vec_type (map));
+    RCP<crs_matrix_type> Acopy = rcp(new crs_matrix_type(*A, Teuchos::Copy));
+    Acopy->apply(*x, *temp);
+  }
+
   // Solve the linear system Ax=b using CG.
   RCP<StackedTimer> timer = rcp(new StackedTimer("CG: global"));
   TimeMonitor::setStackedTimer(timer);
