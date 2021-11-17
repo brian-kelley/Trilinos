@@ -2108,6 +2108,8 @@ public:
     global_size_t globalMaxNumRowEntries_ =
       Teuchos::OrdinalTraits<global_size_t>::invalid();
 
+  public:
+
     // Replacement for device view k_rowPtrs_
     // Device view rowPtrsUnpacked_dev_ takes place of k_rowPtrs_ 
     // Host view rowPtrsUnpacked_host_ takes place of copies and use of getEntryOnHost
@@ -2296,6 +2298,7 @@ public:
     /// inexplicable test failures only on CUDA.  Thus, I left it as a
     /// HostMirror, which means (given Trilinos' current UVM
     /// requirement) that it will be a UVM allocation.
+public:
     typedef typename Kokkos::View<size_t*, Kokkos::LayoutLeft, device_type>::HostMirror num_row_entries_type;
 
     // typedef Kokkos::View<

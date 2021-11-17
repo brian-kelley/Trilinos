@@ -60,7 +60,7 @@ struct CmdLineOpts
   bool saveMM;
   // repetitions - how many times to execute the kernel for testing
   size_t repetitions;
-  // Use Kokkos assembly for matrix
+  // Use Kokkos assembly for matrix (not graph)
   bool useKokkosAssembly;
   // Number of doubles per element (for simulated state transfer)
   int numStateDoublesPerElement;
@@ -68,6 +68,8 @@ struct CmdLineOpts
   bool execInsertGlobalIndicesFE;
   // execTotalElementLoop - execute the Total Element Loop kernel
   bool execTotalElementLoop;
+  // whether to use serial (host) or device graph assembly
+  bool useDeviceGraphAssembly;
 };
 
 // Use a utility from the Teuchos package of Trilinos to set up
@@ -88,6 +90,7 @@ setCmdLineOpts (struct CmdLineOpts& opts,
   opts.saveMM = false;
   opts.repetitions  = 1;
   opts.useKokkosAssembly = false;
+  opts.useDeviceGraphAssembly = false;
   opts.numStateDoublesPerElement = 4;
   opts.execInsertGlobalIndicesFE = false;
   opts.execTotalElementLoop = false;
@@ -105,6 +108,7 @@ setCmdLineOpts (struct CmdLineOpts& opts,
                 "Execute the Insert FECrsMatrix Global Indices FEM Assembly kernel.");
   clp.setOption("with-total-element-loop", "without-total-element-loop", &(opts.execTotalElementLoop),
                 "Execute the Total Element Loop FEM Assembly kernel.");
+  clp.setOption("with-device-graph-assembly", "without-device-graph-assembly", &(opts.useDeviceGraphAssembly), "Whether to do graph assembly on device ('with' requires --kokkos)");
 }
 
 // Check the command-line options that were read in by

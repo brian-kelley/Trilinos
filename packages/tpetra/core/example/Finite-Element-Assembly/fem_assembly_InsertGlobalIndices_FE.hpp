@@ -53,6 +53,8 @@
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_FancyOStream.hpp"
 #include "Tpetra_Assembly_Helpers.hpp"
+#include "Kokkos_UnorderedMap.hpp"
+#include "KokkosKernels_Utils.hpp"
 
 #include "fem_assembly_typedefs.hpp"
 #include "fem_assembly_MeshDatabase.hpp"
@@ -157,6 +159,7 @@ int executeInsertGlobalIndicesFESP_(const Teuchos::RCP<const Teuchos::Comm<int> 
   auto range_map  = row_map;
 
   auto owned_element_to_node_ids = mesh.getOwnedElementToNode().getHostView(Tpetra::Access::ReadOnly);
+  std::cout << "Elements <-> nodes graph: " << owned_element_to_node_ids.extent(0) << "x" << owned_element_to_node_ids.extent(1) << '\n';
 
   Teuchos::TimeMonitor::getStackedTimer()->startBaseTimer();
   RCP<TimeMonitor> timerElementLoopGraph = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("1) ElementLoop  (Graph)")));
@@ -177,7 +180,7 @@ int executeInsertGlobalIndicesFESP_(const Teuchos::RCP<const Teuchos::Comm<int> 
     for(size_t element_node_idx=0; element_node_idx<owned_element_to_node_ids.extent(1); element_node_idx++)
     {
       global_ids_in_row[element_node_idx] = 
-	owned_element_to_node_ids(element_gidx, element_node_idx);
+        owned_element_to_node_ids(element_gidx, element_node_idx);
     }
 
     // Add the contributions from the current row into the graph.
@@ -351,7 +354,7 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
 
   MeshDatabase mesh(comm,nex,ney,procx,procy);
 
-  if(opts.verbose) mesh.print(std::cout);
+  /*if(opts.verbose) */mesh.print(std::cout);
 
   // Build Tpetra Maps
   // -----------------
@@ -376,6 +379,8 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
   auto domain_map = row_map;
   auto range_map  = row_map;
 
+  auto owned_element_to_node_ids = mesh.getOwnedElementToNode().getHostView(Tpetra::Access::ReadOnly);
+  std::cout << "Elements <-> nodes graph: " << owned_element_to_node_ids.extent(0) << "x" << owned_element_to_node_ids.extent(1) << '\n';
 
   Teuchos::TimeMonitor::getStackedTimer()->startBaseTimer();
 
@@ -386,12 +391,80 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
   // be 4 nodes associated with each element.
   Teuchos::Array<global_ordinal_type> global_ids_in_row(4);
 
+  TimeMonitor timerElementLoopGraph
+    (*TimeMonitor::getNewTimer("1) ElementLoop  (Graph)"));
+  Tpetra::beginAssembly(*fe_graph);
+  if(opts.useDeviceGraphAssembly)
+  {
+    using HashSet = Kokkos::UnorderedMap< Kokkos::pair<global_ordinal_type, global_ordinal_type>, void, deviceType>;
+    using RangePol = Kokkos::RangePolicy<typename deviceType::execution_space, Kokkos::IndexType<size_t>>;
+    using RowptrsDevice = typename fe_graph_type::row_ptrs_device_view_type::non_const_type;
+    std::cout << "** Using device graph assembly (TODO).\n";
+    //Set elements are global (row,column) tuples
+    HashSet hashSet(1.3 * 16 * owned_plus_shared_map->getNodeNumElements());
+    int nodesPerElement = owned_element_to_node_ids.extent_int(1);
+    //Get the 3-array (unpacked) CRS graph. Its rows follow local indexing, but columns are globally indexed.
+    auto rowptrsHost = fe_graph->rowPtrsUnpacked_host_;
+    auto localRowMap = row_map->getLocalMap();
+    std::cout << "Note: rowptrs from host: ";
+    KokkosKernels::Impl::print_1Dview(rowptrsHost);
+    std::cout << "\n";
+    RowptrsDevice rowptrs(Kokkos::view_alloc(Kokkos::WithoutInitializing, "unpacked rowptrs"), rowptrsHost.extent(0));
+    //rowptrsHost is already populated based on entries allocated per row
+    Kokkos::deep_copy(rowptrs, rowptrsHost);
+    auto entriesPerRow = fe_graph->k_numRowEntries_;
+    //Globally indexed, unpacked entries of the local graph.
+    {
+      auto unpackedEntries = fe_graph->gblInds_wdv.getDeviceView(Tpetra::Access::ReadWrite);
+      Kokkos::View<size_t*, Kokkos::LayoutLeft, deviceType>::HostMirror num_row_entries_type;
+      std::cout << "Nodes per element: " << nodesPerElement << '\n';
+      std::cout << "Elements in mesh: " << mesh.getNumOwnedElements() << '\n';
+      //First step: insert each edge into the hashset 
+      Kokkos::parallel_for(RangePol(0, mesh.getNumOwnedElements()),
+          KOKKOS_LAMBDA(size_t elem)
+          {
+            for(int i = 0; i < nodesPerElement; i++)
+            {
+              global_ordinal_type globalRow = owned_element_to_node_ids(elem, i);
+              local_ordinal_type localRow = localRowMap.getLocalElement(globalRow);
+              if(localRow != ::Tpetra::Details::OrdinalTraits<local_ordinal_type>::invalid ())
+              {
+                for(int j = 0; j < nodesPerElement; j++)
+                {
+                  global_ordinal_type globalCol = owned_element_to_node_ids(elem, j);
+                  Kokkos::pair<global_ordinal_type, global_ordinal_type> edge(globalRow, globalCol);
+                  printf("Testing edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
+                  auto insertResult = hashSet.insert(edge);
+                  if(!insertResult.existing())
+                  {
+                    //New edge: add it to the actual graph
+                    printf("Have new edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
+                    int insertPos = Kokkos::atomic_fetch_add(&entriesPerRow(localRow), size_t(1));
+                    unpackedEntries(rowptrs(localRow) + insertPos) = globalCol;
+                  }
+                  else if(insertResult.failed())
+                  {
+                    printf("BAD: insertion of edge (%d, %d) into hashmap failed!\n", (int) globalRow, (int) globalCol);
+                  }
+                }
+              }
+              else
+              {
+                printf("BAD: global row %d not owned!\n", (int) globalRow);
+              }
+            }
+          });
+      std::cout << "After inserting all, hashmap contains " << hashSet.size() << '\n';
+      execution_space().fence();
+    }
+  }
+  else
   {
     TimeMonitor timerElementLoopGraph(*TimeMonitor::getNewTimer("1) ElementLoop  (Graph)"));
     auto owned_element_to_node_ids = mesh.getOwnedElementToNode().getHostView(Tpetra::Access::ReadOnly);
+    std::cout << "** Using host graph assembly.\n";
 
     // for each element in the mesh...
-    Tpetra::beginAssembly(*fe_graph);
     for (size_t element_gidx = 0;
          element_gidx < mesh.getNumOwnedElements ();
          ++element_gidx) {
@@ -414,6 +487,7 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
       //   - node 5 inserts [0, 1, 4, 5]
       for (size_t element_node_idx = 0;
            element_node_idx < owned_element_to_node_ids.extent(1); ++element_node_idx) {
+        std::cout << "Host: inserting " << global_ids_in_row.size() << " entries into global row " << element_node_idx << '\n';
         fe_graph->insertGlobalIndices (global_ids_in_row[element_node_idx],
                                        global_ids_in_row());
       }
