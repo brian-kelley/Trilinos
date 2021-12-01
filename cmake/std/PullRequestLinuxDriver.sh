@@ -12,10 +12,10 @@ function bootstrap_modules() {
     print_banner "Bootstrap environment modules start"
 
     cuda_regex=".*(_cuda_).*"
-    ride_regex=".*(ride).*"
+    weaver_regex=".*(weaver).*"
     vortex_regex=".*(vortex).*"
     if [[ ${JOB_BASE_NAME:?} =~ ${cuda_regex} ]]; then
-        if [[ ${NODE_NAME:?} =~ ${ride_regex} ]]; then
+        if [[ ${NODE_NAME:?} =~ ${weaver_regex} ]]; then
             message_std "PRDriver> " "Job is CUDA"
             module unload git
             module unload python
@@ -26,7 +26,7 @@ function bootstrap_modules() {
         elif [[ ${NODE_NAME:?} =~ ${vortex_regex} ]]; then
             echo -e "Job is CUDA node is vortex"
             module load git/2.20.0
-            module load python/3.7.2 
+            module load python/3.7.2
             get_python_packages pip3
             export PYTHON_EXE=python3
         else
@@ -68,9 +68,11 @@ function bootstrap_modules() {
 print_banner "PullRequestLinuxDriver.sh"
 
 # Set up Sandia PROXY environment vars
-export https_proxy=http://wwwproxy.sandia.gov:80
-export http_proxy=http://wwwproxy.sandia.gov:80
-export no_proxy='localhost,localnets,127.0.0.1,169.254.0.0/16,forge.sandia.gov'
+if [[ "${TRILINOS_PR_DO_NOT_SET_PROXY}}" == "" ]] ; then
+  export https_proxy=http://proxy.sandia.gov:80
+  export http_proxy=http://proxy.sandia.gov:80
+  export no_proxy='localhost,.sandia.gov,localnets,127.0.0.1,169.254.0.0/16,forge.sandia.gov'
+fi
 
 
 # bootstrap the python and git modules for this system

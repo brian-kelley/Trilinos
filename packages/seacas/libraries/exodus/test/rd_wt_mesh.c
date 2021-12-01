@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 1999-2020 National Technology & Engineering Solutions
+ * Copyright(C) 1999-2021 National Technology & Engineering Solutions
  * of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
  * NTESS, the U.S. Government retains certain rights in this software.
  *
@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #if defined(_MSC_VER)
+#define NOMINMAX
 #include <windows.h>
 #define sleep(a) Sleep(a * 1000)
 #endif
@@ -70,8 +71,8 @@ double my_timer()
 #ifdef PARALLEL_AWARE_EXODUS
   double t1 = MPI_Wtime();
 #else
-  clock_t ctime = clock();
-  double  t1    = ctime / (double)CLOCKS_PER_SEC;
+  clock_t ctime     = clock();
+  double  t1        = ctime / (double)CLOCKS_PER_SEC;
 #endif
   return t1;
 }
@@ -135,8 +136,8 @@ int main(int argc, char **argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &num_domains);
 #else
-  rank        = 0;
-  num_domains = 1;
+  rank              = 0;
+  num_domains       = 1;
 #endif
   /*
    *    Processor 0: parse the command line arguments.
@@ -655,7 +656,7 @@ int read_exo_mesh(char *file_name, int rank, int *num_dim, int num_domains, int 
 #ifdef PARALLEL_AWARE_EXODUS
   MPI_Allreduce(&file_size, &glob_file_size, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
-  glob_file_size = file_size;
+  glob_file_size    = file_size;
 #endif
 
   if (rank == 0) {
@@ -889,7 +890,7 @@ int write_exo_mesh(char *file_name, int rank, int num_dim, int num_domains, int 
         }
       }
       else {
-        elem_var_tab = 0;
+        elem_var_tab = NULL;
       }
       err = ex_put_all_var_param(exoid[npd], num_global_fields, num_nodal_fields,
                                  num_element_fields, elem_var_tab, 0, 0, 0, 0);
@@ -1137,7 +1138,7 @@ int write_exo_mesh(char *file_name, int rank, int num_dim, int num_domains, int 
 #ifdef PARALLEL_AWARE_EXODUS
   MPI_Allreduce(&file_size, &glob_file_size, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
-  glob_file_size = file_size;
+  glob_file_size    = file_size;
 #endif
 
   if (rank == 0) {
@@ -1182,10 +1183,6 @@ int write_exo_mesh(char *file_name, int rank, int num_dim, int num_domains, int 
 void get_file_name(const char *base, const char *ext, int rank, int nprocs, const char *other,
                    char *output)
 {
-  int  i1, iTemp1;
-  int  iMaxDigit = 0, iMyDigit = 0;
-  char cTemp[128];
-
   output[0] = '\0';
   ex_copy_string(output, base, MAX_STRING_LEN);
   strcat(output, ".");
@@ -1201,8 +1198,8 @@ void get_file_name(const char *base, const char *ext, int rank, int nprocs, cons
      * This allows numbers like 01-99, i.e., prepending zeros to the
      * name to preserve proper alphabetic sorting of the files.
      */
-
-    iTemp1 = nprocs;
+    int iMaxDigit = 0, iMyDigit = 0;
+    int iTemp1 = nprocs;
     do {
       iTemp1 /= 10;
       iMaxDigit++;
@@ -1215,6 +1212,8 @@ void get_file_name(const char *base, const char *ext, int rank, int nprocs, cons
     } while (iTemp1 >= 1);
 
     strcat(output, ".");
+
+    char cTemp[128];
     sprintf(cTemp, "%d", nprocs);
     strcat(output, cTemp);
     strcat(output, ".");
@@ -1222,7 +1221,7 @@ void get_file_name(const char *base, const char *ext, int rank, int nprocs, cons
     /*
      * Append the proper number of zeros to the filename.
      */
-    for (i1 = 0; i1 < iMaxDigit - iMyDigit; i1++) {
+    for (int i1 = 0; i1 < iMaxDigit - iMyDigit; i1++) {
       strcat(output, "0");
     }
 

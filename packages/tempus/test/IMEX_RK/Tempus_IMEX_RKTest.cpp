@@ -76,8 +76,7 @@ TEUCHOS_UNIT_TEST(IMEX_RK, ConstructingFromDefaults)
   timeStepControl->initialize();
 
   // Setup initial condition SolutionState --------------------
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =
-    stepper->getModel()->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSolution = rcp_const_cast<Thyra::VectorBase<double> > (inArgsIC.get_x());
   auto icState = Tempus::createSolutionStateX(icSolution);
   icState->setTime    (timeStepControl->getInitTime());
@@ -95,8 +94,8 @@ TEUCHOS_UNIT_TEST(IMEX_RK, ConstructingFromDefaults)
 
   // Setup Integrator -----------------------------------------
   RCP<Tempus::IntegratorBasic<double> > integrator =
-    Tempus::integratorBasic<double>();
-  integrator->setStepperWStepper(stepper);
+    Tempus::createIntegratorBasic<double>();
+  integrator->setStepper(stepper);
   integrator->setTimeStepControl(timeStepControl);
   integrator->setSolutionHistory(solutionHistory);
   integrator->initialize();
@@ -222,7 +221,7 @@ TEUCHOS_UNIT_TEST(IMEX_RK, VanDerPol)
       // Setup the Integrator and reset initial time step
       pl->sublist("Default Integrator")
          .sublist("Time Step Control").set("Initial Time Step", dt);
-      integrator = Tempus::integratorBasic<double>(pl, model);
+      integrator = Tempus::createIntegratorBasic<double>(pl, model);
 
       // Integrate to timeMax
       bool integratorStatus = integrator->advanceTime();
@@ -260,6 +259,10 @@ TEUCHOS_UNIT_TEST(IMEX_RK, VanDerPol)
     double xDotSlope = 0.0;
     RCP<Tempus::Stepper<double> > stepper = integrator->getStepper();
     //double order = stepper->getOrder();
+
+    // xDot not yet available for IMEX-RK methods, e.g., are not calc. and zero.
+    solutionsDot.clear();
+
     writeOrderError("Tempus_"+stepperName+"_VanDerPol-Error.dat",
                     stepper, StepSize,
                     solutions,    xErrorNorm,    xSlope,
@@ -267,7 +270,6 @@ TEUCHOS_UNIT_TEST(IMEX_RK, VanDerPol)
 
     TEST_FLOATING_EQUALITY( xSlope,        stepperOrders[m],   0.02 );
     TEST_FLOATING_EQUALITY( xErrorNorm[0], stepperErrors[m], 1.0e-4 );
-    // xDot not yet available for IMEX_RK.
     //TEST_FLOATING_EQUALITY( xDotSlope,        1.74898, 0.10 );
     //TEST_FLOATING_EQUALITY( xDotErrorNorm[0],  1.0038, 1.0e-4 );
 

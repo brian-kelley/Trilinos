@@ -180,9 +180,6 @@ private:
   friend class CommNeighbors ;
   friend class CommBroadcast ;
 
-  static CommBuffer * allocate( const unsigned, const unsigned * const );
-  static void deallocate( const unsigned , CommBuffer * );
-
   void pack_overflow() const ;
   void unpack_overflow() const ;
 

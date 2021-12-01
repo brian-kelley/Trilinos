@@ -6,7 +6,6 @@
 
 #include <cstdlib>
 #include <numeric>
-#include <unistd.h>
 
 #include "Cell.h"
 #include "Decompose.h"
@@ -26,6 +25,8 @@
 #include <fmt/chrono.h>
 #include <fmt/color.h>
 #include <fmt/ostream.h>
+#include <open_file_limit.h>
+#include <time_stamp.h>
 #include <tokenize.h>
 
 //! \file
@@ -69,39 +70,7 @@ namespace std {
 
 namespace {
   std::string tsFormat = "[{:%H:%M:%S}]";
-  std::string time_stamp(const std::string &format)
-  {
-    if (format == "") {
-      return std::string("");
-    }
-
-    time_t      calendar_time = std::time(nullptr);
-    struct tm * local_time    = std::localtime(&calendar_time);
-    std::string time_string   = fmt::format(format, *local_time);
-    return time_string;
-  }
-
-  int get_free_descriptor_count()
-  {
-// Returns maximum number of files that one process can have open
-// at one time. (POSIX)
-#if defined(_WIN32)
-    int fdmax = _getmaxstdio();
-#else
-    int fdmax = sysconf(_SC_OPEN_MAX);
-    if (fdmax == -1) {
-      // POSIX indication that there is no limit on open files...
-      fdmax = INT_MAX;
-    }
-#endif
-    // File descriptors are assigned in order (0,1,2,3,...) on a per-process
-    // basis.
-
-    // Assume that we have stdin, stdout, stderr files (3 total).
-    return fdmax - 3;
-  }
-
-  int axis_index(const std::string &axis_str)
+  int         axis_index(const std::string &axis_str)
   {
     char axis = axis_str[0];
     if (axis == 'x' || axis == 'i') {
@@ -200,7 +169,7 @@ bool Grid::initialize(size_t i, size_t j, const std::string &key)
 
 void Grid::add_unit_cell(const std::string &key, const std::string &unit_filename, bool ints32bit)
 {
-  static size_t open_files = get_free_descriptor_count();
+  static size_t open_files = open_file_limit();
   if (!minimize_open_files(Minimize::UNIT) && unit_cells().size() >= open_files) {
     // Just hit the limit...  Close all previous unit_cell files and set the minimize_open_files
     // behavior to UNIT.
@@ -329,7 +298,8 @@ void Grid::set_sideset_names(const std::string &names)
     auto ss_name = token.substr(2);
 
     // Update the name in the list of generated sideset names...
-    auto index                     = axis_index(axis);
+    auto index = axis_index(axis);
+    SMART_ASSERT(index >= 0)(axis)(index);
     generated_surface_names[index] = ss_name;
   }
 }
@@ -434,7 +404,7 @@ void Grid::internal_process()
     }
   }
   if (util().parallel_rank() == 0) {
-    fmt::print("                {:n} Nodes; {:n} Elements.\n", node_count, element_count);
+    fmt::print("                {:L} Nodes; {:L} Elements.\n", node_count, element_count);
   }
 }
 
@@ -913,9 +883,9 @@ void Grid::handle_file_count()
     return;
   }
 
-  size_t open_files = get_free_descriptor_count();
+  size_t open_files = open_file_limit();
   if (util().parallel_rank() == 0) {
-    fmt::print("\n Maximum Open File Count = {}\n", get_free_descriptor_count());
+    fmt::print("\n Maximum Open File Count = {}\n", open_file_limit());
   }
 
   auto unit_cell_size = unit_cells().size();
@@ -1326,7 +1296,7 @@ namespace {
     int64_t nodes    = region->get_property("node_count").get_int();
     int64_t elements = region->get_property("element_count").get_int();
 
-    fmt::print(strm, " Database: {}\tNodes = {:n} \tElements = {:n}\n",
+    fmt::print(strm, " Database: {}\tNodes = {:L} \tElements = {:L}\n",
                region->get_database()->get_filename(), nodes, elements);
   }
 

@@ -57,7 +57,7 @@ namespace Tacho {
     ///
     typedef SchedulerType scheduler_type;
 
-    typedef typename UseThisDevice<typename scheduler_type::execution_space>::device_type device_type;
+    typedef typename UseThisDevice<typename scheduler_type::execution_space>::type device_type;
     typedef typename device_type::execution_space exec_space;
     typedef typename device_type::memory_space exec_memory_space;
 
@@ -71,7 +71,7 @@ namespace Tacho {
     typedef typename supernode_info_type::supernode_type_array supernode_type_array;
     typedef typename supernode_type_array::HostMirror supernode_type_array_host;
 
-    typedef typename UseThisDevice<Kokkos::DefaultHostExecutionSpace>::device_type host_device_type;
+    typedef typename UseThisDevice<Kokkos::DefaultHostExecutionSpace>::type host_device_type;
     typedef typename host_device_type::execution_space host_space;
     typedef typename host_device_type::memory_space host_memory_space;
 
@@ -335,7 +335,7 @@ namespace Tacho {
       stat.n_device_factorize = 0;   stat.n_device_solve = 0;
       stat.n_team_factorize= 0;      stat.n_team_solve = 0;
 
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
 
       timer.reset();
 
@@ -841,7 +841,7 @@ namespace Tacho {
     factorizeCholesky(const value_type_array &ax,
                       const ordinal_type verbose = 0) {
       constexpr bool is_host = std::is_same<exec_memory_space,Kokkos::HostSpace>::value;
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
 
       timer.reset();
       value_type_array work;
@@ -1303,7 +1303,7 @@ namespace Tacho {
 
       // solve U^{H} (U x) = b 
       const ordinal_type nrhs = x.extent(1);
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
 
       stat.n_kernel_launching = 0;
 

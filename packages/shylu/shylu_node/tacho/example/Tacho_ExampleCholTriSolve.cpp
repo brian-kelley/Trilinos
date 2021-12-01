@@ -1,6 +1,6 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
-#include <impl/Kokkos_Timer.hpp>
+#include <Kokkos_Timer.hpp>
 
 #include "Tacho_Internal.hpp"
 #include "Tacho_CommandLineParser.hpp"
@@ -63,8 +63,8 @@ int main (int argc, char *argv[]) {
   cudaProfilerStop();
 #endif
 
-  typedef typename Tacho::UseThisDevice<Kokkos::DefaultExecutionSpace>::device_type device_type;
-  typedef typename Tacho::UseThisDevice<Kokkos::DefaultHostExecutionSpace>::device_type host_device_type;
+  typedef typename Tacho::UseThisDevice<Kokkos::DefaultExecutionSpace>::type device_type;
+  typedef typename Tacho::UseThisDevice<Kokkos::DefaultHostExecutionSpace>::type host_device_type;
 
   typedef TaskSchedulerType<typename device_type::execution_space> scheduler_type;
 
@@ -79,7 +79,7 @@ int main (int argc, char *argv[]) {
     typedef Tacho::CrsMatrixBase<value_type,host_device_type> CrsMatrixBaseTypeHost;
     typedef Kokkos::View<value_type**,Kokkos::LayoutLeft,device_type> DenseMatrixBaseType;
     
-    Kokkos::Impl::Timer timer;
+    Kokkos::Timer timer;
     double t = 0.0;
 
     std::cout << "CholTriSolve:: import input file = " << file << std::endl;

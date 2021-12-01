@@ -261,6 +261,56 @@ tol = 0.;
       return diag;
     }
 
+    /*! @brief Return vector containing: max_{i\not=k}(-a_ik), for each for i in the matrix
+     *
+     * @param[in] A: input matrix
+     * @ret: vector containing max_{i\not=k}(-a_ik)
+    */
+
+    static Teuchos::ArrayRCP<Magnitude> GetMatrixMaxMinusOffDiagonal(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& A) { 
+      size_t numRows = A.getRowMap()->getNodeNumElements();
+      Magnitude ZERO = Teuchos::ScalarTraits<Magnitude>::zero();
+      Teuchos::ArrayRCP<Magnitude> maxvec(numRows);
+      Teuchos::ArrayView<const LocalOrdinal> cols;
+      Teuchos::ArrayView<const Scalar> vals;
+      for (size_t i = 0; i < numRows; ++i) {
+        A.getLocalRowView(i, cols, vals);
+        Magnitude mymax = ZERO;
+        for (LocalOrdinal j=0; j < cols.size(); ++j) {
+          if (Teuchos::as<size_t>(cols[j]) != i) {
+            mymax = std::max(mymax,-Teuchos::ScalarTraits<Scalar>::real(vals[j]));
+          }
+        }          
+        maxvec[i] = mymax;
+      }
+      return maxvec;
+    }
+
+    static Teuchos::ArrayRCP<Magnitude> GetMatrixMaxMinusOffDiagonal(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& A, const Xpetra::Vector<LocalOrdinal,LocalOrdinal,GlobalOrdinal,Node> &BlockNumber) {
+      TEUCHOS_TEST_FOR_EXCEPTION(!A.getColMap()->isSameAs(*BlockNumber.getMap()),std::runtime_error,"GetMatrixMaxMinusOffDiagonal: BlockNumber must match's A's column map.");
+      
+      Teuchos::ArrayRCP<const LocalOrdinal> block_id = BlockNumber.getData(0);
+
+      size_t numRows = A.getRowMap()->getNodeNumElements();
+      Magnitude ZERO = Teuchos::ScalarTraits<Magnitude>::zero();
+      Teuchos::ArrayRCP<Magnitude> maxvec(numRows);
+      Teuchos::ArrayView<const LocalOrdinal> cols;
+      Teuchos::ArrayView<const Scalar> vals;
+      for (size_t i = 0; i < numRows; ++i) {
+        A.getLocalRowView(i, cols, vals);
+        Magnitude mymax = ZERO;
+        for (LocalOrdinal j=0; j < cols.size(); ++j) {
+          if (Teuchos::as<size_t>(cols[j]) != i && block_id[i] == block_id[cols[j]]) {
+            mymax = std::max(mymax,-Teuchos::ScalarTraits<Scalar>::real(vals[j]));
+          }
+        }          
+        //        printf("A(%d,:) row_scale(block) = %6.4e\n",(int)i,mymax); 
+
+        maxvec[i] = mymax;
+      }
+      return maxvec;
+    }
+
     /*! @brief Return vector containing inverse of input vector
      *
      * @param[in] v: input vector
@@ -475,34 +525,6 @@ tol = 0.;
       Op.residual(X,RHS,Resid);
     }
 
-
-#ifndef _WIN32
-    static void PauseForDebugger() {
-      RCP<const Teuchos::Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
-      int myPID = comm->getRank();
-      int pid   = getpid();
-      char hostname[80];
-      for (int i = 0; i <comm->getSize(); i++) {
-        if (i == myPID) {
-          gethostname(hostname, sizeof(hostname));
-          std::cout << "Host: " << hostname << "\tMPI rank: " << myPID << ",\tPID: " << pid << "\n\tattach " << pid << std::endl;
-          sleep(1);
-        }
-      }
-      if (myPID == 0) {
-        std::cout << "** Enter a character to continue > " << std::endl;
-        char go = ' ';
-        int r = scanf("%c", &go);
-        (void)r;
-        assert(r > 0);
-      }
-      comm->barrier();
-    }
-#else
-    static void PauseForDebugger() {
-         throw(Exceptions::RuntimeError("MueLu Utils: PauseForDebugger not implemented on Windows."));
-     }
-#endif
 
     /*! @brief Power method.
 
@@ -720,6 +742,145 @@ tol = 0.;
       }
       return boundaryNodes;
     }
+
+    /*! @brief Find non-zero values in an ArrayRCP
+      Compares the value to 2 * machine epsilon 
+
+      @param[in]  vals - ArrayRCP<const Scalar> of values to be tested
+      @param[out] nonzeros - ArrayRCP<bool> of true/false values for whether each entry in vals is nonzero
+    */
+    
+    static void FindNonZeros(const Teuchos::ArrayRCP<const Scalar> vals,
+                             Teuchos::ArrayRCP<bool> nonzeros) {
+      TEUCHOS_ASSERT(vals.size() == nonzeros.size());
+      typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType magnitudeType;
+      const magnitudeType eps = 2.0*Teuchos::ScalarTraits<magnitudeType>::eps();
+      for(size_t i=0; i<static_cast<size_t>(vals.size()); i++) {
+        nonzeros[i] = (Teuchos::ScalarTraits<Scalar>::magnitude(vals[i]) > eps);
+      }
+    }
+
+    /*! @brief Detects Dirichlet columns & domains from a list of Dirichlet rows
+
+      @param[in] A - Matrix on which to apply Dirichlet column detection
+      @param[in] dirichletRows - ArrayRCP<bool> of indicators as to which rows are Dirichlet
+      @param[out] dirichletCols - ArrayRCP<bool> of indicators as to which cols are Dirichlet
+      @param[out] dirichletDomain - ArrayRCP<bool> of indicators as to which domains are Dirichlet
+    */
+
+    static void DetectDirichletColsAndDomains(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& A,
+                                              const Teuchos::ArrayRCP<bool>& dirichletRows,
+                                              Teuchos::ArrayRCP<bool> dirichletCols,
+                                              Teuchos::ArrayRCP<bool> dirichletDomain) {
+      const Scalar one = Teuchos::ScalarTraits<Scalar>::one();
+      RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > domMap = A .getDomainMap();
+      RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > rowMap = A.getRowMap();
+      RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > colMap = A.getColMap();
+      TEUCHOS_ASSERT(static_cast<size_t>(dirichletRows.size()) == rowMap->getNodeNumElements());
+      TEUCHOS_ASSERT(static_cast<size_t>(dirichletCols.size()) == colMap->getNodeNumElements());
+      TEUCHOS_ASSERT(static_cast<size_t>(dirichletDomain.size()) == domMap->getNodeNumElements());
+      RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > myColsToZero = Xpetra::MultiVectorFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build(colMap, 1, /*zeroOut=*/true);
+      // Find all local column indices that are in Dirichlet rows, record in myColsToZero as 1.0
+      for(size_t i=0; i<(size_t) dirichletRows.size(); i++) {
+        if (dirichletRows[i]) {
+          ArrayView<const LocalOrdinal> indices;
+          ArrayView<const Scalar> values;
+          A.getLocalRowView(i,indices,values);
+          for(size_t j=0; j<static_cast<size_t>(indices.size()); j++)
+            myColsToZero->replaceLocalValue(indices[j],0,one);
+        }
+      }
+      
+      RCP<Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > globalColsToZero;
+      RCP<const Xpetra::Import<LocalOrdinal,GlobalOrdinal,Node> > importer = A.getCrsGraph()->getImporter();
+      if (!importer.is_null()) {
+        globalColsToZero = Xpetra::MultiVectorFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Build(domMap, 1, /*zeroOut=*/true);
+        // export to domain map
+        globalColsToZero->doExport(*myColsToZero,*importer,Xpetra::ADD);
+        // import to column map
+      myColsToZero->doImport(*globalColsToZero,*importer,Xpetra::INSERT);
+      }
+      else
+        globalColsToZero = myColsToZero;
+      
+      FindNonZeros(globalColsToZero->getData(0),dirichletDomain);
+      FindNonZeros(myColsToZero->getData(0),dirichletCols);
+    }
+
+
+
+   /*! @brief Apply Rowsum Criterion
+
+        Flags a row i as dirichlet if:
+    
+        \sum_{j\not=i} A_ij > A_ii * tol
+
+        @param[in] A matrix
+        @param[in] rowSumTol See above
+        @param[in/out] dirichletRows boolean array.  The ith entry is true if the above criterion is satisfied (or if it was already set to true)
+
+    */
+    static void                                                                  ApplyRowSumCriterion(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& A, const Magnitude rowSumTol, Teuchos::ArrayRCP<bool>& dirichletRows) {
+      typedef Teuchos::ScalarTraits<Scalar> STS;
+      typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
+      typedef Teuchos::ScalarTraits<MT> MTS;
+      RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node>> rowmap = A.getRowMap();
+      for (LocalOrdinal row = 0; row < Teuchos::as<LocalOrdinal>(rowmap->getNodeNumElements()); ++row) {
+        size_t nnz = A.getNumEntriesInLocalRow(row);
+        ArrayView<const LocalOrdinal> indices;
+        ArrayView<const Scalar> vals;
+        A.getLocalRowView(row, indices, vals);
+        
+        Scalar rowsum = STS::zero();
+        Scalar diagval = STS::zero();
+
+        for (LocalOrdinal colID = 0; colID < Teuchos::as<LocalOrdinal>(nnz); colID++) {
+          LocalOrdinal col = indices[colID];
+          if (row == col)
+            diagval = vals[colID];
+          rowsum += vals[colID];
+        }
+        //        printf("A(%d,:) row_sum(point) = %6.4e\n",row,rowsum);
+        if (rowSumTol < MTS::one() && STS::magnitude(rowsum) > STS::magnitude(diagval) * rowSumTol) {
+          //printf("Row %d triggers rowsum\n",(int)row);
+          dirichletRows[row] = true;
+        }
+      }
+    }
+
+    static void ApplyRowSumCriterion(const Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>& A, const Xpetra::Vector<LocalOrdinal,LocalOrdinal,GlobalOrdinal,Node> &BlockNumber, const Magnitude rowSumTol, Teuchos::ArrayRCP<bool>& dirichletRows) {
+      typedef Teuchos::ScalarTraits<Scalar> STS;
+      typedef typename Teuchos::ScalarTraits<Scalar>::magnitudeType MT;
+      typedef Teuchos::ScalarTraits<MT> MTS;
+      RCP<const Xpetra::Map<LocalOrdinal,GlobalOrdinal,Node> > rowmap = A.getRowMap();
+
+      TEUCHOS_TEST_FOR_EXCEPTION(!A.getColMap()->isSameAs(*BlockNumber.getMap()),std::runtime_error,"ApplyRowSumCriterion: BlockNumber must match's A's column map.");
+      
+      Teuchos::ArrayRCP<const LocalOrdinal> block_id = BlockNumber.getData(0);
+      for (LocalOrdinal row = 0; row < Teuchos::as<LocalOrdinal>(rowmap->getNodeNumElements()); ++row) {
+        size_t nnz = A.getNumEntriesInLocalRow(row);
+        ArrayView<const LocalOrdinal> indices;
+        ArrayView<const Scalar> vals;
+        A.getLocalRowView(row, indices, vals);
+        
+        Scalar rowsum = STS::zero();
+        Scalar diagval = STS::zero();
+        for (LocalOrdinal colID = 0; colID < Teuchos::as<LocalOrdinal>(nnz); colID++) {
+          LocalOrdinal col = indices[colID];
+          if (row == col)
+            diagval = vals[colID];
+          if(block_id[row] == block_id[col])
+            rowsum += vals[colID];
+        }
+
+        //        printf("A(%d,:) row_sum(block) = %6.4e\n",row,rowsum);
+        if (rowSumTol < MTS::one() && STS::magnitude(rowsum) > STS::magnitude(diagval) * rowSumTol) {
+          //printf("Row %d triggers rowsum\n",(int)row);
+          dirichletRows[row] = true;
+        }
+      }
+    }
+
 
 
     /*! @brief Detect Dirichlet columns based on Dirichlet rows

@@ -101,12 +101,12 @@ void check_split_assign(std::vector<Iocgns::StructuredZoneData *> &zones,
       Iocgns::Utils::assign_zones_to_procs(zones, work_vector, verbose);
 
 #if 0
-        fmt::print(stderr, "\nDecomposition for {} processors; Total work = {:n}, Average = {:n}\n",
+        fmt::print(stderr, "\nDecomposition for {} processors; Total work = {:L}, Average = {:L}\n",
                    proc_count, (size_t)total_work, (size_t)avg_work);
 
           for (const auto zone : zones) {
             if (zone->is_active()) {
-              fmt::print(stderr, "Zone {}\tProc: {}\tOrdinal: {}x{}x{}\tWork: {:n}\n",
+              fmt::print(stderr, "Zone {}\tProc: {}\tOrdinal: {}x{}x{}\tWork: {:L}\n",
                          zone->m_name, zone->m_proc, zone->m_ordinal[0], zone->m_ordinal[1],
                          zone->m_ordinal[2], zone->work());
             }
@@ -559,29 +559,29 @@ TEST_CASE("grv-large-ordinal", "[grv-large-ordinal]")
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x32x32"));
   zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x32x32"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x16x64"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x64x64"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x64x64"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x64x64"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x32x32"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x32x32"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x32x32"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x16x64"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x64x64"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x64x64"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
   zones.push_back(new Iocgns::StructuredZoneData(zone++, "128x64x64"));
-  zones.back()->m_lineOrdinal =Iocgns::Ordinal::J;
+  zones.back()->m_lineOrdinal = Iocgns::Ordinal::J;
 
   for (size_t proc_count = 2; proc_count < 8192; proc_count *= 2) {
     std::string name = "GRV-LARGE_ORDINAL_ProcCount_" + std::to_string(proc_count);

@@ -44,7 +44,7 @@ namespace Tacho {
     ///
     typedef SchedulerType scheduler_type;
 
-    typedef typename UseThisDevice<typename scheduler_type::execution_space>::device_type device_type;
+    typedef typename UseThisDevice<typename scheduler_type::execution_space>::type device_type;
     typedef typename device_type::execution_space exec_space;
     typedef typename device_type::memory_space exec_memory_space;
 
@@ -58,7 +58,7 @@ namespace Tacho {
     typedef typename supernode_info_type::supernode_type_array supernode_type_array;
     typedef typename supernode_type_array::HostMirror supernode_type_array_host;
 
-    typedef typename UseThisDevice<Kokkos::DefaultHostExecutionSpace>::device_type host_device_type;
+    typedef typename UseThisDevice<Kokkos::DefaultHostExecutionSpace>::type host_device_type;
     typedef typename host_device_type::execution_space host_space;
     typedef typename host_device_type::memory_space host_memory_space;
 
@@ -255,7 +255,7 @@ namespace Tacho {
       stat.n_device_problems = 0;
       stat.n_team_problems = 0;
 
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
 
       timer.reset();
 
@@ -760,7 +760,7 @@ namespace Tacho {
       stat.n_device_problems = 0;
       stat.n_team_problems = 0;
       
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
       timer.reset();
 
 #if defined(KOKKOS_ENABLE_CUDA)
@@ -866,7 +866,7 @@ namespace Tacho {
       TACHO_TEST_FOR_EXCEPTION(nrhs > _max_nrhs, std::logic_error,
                                "nrhs is bigger than max nrhs");
       
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
 
       stat.n_kernel_launching = 0;
 

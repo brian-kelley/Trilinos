@@ -36,7 +36,7 @@ ReporterBase*& getDeviceReporterAddress()
 }
 
 #ifdef KOKKOS_ENABLE_CUDA
-using DeviceReporter = Reporter<Kokkos::CudaUVMSpace>;
+using DeviceReporter = Reporter<Kokkos::CudaHostPinnedSpace>;
 #else
 using DeviceReporter = Reporter<Kokkos::DefaultExecutionSpace::device_type>;
 #endif
@@ -68,12 +68,14 @@ void initialize_reporters() {
 inline
 void finalize_reporters() {
   delete global::getHostReporter();
+  global::getHostReporter() = nullptr;
   delete global::getDeviceReporterOnHost();
+  global::getDeviceReporterOnHost() = nullptr;
   Kokkos::kokkos_free(global::getDeviceReporterAddress());
 }
 
 NGP_TEST_INLINE ReporterBase* get_reporter() {
-#ifdef __CUDA_ARCH__
+#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
   return global::getDeviceReporterOnDevice();
 #else
   return global::getHostReporter();

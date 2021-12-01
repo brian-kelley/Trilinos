@@ -1,5 +1,32 @@
 
 TRIBITS_ADD_EXECUTABLE_AND_TEST(
+  TpetraUtils_WrappedDualView
+  SOURCES
+    TpetraUtils_WrappedDualView
+  ARGS ${ARGS}
+  COMM serial mpi
+  STANDARD_PASS_OUTPUT
+  )
+
+TRIBITS_ADD_EXECUTABLE_AND_TEST(
+  TpetraUtils_WrappedDualViewMicrobench
+  SOURCES
+    TpetraUtils_WrappedDualViewMicrobench
+  ARGS ${ARGS}
+  COMM serial mpi
+  STANDARD_PASS_OUTPUT
+  )
+
+TRIBITS_ADD_EXECUTABLE_AND_TEST(
+  TpetraUtils_WrappedDualViewNull
+  SOURCES
+    TpetraUtils_WrappedDualViewNull
+  ARGS ${ARGS}
+  COMM serial mpi
+  STANDARD_PASS_OUTPUT
+  )
+
+TRIBITS_ADD_EXECUTABLE_AND_TEST(
   TpetraUtils_UnitTests
   SOURCES
     TpetraUtils_UnitTests
@@ -116,14 +143,6 @@ TRIBITS_ADD_EXECUTABLE_AND_TEST(
   ARGS ""
   COMM serial mpi
   NUM_MPI_PROCS 1-4
-  STANDARD_PASS_OUTPUT
-  )
-
-TRIBITS_ADD_EXECUTABLE_AND_TEST(
-  withLocalAccess_generic
-  SOURCES
-    withLocalAccess_generic
-  COMM serial mpi
   STANDARD_PASS_OUTPUT
   )
 

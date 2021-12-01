@@ -497,6 +497,19 @@ namespace Xpetra {
     //! Returns the CrsGraph associated with this matrix.
     virtual RCP<const CrsGraph> getCrsGraph() const =0;
 
+    // To keep the normal virtual matrix-multivector definition of apply before overloading with the region variant
+    using Xpetra::Operator< Scalar, LocalOrdinal, GlobalOrdinal, Node >::apply;
+
+    //! Computes the matrix-multivector multiplication for region layout matrices
+    virtual void apply(const MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &X,
+                      MultiVector< Scalar, LocalOrdinal, GlobalOrdinal, Node > &Y,
+                      Teuchos::ETransp mode,
+                      Scalar alpha,
+                      Scalar beta,
+                      bool sumInterfaceValues,
+                      const RCP<Import<LocalOrdinal, GlobalOrdinal, Node> >& regionInterfaceImporter,
+                      const Teuchos::ArrayRCP<LocalOrdinal>& regionInterfaceLIDs ) const =0;
+
     // ----------------------------------------------------------------------------------
     // "TEMPORARY" VIEW MECHANISM
     /**
@@ -526,14 +539,14 @@ namespace Xpetra {
                                               offset
                                               );
 
-      if(IsView("stridedMaps") == true) RemoveView("stridedMaps");
+      if(IsFixedBlockSizeSet()) RemoveView("stridedMaps");
       CreateView("stridedMaps", stridedRangeMap, stridedDomainMap);
     }
 
     //==========================================================================
 
     LocalOrdinal GetFixedBlockSize() const {
-      if(IsView("stridedMaps")==true) {
+      if(IsFixedBlockSizeSet()) {
         Teuchos::RCP<const StridedMap<LocalOrdinal, GlobalOrdinal, Node> > rangeMap = Teuchos::rcp_dynamic_cast<const StridedMap<LocalOrdinal, GlobalOrdinal, Node> >(getRowMap("stridedMaps"));
         Teuchos::RCP<const StridedMap<LocalOrdinal, GlobalOrdinal, Node> > domainMap = Teuchos::rcp_dynamic_cast<const StridedMap<LocalOrdinal, GlobalOrdinal, Node> >(getColMap("stridedMaps"));
         TEUCHOS_TEST_FOR_EXCEPTION(rangeMap  == Teuchos::null, Exceptions::BadCast, "Xpetra::Matrix::GetFixedBlockSize(): rangeMap is not of type StridedMap");
@@ -544,6 +557,11 @@ namespace Xpetra {
         //TEUCHOS_TEST_FOR_EXCEPTION(false, Exceptions::RuntimeError, "Xpetra::Matrix::GetFixedBlockSize(): no strided maps available."); // TODO remove this
         return 1;
     }; //TODO: why LocalOrdinal?
+
+    //! Returns true, if `SetFixedBlockSize` has been called before.
+    bool IsFixedBlockSizeSet() const {
+      return IsView("stridedMaps");
+    };
 
     // ----------------------------------------------------------------------------------
 
@@ -560,8 +578,13 @@ namespace Xpetra {
     // ----------------------------------------------------------------------------------
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
 #ifdef HAVE_XPETRA_TPETRA
+#ifdef TPETRA_ENABLE_DEPRECATED_CODE
+
     /// \brief Access the underlying local Kokkos::CrsMatrix object
     virtual local_matrix_type getLocalMatrix () const = 0;
+#endif
+    virtual local_matrix_type getLocalMatrixDevice () const = 0;
+    virtual typename local_matrix_type::HostMirror getLocalMatrixHost () const = 0;
 #else
 #ifdef __GNUC__
 #warning "Xpetra Kokkos interface for CrsMatrix is enabled (HAVE_XPETRA_KOKKOS_REFACTOR) but Tpetra is disabled. The Kokkos interface needs Tpetra to be enabled, too."

@@ -6,14 +6,8 @@
 // ****************************************************************************
 // @HEADER
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_XMLParameterListHelpers.hpp"
-#include "Teuchos_TimeMonitor.hpp"
-#include "Teuchos_DefaultComm.hpp"
+#include "Tempus_UnitTest_Utils.hpp"
 
-#include "Thyra_VectorStdOps.hpp"
-
-#include "Tempus_SolutionHistory.hpp"
 #include "Tempus_StepperForwardEuler.hpp"
 #include "Tempus_StepperBackwardEuler.hpp"
 
@@ -23,14 +17,7 @@
 #include "Tempus_StepperBackwardEulerModifierDefault.hpp"
 #include "Tempus_StepperBackwardEulerModifierXDefault.hpp"
 #include "Tempus_StepperBackwardEulerObserverDefault.hpp"
-#include "Tempus_UnitTest_Utils.hpp"
 
-#include "../TestModels/SinCosModel.hpp"
-#include "../TestModels/VanDerPolModel.hpp"
-#include "../TestUtils/Tempus_ConvergenceTestUtils.hpp"
-
-#include <fstream>
-#include <vector>
 
 namespace Tempus_Unit_Test {
 
@@ -40,8 +27,6 @@ using Teuchos::rcp_const_cast;
 using Teuchos::rcp_dynamic_cast;
 using Teuchos::ParameterList;
 using Teuchos::sublist;
-using Teuchos::getParametersFromXmlFile;
-
 
 
 // ************************************************************
@@ -117,7 +102,7 @@ public:
     : testBEGIN_STEP(false), testBEFORE_SOLVE(false),
       testAFTER_SOLVE(false), testEND_STEP(false),
       testCurrentValue(-0.99), testWorkingValue(-0.99),
-      testDt(-1.5), testType("")
+      testDt(-1.5), testName("")
   {}
 
   /// Destructor
@@ -147,8 +132,8 @@ public:
       case StepperBackwardEulerAppAction<double>::AFTER_SOLVE:
       {
         testAFTER_SOLVE = true;
-        testType = "Backward Euler - Modifier";
-        stepper->setStepperType(testType);
+        testName = "Backward Euler - Modifier";
+        stepper->setStepperName(testName);
         break;
       }
       case StepperBackwardEulerAppAction<double>::END_STEP:
@@ -171,7 +156,7 @@ public:
   double testCurrentValue;
   double testWorkingValue;
   double testDt;
-  std::string testType;
+  std::string testName;
 };
 
 TEUCHOS_UNIT_TEST(BackwardEuler, AppAction_Modifier)
@@ -210,7 +195,7 @@ TEUCHOS_UNIT_TEST(BackwardEuler, AppAction_Modifier)
   auto Dt = solutionHistory->getWorkingState()->getTimeStep();
   TEST_FLOATING_EQUALITY(modifier->testDt, Dt, 1.0e-14);
 
-  TEST_COMPARE(modifier->testType, ==, "Backward Euler - Modifier");
+  TEST_COMPARE(modifier->testName, ==, "Backward Euler - Modifier");
 
 }
 
@@ -227,7 +212,7 @@ public:
     : testBEGIN_STEP(false), testBEFORE_SOLVE(false),
       testAFTER_SOLVE(false), testEND_STEP(false),
       testCurrentValue(-0.99), testWorkingValue(-0.99),
-      testDt(-1.5), testType("")
+      testDt(-1.5), testName("")
   {}
 
   /// Destructor
@@ -256,7 +241,7 @@ public:
       case StepperBackwardEulerAppAction<double>::AFTER_SOLVE:
       {
         testAFTER_SOLVE = true;
-        testType = stepper->getStepperType();
+        testName = stepper->getStepperType();
         break;
       }
       case StepperBackwardEulerAppAction<double>::END_STEP:
@@ -279,7 +264,7 @@ public:
   double testCurrentValue;
   double testWorkingValue;
   double testDt;
-  std::string testType;
+  std::string testName;
 };
 
 TEUCHOS_UNIT_TEST(BackwardEuler, AppAction_Observer)
@@ -317,7 +302,7 @@ TEUCHOS_UNIT_TEST(BackwardEuler, AppAction_Observer)
   TEST_FLOATING_EQUALITY(observer->testWorkingValue, get_ele(*(x), 0), 1.0e-14);
   TEST_FLOATING_EQUALITY(observer->testDt, dt, 1.0e-14);
 
-  TEST_COMPARE(observer->testType, ==, "Backward Euler");
+  TEST_COMPARE(observer->testName, ==, "Backward Euler");
 }
 
 

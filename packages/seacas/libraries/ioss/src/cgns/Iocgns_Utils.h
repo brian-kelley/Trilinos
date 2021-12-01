@@ -66,9 +66,6 @@ namespace Iocgns {
     Utils()  = default;
     ~Utils() = default;
 
-    static const size_t CG_CELL_CENTER_FIELD_ID = 1ul << 33;
-    static const size_t CG_VERTEX_FIELD_ID      = 1ul << 34;
-
     static std::pair<std::string, int> decompose_name(const std::string &name, bool is_parallel);
     static std::string                 decompose_sb_name(const std::string &name);
 
@@ -289,9 +286,7 @@ namespace Iocgns {
     static int  get_step_times(int cgns_file_ptr, std::vector<double> &timesteps,
                                Ioss::Region *region, double timeScaleFactor, int myProcessor);
     static void add_transient_variables(int cgns_file_ptr, const std::vector<double> &timesteps,
-                                        Ioss::Region *region, bool enable_field_recognition,
-                                        char suffix_separator, int myProcessor,
-                                        bool is_parallel_io);
+                                        Ioss::Region *region, int myProcessor, bool is_parallel_io);
 
     static void   set_line_decomposition(int cgns_file_ptr, const std::string &line_decomposition,
                                          std::vector<Iocgns::StructuredZoneData *> &zones, int rank,

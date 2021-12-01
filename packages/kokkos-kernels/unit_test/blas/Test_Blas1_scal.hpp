@@ -8,73 +8,54 @@
 namespace Test {
   template<class ViewTypeA, class ViewTypeB, class Device>
   void impl_test_scal(int N) {
+  typedef typename ViewTypeA::value_type ScalarA;
+  typedef typename ViewTypeB::value_type ScalarB;
+  typedef Kokkos::Details::ArithTraits<ScalarA> AT;
 
-    typedef typename ViewTypeA::value_type ScalarA;
-    typedef typename ViewTypeB::value_type ScalarB;
-    typedef Kokkos::Details::ArithTraits<ScalarA> AT;
+  ScalarA a(3);
+  typename AT::mag_type eps = AT::epsilon() * 1000;
 
-    typedef Kokkos::View<ScalarA*[2],
-       typename std::conditional<
-                std::is_same<typename ViewTypeA::array_layout,Kokkos::LayoutStride>::value,
-                Kokkos::LayoutRight, Kokkos::LayoutLeft>::type,Device> BaseTypeA;
-    typedef Kokkos::View<ScalarB*[2],
-       typename std::conditional<
-                std::is_same<typename ViewTypeB::array_layout,Kokkos::LayoutStride>::value,
-                Kokkos::LayoutRight, Kokkos::LayoutLeft>::type,Device> BaseTypeB;
+  ViewTypeA x("X", N);
+  ViewTypeB y("Y", N);
+  ViewTypeB org_y("Org_Y", N);
 
+  typename ViewTypeA::const_type c_x = x;
+  typename ViewTypeB::const_type c_y = y;
 
-    ScalarA a(3);
-    typename AT::mag_type eps = AT::epsilon()*1000;
-    typename AT::mag_type zero = AT::abs( AT::zero() );
-    typename AT::mag_type one = AT::abs( AT::one() );
+  typename ViewTypeA::HostMirror h_x = Kokkos::create_mirror_view(x);
+  typename ViewTypeB::HostMirror h_y = Kokkos::create_mirror_view(y);
 
-    BaseTypeA b_x("X",N);
-    BaseTypeB b_y("Y",N);
-    BaseTypeB b_org_y("Org_Y",N);
-    
+  Kokkos::Random_XorShift64_Pool<typename Device::execution_space> rand_pool(
+      13718);
 
-    ViewTypeA x = Kokkos::subview(b_x,Kokkos::ALL(),0);
-    ViewTypeB y = Kokkos::subview(b_y,Kokkos::ALL(),0);
-    typename ViewTypeA::const_type c_x = x;
-    typename ViewTypeB::const_type c_y = y;
+  {
+    ScalarA randStart, randEnd;
+    Test::getRandomBounds(1.0, randStart, randEnd);
+    Kokkos::fill_random(x, rand_pool, randStart, randEnd);
+  }
+  {
+    ScalarB randStart, randEnd;
+    Test::getRandomBounds(1.0, randStart, randEnd);
+    Kokkos::fill_random(y, rand_pool, randStart, randEnd);
+  }
 
-    typename BaseTypeA::HostMirror h_b_x = Kokkos::create_mirror_view(b_x);
-    typename BaseTypeB::HostMirror h_b_y = Kokkos::create_mirror_view(b_y);
+  Kokkos::deep_copy(org_y, y);
 
-    typename ViewTypeA::HostMirror h_x = Kokkos::subview(h_b_x,Kokkos::ALL(),0);
-    typename ViewTypeB::HostMirror h_y = Kokkos::subview(h_b_y,Kokkos::ALL(),0);
+  Kokkos::deep_copy(h_x, x);
 
-    Kokkos::Random_XorShift64_Pool<typename Device::execution_space> rand_pool(13718);
-
-    Kokkos::fill_random(b_x,rand_pool,ScalarA(1));
-    Kokkos::fill_random(b_y,rand_pool,ScalarB(1));
-
-    Kokkos::fence();
-
-    Kokkos::deep_copy(b_org_y,b_y);
-
-    Kokkos::deep_copy(h_b_x,b_x);
-    Kokkos::deep_copy(h_b_y,b_y);
-
-    ScalarA expected_result(0);
-    for(int i=0;i<N;i++)
-    { expected_result += ScalarB(a*h_x(i)) * ScalarB(a*h_x(i)); }
-
-    KokkosBlas::scal(y,a,x);
+  KokkosBlas::scal(y, a, x);
+  Kokkos::deep_copy(h_y, y);
+  for(int i = 0; i < N; i++)
     {
-      ScalarB nonconst_nonconst_result = KokkosBlas::dot(y,y);
-      typename AT::mag_type divisor = AT::abs(expected_result) == zero ? one : AT::abs(expected_result);
-      typename AT::mag_type diff = AT::abs( nonconst_nonconst_result - expected_result )/divisor;
-      EXPECT_NEAR_KK( diff, zero, eps );
+      EXPECT_NEAR_KK(a * h_x(i), h_y(i), eps);
     }
- 
-    Kokkos::deep_copy(b_y,b_org_y);
-    KokkosBlas::scal(y,a,c_x);
+
+    Kokkos::deep_copy(y, org_y);
+    KokkosBlas::scal(y, a, c_x);
+    Kokkos::deep_copy(h_y, y);
+    for(int i = 0; i < N; i++)
     {
-      ScalarB const_nonconst_result = KokkosBlas::dot(y,y);
-      typename AT::mag_type divisor = AT::abs(expected_result) == zero ? one : AT::abs(expected_result);
-      typename AT::mag_type diff = AT::abs( const_nonconst_result - expected_result )/divisor;
-      EXPECT_NEAR_KK( diff, zero, eps );
+      EXPECT_NEAR_KK(a * h_x(i), h_y(i), eps);
     }
   }
 
@@ -106,50 +87,51 @@ namespace Test {
 
     Kokkos::Random_XorShift64_Pool<typename Device::execution_space> rand_pool(13718);
 
-    Kokkos::fill_random(b_x,rand_pool,ScalarA(1));
-    Kokkos::fill_random(b_y,rand_pool,ScalarB(1));
+    {
+      ScalarA randStart, randEnd;
+      Test::getRandomBounds(1.0, randStart, randEnd);
+      Kokkos::fill_random(b_x,rand_pool,randStart,randEnd);
+    }
+    {
+      ScalarB randStart, randEnd;
+      Test::getRandomBounds(1.0, randStart, randEnd);
+      Kokkos::fill_random(b_y,rand_pool,randStart,randEnd);
+    }
 
     Kokkos::fence();
 
     Kokkos::deep_copy(b_org_y,b_y);
 
     Kokkos::deep_copy(h_b_x,b_x);
-    Kokkos::deep_copy(h_b_y,b_y);
 
     ScalarA a(3.0);
     typename ViewTypeA::const_type c_x = x;
 
-    ScalarA* expected_result = new ScalarA[K];
-    for(int j=0;j<K;j++) {
-      expected_result[j] = ScalarA();
-      for(int i=0;i<N;i++)
-      { expected_result[j] += ScalarB(a*h_x(i,j)) * ScalarB(a*h_x(i,j)); }
-    }
-
     typename AT::mag_type eps = AT::epsilon()*1000;
-    typename AT::mag_type zero = AT::abs( AT::zero() );
-    typename AT::mag_type one = AT::abs( AT::one() );
 
     Kokkos::View<ScalarB*,Kokkos::HostSpace> r("Dot::Result",K);
 
     KokkosBlas::scal(y,a,x);
-    KokkosBlas::dot(r,y,y);
-    for(int k=0;k<K;k++) {
-      ScalarA nonconst_scalar_result = r(k);
-      typename AT::mag_type divisor = AT::abs(expected_result[k]) == zero ? one : AT::abs(expected_result[k]);
-      typename AT::mag_type diff = AT::abs( nonconst_scalar_result - expected_result[k] )/divisor;
-      EXPECT_NEAR_KK( diff, zero, eps );
+    Kokkos::deep_copy(h_b_y, b_y);
+    for(int i = 0; i < N; i++)
+    {
+      for(int j = 0; j < K; j++)
+      {
+        EXPECT_NEAR_KK(a * h_x(i, j), h_y(i, j), eps);
+      }
     }
 
     Kokkos::deep_copy(b_y,b_org_y);
     KokkosBlas::scal(y,a,c_x);
-    KokkosBlas::dot(r,y,y);
-    for(int k=0;k<K;k++) {
-      ScalarA const_scalar_result = r(k);
-      typename AT::mag_type divisor = AT::abs(expected_result[k]) == zero ? one : AT::abs(expected_result[k]);
-      typename AT::mag_type diff = AT::abs( const_scalar_result - expected_result[k] )/divisor;
-      EXPECT_NEAR_KK( diff, zero, eps );
+    Kokkos::deep_copy(h_b_y, b_y);
+    for(int i = 0; i < N; i++)
+    {
+      for(int j = 0; j < K; j++)
+      {
+        EXPECT_NEAR_KK(a * h_x(i, j), h_y(i, j), eps);
+      }
     }
+
 
     // Generate 'params' view with dimension == number of multivectors; each entry will be different scalar to scale y
     Kokkos::View<ScalarA*,Device> params("Params",K);
@@ -158,33 +140,28 @@ namespace Test {
       Kokkos::deep_copy(param_j,ScalarA(3+j));
     }
 
-    // Update expected_result for next 3 vector tests
-    for(int j=0;j<K;j++) {
-      expected_result[j] = ScalarA();
-      for(int i=0;i<N;i++)
-        expected_result[j] += ScalarB((3.0+j)*h_x(i,j)) * ScalarB((3.0+j)*h_x(i,j));
-    }
+    auto h_params = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), params);
 
     KokkosBlas::scal(y,params,x);
-    KokkosBlas::dot(r,y,y);
-    for(int k=0;k<K;k++) {
-      ScalarA nonconst_vector_result = r(k);
-      typename AT::mag_type divisor = AT::abs(expected_result[k]) == zero ? one : AT::abs(expected_result[k]);
-      typename AT::mag_type diff = AT::abs( nonconst_vector_result - expected_result[k] )/divisor;
-      EXPECT_NEAR_KK( diff, zero, eps );
+    Kokkos::deep_copy(h_b_y, b_y);
+    for(int i = 0; i < N; i++)
+    {
+      for(int j = 0; j < K; j++)
+      {
+        EXPECT_NEAR_KK(h_params(j) * h_x(i, j), h_y(i, j), eps);
+      }
     }
 
     Kokkos::deep_copy(b_y,b_org_y);
     KokkosBlas::scal(y,params,c_x);
-    KokkosBlas::dot(r,y,y);
-    for(int k=0;k<K;k++) {
-      ScalarA const_vector_result = r(k);
-      typename AT::mag_type divisor = AT::abs(expected_result[k]) == zero ? one : AT::abs(expected_result[k]);
-      typename AT::mag_type diff = AT::abs( const_vector_result - expected_result[k] )/divisor;
-      EXPECT_NEAR_KK( diff, zero, eps );
+    Kokkos::deep_copy(h_b_y, b_y);
+    for(int i = 0; i < N; i++)
+    {
+      for(int j = 0; j < K; j++)
+      {
+        EXPECT_NEAR_KK(h_params(j) * h_x(i, j), h_y(i, j), eps);
+      }
     }
-
-    delete [] expected_result;
   }
 }
 
@@ -268,12 +245,12 @@ int test_scal_mv() {
 
 #if defined(KOKKOSKERNELS_INST_FLOAT) || (!defined(KOKKOSKERNELS_ETI_ONLY) && !defined(KOKKOSKERNELS_IMPL_CHECK_ETI_CALLS))
 TEST_F( TestCategory, scal_float ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_float"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_float");
     test_scal<float,float,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }
 TEST_F( TestCategory, scal_mv_float ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_float"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_float");
     test_scal_mv<float,float,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }
@@ -281,12 +258,12 @@ TEST_F( TestCategory, scal_mv_float ) {
 
 #if defined(KOKKOSKERNELS_INST_DOUBLE) || (!defined(KOKKOSKERNELS_ETI_ONLY) && !defined(KOKKOSKERNELS_IMPL_CHECK_ETI_CALLS))
 TEST_F( TestCategory, scal_double ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_double"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_double");
     test_scal<double,double,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }
 TEST_F( TestCategory, scal_mv_double ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_double"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_double");
     test_scal_mv<double,double,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }
@@ -294,12 +271,12 @@ TEST_F( TestCategory, scal_mv_double ) {
 
 #if defined(KOKKOSKERNELS_INST_COMPLEX_DOUBLE) || (!defined(KOKKOSKERNELS_ETI_ONLY) && !defined(KOKKOSKERNELS_IMPL_CHECK_ETI_CALLS))
 TEST_F( TestCategory, scal_complex_double ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_complex_double"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_complex_double");
     test_scal<Kokkos::complex<double>,Kokkos::complex<double>,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }
 TEST_F( TestCategory, scal_mv_complex_double ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_complex_double"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_complex_double");
     test_scal_mv<Kokkos::complex<double>,Kokkos::complex<double>,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }
@@ -307,12 +284,12 @@ TEST_F( TestCategory, scal_mv_complex_double ) {
 
 #if defined(KOKKOSKERNELS_INST_INT) || (!defined(KOKKOSKERNELS_ETI_ONLY) && !defined(KOKKOSKERNELS_IMPL_CHECK_ETI_CALLS))
 TEST_F( TestCategory, scal_int ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_int"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_int");
     test_scal<int,int,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }
 TEST_F( TestCategory, scal_mv_int ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_int"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_int");
     test_scal_mv<int,int,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }
@@ -320,12 +297,12 @@ TEST_F( TestCategory, scal_mv_int ) {
 
 #if !defined(KOKKOSKERNELS_ETI_ONLY) && !defined(KOKKOSKERNELS_IMPL_CHECK_ETI_CALLS)
 TEST_F( TestCategory, scal_double_int ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_double_int"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_double_int");
     test_scal<double,int,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }
 TEST_F( TestCategory, scal_mv_double_int ) {
-  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_double_int"); 
+  Kokkos::Profiling::pushRegion("KokkosBlas::Test::scal_mv_double_int");
     test_scal_mv<double,int,TestExecSpace> ();
   Kokkos::Profiling::popRegion();
 }

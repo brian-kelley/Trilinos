@@ -1,7 +1,7 @@
 /// \author Kyungjoo Kim (kyukim@sandia.gov)
 
 #include "Kokkos_Core.hpp"
-#include "impl/Kokkos_Timer.hpp"
+#include "Kokkos_Timer.hpp"
 
 #if defined(KOKKOS_ENABLE_CUDA) 
 
@@ -262,7 +262,7 @@ namespace KokkosBatched {
       typedef typename DeviceSpaceType::memory_space DeviceMemorySpaceType;
 
       const int iter_begin = -3, iter_end = 30;
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
 
       Kokkos::View<value_type***,Kokkos::LayoutLeft,HostSpaceType>
         amat("amat", N*VectorLength, BlkSize, BlkSize),
@@ -608,20 +608,12 @@ namespace KokkosBatched {
             Kokkos::deep_copy(a, amat);
             Kokkos::deep_copy(b, bmat);
             
-<<<<<<< HEAD:perf_test/batched/do-not-use/KokkosBatched_Test_Trsm_Cuda.cpp
-            Kokkos::fence();
-=======
             DeviceSpaceType().fence();
->>>>>>> develop:perf_test/batched/KokkosBatched_Test_Trsm_Cuda.cpp
             timer.reset();
             
             Kokkos::parallel_for("KokkosBatched::PerfTest::TeamTagV2", policy, functor_type(a, b));
 
-<<<<<<< HEAD:perf_test/batched/do-not-use/KokkosBatched_Test_Trsm_Cuda.cpp
-            Kokkos::fence();
-=======
             DeviceSpaceType().fence();
->>>>>>> develop:perf_test/batched/KokkosBatched_Test_Trsm_Cuda.cpp
             const double t = timer.seconds();
             tmin = std::min(tmin, t);
             tavg += (iter >= 0)*t;
@@ -693,20 +685,12 @@ namespace KokkosBatched {
               Kokkos::deep_copy(a, amat);
               Kokkos::deep_copy(b, bmat);
                   
-<<<<<<< HEAD:perf_test/batched/do-not-use/KokkosBatched_Test_Trsm_Cuda.cpp
-              Kokkos::fence();
-=======
               DeviceSpaceType().fence();
->>>>>>> develop:perf_test/batched/KokkosBatched_Test_Trsm_Cuda.cpp
               timer.reset();
             
               Kokkos::parallel_for("KokkosBatched::PerfTest::TeamTagV3", policy, functor_type(a, b));
 
-<<<<<<< HEAD:perf_test/batched/do-not-use/KokkosBatched_Test_Trsm_Cuda.cpp
-              Kokkos::fence();
-=======
               DeviceSpaceType().fence();
->>>>>>> develop:perf_test/batched/KokkosBatched_Test_Trsm_Cuda.cpp
               const double t = timer.seconds();
               tmin = std::min(tmin, t);
               tavg += (iter >= 0)*t;

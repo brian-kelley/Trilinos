@@ -327,14 +327,14 @@ void Amesos2Wrapper<MatrixType>::initialize ()
                                     A_local->getColMap (),
                                     entriesPerRow()));
         // copy entries into A_local_crs
-        Teuchos::Array<local_ordinal_type> indices(A_local->getNodeMaxNumRowEntries());
-        Teuchos::Array<scalar_type> values(A_local->getNodeMaxNumRowEntries());
+	typename crs_matrix_type::nonconst_local_inds_host_view_type indices("Indices",A_local->getNodeMaxNumRowEntries() );
+	typename crs_matrix_type::nonconst_values_host_view_type values("Values", A_local->getNodeMaxNumRowEntries());
         for(local_ordinal_type i = 0; i < numRows; i++)
         {
           size_t numEntries = 0;
-          A_local->getLocalRowCopy(i, indices(), values(), numEntries);
+          A_local->getLocalRowCopy(i, indices, values, numEntries);
           ArrayView<const local_ordinal_type> indicesInsert(indices.data(), numEntries);
-          ArrayView<const scalar_type> valuesInsert(values.data(), numEntries);
+          ArrayView<const scalar_type> valuesInsert((const scalar_type*)values.data(), numEntries);
           A_local_crs_nc->insertLocalValues(i, indicesInsert, valuesInsert);
         }
         A_local_crs_nc->fillComplete (A_local->getDomainMap (), A_local->getRangeMap ());
@@ -467,10 +467,7 @@ apply (const Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal
     // when computing the output.  Otherwise, alias X_temp to X.
     RCP<const MV> X_temp;
     {
-      auto X_lcl_host = X.getLocalViewHost ();
-      auto Y_lcl_host = Y.getLocalViewHost ();
-
-      if (X_lcl_host.data () == Y_lcl_host.data ()) {
+      if (X.aliases(Y)) {
         X_temp = rcp (new MV (X, Teuchos::Copy));
       } else {
         X_temp = rcpFromRef (X);

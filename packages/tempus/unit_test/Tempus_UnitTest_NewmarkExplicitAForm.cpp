@@ -6,16 +6,9 @@
 // ****************************************************************************
 // @HEADER
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_XMLParameterListHelpers.hpp"
-#include "Teuchos_TimeMonitor.hpp"
-#include "Teuchos_DefaultComm.hpp"
-
-#include "Thyra_VectorStdOps.hpp"
-
-#include "Tempus_IntegratorBasic.hpp"
-#include "Tempus_SolutionHistory.hpp"
 #include "Tempus_UnitTest_Utils.hpp"
+
+#include "Teuchos_XMLParameterListHelpers.hpp"
 
 #include "Tempus_StepperNewmarkExplicitAForm.hpp"
 #include "Tempus_StepperNewmarkExplicitAFormModifierBase.hpp"
@@ -23,13 +16,8 @@
 #include "Tempus_StepperNewmarkExplicitAFormModifierDefault.hpp"
 #include "Tempus_StepperNewmarkExplicitAFormModifierXDefault.hpp"
 
-#include "../TestModels/SinCosModel.hpp"
-#include "../TestModels/VanDerPolModel.hpp"
 #include "../TestModels/HarmonicOscillatorModel.hpp"
-#include "../TestUtils/Tempus_ConvergenceTestUtils.hpp"
 
-#include <fstream>
-#include <vector>
 
 namespace Tempus_Unit_Test {
 
@@ -39,7 +27,6 @@ using Teuchos::rcp_const_cast;
 using Teuchos::rcp_dynamic_cast;
 using Teuchos::ParameterList;
 using Teuchos::sublist;
-using Teuchos::getParametersFromXmlFile;
 
 
 // ************************************************************
@@ -54,7 +41,7 @@ public:
     : testBEGIN_STEP(false), testBEFORE_EXPLICIT_EVAL(false),
       testAFTER_EXPLICIT_EVAL(false), testEND_STEP(false),
       testCurrentValue(-0.99),
-      testDt(-1.5), testType("")
+      testDt(-1.5), testName("")
   {}
 
   /// Destructor
@@ -75,8 +62,8 @@ public:
       case StepperNewmarkExplicitAFormAppAction<double>::BEFORE_EXPLICIT_EVAL:
       {
         testBEFORE_EXPLICIT_EVAL = true;
-        testType = "Newmark Explicit A Form - Modifier";
-        stepper->setStepperType(testType);
+        testName = "Newmark Explicit A Form - Modifier";
+        stepper->setStepperName(testName);
         break;
       }
       case StepperNewmarkExplicitAFormAppAction<double>::AFTER_EXPLICIT_EVAL:
@@ -105,7 +92,7 @@ public:
   bool testEND_STEP;
   double testCurrentValue;
   double testDt;
-  std::string testType;
+  std::string testName;
 };
 
 
@@ -181,7 +168,6 @@ public:
 TEUCHOS_UNIT_TEST(NewmarkExplicitAForm, AppAction_Modifier)
 {
   using Teuchos::RCP;
-  using Teuchos::getParametersFromXmlFile;
   using Teuchos::sublist;
   using Teuchos::ParameterList;
 
@@ -191,7 +177,7 @@ TEUCHOS_UNIT_TEST(NewmarkExplicitAForm, AppAction_Modifier)
 
   // Read params from .xml file
   RCP<ParameterList> pList =
-    getParametersFromXmlFile("Tempus_NewmarkExplicitAForm_HarmonicOscillator_Damped.xml");
+    Teuchos::getParametersFromXmlFile("Tempus_NewmarkExplicitAForm_HarmonicOscillator_Damped.xml");
 
   // Setup the HarmonicOscillatorModel
   RCP<ParameterList> hom_pl = sublist(pList, "HarmonicOscillatorModel", true);
@@ -209,7 +195,7 @@ TEUCHOS_UNIT_TEST(NewmarkExplicitAForm, AppAction_Modifier)
 
   pl->sublist("Default Integrator")
     .sublist("Time Step Control").set("Initial Time Step", dt);
-  integrator = Tempus::integratorBasic<double>(pl, model);
+  integrator = Tempus::createIntegratorBasic<double>(pl, model);
 
   RCP<Tempus::StepperNewmarkExplicitAForm<double> > stepper =
     Teuchos::rcp_dynamic_cast<Tempus::StepperNewmarkExplicitAForm<double> >(integrator->getStepper(), true);
@@ -234,14 +220,13 @@ TEUCHOS_UNIT_TEST(NewmarkExplicitAForm, AppAction_Modifier)
   auto Dt = integrator->getTime();
   TEST_FLOATING_EQUALITY(modifier->testDt, Dt, 1.0e-14);
   TEST_FLOATING_EQUALITY(modifier->testCurrentValue, get_ele(*(x), 0), 1.0e-14);
-  TEST_COMPARE(modifier->testType, ==, stepper->getStepperType());
+  TEST_COMPARE(modifier->testName, ==, stepper->getStepperName());
 }
 
 
 TEUCHOS_UNIT_TEST(NewmarkExplicitAForm, AppAction_ModifierX)
 {
   using Teuchos::RCP;
-  using Teuchos::getParametersFromXmlFile;
   using Teuchos::sublist;
   using Teuchos::ParameterList;
 
@@ -251,7 +236,7 @@ TEUCHOS_UNIT_TEST(NewmarkExplicitAForm, AppAction_ModifierX)
 
   // Read params from .xml file
   RCP<ParameterList> pList =
-    getParametersFromXmlFile("Tempus_NewmarkExplicitAForm_HarmonicOscillator_Damped.xml");
+    Teuchos::getParametersFromXmlFile("Tempus_NewmarkExplicitAForm_HarmonicOscillator_Damped.xml");
 
   // Setup the HarmonicOscillatorModel
   RCP<ParameterList> hom_pl = sublist(pList, "HarmonicOscillatorModel", true);
@@ -269,7 +254,7 @@ TEUCHOS_UNIT_TEST(NewmarkExplicitAForm, AppAction_ModifierX)
 
   pl->sublist("Default Integrator")
     .sublist("Time Step Control").set("Initial Time Step", dt);
-  integrator = Tempus::integratorBasic<double>(pl, model);
+  integrator = Tempus::createIntegratorBasic<double>(pl, model);
 
   RCP<Tempus::StepperNewmarkExplicitAForm<double> > stepper =
     Teuchos::rcp_dynamic_cast<Tempus::StepperNewmarkExplicitAForm<double> >(integrator->getStepper(), true);

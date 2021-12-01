@@ -361,7 +361,7 @@ run_tempus(const Thyra::ModelEvaluatorBase::InArgs<Real>&  inArgs,
   // Create and run integrator
   if (dgdp != Teuchos::null && sensitivity_method_ == "Forward") {
     RCP<Tempus::IntegratorForwardSensitivity<Real> > integrator =
-      Tempus::integratorForwardSensitivity<Real>(tempus_params_, wrapped_model);
+      Tempus::createIntegratorForwardSensitivity<Real>(tempus_params_, wrapped_model);
     const bool integratorStatus = integrator->advanceTime();
     TEUCHOS_TEST_FOR_EXCEPTION(
       !integratorStatus, std::logic_error, "Integrator failed!");
@@ -375,7 +375,7 @@ run_tempus(const Thyra::ModelEvaluatorBase::InArgs<Real>&  inArgs,
   }
   else if (dgdp != Teuchos::null && sensitivity_method_ == "Adjoint") {
     RCP<Tempus::IntegratorAdjointSensitivity<Real> > integrator =
-      Tempus::integratorAdjointSensitivity<Real>(tempus_params_, wrapped_model);
+      Tempus::createIntegratorAdjointSensitivity<Real>(tempus_params_, wrapped_model);
     const bool integratorStatus = integrator->advanceTime();
     TEUCHOS_TEST_FOR_EXCEPTION(
       !integratorStatus, std::logic_error, "Integrator failed!");
@@ -389,7 +389,7 @@ run_tempus(const Thyra::ModelEvaluatorBase::InArgs<Real>&  inArgs,
   else if (dgdp != Teuchos::null &&
            sensitivity_method_ == "Pseudotransient Forward") {
     RCP<Tempus::IntegratorPseudoTransientForwardSensitivity<Real> > integrator =
-      Tempus::integratorPseudoTransientForwardSensitivity<Real>(tempus_params_,
+      Tempus::createIntegratorPseudoTransientForwardSensitivity<Real>(tempus_params_,
                                                                 wrapped_model);
     const bool integratorStatus = integrator->advanceTime();
     TEUCHOS_TEST_FOR_EXCEPTION(
@@ -426,7 +426,7 @@ run_tempus(const Thyra::ModelEvaluatorBase::InArgs<Real>&  inArgs,
   }
   else {
     RCP<Tempus::IntegratorBasic<Real> > integrator =
-      Tempus::integratorBasic<Real>(tempus_params_, wrapped_model);
+      Tempus::createIntegratorBasic<Real>(tempus_params_, wrapped_model);
     const bool integratorStatus = integrator->advanceTime();
     TEUCHOS_TEST_FOR_EXCEPTION(
       !integratorStatus, std::logic_error, "Integrator failed!");

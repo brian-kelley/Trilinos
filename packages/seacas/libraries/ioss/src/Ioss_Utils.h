@@ -22,6 +22,7 @@
 #include <string>    // for string
 #include <vector>    // for vector
 namespace Ioss {
+  class DatabaseIO;
   class Field;
   class GroupingEntity;
   class Region;
@@ -116,6 +117,9 @@ namespace Ioss {
       }
     }
 
+    /** \brief guess file type from extension */
+    static std::string get_type_from_file(const std::string &filename);
+
     template <typename T> static void uniquify(std::vector<T> &vec, bool skip_first = false)
     {
       auto it = vec.begin();
@@ -203,7 +207,7 @@ namespace Ioss {
      * (1,234,567,890 would return 13)
      * Typically used with the `fmt::print()` functions as:
      * ```
-     * fmt::print("{:{}n}", number, number_width(number,true))
+     * fmt::print("{:{}L}", number, number_width(number,true))
      * fmt::print("{:{}d}", number, number_width(number,false))
      * ```
      */
@@ -409,8 +413,7 @@ namespace Ioss {
                                       const std::string &working_directory);
 
     static void get_fields(int64_t entity_count, char **names, size_t num_names,
-                           Ioss::Field::RoleType fld_role, bool enable_field_recognition,
-                           char suffix_separator, int *local_truth,
+                           Ioss::Field::RoleType fld_role, const DatabaseIO *db, int *local_truth,
                            std::vector<Ioss::Field> &fields);
 
     static int field_warning(const Ioss::GroupingEntity *ge, const Ioss::Field &field,

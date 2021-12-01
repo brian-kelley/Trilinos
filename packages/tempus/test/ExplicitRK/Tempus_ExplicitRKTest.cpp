@@ -80,14 +80,20 @@ TEUCHOS_UNIT_TEST(ExplicitRK, ParameterList)
       tempusPL->sublist("Demo Stepper").set("Stepper Type", RKMethods[m]);
     }
 
-    // Set IC consistency to default value.
-    tempusPL->sublist("Demo Stepper")
-                 .set("Initial Condition Consistency", "None");
-
-    // Test constructor IntegratorBasic(tempusPL, model)
+    // Test constructor IntegratorBasic(tempusPL, model, runInitialize)
     {
       RCP<Tempus::IntegratorBasic<double> > integrator =
-        Tempus::integratorBasic<double>(tempusPL, model);
+        Tempus::createIntegratorBasic<double>(tempusPL, model,false);
+
+      // check initialization
+      {
+        // TSC should not be initialized
+        TEST_ASSERT(!integrator->getNonConstTimeStepControl()->isInitialized());
+        // now initialize everything (TSC should also be initilized)
+        integrator->initialize();
+        // TSC should be initialized
+        TEST_ASSERT(integrator->getNonConstTimeStepControl()->isInitialized());
+      }
 
       RCP<ParameterList> stepperPL = sublist(tempusPL, "Demo Stepper", true);
       if (RKMethods[m] == "General ERK")
@@ -95,9 +101,8 @@ TEUCHOS_UNIT_TEST(ExplicitRK, ParameterList)
       RCP<ParameterList> defaultPL =
         Teuchos::rcp_const_cast<Teuchos::ParameterList>(
           integrator->getStepper()->getValidParameters());
-      defaultPL->remove("Description");
 
-      bool pass = haveSameValues(*stepperPL, *defaultPL, true);
+      bool pass = haveSameValuesSorted(*stepperPL, *defaultPL, true);
       if (!pass) {
         std::cout << std::endl;
         std::cout << "stepperPL -------------- \n" << *stepperPL << std::endl;
@@ -106,10 +111,26 @@ TEUCHOS_UNIT_TEST(ExplicitRK, ParameterList)
       TEST_ASSERT(pass)
     }
 
+    // Adjust tempusPL to default values.
+    if (RKMethods[m] == "General ERK") {
+      tempusPL->sublist("Demo Stepper 2")
+                   .set("Initial Condition Consistency", "None");
+    }
+    if (RKMethods[m] == "RK Forward Euler" ||
+        RKMethods[m] == "Bogacki-Shampine 3(2) Pair") {
+      tempusPL->sublist("Demo Stepper")
+                   .set("Initial Condition Consistency", "Consistent");
+      tempusPL->sublist("Demo Stepper")
+                   .set("Use FSAL", true);
+    } else {
+      tempusPL->sublist("Demo Stepper")
+                   .set("Initial Condition Consistency", "None");
+    }
+
     // Test constructor IntegratorBasic(model, stepperType)
     {
       RCP<Tempus::IntegratorBasic<double> > integrator =
-        Tempus::integratorBasic<double>(model, RKMethods[m]);
+        Tempus::createIntegratorBasic<double>(model, RKMethods[m]);
 
       RCP<ParameterList> stepperPL = sublist(tempusPL, "Demo Stepper", true);
       if (RKMethods[m] == "General ERK")
@@ -117,9 +138,8 @@ TEUCHOS_UNIT_TEST(ExplicitRK, ParameterList)
       RCP<ParameterList> defaultPL =
         Teuchos::rcp_const_cast<Teuchos::ParameterList>(
           integrator->getStepper()->getValidParameters());
-      defaultPL->remove("Description");
 
-      bool pass = haveSameValues(*stepperPL, *defaultPL, true);
+      bool pass = haveSameValuesSorted(*stepperPL, *defaultPL, true);
       if (!pass) {
         std::cout << std::endl;
         std::cout << "stepperPL -------------- \n" << *stepperPL << std::endl;
@@ -175,8 +195,7 @@ TEUCHOS_UNIT_TEST(ExplicitRK, ConstructingFromDefaults)
     timeStepControl->initialize();
 
     // Setup initial condition SolutionState --------------------
-    Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =
-      stepper->getModel()->getNominalValues();
+    auto inArgsIC = model->getNominalValues();
     auto icSolution = rcp_const_cast<Thyra::VectorBase<double> > (inArgsIC.get_x());
     auto icState = Tempus::createSolutionStateX(icSolution);
     icState->setTime    (timeStepControl->getInitTime());
@@ -194,8 +213,8 @@ TEUCHOS_UNIT_TEST(ExplicitRK, ConstructingFromDefaults)
 
     // Setup Integrator -----------------------------------------
     RCP<Tempus::IntegratorBasic<double> > integrator =
-      Tempus::integratorBasic<double>();
-    integrator->setStepperWStepper(stepper);
+      Tempus::createIntegratorBasic<double>();
+    integrator->setStepper(stepper);
     integrator->setTimeStepControl(timeStepControl);
     integrator->setSolutionHistory(solutionHistory);
     //integrator->setObserver(...);
@@ -268,7 +287,7 @@ TEUCHOS_UNIT_TEST(ExplicitRK, useFSAL_false)
     timeStepControl->initialize();
 
     // Setup initial condition SolutionState --------------------
-    auto inArgsIC = stepper->getModel()->getNominalValues();
+    auto inArgsIC = model->getNominalValues();
     auto icSolution = rcp_const_cast<Thyra::VectorBase<double> > (inArgsIC.get_x());
     auto icState = Tempus::createSolutionStateX(icSolution);
     icState->setTime    (timeStepControl->getInitTime());
@@ -285,8 +304,8 @@ TEUCHOS_UNIT_TEST(ExplicitRK, useFSAL_false)
     solutionHistory->addState(icState);
 
     // Setup Integrator -----------------------------------------
-    auto integrator = Tempus::integratorBasic<double>();
-    integrator->setStepperWStepper(stepper);
+    auto integrator = Tempus::createIntegratorBasic<double>();
+    integrator->setStepper(stepper);
     integrator->setTimeStepControl(timeStepControl);
     integrator->setSolutionHistory(solutionHistory);
     integrator->initialize();
@@ -423,7 +442,7 @@ TEUCHOS_UNIT_TEST(ExplicitRK, SinCos)
       // Setup the Integrator and reset initial time step
       pl->sublist("Demo Integrator")
         .sublist("Time Step Control").set("Initial Time Step", dt);
-      integrator = Tempus::integratorBasic<double>(pl, model);
+      integrator = Tempus::createIntegratorBasic<double>(pl, model);
 
       // Initial Conditions
       // During the Integrator construction, the initial SolutionState
@@ -549,7 +568,7 @@ TEUCHOS_UNIT_TEST(ExplicitRK, EmbeddedVanDerPol)
 
      // Setup the Integrator
      RCP<Tempus::IntegratorBasic<double> > integrator =
-        Tempus::integratorBasic<double>(pl, model);
+        Tempus::createIntegratorBasic<double>(pl, model);
 
      const std::string RKMethod =
         pl->sublist(integratorChoice).get<std::string>("Stepper Name");
@@ -662,8 +681,7 @@ TEUCHOS_UNIT_TEST(ExplicitRK, stage_number)
   timeStepControl->initialize();
 
   // Setup initial condition SolutionState --------------------
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =
-    stepper->getModel()->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSolution = rcp_const_cast<Thyra::VectorBase<double> > (inArgsIC.get_x());
   auto icState = Tempus::createSolutionStateX(icSolution);
   icState->setTime    (timeStepControl->getInitTime());
@@ -681,8 +699,8 @@ TEUCHOS_UNIT_TEST(ExplicitRK, stage_number)
 
   // Setup Integrator -----------------------------------------
   RCP<Tempus::IntegratorBasic<double> > integrator =
-    Tempus::integratorBasic<double>();
-  integrator->setStepperWStepper(stepper);
+    Tempus::createIntegratorBasic<double>();
+  integrator->setStepper(stepper);
   integrator->setTimeStepControl(timeStepControl);
   integrator->setSolutionHistory(solutionHistory);
   //integrator->setObserver(...);

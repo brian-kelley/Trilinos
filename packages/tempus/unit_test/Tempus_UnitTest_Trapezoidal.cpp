@@ -6,12 +6,7 @@
 // ****************************************************************************
 // @HEADER
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_XMLParameterListHelpers.hpp"
-#include "Teuchos_TimeMonitor.hpp"
-#include "Teuchos_DefaultComm.hpp"
-
-#include "Thyra_VectorStdOps.hpp"
+#include "Tempus_UnitTest_Utils.hpp"
 
 #include "Tempus_StepperTrapezoidal.hpp"
 #include "Tempus_StepperTrapezoidalModifierBase.hpp"
@@ -20,14 +15,7 @@
 #include "Tempus_StepperTrapezoidalModifierDefault.hpp"
 #include "Tempus_StepperTrapezoidalModifierXDefault.hpp"
 #include "Tempus_StepperTrapezoidalObserverDefault.hpp"
-#include "Tempus_UnitTest_Utils.hpp"
 
-#include "../TestModels/SinCosModel.hpp"
-#include "../TestModels/VanDerPolModel.hpp"
-#include "../TestUtils/Tempus_ConvergenceTestUtils.hpp"
-
-#include <fstream>
-#include <vector>
 
 namespace Tempus_Unit_Test {
 
@@ -37,7 +25,6 @@ using Teuchos::rcp_const_cast;
 using Teuchos::rcp_dynamic_cast;
 using Teuchos::ParameterList;
 using Teuchos::sublist;
-using Teuchos::getParametersFromXmlFile;
 
 
 // ************************************************************
@@ -103,7 +90,7 @@ public:
     : testBEGIN_STEP(false), testBEFORE_SOLVE(false),
       testAFTER_SOLVE(false), testEND_STEP(false),
       testCurrentValue(-0.99), testWorkingValue(-0.99),
-      testDt(-1.5), testType("")
+      testDt(-1.5), testName("")
   {}
 
   /// Destructor
@@ -133,8 +120,8 @@ public:
     case StepperTrapezoidalAppAction<double>::AFTER_SOLVE:
       {
         testAFTER_SOLVE = true;
-        testType = "Trapezoidal - Modifier";
-        stepper->setStepperType(testType);
+        testName = "Trapezoidal - Modifier";
+        stepper->setStepperName(testName);
         break;
       }
     case StepperTrapezoidalAppAction<double>::END_STEP:
@@ -157,7 +144,7 @@ public:
   double testCurrentValue;
   double testWorkingValue;
   double testDt;
-  std::string testType;
+  std::string testName;
 };
 
 TEUCHOS_UNIT_TEST(Trapezoidal, AppAction_Modifier)
@@ -195,7 +182,7 @@ TEUCHOS_UNIT_TEST(Trapezoidal, AppAction_Modifier)
   TEST_FLOATING_EQUALITY(modifier->testWorkingValue, get_ele(*(x), 0), 1.0e-14);
   auto Dt = solutionHistory->getWorkingState()->getTimeStep();
   TEST_FLOATING_EQUALITY(modifier->testDt, Dt, 1.0e-14);
-  TEST_COMPARE(modifier->testType, ==, "Trapezoidal - Modifier");
+  TEST_COMPARE(modifier->testName, ==, "Trapezoidal - Modifier");
 }
 
 // ************************************************************
@@ -210,7 +197,7 @@ public:
     : testBEGIN_STEP(false), testBEFORE_SOLVE(false),
       testAFTER_SOLVE(false), testEND_STEP(false),
       testCurrentValue(-0.99), testWorkingValue(-0.99),
-      testDt(-1.5), testType("")
+      testDt(-1.5), testName("")
   {}
 
   /// Destructor
@@ -239,7 +226,7 @@ public:
     case StepperTrapezoidalAppAction<double>::AFTER_SOLVE:
     {
       testAFTER_SOLVE = true;
-      testType = stepper->getStepperType();
+      testName = stepper->getStepperType();
       break;
     }
     case StepperTrapezoidalAppAction<double>::END_STEP:
@@ -261,7 +248,7 @@ public:
   double testCurrentValue;
   double testWorkingValue;
   double testDt;
-  std::string testType;
+  std::string testName;
 };
 
 TEUCHOS_UNIT_TEST(Trapezoidal, AppAction_Observer)
@@ -298,7 +285,7 @@ TEUCHOS_UNIT_TEST(Trapezoidal, AppAction_Observer)
   x = solutionHistory->getWorkingState()->getX();
   TEST_FLOATING_EQUALITY(observer->testWorkingValue, get_ele(*(x), 0), 1.0e-14);
   TEST_FLOATING_EQUALITY(observer->testDt, dt, 1.0e-14);
-  TEST_COMPARE(observer->testType, ==, "Trapezoidal Method");
+  TEST_COMPARE(observer->testName, ==, "Trapezoidal Method");
 }
 
 // ************************************************************

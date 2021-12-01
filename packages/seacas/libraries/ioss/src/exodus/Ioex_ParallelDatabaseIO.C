@@ -449,12 +449,36 @@ namespace Ioex {
     // buggy mpiio code.  Therefore, we always do chdir call.  Maybe in several
     // years, we can remove this code and everything will work...
 
-#ifndef _WIN32
+#if !defined(__IOSS_WINDOWS__)
     Ioss::FileInfo file(filename);
     std::string    path = file.pathname();
     filename            = file.tailname();
     char *current_cwd   = getcwd(nullptr, 0);
-    chdir(path.c_str());
+    if (!path.empty()) {
+      auto success = chdir(path.c_str());
+      if (success == -1) {
+        if (write_message || error_msg != nullptr) {
+          std::ostringstream errmsg;
+          fmt::print(errmsg,
+                     "ERROR: Directory '{}' does not exist.  Error in filename specification.",
+                     path);
+          fmt::print(errmsg, "\n");
+          if (error_msg != nullptr) {
+            *error_msg = errmsg.str();
+          }
+          if (write_message && myProcessor == 0) {
+            fmt::print(Ioss::OUTPUT(), "{}", errmsg.str());
+          }
+          if (bad_count != nullptr) {
+            *bad_count = 1;
+          }
+          if (abort_if_error) {
+            IOSS_ERROR(errmsg);
+          }
+        }
+        return false;
+      }
+    }
 #endif
 
     bool do_timer = false;
@@ -473,8 +497,10 @@ namespace Ioex {
       }
     }
 
-#ifndef _WIN32
-    chdir(current_cwd);
+#if !defined(__IOSS_WINDOWS__)
+    if (!path.empty()) {
+      chdir(current_cwd);
+    }
     std::free(current_cwd);
 #endif
 
@@ -544,7 +570,7 @@ namespace Ioex {
 
     std::string filename = get_dwname();
 
-#ifndef _WIN32
+#if !defined(__IOSS_WINDOWS__)
     Ioss::FileInfo file(filename);
     std::string    path = file.pathname();
     filename            = file.tailname();
@@ -588,7 +614,7 @@ namespace Ioex {
       }
     }
 
-#ifndef _WIN32
+#if !defined(__IOSS_WINDOWS__)
     chdir(current_cwd);
     std::free(current_cwd);
 #endif
@@ -886,7 +912,7 @@ namespace Ioex {
           // worst case...
           fmt::print(
               Ioss::WARNING(),
-              "Skipping step {:n} at time {} in database file\n\t{}.\nThe data for that step "
+              "Skipping step {:L} at time {} in database file\n\t{}.\nThe data for that step "
               "is possibly corrupt.\n",
               i + 1, tsteps[i], get_filename());
         }
@@ -1470,7 +1496,7 @@ namespace Ioex {
             // topology and the side number, determine the side
             // type.
 
-            for (auto side_topo : sideTopology) {
+            for (auto &side_topo : sideTopology) {
               topo_map[std::make_pair(side_topo.first->name(), side_topo.second)] = 0;
               side_map[std::make_pair(side_topo.first->name(), side_topo.second)] = 0;
             }
@@ -4101,7 +4127,7 @@ void ParallelDatabaseIO::write_nodal_transient_field(ex_entity_type /* type */,
         fmt::print(errmsg,
                    "ERROR: Problem outputting nodal variable '{}' with index = {} to file '{}' on "
                    "processor {}\n"
-                   "\tShould have output {:n} values, but instead only output {:n} values.\n",
+                   "\tShould have output {:L} values, but instead only output {:L} values.\n",
                    var_name, var_index, get_filename(), myProcessor, nodeCount, num_out);
         IOSS_ERROR(errmsg);
       }
@@ -4235,7 +4261,7 @@ void ParallelDatabaseIO::write_entity_transient_field(ex_entity_type type, const
 
       if (ierr < 0) {
         std::ostringstream extra_info;
-        fmt::print(extra_info, "Outputting component {} of field '{}' at step {:n} on {} '{}'.", i,
+        fmt::print(extra_info, "Outputting component {} of field '{}' at step {:L} on {} '{}'.", i,
                    field_name, step, ge->type_string(), ge->name());
         Ioex::exodus_error(get_file_pointer(), __LINE__, __func__, __FILE__, extra_info.str());
       }

@@ -84,7 +84,9 @@ set (TPL_DLlib_LIBRARIES "-ldl" CACHE FILEPATH "Set by default for CUDA PR testi
 # The compile times for two Panzer files went up to over 6 hours. This
 # turns off one feature that allows these in about 24 minutes. Please remove
 # when issue #7532 is resolved.
-set (Sacado_NEW_FAD_DESIGN_IS_DEFAULT OFF CACHE BOOL "Temporary fix for issue #7532" )
+# Compile time issues addressed by #8377. Commenting out the override of 
+# Sacado_NEW_FAD_DESIGN_IS_DEFAULT to return to default settings.
+#set (Sacado_NEW_FAD_DESIGN_IS_DEFAULT OFF CACHE BOOL "Temporary fix for issue #7532" )
 
 # Disable some packages that can't be tested with this PR build
 set (Trilinos_ENABLE_ShyLU_NodeTacho OFF CACHE BOOL
@@ -129,11 +131,11 @@ set (KokkosCore_UnitTest_Cuda_MPI_1_EXTRA_ARGS
   "--gtest_filter=-cuda.debug_pin_um_to_host:cuda.debug_serial_execution"
   CACHE STRING "Temporary disable for CUDA PR testing")
 
-# Disable a few failing tests for initial release of Cuda 10.1.105 PR build
-# set (EpetraExt_inout_test_LL_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
-# set (EpetraExt_inout_test_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
-# set (Teko_testdriver_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
-# set (Zoltan2_fix4785_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+# Disable a few failing tests for initial release of Cuda 10.1.243 PR build
+# these fail due to a bug in spectrum-mpi : see issue #8798 for details
+set (Zoltan_ch_simple_zoltan_parallel_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+set (Zoltan_hg_simple_zoltan_parallel_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+set (Zoltan_mpiMinLoc_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
 
 # Disable SEACAS tests that grep results out of stderr...
 set (SEACASIoss_create_path_fpp_DISABLE ON CACHE BOOL "Temporary disable due to jsrun polluting stderr")
@@ -144,6 +146,23 @@ set (SEACASAprepro_aprepro_array_test_DISABLE ON CACHE BOOL "Temporary disable d
 set (SEACASAprepro_aprepro_command_line_vars_test_DISABLE ON CACHE BOOL "Temporary disable due to jsrun polluting stderr")
 set (SEACASAprepro_aprepro_command_line_include_test_DISABLE ON CACHE BOOL "Temporary disable due to jsrun polluting stderr")
 set (SEACASAprepro_aprepro_test_dump_reread_DISABLE ON CACHE BOOL "Temporary disable due to jsrun polluting stderr")
+
+# Disable tests detailed in issue #8796
+set (Adelus_vector_random_MPI_1_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+
+# Disable tests detailed in issue #8799
+set (ROL_adapters_minitensor_test_function_test_01_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+set (ROL_adapters_minitensor_test_function_test_02_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+set (ROL_adapters_minitensor_test_sol_test_01_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+set (ROL_adapters_minitensor_test_vector_test_01_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+set (ROL_test_algorithm_TypeB_TrustRegionSPG_MPI_1_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+
+# Disable tests detailed in issue #8800
+set (KokkosCore_UnitTest_CudaTimingBased_MPI_1_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+
+# Disable tests detailed in issue #8129
+set (PanzerDiscFE_integration_values2_MPI_1_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
+set (Stokhos_TpetraCrsMatrixMPVectorUnitTest_Cuda_MPI_4_DISABLE ON CACHE BOOL "Temporary disable for CUDA PR testing")
 
 set (CMAKE_CXX_STANDARD "14" CACHE STRING "Set C++ standard to C++14")
 # set (CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "Kokkos turns off CXX extensions")

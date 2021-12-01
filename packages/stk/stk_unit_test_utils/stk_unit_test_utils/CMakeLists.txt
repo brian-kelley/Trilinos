@@ -9,9 +9,15 @@ SET(HEADERS_NEED_IO
   ElemGraphMultipleSharedSidesUtils.hpp
   BulkDataTester.hpp
   FaceCreationTestUtils.hpp
+  Iotm_DatabaseIO.hpp
+  Iotm_TextMesh.hpp
   GeneratedMeshToFile.hpp
   ReadWriteSidesetTester.hpp
   StkMeshFromGeneratedMesh.hpp
+  TextMeshFixture.hpp
+  TextMeshToFile.hpp
+  TextMeshUtils.hpp
+  TextMesh.hpp
   ioUtils.hpp
   )
 SET(SOURCES_NEED_IO
@@ -20,7 +26,12 @@ SET(SOURCES_NEED_IO
   FaceTestingUtils.cpp
   GenerateALefRAMesh.cpp
   GeneratedMeshToFile.cpp
+  Iotm_DatabaseIO.cpp
+  Iotm_TextMesh.cpp
   ReadWriteSidesetTester.cpp
+  TextMeshFixture.cpp
+  TextMeshToFile.cpp
+  TextMeshUtils.cpp
   TextMesh.cpp
   ioUtils.cpp
   meshCreationHelpers.cpp
@@ -30,6 +41,7 @@ SET(HEADERS_NEED_MESH_BUT_NOT_IO
   BucketTester.hpp
   MeshFixture.hpp
   MeshFileFixture.hpp
+  MeshUtilsForBoundingVolumes.hpp
   ParticleUtils.hpp
   WriteSelectedEntities.hpp
   unittestMeshUtils.hpp

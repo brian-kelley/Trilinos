@@ -1,3 +1,9 @@
+// Note: Luc Berger-Vergiat 04/14/21
+//       This tests uses KOKKOS_LAMBDA so we need
+//       to make sure that these are enabled in
+//       the CUDA backend before including this test.
+#if !defined(TEST_CUDA_BLAS_CPP) || defined(KOKKOS_ENABLE_CUDA_LAMBDA)
+
 #include<gtest/gtest.h>
 #include<Kokkos_Core.hpp>
 #include<Kokkos_Random.hpp>
@@ -45,8 +51,6 @@ namespace Test {
 
     Kokkos::fill_random(b_a,rand_pool,ScalarA(10));
     Kokkos::fill_random(b_b,rand_pool,ScalarB(10));
-
-    Kokkos::fence();
 
     Kokkos::deep_copy(h_b_a,b_a);
     Kokkos::deep_copy(h_b_b,b_b);
@@ -149,8 +153,6 @@ namespace Test {
 
     Kokkos::fill_random(b_a,rand_pool,ScalarA(10));
     Kokkos::fill_random(b_b,rand_pool,ScalarB(10));
-
-    Kokkos::fence();
 
     Kokkos::deep_copy(h_b_a,b_a);
     Kokkos::deep_copy(h_b_b,b_b);
@@ -339,3 +341,4 @@ TEST_F( TestCategory, team_dot_mv_double_int ) {
 }
 #endif*/
 
+#endif // Check for lambda availability in CUDA backend

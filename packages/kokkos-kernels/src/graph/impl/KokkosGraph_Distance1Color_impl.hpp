@@ -44,7 +44,7 @@
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Atomic.hpp>
-#include <impl/Kokkos_Timer.hpp>
+#include <Kokkos_Timer.hpp>
 #include <Kokkos_MemoryTraits.hpp>
 #include <vector>
 #include "KokkosGraph_Distance1ColorHandle.hpp"
@@ -354,7 +354,7 @@ public:
     //if we use edge-filtering, we perform swaps.
     //We need to copy the adjacency array so that we dont harm the original one.
     if (this->_edge_filtering){
-      adj_copy = nnz_lno_temp_work_view_t(Kokkos::ViewAllocateWithoutInitializing("adj copy"), this->ne);
+      adj_copy = nnz_lno_temp_work_view_t(Kokkos::view_alloc(Kokkos::WithoutInitializing, "adj copy"), this->ne);
       Kokkos::deep_copy(adj_copy, this->adj);
     }
 
@@ -366,12 +366,18 @@ public:
 
     //the conflictlist
     nnz_lno_temp_work_view_t current_vertexList =
-        nnz_lno_temp_work_view_t(Kokkos::ViewAllocateWithoutInitializing("vertexList"), this->nv);
-
-    //init vertexList sequentially.
-    Kokkos::parallel_for("KokkosGraph::GraphColoring::InitList",
-        my_exec_space(0, this->nv), functorInitList<nnz_lno_temp_work_view_t> (current_vertexList));
-
+        nnz_lno_temp_work_view_t(Kokkos::view_alloc(Kokkos::WithoutInitializing, "vertexList"), this->nv);
+    nnz_lno_t current_vertexListLength = this->nv;
+    
+    if(this->cp->get_use_vtx_list()){
+      //get the vertexList from the color handle, if it exists.
+      current_vertexList = this->cp->get_vertex_list();
+      current_vertexListLength = this->cp->get_vertex_list_size();
+    } else {
+      //init vertexList sequentially.
+      Kokkos::parallel_for("KokkosGraph::GraphColoring::InitList",
+          my_exec_space(0, this->nv), functorInitList<nnz_lno_temp_work_view_t> (current_vertexList));
+    }
 
     // the next iteration's conflict list
     nnz_lno_temp_work_view_t next_iteration_recolorList;
@@ -383,19 +389,18 @@ public:
     // if a conflictlist is used
     if (this->_conflict_scheme!= COLORING_NOCONFLICT){
       // Vertices to recolor. Will swap with vertexList.
-      next_iteration_recolorList = nnz_lno_temp_work_view_t(Kokkos::ViewAllocateWithoutInitializing("recolorList"), this->nv);
+      next_iteration_recolorList = nnz_lno_temp_work_view_t(Kokkos::view_alloc(Kokkos::WithoutInitializing, "recolorList"), this->nv);
       next_iteration_recolorListLength = single_dim_index_view_type("recolorListLength");
     }
 
     nnz_lno_t numUncolored = this->nv;
-    nnz_lno_t current_vertexListLength = this->nv;
 
 
     double t, total=0.0;
     double total_time_greedy_phase=0.0;
     double total_time_find_conflicts=0.0;
     double total_time_serial_conflict_resolution=0.0;
-    Kokkos::Impl::Timer timer;
+    Kokkos::Timer timer;
     timer.reset();
 
 
@@ -1905,7 +1910,7 @@ public:
 
     size_type maxColors = 0;
     nnz_lno_persistent_work_view_t score
-      = nnz_lno_persistent_work_view_t(Kokkos::ViewAllocateWithoutInitializing("score"), this->nv);
+      = nnz_lno_persistent_work_view_t(Kokkos::view_alloc(Kokkos::WithoutInitializing, "score"), this->nv);
     functorScoreCalculation<size_type, MyExecSpace> scoreCalculation(score, this->xadj);
     
     Kokkos::parallel_reduce("Deterministic Coloring: compute initial scores", my_exec_space(0, this->nv),
@@ -2058,32 +2063,39 @@ public:
     Kokkos::View<size_type, MyTempMemorySpace> newFrontierSize_;
     size_type maxColors_;
     color_view_type colors_;
+    Kokkos::View<int **, MyTempMemorySpace> bannedColors_;
 
-    functorDeterministicColoring(const_lno_row_view_t rowPtr,
-                                 const_lno_nnz_view_t colInd,
-                                 nnz_lno_persistent_work_view_t dependency,
-                                 nnz_lno_temp_work_view_t frontier,
-                                 Kokkos::View<size_type, MyTempMemorySpace> frontierSize,
-                                 nnz_lno_temp_work_view_t newFrontier,
-                                 Kokkos::View<size_type, MyTempMemorySpace> newFrontierSize,
-                                 size_type maxColors,
-                                 color_view_type colors)
-      : xadj_(rowPtr), adj_(colInd), dependency_(dependency), frontier_(frontier),
-      frontierSize_(frontierSize), newFrontier_(newFrontier), newFrontierSize_(newFrontierSize),
-      maxColors_(maxColors), colors_(colors) {}
+    functorDeterministicColoring(
+        const_lno_row_view_t rowPtr, const_lno_nnz_view_t colInd,
+        nnz_lno_persistent_work_view_t dependency,
+        nnz_lno_temp_work_view_t frontier,
+        Kokkos::View<size_type, MyTempMemorySpace> frontierSize,
+        nnz_lno_temp_work_view_t newFrontier,
+        Kokkos::View<size_type, MyTempMemorySpace> newFrontierSize,
+        size_type maxColors, color_view_type colors)
+        : xadj_(rowPtr),
+          adj_(colInd),
+          dependency_(dependency),
+          frontier_(frontier),
+          frontierSize_(frontierSize),
+          newFrontier_(newFrontier),
+          newFrontierSize_(newFrontierSize),
+          maxColors_(maxColors),
+          colors_(colors),
+          bannedColors_("KokkosKernels::bannedColors", frontier.size(),
+                        maxColors_) {}
 
     KOKKOS_INLINE_FUNCTION
     void operator() (const size_type frontierIdx) const {
       typedef typename std::remove_reference< decltype( newFrontierSize_() ) >::type atomic_incr_type;
       size_type frontierNode = frontier_(frontierIdx);
-      int* bannedColors = new int[maxColors_];
       for(size_type colorIdx= 0; colorIdx < maxColors_; ++colorIdx) {
-        bannedColors[colorIdx] = 0;
+        bannedColors_(frontierIdx, colorIdx) = 0;
       }
 
       // Loop over neighbors, find banned colors, decrement dependency and update newFrontier
       for(size_type neigh = xadj_(frontierNode); neigh < xadj_(frontierNode + 1); ++neigh) {
-        bannedColors[colors_(adj_(neigh))] = 1;
+        bannedColors_(frontierIdx, colors_(adj_(neigh))) = 1;
 
         // We want to avoid the cost of atomic operations when not needed
         // so let's check that the node is not already colored, i.e.
@@ -2100,12 +2112,11 @@ public:
       } // Loop over neighbors
 
       for(size_type color = 1; color < maxColors_; ++color) {
-        if(bannedColors[color] == 0) {
+        if (bannedColors_(frontierIdx, color) == 0) {
           colors_(frontierNode) = color;
           break;
         }
       } // Loop over banned colors
-      delete [] bannedColors;
     }
   }; // functorDeterministicColoring
 
@@ -2280,10 +2291,10 @@ public:
 
     bool tictoc = this->cp->get_tictoc();
 
-    Kokkos::Impl::Timer *timer = NULL;
+    Kokkos::Timer *timer = NULL;
 
     if (tictoc){
-      timer = new Kokkos::Impl::Timer();
+      timer = new Kokkos::Timer();
       std::cout << "\tRewriting EB params. num_initial_colors:" << numInitialColors
           << " prefix_sum_shrink_min:"  << ps_min
           << " ps_cutoff:" << pps_cutoff
@@ -2298,24 +2309,24 @@ public:
     size_type num_work_edges = numEdges;
 
     //allocate memory for vertex ban colors, and tentative bans
-    color_temp_work_view_type color_ban (Kokkos::ViewAllocateWithoutInitializing("color_ban"), this->nv);
-    color_temp_work_view_type tentative_color_ban(Kokkos::ViewAllocateWithoutInitializing("tentative_color_ban"), this->nv);//views are initialized with zero
+    color_temp_work_view_type color_ban (Kokkos::view_alloc(Kokkos::WithoutInitializing, "color_ban"), this->nv);
+    color_temp_work_view_type tentative_color_ban(Kokkos::view_alloc(Kokkos::WithoutInitializing, "tentative_color_ban"), this->nv);//views are initialized with zero
     //allocate memory for vertex color set shifts.
     nnz_lno_temp_work_view_t color_set ("color_set", this->nv); //initialized with zero.
     //initialize colors, color bans
     Kokkos::parallel_for ("KokkosGraph::GraphColoring::initColors",
-        my_exec_space (0, this->nv) , init_colors (kok_colors, color_ban, numInitialColors));
+        my_exec_space (0, this->nv) , init_colors (kok_colors, color_ban, numInitialColors, color_set));
     //std::cout << "nv:" << this->nv << " init_colors" << std::endl;
 
     //worklist
     size_type_temp_work_view_t edge_conflict_indices
-    (Kokkos::ViewAllocateWithoutInitializing("edge_conflict_indices"), num_work_edges);
+    (Kokkos::view_alloc(Kokkos::WithoutInitializing, "edge_conflict_indices"), num_work_edges);
     //next iterations conflict list
     size_type_temp_work_view_t new_edge_conflict_indices
-    (Kokkos::ViewAllocateWithoutInitializing("new_edge_conflict_indices"), num_work_edges);
+    (Kokkos::view_alloc(Kokkos::WithoutInitializing, "new_edge_conflict_indices"), num_work_edges);
 
     char_temp_work_view_type edge_conflict_marker
-    (Kokkos::ViewAllocateWithoutInitializing("edge_conflict_marker"), num_work_edges);
+    (Kokkos::view_alloc(Kokkos::WithoutInitializing, "edge_conflict_marker"), num_work_edges);
 
 
     //initialize the worklist sequentiall, and markers as 1.
@@ -2515,23 +2526,27 @@ public:
     color_view_type kokcolors;
     color_temp_work_view_type color_ban; //colors
     color_t hash; //the number of colors to be assigned initially.
+    nnz_lno_temp_work_view_t color_set;
 
     //the value to initialize the color_ban_. We avoid using the first bit representing the sign.
     //Therefore if idx is int, it can represent 32-1 colors. Use color_set to represent more.
     color_t color_ban_init_val;
 
 
-    init_colors (color_view_type colors,color_temp_work_view_type color_ban_,color_t hash_):
-      kokcolors(colors), color_ban(color_ban_), hash(hash_){
+    init_colors (color_view_type colors,color_temp_work_view_type color_ban_,color_t hash_, nnz_lno_temp_work_view_t color_set_):
+      kokcolors(colors), color_ban(color_ban_), hash(hash_), color_set(color_set_){
       color_t tmp = 1;
       color_ban_init_val = tmp <<( sizeof(color_t) * 8 -1);
     }
 
     KOKKOS_INLINE_FUNCTION
     void operator()(const size_type &ii) const {
-      //set colors based on their indices.
-      color_t tmp1 = 1;
-      kokcolors(ii) = tmp1 << (ii % hash);
+      //set colors based on their input colors.
+      if(kokcolors(ii) > 0){
+        color_t colorsize = sizeof(color_t) * 8 - 1;
+        color_set(ii) = (kokcolors(ii) - 1) / colorsize;
+        kokcolors(ii) = 1 << ((kokcolors(ii) - 1) % colorsize);
+      }
       color_ban(ii) = color_ban_init_val;
     }
   };

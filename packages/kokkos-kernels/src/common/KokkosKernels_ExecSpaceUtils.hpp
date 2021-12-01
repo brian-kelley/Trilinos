@@ -53,7 +53,15 @@ namespace KokkosKernels{
 
 namespace Impl{
 
-enum ExecSpaceType{Exec_SERIAL, Exec_OMP, Exec_PTHREADS, Exec_QTHREADS, Exec_CUDA, Exec_HIP};
+enum ExecSpaceType {
+  Exec_SERIAL,
+  Exec_OMP,
+  Exec_PTHREADS,
+  Exec_QTHREADS,
+  Exec_CUDA,
+  Exec_HIP,
+  Exec_SYCL
+};
 template <typename ExecutionSpace>
 KOKKOS_FORCEINLINE_FUNCTION ExecSpaceType kk_get_exec_space_type(){
   ExecSpaceType exec_space = Exec_SERIAL;
@@ -87,14 +95,23 @@ KOKKOS_FORCEINLINE_FUNCTION ExecSpaceType kk_get_exec_space_type(){
   }
 #endif
 
-#if defined( KOKKOS_ENABLE_QTHREAD)
-  if (std::is_same< Kokkos::Qthread, ExecutionSpace >::value){
+#if defined(KOKKOS_ENABLE_SYCL)
+  if (std::is_same<Kokkos::Experimental::SYCL, ExecutionSpace>::value) {
+    exec_space = Exec_SYCL;
+  }
+#endif
+
+#if defined(KOKKOS_ENABLE_QTHREAD)
+  if (std::is_same<Kokkos::Qthread, ExecutionSpace>::value) {
     exec_space = Exec_QTHREADS;
   }
 #endif
   return exec_space;
-
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// GPU Exec Space Utils
+////////////////////////////////////////////////////////////////////////////////
 
 template <typename ExecutionSpace>
 constexpr KOKKOS_INLINE_FUNCTION bool kk_is_gpu_exec_space() {
@@ -110,18 +127,62 @@ constexpr KOKKOS_INLINE_FUNCTION bool kk_is_gpu_exec_space<Kokkos::Cuda>() {
 
 #ifdef KOKKOS_ENABLE_HIP
 template <>
-constexpr KOKKOS_INLINE_FUNCTION bool kk_is_gpu_exec_space<Kokkos::Experimental::HIP>() {
+constexpr KOKKOS_INLINE_FUNCTION bool
+kk_is_gpu_exec_space<Kokkos::Experimental::HIP>() {
   return true;
 }
 #endif
 
-//Host function to determine free and total device memory.
-//Will throw if execution space doesn't support this.
+#ifdef KOKKOS_ENABLE_SYCL
+template <>
+constexpr KOKKOS_INLINE_FUNCTION bool
+kk_is_gpu_exec_space<Kokkos::Experimental::SYCL>() {
+  return true;
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// x86_64 Memory Space Utils
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename ExecutionSpace>
+constexpr KOKKOS_INLINE_FUNCTION bool kk_is_x86_64_mem_space() {
+  return false;
+}
+
+#if __x86_64__
+template <>
+constexpr KOKKOS_INLINE_FUNCTION bool
+kk_is_x86_64_mem_space<Kokkos::HostSpace>() {
+  return true;
+}
+#endif  // x86_64 architectures
+
+////////////////////////////////////////////////////////////////////////////////
+// A64FX Memory Space Utils
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename ExecutionSpace>
+constexpr KOKKOS_INLINE_FUNCTION bool kk_is_a64fx_mem_space() {
+  return false;
+}
+
+#if defined(__ARM_ARCH_ISA_A64)
+template <>
+constexpr KOKKOS_INLINE_FUNCTION bool
+kk_is_a64fx_mem_space<Kokkos::HostSpace>() {
+  return true;
+}
+#endif  // a64fx architectures
+
+// Host function to determine free and total device memory.
+// Will throw if execution space doesn't support this.
 template <typename MemorySpace>
-inline void kk_get_free_total_memory(size_t& free_mem, size_t& total_mem)
-{
+inline void kk_get_free_total_memory(
+    size_t& /* free_mem */, size_t & /* total_mem */) {
   std::ostringstream oss;
-  oss << "Error: memory space " << MemorySpace::name() << " does not support querying free/total memory.";
+  oss << "Error: memory space " << MemorySpace::name()
+      << " does not support querying free/total memory.";
   throw std::runtime_error(oss.str());
 }
 

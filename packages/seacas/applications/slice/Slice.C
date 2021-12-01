@@ -24,6 +24,7 @@
 #include <exodusII.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -41,7 +42,6 @@
 using idx_t = int;
 #endif
 
-#include <sys/stat.h>
 #include <sys/types.h>
 
 #ifdef SEACAS_HAVE_MPI
@@ -217,11 +217,7 @@ int main(int argc, char *argv[])
     Ioss::FileInfo output_path(path);
     if (!output_path.exists()) {
       // Try to create the directory...
-      if (mkdir(path.c_str(), 0777) == -1) {
-        fmt::print(stderr, "ERROR: Could not create path '{}' for output of decomposed files.\n",
-                   path);
-        exit(EXIT_FAILURE);
-      }
+      Ioss::FileInfo::create_path(path);
     }
     else if (!output_path.is_dir()) {
       fmt::print(stderr, "ERROR: Path '{}' is not a directory.\n", path);
@@ -288,7 +284,7 @@ namespace {
 
   template <typename INT>
   void create_adjacency_list(const Ioss::Region &region, std::vector<idx_t> &pointer,
-                             std::vector<idx_t> &adjacency, INT /*dummy*/)
+                             std::vector<idx_t> &adjacency, INT dummy)
   {
     progress(__func__);
     // Size of pointer list is element count + 1;
@@ -681,7 +677,7 @@ namespace {
       }
 
       auto &side_blocks = gss->get_side_blocks();
-      for (auto gsb : side_blocks) {
+      for (auto &gsb : side_blocks) {
         std::vector<INT> ss_elems;
         gsb->get_field_data("element_side_raw", ss_elems);
 
@@ -731,7 +727,7 @@ namespace {
       }
 
       auto &side_blocks = gss->get_side_blocks();
-      for (auto gsb : side_blocks) {
+      for (auto &gsb : side_blocks) {
         auto &sb_name = gsb->name();
 
         std::vector<Ioss::SideBlock *> proc_sb(proc_count);
@@ -1558,7 +1554,7 @@ namespace {
     fmt::print(stderr, "Processor count per node histogram:\n");
     for (size_t i = 1; i < proc_histo.size(); i++) {
       if (proc_histo[i] > 0) {
-        fmt::print(stderr, "\tNodes on {:2n} processors = {:12n}\t({:2})%\n", i, proc_histo[i],
+        fmt::print(stderr, "\tNodes on {:2L} processors = {:12L}\t({:2})%\n", i, proc_histo[i],
                    (proc_histo[i] * 100 + node_count / 2) / node_count);
       }
     }
@@ -1573,7 +1569,7 @@ namespace {
     progress("\tNode_to_proc reserved");
     assert(sum_on_proc_count == node_to_proc_pointer_size);
 
-    for (auto pn : proc_node) {
+    for (auto &pn : proc_node) {
       size_t num_procs = pn.size();
       for (size_t p = 0; p < num_procs; p++) {
         node_to_proc.push_back(pn[p]);

@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 1999-2020 National Technology & Engineering Solutions
+ * Copyright(C) 1999-2021 National Technology & Engineering Solutions
  * of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
  * NTESS, the U.S. Government retains certain rights in this software.
  *
@@ -28,20 +28,21 @@
 
 int main(int argc, char **argv)
 {
-  int exoid;
-  int num_blob;
-  int num_red_vars;
-  int num_vars;
-  int error;
-  int i;
-  int CPU_word_size;
-  int IO_word_size;
-  int idum;
+  int   exoid;
+  int   num_blob;
+  int   num_red_vars;
+  int   num_vars;
+  int   error;
+  int   i;
+  int   CPU_word_size;
+  int   IO_word_size;
+  int   idum;
+  char *blob_names[10];
 
   float version;
 
   char *var_names[10];
-  char *cdum = 0;
+  char *cdum = NULL;
 
   CPU_word_size = 0; /* sizeof(float) */
   IO_word_size  = 0; /* use what is stored in file */
@@ -100,7 +101,6 @@ int main(int argc, char **argv)
     int blob_ids[10];
     ex_get_ids(exoid, EX_BLOB, blob_ids);
 
-    char *blob_names[10];
     for (i = 0; i < num_blob; i++) {
       blob_names[i] = (char *)calloc((MAX_STR_LENGTH + 1), sizeof(char));
     }
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
     }
 
     float *vals       = (float *)calloc(max_count, CPU_word_size);
-    float *var_values = (float *)calloc(num_red_vars, sizeof(float));
+    float *var_values = (num_red_vars > 0) ? (float *)calloc(num_red_vars, sizeof(float)) : NULL;
     for (i = 0; i < num_time_steps; i++) {
       float time_value;
       EXCHECK(ex_get_time(exoid, i + 1, &time_value));
@@ -246,6 +246,10 @@ int main(int argc, char **argv)
     free(var_values);
     free(vals);
   }
+  for (i = 0; i < num_blob; i++) {
+    free(blob_names[i]);
+  }
+
   EXCHECK(ex_close(exoid));
   return 0;
 }

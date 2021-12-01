@@ -1,12 +1,16 @@
-// Copyright(C) 1999-2020 National Technology & Engineering Solutions
+// Copyright(C) 1999-2021 National Technology & Engineering Solutions
 // of Sandia, LLC (NTESS).  Under the terms of Contract DE-NA0003525 with
 // NTESS, the U.S. Government retains certain rights in this software.
 //
 // See packages/seacas/LICENSE for details
 
+#include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <fstream>
 #include <iostream>
+#include <string>
+#include <vector>
 
 #include "aprepro.h"
 
@@ -43,7 +47,7 @@ int main(int argc, char *argv[])
           double dval = std::stod(value);
           aprepro.add_variable(var, dval, true);
         }
-        catch (std::exception &e) {
+        catch (std::exception & /* e */) {
           // If cannot convert to double; make it a string variable...
           aprepro.add_variable(var, value, true); // Make it immutable
         }
@@ -61,9 +65,7 @@ int main(int argc, char *argv[])
 
   if (input_files.empty()) {
     if (!quiet) {
-      auto comment = aprepro.getsym("_C_")->value.svar;
-      std::cout << comment << " Algebraic Preprocessor -- Aprepro, version " << aprepro.version()
-                << "\n";
+      std::cout << aprepro.long_version() << "\n";
     }
     aprepro.ap_options.interactive = true;
     try {
@@ -87,16 +89,16 @@ int main(int argc, char *argv[])
     if (!infile.good()) {
       std::cerr << "APREPRO: ERROR: Could not open file: " << input_files[0] << '\n'
                 << "                Error Code: " << strerror(errno) << '\n';
-      return 0;
+      return EXIT_FAILURE;
     }
 
     // Read and parse a file.  The entire file will be parsed and
     // then the output can be obtained in an std::ostringstream via
     // Aprepro::parsing_results()
-    bool writeResults = true;
     try {
       bool result = aprepro.parse_stream(infile, input_files[0]);
 
+      bool writeResults = true;
       if (aprepro.ap_options.errors_fatal && aprepro.get_error_count() > 0) {
         writeResults = false;
       }
@@ -110,17 +112,13 @@ int main(int argc, char *argv[])
           if (input_files.size() > 1) {
             std::ofstream ofile(input_files[1]);
             if (!quiet) {
-              auto comment = aprepro.getsym("_C_")->value.svar;
-              ofile << comment << " Algebraic Preprocessor (Aprepro) version " << aprepro.version()
-                    << "\n";
+              ofile << aprepro.long_version() << "\n";
             }
             ofile << aprepro.parsing_results().str();
           }
           else {
             if (!quiet) {
-              auto comment = aprepro.getsym("_C_")->value.svar;
-              std::cout << comment << " Algebraic Preprocessor (Aprepro) version "
-                        << aprepro.version() << "\n";
+              std::cout << aprepro.long_version() << "\n";
             }
             std::cout << aprepro.parsing_results().str();
           }
@@ -154,6 +152,9 @@ int main(int argc, char *argv[])
   }
   if (aprepro.ap_options.debugging || aprepro.ap_options.dumpvars) {
     aprepro.dumpsym("variable", false);
+  }
+  if (aprepro.ap_options.dumpvars_json) {
+    aprepro.dumpsym_json();
   }
   return exit_status;
 }

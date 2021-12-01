@@ -28,11 +28,10 @@ export TRIBITS_TDD_USE_SYSTEM_CTEST=1
 
 # Machine specific environment
 #
-export TDD_HTTP_PROXY="http://sonproxy.sandia.gov:80"
-export TDD_HTTPS_PROXY="https://sonproxy.sandia.gov:80"
-export http_proxy="http://sonproxy.sandia.gov:80"
-export https_proxy="https://sonproxy.sandia.gov:80"
-export no_proxy='.sandia.gov'
+. /etc/profile
+
+export TDD_HTTP_PROXY=$http_proxy
+export TDD_HTTPS_PROXY=$https_proxy
 
 . ~/.bashrc
 
@@ -100,6 +99,8 @@ env
 
 export CUDA_LAUNCH_BLOCKING=1
 export CUDA_MANAGED_FORCE_DEVICE_ALLOC=1
+# Only run on the Tesla K40, not the Quadro
+export CUDA_VISIBLE_DEVICES=0
 # Machine independent cron_driver:
 SCRIPT_DIR=`cd "\`dirname \"$0\"\`";pwd`
 $SCRIPT_DIR/../cron_driver.py

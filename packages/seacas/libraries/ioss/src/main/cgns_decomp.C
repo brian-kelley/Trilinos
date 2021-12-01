@@ -8,24 +8,6 @@
 #undef NDEBUG
 
 #include <Ionit_Initializer.h>
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <numeric>
-#include <set>
-#include <stdexcept>
-#include <string>
-#include <sys/ioctl.h>
-#include <unistd.h>
-#include <utility>
-#include <vector>
 
 #include <Ioss_CodeTypes.h>
 #include <Ioss_DatabaseIO.h>
@@ -40,6 +22,28 @@
 
 #include <cgns/Iocgns_StructuredZoneData.h>
 #include <cgns/Iocgns_Utils.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include <set>
+#include <stdexcept>
+#include <string>
+#if !defined(__IOSS_WINDOWS__)
+#include <sys/ioctl.h>
+#endif
+#include <unistd.h>
+#include <utility>
+#include <vector>
 
 #include <fmt/color.h>
 #include <fmt/format.h>
@@ -88,50 +92,59 @@ namespace {
       {
         const char *temp = options_.retrieve("ordinal");
         if (temp != nullptr) {
-	  // See if ordinal contains digits or letters...
-	  std::string stemp{temp};
-	  bool all_dig = stemp.find_first_not_of("0123456789") == std::string::npos;
-	  if (all_dig) {
-	    ordinal = std::stoi(stemp);
-	    switch (ordinal) {
-	    case 0: // i
-	      ordinal = Iocgns::Ordinal::I; break;
-	    case 1: // j
-	      ordinal = Iocgns::Ordinal::J; break;
-	    case 2: // k
-	      ordinal = Iocgns::Ordinal::K; break;
-	    case 3: // ij
-	      ordinal = Iocgns::Ordinal::I | Iocgns::Ordinal::J; break;
-	    case 4: // ik
-	      ordinal = Iocgns::Ordinal::I | Iocgns::Ordinal::K; break;
-	    case 5: // jk
-	      ordinal = Iocgns::Ordinal::J | Iocgns::Ordinal::K; break;
-	    default:
-	      fmt::print(stderr,
-			 "\nERROR: Invalid ordinal ('{}') specified.  Must be between 0 and 5.\n", stemp);
-	      options_.usage(std::cerr);
-	      exit(EXIT_FAILURE);
-	    }
-	  }	  
-	  else {
-	    for (size_t i = 0; i < stemp.size(); i++) {
-	      if (stemp[i] == 'i' || stemp[i] == 'I') {
-		ordinal |= Iocgns::Ordinal::I;
-	      }
-	      else if (stemp[i] == 'j' || stemp[i] == 'J') {
-		ordinal |= Iocgns::Ordinal::J;
-	      }
-	      else if (stemp[i] == 'k' || stemp[i] == 'K') {
-		ordinal |= Iocgns::Ordinal::K;
-	      }
-	      else {
-		fmt::print(stderr,
-			   "\nERROR: Invalid ordinal ('{}') specified.  Must be 'i', 'j', or 'k'.\n", stemp[i]);
-		options_.usage(std::cerr);
-		exit(EXIT_FAILURE);
-	      }
-	    }
-	  }
+          // See if ordinal contains digits or letters...
+          std::string stemp{temp};
+          bool        all_dig = stemp.find_first_not_of("0123456789") == std::string::npos;
+          if (all_dig) {
+            ordinal = std::stoi(stemp);
+            switch (ordinal) {
+            case 0: // i
+              ordinal = Iocgns::Ordinal::I;
+              break;
+            case 1: // j
+              ordinal = Iocgns::Ordinal::J;
+              break;
+            case 2: // k
+              ordinal = Iocgns::Ordinal::K;
+              break;
+            case 3: // ij
+              ordinal = Iocgns::Ordinal::I | Iocgns::Ordinal::J;
+              break;
+            case 4: // ik
+              ordinal = Iocgns::Ordinal::I | Iocgns::Ordinal::K;
+              break;
+            case 5: // jk
+              ordinal = Iocgns::Ordinal::J | Iocgns::Ordinal::K;
+              break;
+            default:
+              fmt::print(stderr,
+                         "\nERROR: Invalid ordinal ('{}') specified.  Must be between 0 and 5.\n",
+                         stemp);
+              options_.usage(std::cerr);
+              exit(EXIT_FAILURE);
+            }
+          }
+          else {
+            for (size_t i = 0; i < stemp.size(); i++) {
+              if (stemp[i] == 'i' || stemp[i] == 'I') {
+                ordinal |= Iocgns::Ordinal::I;
+              }
+              else if (stemp[i] == 'j' || stemp[i] == 'J') {
+                ordinal |= Iocgns::Ordinal::J;
+              }
+              else if (stemp[i] == 'k' || stemp[i] == 'K') {
+                ordinal |= Iocgns::Ordinal::K;
+              }
+              else {
+                fmt::print(
+                    stderr,
+                    "\nERROR: Invalid ordinal ('{}') specified.  Must be 'i', 'j', or 'k'.\n",
+                    stemp[i]);
+                options_.usage(std::cerr);
+                exit(EXIT_FAILURE);
+              }
+            }
+          }
         }
       }
 
@@ -175,7 +188,7 @@ namespace {
       options_.enroll("processors", Ioss::GetLongOption::MandatoryValue, "Number of processors.",
                       nullptr);
       options_.enroll("ordinal", Ioss::GetLongOption::MandatoryValue,
-		      "Ordinal not to split 0(i), 1(j), 2(k), 3(ij), 4(ik), or 5(jk).", nullptr);
+                      "Ordinal not to split 0(i), 1(j), 2(k), 3(ij), 4(ik), or 5(jk).", nullptr);
       options_.enroll("line_decomposition", Ioss::GetLongOption::MandatoryValue,
                       "list of 1 or more BC (Family) names.\n"
                       "\t\tFor all structured zones which this BC touches, the ordinal of the face "
@@ -273,11 +286,11 @@ namespace {
     }
   }
 
-  void validate_decomposition(std::vector<Iocgns::StructuredZoneData *> &zones, int proc_count)
+  void validate_decomposition(std::vector<Iocgns::StructuredZoneData *> &zones)
   {
 
     // Each active zone must be on a processor
-    for (const auto zone : zones) {
+    for (const auto &zone : zones) {
       if (zone->is_active()) {
         SMART_ASSERT(zone->m_proc >= 0)(zone->m_proc);
       }
@@ -285,7 +298,7 @@ namespace {
 
     // A processor cannot have more than one zone with the same adam zone
     std::set<std::pair<int, int>> proc_adam_map;
-    for (const auto zone : zones) {
+    for (const auto &zone : zones) {
       if (zone->is_active()) {
         auto success = proc_adam_map.insert(std::make_pair(zone->m_adam->m_zone, zone->m_proc));
         SMART_ASSERT(success.second);
@@ -344,14 +357,13 @@ namespace {
     }
   }
 
-  bool validate_symmetric_communications(std::vector<Iocgns::StructuredZoneData *> &zones,
-                                         int                                        proc_count)
+  bool validate_symmetric_communications(std::vector<Iocgns::StructuredZoneData *> &zones)
   {
     std::set<std::pair<std::pair<std::string, int>, std::pair<std::string, int>>> comms;
     for (const auto &adam_zone : zones) {
       if (adam_zone->m_parent == nullptr) {
         // Iterate children (or self) of the adam_zone.
-        for (const auto zone : zones) {
+        for (const auto &zone : zones) {
           if (zone->is_active() && zone->m_adam == adam_zone) {
             for (auto &zgc : zone->m_zoneConnectivity) {
               if (zgc.is_active()) {
@@ -391,7 +403,7 @@ namespace {
         std::vector<std::pair<int, int>> comms;
 
         // Iterate children (or self) of the adam_zone.
-        for (const auto zone : zones) {
+        for (const auto &zone : zones) {
           if (zone->is_active() && zone->m_adam == adam_zone) {
             for (auto &zgc : zone->m_zoneConnectivity) {
               if (zgc.is_active()) {
@@ -496,7 +508,7 @@ namespace {
         }
         postfix += "median";
       }
-      fmt::print("\t{:{}n}..{:{}n} ({:{}n}):\t{:{}}  {}\n", w1, work_width, w2, work_width,
+      fmt::print("\t{:{}L}..{:{}L} ({:{}L}):\t{:{}}  {}\n", w1, work_width, w2, work_width,
                  histogram[i], proc_width, stars, max_star, postfix);
     }
     fmt::print("\n");
@@ -520,7 +532,7 @@ namespace {
 
     // Find maximum ordinal to get width... (makes output look better)
     int max_ordinal = 0;
-    for (const auto zone : zones) {
+    for (const auto &zone : zones) {
       if (zone->is_active()) {
         max_ordinal =
             std::max({max_ordinal, zone->m_ordinal[0], zone->m_ordinal[1], zone->m_ordinal[2]});
@@ -530,13 +542,13 @@ namespace {
     double avg_work  = total_work / (double)proc_count;
 
     // Print work/processor map...
-    fmt::print("\nDecomposing {:n} zones over {:n} processors; Total work = {:n}; Average = "
-               "{:n} (goal)\n",
+    fmt::print("\nDecomposing {:L} zones over {:L} processors; Total work = {:L}; Average = "
+               "{:L} (goal)\n",
                orig_zone_count, proc_count, (size_t)total_work, (size_t)avg_work);
 
     // Get max name length for all zones...
     size_t name_len = 0;
-    for (const auto zone : zones) {
+    for (const auto &zone : zones) {
       if (zone->is_active()) {
         auto len = zone->m_name.length();
         if (len > name_len) {
@@ -548,11 +560,11 @@ namespace {
     if (interFace.zone_proc_assignment) {
       // Output Zone->Processor assignment info
       fmt::print("\n");
-      for (const auto adam_zone : zones) {
+      for (const auto &adam_zone : zones) {
         if (adam_zone->m_parent == nullptr) {
           if (adam_zone->m_child1 == nullptr) {
             // Unsplit...
-            fmt::print("\tZone: {:{}}\t  Proc: {:{}}\tOrd: {:^12}    Work: {:{}n} (unsplit)\n",
+            fmt::print("\tZone: {:{}}\t  Proc: {:{}}\tOrd: {:^12}    Work: {:{}L} (unsplit)\n",
                        adam_zone->m_name, name_len, adam_zone->m_proc, proc_width,
                        fmt::format("{1:{0}} x {2:{0}} x {3:{0}}", ord_width,
                                    adam_zone->m_ordinal[0], adam_zone->m_ordinal[1],
@@ -560,15 +572,15 @@ namespace {
                        adam_zone->work(), work_width);
           }
           else {
-            fmt::print("\tZone: {:{}} is decomposed. \tOrd: {:^12}    Work: {:{}n}\n",
+            fmt::print("\tZone: {:{}} is decomposed. \tOrd: {:^12}    Work: {:{}L}\n",
                        adam_zone->m_name, name_len,
                        fmt::format("{1:{0}} x {2:{0}} x {3:{0}}", ord_width,
                                    adam_zone->m_ordinal[0], adam_zone->m_ordinal[1],
                                    adam_zone->m_ordinal[2]),
                        adam_zone->work(), work_width);
-            for (const auto zone : zones) {
+            for (const auto &zone : zones) {
               if (zone->is_active() && zone->m_adam == adam_zone) {
-                fmt::print("\t      {:{}}\t  Proc: {:{}}\tOrd: {:^12}    Work: {:{}n}    SurfExp: "
+                fmt::print("\t      {:{}}\t  Proc: {:{}}\tOrd: {:^12}    Work: {:{}L}    SurfExp: "
                            "{:0.3}\n",
                            zone->m_name, name_len, zone->m_proc, proc_width,
                            fmt::format("{1:{0}} x {2:{0}} x {3:{0}}", ord_width, zone->m_ordinal[0],
@@ -583,7 +595,7 @@ namespace {
 
     // Output Processor Work information
     std::vector<size_t> proc_work(proc_count);
-    for (const auto zone : zones) {
+    for (const auto &zone : zones) {
       if (zone->is_active()) {
         proc_work[zone->m_proc] += zone->work();
       }
@@ -596,13 +608,13 @@ namespace {
       auto pw_copy(proc_work);
       std::nth_element(pw_copy.begin(), pw_copy.begin() + pw_copy.size() / 2, pw_copy.end());
       median = pw_copy[pw_copy.size() / 2];
-      fmt::print("\nWork per processor:\n\tMinimum = {:n}, Maximum = {:n}, Median = {:n}, Ratio = "
+      fmt::print("\nWork per processor:\n\tMinimum = {:L}, Maximum = {:L}, Median = {:L}, Ratio = "
                  "{:.3}\n\n",
                  min_work, max_work, median, (double)(max_work) / min_work);
     }
     if (interFace.work_per_processor) {
       if (min_work == max_work) {
-        fmt::print("\nWork on all processors is {:n}\n\n", min_work);
+        fmt::print("\nWork on all processors is {:L}\n\n", min_work);
       }
       else {
         int max_star = 40;
@@ -613,7 +625,7 @@ namespace {
           int star_cnt =
               (double)(proc_work[i] - min_work) / (max_work - min_work) * delta + min_star;
           std::string stars(star_cnt, '*');
-          std::string format = "\tProcessor {:{}}, work = {:{}n}  ({:.2f})\t{}\n";
+          std::string format = "\tProcessor {:{}}, work = {:{}L}  ({:.2f})\t{}\n";
           if (proc_work[i] == max_work) {
             fmt::print(fg(fmt::color::red), format, i, proc_width, proc_work[i], work_width,
                        proc_work[i] / avg_work, stars);
@@ -627,10 +639,10 @@ namespace {
                        stars);
           }
           if (verbose) {
-            for (const auto zone : zones) {
+            for (const auto &zone : zones) {
               if ((size_t)zone->m_proc == i) {
                 auto pct = int(100.0 * (double)zone->work() / proc_work[i] + 0.5);
-                fmt::print("\t      {:{}} {:{}n}\t{:3}%\t{:^12}\n", zone->m_name, name_len,
+                fmt::print("\t      {:{}} {:{}L}\t{:3}%\t{:^12}\n", zone->m_name, name_len,
                            zone->work(), work_width, pct,
                            fmt::format("{1:{0}} x {2:{0}} x {3:{0}}", ord_width, zone->m_ordinal[0],
                                        zone->m_ordinal[1], zone->m_ordinal[2]));
@@ -665,15 +677,15 @@ namespace {
                                             });
 
       auto delta = new_nodal_work - nodal_work;
-      fmt::print("Nodal Inflation:\n\tOriginal Node Count = {:n}, Decomposed Node Count = {:n}, "
-                 "Created = {:n}, Ratio = {:.2f}\n\n",
+      fmt::print("Nodal Inflation:\n\tOriginal Node Count = {:L}, Decomposed Node Count = {:L}, "
+                 "Created = {:L}, Ratio = {:.2f}\n\n",
                  nodal_work, new_nodal_work, delta, (double)new_nodal_work / nodal_work);
     }
 
     // Imbalance penalty -- max work / avg work.  If perfect balance, then all processors would have
     // "avg_work" work to do. With current decomposition, every processor has to wait until
     // "max_work" is done.  Penalty = max_work / avg_work.
-    fmt::print("Imbalance Penalty:\n\tMaximum Work = {:n}, Average Work = {:n}, Penalty (max/avg) "
+    fmt::print("Imbalance Penalty:\n\tMaximum Work = {:L}, Average Work = {:L}, Penalty (max/avg) "
                "= {:.2f}\n\n",
                max_work, (size_t)avg_work, (double)max_work / avg_work);
   }
@@ -723,9 +735,9 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  unsigned int line_ordinal = interFace.ordinal;
+  unsigned int                              line_ordinal = interFace.ordinal;
   std::vector<Iocgns::StructuredZoneData *> zones;
-  for (auto iblock : blocks) {
+  for (auto &iblock : blocks) {
     size_t ni   = iblock->get_property("ni").get_int();
     size_t nj   = iblock->get_property("nj").get_int();
     size_t nk   = iblock->get_property("nk").get_int();
@@ -757,18 +769,18 @@ int main(int argc, char *argv[])
 
   describe_decomposition(zones, orig_zone_count, interFace);
 
-  auto valid = validate_symmetric_communications(zones, interFace.proc_count);
+  auto valid = validate_symmetric_communications(zones);
   if (!valid) {
     fmt::print(stderr, fg(fmt::color::red),
                "\nERROR: Zone Grid Communication interfaces are not symmetric.  There is an error "
                "in the decomposition.\n");
   }
 
-  validate_decomposition(zones, interFace.proc_count);
+  validate_decomposition(zones);
 
   cleanup(zones);
   fmt::print(stderr,
-             "\nTotal Execution time = {:.5} seconds to decompose for {:n} processors. (decomp: "
+             "\nTotal Execution Time = {:.5} seconds to decompose for {:L} processors. (decomp: "
              "{:.5}, resolve_zgc: {:.5})\n",
              end2 - begin, interFace.proc_count, end1 - begin, end2 - end1);
   if (valid) {

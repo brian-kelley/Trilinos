@@ -72,6 +72,62 @@ void (*do_trmm_invoke[LOOP_N][TEST_N])(options_t) = {
 #define DEFAULT_TRMM_ARGS "LUNU"
 #define DEFAULT_TRMM_ALPHA 1.0
 
+/**
+ * The KokkosBatched::SerialTrmm implementation performs dot products on
+ * non-zero elements of the triangular matrices. The flop calculation below
+ * assumes KokkosBatched::SerialTrmm is being used. Since the dot products
+ * do a multiply and add we can calculate the flops for any element in the last
+ * column of the LHS to be 2*columns_LHS, any element in the last-1 column of
+ * the LHS to be 2*(columns_LHS-1), and so on. We do this for every row of the
+ * LHS giving us this flop count: flops = columns_LHS * (columns_LHS + 1) flops
+ * = (flops / 2) * 2 flops = flops * rows_LHS
+ */
+static inline int __trmm_impl_flop_count(char side, int b_m, int b_n, int /*a_m*/,
+                                         int /*a_n*/) {
+  int flops;
+
+  if (side == 'L' || side == 'l') {
+    flops = (b_m * (b_m + 1)) * b_n;
+  } else {
+    flops = (b_n * (b_n + 1)) * b_m;
+  }
+
+  if (std::is_same<double, default_scalar>::value ||
+      std::is_same<float, default_scalar>::value ||
+      std::is_same<Kokkos::Experimental::half_t, default_scalar>::value)
+    return flops;
+
+  // Account for 6 additional flops when complex numbers are used.
+  // Above we have counted 1 flop for each add and 1 flop for each multiply.
+  // For complex, we need to count 2 flops for each add and 6 flops for each
+  // multiply.
+  return flops * 4;
+}
+
+// Flop count formula from lapack working note 41:
+// http://www.icl.utk.edu/~mgates3/docs/lawn41.pdf
+static inline double __trmm_flop_count(char side, double b_m, double b_n,
+                                       double /*a_m*/, double /*a_n*/) {
+  double flops;
+
+  if (side == 'L' || side == 'l') {
+    flops = b_m * b_m * b_n;
+  } else {
+    flops = b_n * b_n * b_m;
+  }
+
+  if (std::is_same<double, default_scalar>::value ||
+      std::is_same<float, default_scalar>::value ||
+      std::is_same<Kokkos::Experimental::half_t, default_scalar>::value)
+    return flops;
+
+  // Account for 6 additional flops when complex numbers are used.
+  // Above we have counted 1 flop for each add and 1 flop for each multiply.
+  // For complex, we need to count 2 flops for each add and 6 flops for each
+  // multiply.
+  return flops * 4;
+}
+
 using view_type_3d =
     Kokkos::View<default_scalar***, default_layout, default_device>;
 struct trmm_args {
@@ -83,23 +139,58 @@ typedef struct trmm_args trmm_args_t;
 
 static std::string trmm_csv_header_str =
     "algorithm,side-uplo-trans-diag,alpha,loop_type,A_dims,B_dims,warm_up_n,"
-    "iter,total_time(s),average_time(s)";
+    "iter,total_time(s),average_time(s),FLOPS,GFLOP/"
+    "average_time(s),min_achieved_bandwidth(GB/s),max_achieved_bandwidth(GB/s)";
 
 /*************************** Internal helper fns **************************/
 static void __trmm_output_csv_row(options_t options, trmm_args_t trmm_args,
                                   double time_in_seconds) {
+  double flops = trmm_args.A.extent(0) *
+                 __trmm_flop_count(trmm_args.side, trmm_args.B.extent(1),
+                                   trmm_args.B.extent(2), trmm_args.A.extent(1),
+                                   trmm_args.A.extent(2));
+  double gflops           = flops / 1e9;
+  double average_time     = time_in_seconds / options.n;
+  double gbytes_in_matrix = (trmm_args.B.extent(0) * trmm_args.B.extent(1) *
+                             trmm_args.B.extent(2) * sizeof(default_scalar)) /
+                            1e9;
+  double min_memory_transactions, max_memory_transactions;
+
+  // Assuming infinite cache size
+  // We have to read A and B into the cache once and then write
+  // B back out to main memory once.
+  min_memory_transactions = 3;
+
+  // Assuming no register or real caching
+  // We have to go out to memory for every element we read from A and B as well
+  // as every element we write to B. We use the trmm flops from lapack note 41
+  // and multiple by 3/2 to account for the write to B since this flop count is
+  // for one multiply and one add.
+  if (trmm_args.side == 'l' || trmm_args.side == 'L')
+    max_memory_transactions = trmm_args.B.extent(1) * trmm_args.B.extent(1) *
+                              trmm_args.B.extent(2) * (3. / 2.);
+  else
+    max_memory_transactions = trmm_args.B.extent(2) * trmm_args.B.extent(2) *
+                              trmm_args.B.extent(1) * (3. / 2.);
+
   options.out[0] << test_e_str[options.test] << ","
                  << options.blas_args.trmm.trmm_args << ","
-                 << options.blas_args.trmm.alpha << ","
-                 << loop_e_str[options.loop] << "," << trmm_args.A.extent(1)
-                 << "x" << trmm_args.A.extent(2) << "," << trmm_args.B.extent(1)
+                 << static_cast<double>(options.blas_args.trmm.alpha) << ","
+                 << loop_e_str[options.loop] << "," << trmm_args.A.extent(0)
+                 << "x" << trmm_args.A.extent(1) << "x" << trmm_args.A.extent(2)
+                 << "," << trmm_args.B.extent(0) << "x" << trmm_args.B.extent(1)
                  << "x" << trmm_args.B.extent(2) << "," << options.warm_up_n
                  << "," << options.n << "," << time_in_seconds << ","
-                 << time_in_seconds / options.n << std::endl;
+                 << average_time << "," << flops << "," << gflops / average_time
+                 << ","
+                 << (gbytes_in_matrix * min_memory_transactions) / average_time
+                 << ","
+                 << (gbytes_in_matrix * max_memory_transactions) / average_time
+                 << std::endl;
 }
 
-static void __print_trmm_perf_test_options(options_t options) {
 #ifdef PERF_TEST_DEBUG
+static void __print_trmm_perf_test_options(options_t options) {
   printf("options.test      = %s\n", test_e_str[options.test].c_str());
   printf("options.loop      = %s\n", loop_e_str[options.loop].c_str());
   printf("options.start     = %dx%d,%dx%d\n", options.start.a.m,
@@ -116,84 +207,118 @@ static void __print_trmm_perf_test_options(options_t options) {
     printf("options.alpha     = %lf\n", options.blas_args.trmm.alpha);
   else if (std::is_same<float, default_scalar>::value)
     printf("options.alpha     = %f\n", options.blas_args.trmm.alpha);
-#endif  // PERF_TEST_DEBUG
   return;
 }
+#else
+static void __print_trmm_perf_test_options(options_t /*options*/) {
+  return;
+}
+#endif  // PERF_TEST_DEBUG
 
 /*************************** Internal templated fns **************************/
+// Need to take subviews on the device
+#if !defined(KOKKOS_ENABLE_CUDA) \
+  && !defined(KOKKOS_ENABLE_HIP) \
+  && !defined(KOKKOS_ENABLE_OPENMPTARGET)
 template <class scalar_type, class vta, class vtb, class device_type>
 void __do_trmm_serial_blas(options_t options, trmm_args_t trmm_args) {
-// Need to take subviews on the device
-#if !defined(KOKKOS_ENABLE_CUDA)
   uint32_t warm_up_n = options.warm_up_n;
   uint32_t n         = options.n;
   Kokkos::Timer timer;
 
   STATUS;
 
-  for (uint32_t i = 0; i < warm_up_n; ++i) {
-    auto A = Kokkos::subview(trmm_args.A, i, Kokkos::ALL(), Kokkos::ALL());
-    auto B = Kokkos::subview(trmm_args.B, i, Kokkos::ALL(), Kokkos::ALL());
+  for (uint32_t j = 0; j < warm_up_n; ++j) {
+    for (int i = 0; i < options.start.a.k; ++i) {
+      auto A = Kokkos::subview(trmm_args.A, i, Kokkos::ALL(), Kokkos::ALL());
+      auto B = Kokkos::subview(trmm_args.B, i, Kokkos::ALL(), Kokkos::ALL());
 
-    KokkosBlas::trmm(&trmm_args.side, &trmm_args.uplo, &trmm_args.trans,
-                     &trmm_args.diag, trmm_args.alpha, A, B);
+      KokkosBlas::trmm(&trmm_args.side, &trmm_args.uplo, &trmm_args.trans,
+                       &trmm_args.diag, trmm_args.alpha, A, B);
+    }
+    // Fence after submitting each batch operation
+    Kokkos::fence();
   }
 
-  Kokkos::fence();
   timer.reset();
-  for (uint32_t i = 0; i < n; ++i) {
-    auto A = Kokkos::subview(trmm_args.A, i, Kokkos::ALL(), Kokkos::ALL());
-    auto B = Kokkos::subview(trmm_args.B, i, Kokkos::ALL(), Kokkos::ALL());
+  for (uint32_t j = 0; j < n; ++j) {
+    for (int i = 0; i < options.start.a.k; ++i) {
+      auto A = Kokkos::subview(trmm_args.A, i, Kokkos::ALL(), Kokkos::ALL());
+      auto B = Kokkos::subview(trmm_args.B, i, Kokkos::ALL(), Kokkos::ALL());
 
-    KokkosBlas::trmm(&trmm_args.side, &trmm_args.uplo, &trmm_args.trans,
-                     &trmm_args.diag, trmm_args.alpha, A, B);
+      KokkosBlas::trmm(&trmm_args.side, &trmm_args.uplo, &trmm_args.trans,
+                       &trmm_args.diag, trmm_args.alpha, A, B);
+    }
+    // Fence after submitting each batch operation
+    Kokkos::fence();
   }
-  Kokkos::fence();
   __trmm_output_csv_row(options, trmm_args, timer.seconds());
-#else
-  std::cerr << std::string(__func__)
-            << " disabled since KOKKOS_ENABLE_CUDA is defined." << std::endl;
-#endif  // !KOKKOS_ENABLE_CUDA
   return;
 }
+#else
+template <class scalar_type, class vta, class vtb, class device_type>
+void __do_trmm_serial_blas(options_t /*options*/, trmm_args_t /*trmm_args*/) {
+  std::cerr << std::string(__func__)
+            << " disabled since KOKKOS_ENABLE_CUDA or KOKKOS_ENABLE_OPENMPTARGET is defined." << std::endl;
+  return;
+}
+#endif  // !KOKKOS_ENABLE_CUDA && !KOKKOS_ENABLE_OPENMPTARGET
 
+// Need to take subviews on the device
+#if !defined(KOKKOS_ENABLE_CUDA) \
+  && !defined(KOKKOS_ENABLE_HIP) \
+  && !defined(KOKKOS_ENABLE_OPENMPTARGET)
 template <class side, class uplo, class trans, class diag>
 void __do_trmm_serial_batched_template(options_t options,
                                        trmm_args_t trmm_args) {
-// Need to take subviews on the device
-#if !defined(KOKKOS_ENABLE_CUDA)
   uint32_t warm_up_n = options.warm_up_n;
   uint32_t n         = options.n;
   Kokkos::Timer timer;
-  using tag = Algo::Trmm::Unblocked;
+  using tag = KokkosBatched::Algo::Trmm::Unblocked;
 
-  for (uint32_t i = 0; i < warm_up_n; ++i) {
-    auto A = Kokkos::subview(trmm_args.A, i, Kokkos::ALL(), Kokkos::ALL());
-    auto B = Kokkos::subview(trmm_args.B, i, Kokkos::ALL(), Kokkos::ALL());
+  for (uint32_t j = 0; j < warm_up_n; ++j) {
+    for (int i = 0; i < options.start.a.k; ++i) {
+      auto A = Kokkos::subview(trmm_args.A, i, Kokkos::ALL(), Kokkos::ALL());
+      auto B = Kokkos::subview(trmm_args.B, i, Kokkos::ALL(), Kokkos::ALL());
 
-    SerialTrmm<side, uplo, trans, diag, tag>::invoke(trmm_args.alpha, A, B);
+      KokkosBatched::SerialTrmm<side, uplo, trans, diag, tag>::invoke(trmm_args.alpha, A, B);
+    }
+    // Fence after submitting each batch operation
+    Kokkos::fence();
   }
 
   timer.reset();
-  for (uint32_t i = 0; i < n; ++i) {
-    auto A = Kokkos::subview(trmm_args.A, i, Kokkos::ALL(), Kokkos::ALL());
-    auto B = Kokkos::subview(trmm_args.B, i, Kokkos::ALL(), Kokkos::ALL());
+  for (uint32_t j = 0; j < n; ++j) {
+    for (int i = 0; i < options.start.a.k; ++i) {
+      auto A = Kokkos::subview(trmm_args.A, i, Kokkos::ALL(), Kokkos::ALL());
+      auto B = Kokkos::subview(trmm_args.B, i, Kokkos::ALL(), Kokkos::ALL());
 
-    SerialTrmm<side, uplo, trans, diag, tag>::invoke(trmm_args.alpha, A, B);
+      KokkosBatched::SerialTrmm<side, uplo, trans, diag, tag>::invoke(trmm_args.alpha, A, B);
+    }
+    // Fence after submitting each batch operation
+    Kokkos::fence();
   }
-  Kokkos::fence();
   __trmm_output_csv_row(options, trmm_args, timer.seconds());
-#else
-  std::cerr << std::string(__func__)
-            << " disabled since KOKKOS_ENABLE_CUDA is defined." << std::endl;
-#endif  // !KOKKOS_ENABLE_CUDA
 }
+#else
+template <class side, class uplo, class trans, class diag>
+void __do_trmm_serial_batched_template(options_t /*options*/,
+                                       trmm_args_t /*trmm_args*/) {
+  std::cerr << std::string(__func__)
+            << " disabled since KOKKOS_ENABLE_CUDA or KOKKOS_ENABLE_OPENMPTARGET is defined." << std::endl;
+}
+#endif  // !KOKKOS_ENABLE_CUDA && !KOKKOS_ENABLE_OPENMPTARGET
 
 template <class scalar_type, class vta, class vtb, class device_type>
 void __do_trmm_serial_batched(options_t options, trmm_args_t trmm_args) {
   char __side = tolower(trmm_args.side), __uplo = tolower(trmm_args.uplo),
        __trans = tolower(trmm_args.trans);
   //__diag = tolower(diag[0]);
+
+  using KokkosBatched::Diag;
+  using KokkosBatched::Side;
+  using KokkosBatched::Trans;
+  using KokkosBatched::Uplo;
 
   STATUS;
 
@@ -286,7 +411,9 @@ void __do_trmm_serial_batched(options_t options, trmm_args_t trmm_args) {
   return;
 }
 
-#if !defined(KOKKOS_ENABLE_CUDA) && !defined(KOKKOS_ENABLE_HIP)
+#if !defined(KOKKOS_ENABLE_CUDA) \
+  && !defined(KOKKOS_ENABLE_HIP) \
+  && !defined(KOKKOS_ENABLE_OPENMPTARGET)
 template <class ExecutionSpace>
 struct parallel_blas_trmm {
   trmm_args_t trmm_args_;
@@ -302,11 +429,14 @@ struct parallel_blas_trmm {
                      &trmm_args_.diag, trmm_args_.alpha, svA, svB);
   }
 };
-#endif  // !KOKKOS_ENABLE_CUDA
+#endif  // !KOKKOSKERNELS_ENABLE_DEVICE
 
 template <class scalar_type, class vta, class vtb, class device_type>
 void __do_trmm_parallel_blas(options_t options, trmm_args_t trmm_args) {
-#if !defined(KOKKOS_ENABLE_CUDA) && !defined(KOKKOS_ENABLE_HIP)
+// TODO: Note why this is disabled on CUDA, OPENMPTARGET and HIP
+#if !defined(KOKKOS_ENABLE_CUDA) \
+  && !defined(KOKKOS_ENABLE_HIP) \
+  && !defined(KOKKOS_ENABLE_OPENMPTARGET)
   uint32_t warm_up_n = options.warm_up_n;
   uint32_t n         = options.n;
   Kokkos::Timer timer;
@@ -316,24 +446,32 @@ void __do_trmm_parallel_blas(options_t options, trmm_args_t trmm_args) {
 
   STATUS;
 
-  Kokkos::parallel_for("parallelBlasWarmUpLoopTrmm",
-                       Kokkos::RangePolicy<execution_space>(0, warm_up_n),
-                       parallel_blas_trmm_functor);
-  Kokkos::fence();
+  for (uint32_t j = 0; j < warm_up_n; ++j) {
+    Kokkos::parallel_for(
+        "parallelBlasWarmUpLoopTrmm",
+        Kokkos::RangePolicy<execution_space>(0, options.start.a.k),
+        parallel_blas_trmm_functor);
+    // Fence after each batch operation
+    Kokkos::fence();
+  }
 
   timer.reset();
-  Kokkos::parallel_for("parallelBlasTimedLoopTrmm",
-                       Kokkos::RangePolicy<execution_space>(0, n),
-                       parallel_blas_trmm_functor);
-  Kokkos::fence();
+  for (uint32_t j = 0; j < n; ++j) {
+    Kokkos::parallel_for(
+        "parallelBlasTimedLoopTrmm",
+        Kokkos::RangePolicy<execution_space>(0, options.start.a.k),
+        parallel_blas_trmm_functor);
+    // Fence after each batch operation
+    Kokkos::fence();
+  }
   __trmm_output_csv_row(options, trmm_args, timer.seconds());
 #else
   std::cerr << std::string(__func__)
-            << " disabled since KOKKOS_ENABLE_CUDA and/or KOKKOS_ENABLE_HIP is "
-               "defined."
+            << " disabled since KOKKOS_ENABLE_CUDA, KOKKOS_ENABLE_HIP "
+               "or KOKKOS_ENABLE_OPENMPTARGET is defined."
             << std::endl;
   __trmm_output_csv_row(options, trmm_args, -1);
-#endif  // !KOKKOS_ENABLE_CUDA
+#endif  // !KOKKOS_ENABLE_DEVICE
   return;
 }
 
@@ -349,7 +487,7 @@ struct parallel_batched_trmm {
     auto svA = Kokkos::subview(trmm_args_.A, i, Kokkos::ALL(), Kokkos::ALL());
     auto svB = Kokkos::subview(trmm_args_.B, i, Kokkos::ALL(), Kokkos::ALL());
 
-    SerialTrmm<side, uplo, trans, diag, tag>::invoke(trmm_args_.alpha, svA,
+    KokkosBatched::SerialTrmm<side, uplo, trans, diag, tag>::invoke(trmm_args_.alpha, svA,
                                                      svB);
   }
 };
@@ -360,7 +498,7 @@ void __do_trmm_parallel_batched_template(options_t options,
   uint32_t warm_up_n = options.warm_up_n;
   uint32_t n         = options.n;
   Kokkos::Timer timer;
-  using tag             = Algo::Trmm::Unblocked;
+  using tag             = KokkosBatched::Algo::Trmm::Unblocked;
   using execution_space = typename device_type::execution_space;
   using functor_type =
       parallel_batched_trmm<side, uplo, trans, diag, tag, execution_space>;
@@ -368,16 +506,24 @@ void __do_trmm_parallel_batched_template(options_t options,
 
   STATUS;
 
-  Kokkos::parallel_for("parallelBatchedWarmUpLoopTrmm",
-                       Kokkos::RangePolicy<execution_space>(0, warm_up_n),
-                       parallel_batched_trmm_functor);
-  Kokkos::fence();
+  for (uint32_t j = 0; j < warm_up_n; ++j) {
+    Kokkos::parallel_for(
+        "parallelBatchedWarmUpLoopTrmm",
+        Kokkos::RangePolicy<execution_space>(0, options.start.a.k),
+        parallel_batched_trmm_functor);
+    // Fence after each batch operation
+    Kokkos::fence();
+  }
 
   timer.reset();
-  Kokkos::parallel_for("parallelBatchedTimedLoopTrmm",
-                       Kokkos::RangePolicy<execution_space>(0, n),
-                       parallel_batched_trmm_functor);
-  Kokkos::fence();
+  for (uint32_t j = 0; j < n; ++j) {
+    Kokkos::parallel_for(
+        "parallelBatchedTimedLoopTrmm",
+        Kokkos::RangePolicy<execution_space>(0, options.start.a.k),
+        parallel_batched_trmm_functor);
+    // Fence after each batch operation
+    Kokkos::fence();
+  }
   __trmm_output_csv_row(options, trmm_args, timer.seconds());
 
   return;
@@ -388,6 +534,11 @@ void __do_trmm_parallel_batched(options_t options, trmm_args_t trmm_args) {
   char __side = tolower(trmm_args.side), __uplo = tolower(trmm_args.uplo),
        __trans = tolower(trmm_args.trans);
   //__diag = tolower(diag[0]);
+
+  using KokkosBatched::Diag;
+  using KokkosBatched::Side;
+  using KokkosBatched::Trans;
+  using KokkosBatched::Uplo;
 
   STATUS;
 
@@ -498,19 +649,24 @@ trmm_args_t __do_setup(options_t options, matrix_dims_t dim) {
   trmm_args.uplo  = options.blas_args.trmm.trmm_args.c_str()[1];
   trmm_args.trans = options.blas_args.trmm.trmm_args.c_str()[2];
   trmm_args.diag  = options.blas_args.trmm.trmm_args.c_str()[3];
-  trmm_args.A     = vta("trmm_args.A", options.n, dim.a.m, dim.a.n);
-  trmm_args.B     = vtb("trmm_args.B", options.n, dim.b.m, dim.b.n);
+  trmm_args.A     = vta("trmm_args.A", dim.a.k, dim.a.m, dim.a.n);
+  trmm_args.B     = vtb("trmm_args.B", dim.b.k, dim.b.m, dim.b.n);
   trmm_args.alpha = options.blas_args.trmm.alpha;
   host_A          = Kokkos::create_mirror_view(trmm_args.A);
 
-  Kokkos::fill_random(trmm_args.A, rand_pool,
-                      Kokkos::rand<Kokkos::Random_XorShift64<execution_space>,
-                                   scalar_type>::max());
-  Kokkos::deep_copy(host_A, trmm_args.A);
+  {
+    Kokkos::View<double***, default_layout, default_device> tmp(
+        "tmp", trmm_args.A.extent(0), trmm_args.A.extent(1),
+        trmm_args.A.extent(2));
+    Kokkos::fill_random(tmp, rand_pool,
+                        Kokkos::rand<Kokkos::Random_XorShift64<execution_space>,
+                                     double>::max());
+    Kokkos::deep_copy(host_A, tmp);
+  }
 
   if (trmm_args.uplo == 'U' || trmm_args.uplo == 'u') {
     // Make A upper triangular
-    for (uint32_t k = 0; k < options.n; ++k) {
+    for (int k = 0; k < dim.a.k; ++k) {
       auto A = Kokkos::subview(host_A, k, Kokkos::ALL(), Kokkos::ALL());
       for (int i = 1; i < dim.a.m; i++) {
         for (int j = 0; j < i; j++) {
@@ -522,7 +678,7 @@ trmm_args_t __do_setup(options_t options, matrix_dims_t dim) {
     // Make A lower triangular
     // Kokkos::parallel_for("toLowerLoop", options.n, KOKKOS_LAMBDA (const int&
     // i) {
-    for (uint32_t k = 0; k < options.n; ++k) {
+    for (int k = 0; k < dim.a.k; ++k) {
       auto A = Kokkos::subview(host_A, k, Kokkos::ALL(), Kokkos::ALL());
       for (int i = 0; i < dim.a.m - 1; i++) {
         for (int j = i + 1; j < dim.a.n; j++) {
@@ -533,7 +689,7 @@ trmm_args_t __do_setup(options_t options, matrix_dims_t dim) {
   }
 
   if (trmm_args.diag == 'U' || trmm_args.diag == 'u') {
-    for (uint32_t k = 0; k < options.n; ++k) {
+    for (int k = 0; k < dim.a.k; ++k) {
       auto A = Kokkos::subview(host_A, k, Kokkos::ALL(), Kokkos::ALL());
       for (int i = 0; i < min_dim; i++) {
         A(i, i) = scalar_type(1);
@@ -542,9 +698,15 @@ trmm_args_t __do_setup(options_t options, matrix_dims_t dim) {
   }
   Kokkos::deep_copy(trmm_args.A, host_A);
 
-  Kokkos::fill_random(trmm_args.B, rand_pool,
-                      Kokkos::rand<Kokkos::Random_XorShift64<execution_space>,
-                                   scalar_type>::max());
+  {
+    Kokkos::View<double***, default_layout, default_device> tmp(
+        "tmp", trmm_args.B.extent(0), trmm_args.B.extent(1),
+        trmm_args.B.extent(2));
+    Kokkos::fill_random(tmp, rand_pool,
+                        Kokkos::rand<Kokkos::Random_XorShift64<execution_space>,
+                                     double>::max());
+    Kokkos::deep_copy(trmm_args.B, tmp);
+  }
 
   return trmm_args;
 }
@@ -566,8 +728,8 @@ void __do_loop_and_invoke(options_t options,
   for (cur_dims = options.start;
        cur_dims.a.m <= options.stop.a.m && cur_dims.a.n <= options.stop.a.n &&
        cur_dims.b.m <= options.stop.b.m && cur_dims.b.n <= options.stop.b.n;
-       cur_dims.a.m *= options.step, cur_dims.a.n *= options.step,
-      cur_dims.b.m *= options.step, cur_dims.b.n *= options.step) {
+       cur_dims.a.m += options.step, cur_dims.a.n += options.step,
+      cur_dims.b.m += options.step, cur_dims.b.n += options.step) {
     trmm_args =
         __do_setup<default_scalar, view_type_3d, view_type_3d, default_device>(
             options, cur_dims);

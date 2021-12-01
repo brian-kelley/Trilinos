@@ -1,3 +1,42 @@
+//@HEADER
+// ************************************************************************
+//
+//                 Belos: Block Linear Solvers Package
+//                  Copyright 2004 Sandia Corporation
+//
+// Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
+// the U.S. Government retains certain rights in this software.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the Corporation nor the names of the
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY SANDIA CORPORATION "AS IS" AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL SANDIA CORPORATION OR THE
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// ************************************************************************
+//@HEADER
+
 #ifndef BELOS_TPETRA_GMRES_HPP
 #define BELOS_TPETRA_GMRES_HPP
 
@@ -145,7 +184,7 @@ sortRitzValues (const LO m,
   LO i = 0;
   LO next_index = 0;
   real_type next_value = std::abs (RR[0]);
-  for (int i = 1; i < m; ++i) {
+  for (i = 1; i < m; ++i) {
     if (next_value < std::abs (RR[i])) {
       next_index = i;
       next_value = std::abs (RR[i]);
@@ -154,6 +193,7 @@ sortRitzValues (const LO m,
   ritzValues[0] = RR[next_index];
   RR[next_index] = RR[0];
 
+  i = 0;
   if (! STS::isComplex) {
     if (RR[i].imag() != 0.0) {
 
@@ -470,7 +510,12 @@ protected:
     const SC one  = STS::one ();
 
     // timers
-    Teuchos::RCP< Teuchos::Time > spmvTimer = Teuchos::TimeMonitor::getNewCounter ("Gmres::Sparse Mat-Vec");
+    Teuchos::RCP< Teuchos::Time > spmvTimer  = Teuchos::TimeMonitor::getNewCounter ("Gmres::matrix-apply ");
+    Teuchos::RCP< Teuchos::Time > precTimer  = Teuchos::TimeMonitor::getNewCounter ("Gmres::precondition ");
+    Teuchos::RCP< Teuchos::Time > orthTimer  = Teuchos::TimeMonitor::getNewCounter ("Gmres::orthogonalize");
+
+    Teuchos::RCP< Teuchos::Time > totalTimer = Teuchos::TimeMonitor::getNewCounter ("Gmres::total        ");
+    Teuchos::TimeMonitor GmresTimer (*totalTimer);
 
     // initialize output parameters
     SolverOutput<SC> output {};
@@ -499,7 +544,7 @@ protected:
     vec_type Y (B.getMap (), zeroOut);
     vec_type MP (B.getMap (), zeroOut);
     MV Q (B.getMap (), restart+1, zeroOut);
-    vec_type P = * (Q.getVectorNonConst (0));
+    vec_type P0 = * (Q.getVectorNonConst (0));
 
     // initial residual (making sure R = B - Ax)
     {
@@ -509,11 +554,14 @@ protected:
     R.update (one, B, -one);
     b0_norm = R.norm2 (); // residual norm, not-preconditioned
     if (input.precoSide == "left") {
-      M.apply (R, P);
-      b_norm = P.norm2 (); // residual norm, left-preconditioned
+      {
+        Teuchos::TimeMonitor LocalTimer (*precTimer);
+        M.apply (R, P0);
+      }
+      b_norm = P0.norm2 (); // residual norm, left-preconditioned
     }
     else {
-      Tpetra::deep_copy (P, R);
+      Tpetra::deep_copy (P0, R);
       b_norm = b0_norm;
     }
     real_type metric = this->getConvergenceMetric (b0_norm, b0_norm, input);
@@ -528,7 +576,7 @@ protected:
       output.numIters = 0;
       output.converged = true;
       // return residual norm as B
-      Tpetra::deep_copy (B, P);
+      Tpetra::deep_copy (B, P0);
       return output;
     } else if (outPtr != NULL) {
       *outPtr << "Initial guess' residual norm " << b0_norm << endl;
@@ -550,7 +598,7 @@ protected:
     #endif
 
     // initialize starting vector
-    P.scale (one / b_norm);
+    P0.scale (one / b_norm);
     y[0] = SC {b_norm};
 
     // main loop
@@ -583,7 +631,10 @@ protected:
           A.apply (P, AP);
         }
         else if (input.precoSide == "right") {
-          M.apply (P, MP);
+          {
+            Teuchos::TimeMonitor LocalTimer (*precTimer);
+            M.apply (P, MP);
+          }
           {
             Teuchos::TimeMonitor LocalTimer (*spmvTimer);
             A.apply (MP, AP);
@@ -594,11 +645,18 @@ protected:
             Teuchos::TimeMonitor LocalTimer (*spmvTimer);
             A.apply (P, MP);
           }
-          M.apply (MP, AP);
+          {
+            Teuchos::TimeMonitor LocalTimer (*precTimer);
+            M.apply (MP, AP);
+          }
         }
         output.numIters++;
 
-        const int rank = this->projectAndNormalize (iter, input, Q, H, h);
+        int rank = 0;
+        {
+          Teuchos::TimeMonitor LocalTimer (*orthTimer);
+          rank = this->projectAndNormalize (iter, input, Q, H, h);
+        }
         // Save H if Ritz values are requested
         if (input.computeRitzValues && output.numRests == 0) {
           blas.COPY (iter+2, &H(0, iter), 1, &G(0, iter), 1);
@@ -649,7 +707,10 @@ protected:
         if (input.precoSide == "right") {
           //MVT::MvTimesMatAddMv (one, *Qj, y, zero, R);
           MVT::MvTimesMatAddMv (one, *Qj, y_iter, zero, R);
-          M.apply (R, MP);
+          {
+            Teuchos::TimeMonitor LocalTimer (*precTimer);
+            M.apply (R, MP);
+          }
           X.update (one, MP, one);
         }
         else {
@@ -681,16 +742,19 @@ protected:
         if (iter >= restart) {
           // Restart: Initialize starting vector for restart
           iter = 0;
-          P = * (Q.getVectorNonConst (0));
+          P0 = * (Q.getVectorNonConst (0));
           if (input.precoSide == "left") {
-            M.apply (R, P);
-            r_norm = P.norm2 (); // norm
+            {
+              Teuchos::TimeMonitor LocalTimer (*precTimer);
+              M.apply (R, P0);
+            }
+            r_norm = P0.norm2 (); // norm
           }
           else {
             // set the starting vector
-            Tpetra::deep_copy (P, R);
+            Tpetra::deep_copy (P0, R);
           }
-          P.scale (one / r_norm);
+          P0.scale (one / r_norm);
           y[0] = SC {r_norm};
           for (int i=1; i < restart+1; i++) {
             y[i] = STS::zero ();
@@ -716,7 +780,7 @@ protected:
     return output;
   }
 
-  // ! compute condition number
+  // ! compute matrix norm
   real_type
   computeNorm(dense_matrix_type &T)
   {

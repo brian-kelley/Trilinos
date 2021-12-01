@@ -954,6 +954,12 @@ namespace Xpetra {
     //! @name Methods implementing Matrix
     //@{
 
+    //! sparse matrix-multivector multiplication for the region layout matrices (currently no blocked implementation)
+    virtual void apply(const MultiVector &X, MultiVector &Y, Teuchos::ETransp mode, Scalar alpha, Scalar beta, bool sumInterfaceValues,
+                 const RCP<Xpetra::Import<LocalOrdinal, GlobalOrdinal, Node> >& regionInterfaceImporter,
+                 const Teuchos::ArrayRCP<LocalOrdinal>& regionInterfaceLIDs) const
+    { }
+
     //! \brief Computes the sparse matrix-multivector multiplication.
     /*! Performs \f$Y = \alpha A^{\textrm{mode}} X + \beta Y\f$, with one special exceptions:
       - if <tt>beta == 0</tt>, apply() overwrites \c Y, so that any values in \c Y (including NaNs) are ignored.
@@ -1480,14 +1486,27 @@ namespace Xpetra {
 
 #ifdef HAVE_XPETRA_KOKKOS_REFACTOR
     typedef typename CrsMatrix::local_matrix_type local_matrix_type;
-
-    /// \brief Access the underlying local Kokkos::CrsMatrix object
+#ifdef TPETRA_ENABLE_DEPRECATED_CODE
     local_matrix_type getLocalMatrix () const {
+      return getLocalMatrixDevice();
+    }
+#endif
+    /// \brief Access the underlying local Kokkos::CrsMatrix object
+    local_matrix_type getLocalMatrixDevice () const {
       if (Rows() == 1 && Cols () == 1) {
-        return getMatrix(0,0)->getLocalMatrix();
+        return getMatrix(0,0)->getLocalMatrixDevice();
       }
       throw Xpetra::Exceptions::RuntimeError("BlockedCrsMatrix::getLocalMatrix(): operation not supported.");
     }
+    /// \brief Access the underlying local Kokkos::CrsMatrix object
+    typename local_matrix_type::HostMirror getLocalMatrixHost () const {
+      if (Rows() == 1 && Cols () == 1) {
+        return getMatrix(0,0)->getLocalMatrixHost();
+      }
+      throw Xpetra::Exceptions::RuntimeError("BlockedCrsMatrix::getLocalMatrix(): operation not supported.");
+    }
+
+
 #endif
 
 #ifdef HAVE_XPETRA_THYRA

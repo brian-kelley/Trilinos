@@ -17,12 +17,12 @@ namespace Tacho {
   public:
     typedef double value_type;
 
-    typedef typename UseThisDevice<Kokkos::Cuda>::device_type device_type;
+    typedef typename UseThisDevice<Kokkos::Cuda>::type device_type;
 
     typedef typename device_type::execution_space exec_space;
     typedef typename device_type::memory_space exec_memory_space;    
     
-    typedef typename UseThisDevice<Kokkos::DefaultHostExecutionSpace>::device_type host_device_type;    
+    typedef typename UseThisDevice<Kokkos::DefaultHostExecutionSpace>::type host_device_type;    
     typedef typename host_device_type::execution_space host_space;
     typedef typename host_device_type::memory_space host_memory_space;    
 
@@ -82,7 +82,7 @@ namespace Tacho {
         printf("cuSolver: Analyze\n");
         printf("=================\n");
       }
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
 
       _m = m; 
 
@@ -140,7 +140,7 @@ namespace Tacho {
         printf("cuSolver: Factorize\n");
         printf("===================\n");
       }
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
 
       timer.reset();
       size_t internalDataInBytes, workspaceInBytes;
@@ -186,7 +186,7 @@ namespace Tacho {
         printf("cuSolver: Solve\n");
         printf("===============\n");
       }
-      Kokkos::Impl::Timer timer;
+      Kokkos::Timer timer;
       
       timer.reset();
       /// solve A x = t

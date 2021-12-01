@@ -132,6 +132,7 @@ namespace MueLu {
     if (name == "print initial parameters") { ss << "<Parameter name=\"print initial parameters\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "print unused parameters") { ss << "<Parameter name=\"print unused parameters\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: damping factor") { ss << "<Parameter name=\"sa: damping factor\" type=\"double\" value=" << value << "/>"; return ss.str(); }      
+    if (name == "sa: use filtered matrix") { ss << "<Parameter name=\"sa: use filtered matrix\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: eigenvalue estimate num iterations") { ss << "<Parameter name=\"sa: eigenvalue estimate num iterations\" type=\"int\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: use rowsumabs diagonal scaling") { ss << "<Parameter name=\"sa: use rowsumabs diagonal scaling\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
     if (name == "sa: enforce constraints") { ss << "<Parameter name=\"sa: enforce constraints\" type=\"bool\" value=" << value << "/>"; return ss.str(); }      
@@ -184,6 +185,7 @@ namespace MueLu {
   "<Parameter name=\"parameterlist: syntax\" type=\"string\" value=\"muelu\"/>"
   "<Parameter name=\"hierarchy label\" type=\"string\" value=\"\"/>"
   "<ParameterList name=\"matvec params\"/>"
+  "<Parameter name=\"half precision\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"smoother: pre or post\" type=\"string\" value=\"both\"/>"
   "<Parameter name=\"smoother: type\" type=\"string\" value=\"RELAXATION\"/>"
   "<Parameter name=\"smoother: pre type\" type=\"string\" value=\"RELAXATION\"/>"
@@ -202,6 +204,8 @@ namespace MueLu {
   "<Parameter name=\"aggregation: mode\" type=\"string\" value=\"uncoupled\"/>"
   "<Parameter name=\"aggregation: ordering\" type=\"string\" value=\"natural\"/>"
   "<Parameter name=\"aggregation: drop scheme\" type=\"string\" value=\"classical\"/>"
+  "<Parameter name=\"aggregation: classical scheme\" type=\"string\" value=\"direct\"/>"
+  "<Parameter name=\"aggregation: row sum drop tol\" type=\"double\" value=\"-1.0\"/>"
   "<Parameter name=\"aggregation: block diagonal: interleaved blocksize\" type=\"int\" value=\"3\"/>"
   "<Parameter name=\"aggregation: number of random vectors\" type=\"int\" value=\"10\"/>"
   "<Parameter name=\"aggregation: number of times to pre or post smooth\" type=\"int\" value=\"10\"/>"
@@ -221,8 +225,11 @@ namespace MueLu {
   "<Parameter name=\"aggregation: brick z Dirichlet\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: max selected neighbors\" type=\"int\" value=\"0\"/>"
   "<Parameter name=\"aggregation: Dirichlet threshold\" type=\"double\" value=\"0.0\"/>"
+  "<Parameter name=\"aggregation: greedy Dirichlet\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: deterministic\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"aggregation: coloring algorithm\" type=\"string\" value=\"serial\"/>"
+  "<Parameter name=\"aggregation: coloring: use color graph\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"aggregation: coloring: localize color graph\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 1\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 2a\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"aggregation: enable phase 2b\" type=\"bool\" value=\"true\"/>"
@@ -264,6 +271,7 @@ namespace MueLu {
   "<Parameter name=\"print initial parameters\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"print unused parameters\" type=\"bool\" value=\"true\"/>"
   "<Parameter name=\"transpose: use implicit\" type=\"bool\" value=\"false\"/>"
+  "<Parameter name=\"nullspace: calculate rotations\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"restriction: scale nullspace\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"use kokkos refactor\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"synchronize factory timers\" type=\"bool\" value=\"false\"/>"
@@ -271,6 +279,7 @@ namespace MueLu {
   "<Parameter name=\"multigrid algorithm\" type=\"string\" value=\"sa\"/>"
   "<Parameter name=\"toggle: mode\" type=\"string\" value=\"semicoarsen\"/>"
   "<Parameter name=\"semicoarsen: coarsen rate\" type=\"int\" value=\"3\"/>"
+  "<Parameter name=\"semicoarsen: piecewise constant\" type=\"bool\" value=\"false\"/>"
   "<Parameter name=\"semicoarsen: number of levels\" type=\"int\" value=\"3\"/>"
   "<Parameter name=\"linedetection: orientation\" type=\"string\" value=\"vertical\"/>"
   "<Parameter name=\"linedetection: num layers\" type=\"int\" value=\"-1\"/>"
@@ -283,7 +292,6 @@ namespace MueLu {
   "<Parameter name=\"sa: max eigenvalue\" type=\"double\" value=\"-1.0\"/>"
   "<Parameter name=\"sa: rowsumabs diagonal replacement tolerance\" type=\"double\" value=\"-1.0\"/>"
   "<Parameter name=\"sa: rowsumabs diagonal replacement value\" type=\"double\" value=\"0.0\"/>"
-  "<Parameter name=\"interp: interpolation order\" type=\"int\" value=\"1\"/>"
   "<Parameter name=\"interp: build coarse coordinates\" type=\"bool\" value=\"true\"/>"
   "<ParameterList name=\"transfer: params\"/>"
   "<Parameter name=\"pcoarsen: element\" type=\"string\" value=\"\"/>"
@@ -343,7 +351,10 @@ namespace MueLu {
   "<Parameter name=\"reuse: type\" type=\"string\" value=\"none\"/>"
   "<Parameter name=\"use external multigrid package\" type=\"string\" value=\"none\"/>"
   "<ParameterList name=\"amgx:params\"/>"
-  "<Parameter name=\"debug: graph level\" type=\"int\" value=\"-1\"/>"
+  "<Parameter name=\"debug: graph level\" type=\"int\" value=\"-2\"/>"
+  "<Parameter name=\"maxwell1: mode\" type=\"string\" value=\"standard\"/>"
+  "<ParameterList name=\"maxwell1: 11list\"/>"
+  "<ParameterList name=\"maxwell1: 22list\"/>"
   "<Parameter name=\"refmaxwell: mode\" type=\"string\" value=\"additive\"/>"
   "<Parameter name=\"refmaxwell: disable addon\" type=\"bool\" value=\"true\"/>"
   "<ParameterList name=\"refmaxwell: 11list\"/>"
@@ -568,6 +579,8 @@ namespace MueLu {
       
          ("matvec params","matvec params")
       
+         ("half precision","half precision")
+      
          ("smoother: pre or post","smoother: pre or post")
       
          ("smoother: type","smoother: type")
@@ -603,6 +616,10 @@ namespace MueLu {
          ("aggregation: ordering","aggregation: ordering")
       
          ("aggregation: drop scheme","aggregation: drop scheme")
+      
+         ("aggregation: classical scheme","aggregation: classical scheme")
+      
+         ("aggregation: row sum drop tol","aggregation: row sum drop tol")
       
          ("aggregation: block diagonal: interleaved blocksize","aggregation: block diagonal: interleaved blocksize")
       
@@ -642,9 +659,15 @@ namespace MueLu {
       
          ("aggregation: Dirichlet threshold","aggregation: Dirichlet threshold")
       
+         ("aggregation: greedy Dirichlet","aggregation: greedy Dirichlet")
+      
          ("aggregation: deterministic","aggregation: deterministic")
       
          ("aggregation: coloring algorithm","aggregation: coloring algorithm")
+      
+         ("aggregation: coloring: use color graph","aggregation: coloring: use color graph")
+      
+         ("aggregation: coloring: localize color graph","aggregation: coloring: localize color graph")
       
          ("aggregation: enable phase 1","aggregation: enable phase 1")
       
@@ -728,6 +751,8 @@ namespace MueLu {
       
          ("transpose: use implicit","transpose: use implicit")
       
+         ("nullspace: calculate rotations","nullspace: calculate rotations")
+      
          ("restriction: scale nullspace","restriction: scale nullspace")
       
          ("use kokkos refactor","use kokkos refactor")
@@ -742,6 +767,8 @@ namespace MueLu {
       
          ("semicoarsen: coarsen rate","semicoarsen: coarsen rate")
       
+         ("semicoarsen: piecewise constant","semicoarsen: piecewise constant")
+      
          ("semicoarsen: number of levels","semicoarsen: number of levels")
       
          ("linedetection: orientation","linedetection: orientation")
@@ -750,7 +777,7 @@ namespace MueLu {
       
          ("aggregation: damping factor","sa: damping factor")
       
-         ("sa: use filtered matrix","sa: use filtered matrix")
+         ("aggregation aux: enable","sa: use filtered matrix")
       
          ("sa: calculate eigenvalue estimate","sa: calculate eigenvalue estimate")
       
@@ -765,8 +792,6 @@ namespace MueLu {
          ("not supported by ML","sa: rowsumabs diagonal replacement tolerance")
       
          ("not supported by ML","sa: rowsumabs diagonal replacement value")
-      
-         ("interp: interpolation order","interp: interpolation order")
       
          ("interp: build coarse coordinates","interp: build coarse coordinates")
       
@@ -887,6 +912,12 @@ namespace MueLu {
          ("amgx:params","amgx:params")
       
          ("debug: graph level","debug: graph level")
+      
+         ("maxwell1: mode","maxwell1: mode")
+      
+         ("maxwell1: 11list","maxwell1: 11list")
+      
+         ("maxwell1: 22list","maxwell1: 22list")
       
          ("refmaxwell: mode","refmaxwell: mode")
       

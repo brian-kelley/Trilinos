@@ -26,6 +26,7 @@ template<class Scalar>
 StepperStaggeredForwardSensitivity<Scalar>::
 StepperStaggeredForwardSensitivity()
 {
+  this->setStepperName(        "StaggeredForwardSensitivity");
   this->setStepperType(        "StaggeredForwardSensitivity");
   this->setParams(Teuchos::null, Teuchos::null);
 }
@@ -39,6 +40,7 @@ StepperStaggeredForwardSensitivity(
   const Teuchos::RCP<Teuchos::ParameterList>& sens_pList)
 {
   // Set all the input parameters and call initialize
+  this->setStepperName(        "StaggeredForwardSensitivity");
   this->setStepperType(        "StaggeredForwardSensitivity");
   this->setParams(pList, sens_pList);
   this->setModel(appModel);
@@ -87,7 +89,7 @@ setModel(
 template<class Scalar>
 Teuchos::RCP<const Thyra::ModelEvaluator<Scalar> >
 StepperStaggeredForwardSensitivity<Scalar>::
-getModel()
+getModel() const
 {
   return combined_fsa_model_;
 }
@@ -136,6 +138,7 @@ takeStep(
     RCP<SolutionState<Scalar> > state = solutionHistory->getCurrentState();
     RCP<DMVPV> X, XDot, XDotDot;
     X = rcp_dynamic_cast<DMVPV>(state->getX(),true);
+
     XDot = rcp_dynamic_cast<DMVPV>(state->getXDot(),true);
     if (state->getXDotDot() != Teuchos::null)
       XDotDot = rcp_dynamic_cast<DMVPV>(state->getXDotDot(),true);
@@ -272,6 +275,7 @@ describe(
    Teuchos::FancyOStream               &out,
    const Teuchos::EVerbosityLevel      verbLevel) const
 {
+  out.setOutputToRootOnly(0);
   out << std::endl;
   Stepper<Scalar>::describe(out, verbLevel);
 
@@ -294,6 +298,7 @@ describe(
 template<class Scalar>
 bool StepperStaggeredForwardSensitivity<Scalar>::isValidSetup(Teuchos::FancyOStream & out) const
 {
+  out.setOutputToRootOnly(0);
   bool isValidSetup = true;
 
   if ( !Stepper<Scalar>::isValidSetup(out) ) isValidSetup = false;

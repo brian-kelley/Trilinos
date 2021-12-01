@@ -473,7 +473,7 @@ SupportGraph<MatrixType>::findSupport ()
   // Create the CrsMatrix for the support graph
   Support_ = rcp (new crs_matrix_type (A_local_->getRowMap(),
                                        A_local_->getColMap(),
-                                       localnumnz, Tpetra::StaticProfile));
+                                       localnumnz));
 
   // Fill in the matrix with the stl vectors for each row
   for (size_t row = 0; row < num_verts; ++row) {
@@ -642,9 +642,7 @@ apply (const Tpetra::MultiVector<scalar_type,
     // we need to create an auxiliary vector, Xcopy
     RCP<const MV> Xcopy;
     {
-      auto X_lcl_host = X.getLocalView<Kokkos::HostSpace> ();
-      auto Y_lcl_host = Y.getLocalView<Kokkos::HostSpace> ();
-      if (X_lcl_host.data () == Y_lcl_host.data ()) {
+      if (X.aliases(Y)) {
         Xcopy = rcp (new MV (X, Teuchos::Copy));
       } else {
         Xcopy = rcpFromRef (X);

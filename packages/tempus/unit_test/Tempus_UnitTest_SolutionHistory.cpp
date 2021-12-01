@@ -6,22 +6,13 @@
 // ****************************************************************************
 // @HEADER
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_XMLParameterListHelpers.hpp"
-#include "Teuchos_TimeMonitor.hpp"
-#include "Teuchos_DefaultComm.hpp"
-
-#include "Thyra_VectorStdOps.hpp"
+#include "Tempus_UnitTest_Utils.hpp"
 
 #include "Tempus_SolutionHistory.hpp"
 #include "Tempus_InterpolatorFactory.hpp"
 
-#include "../TestModels/SinCosModel.hpp"
 #include "../TestModels/DahlquistTestModel.hpp"
-#include "../TestUtils/Tempus_ConvergenceTestUtils.hpp"
 
-#include <fstream>
-#include <vector>
 
 namespace Tempus_Unit_Test {
 
@@ -31,7 +22,6 @@ using Teuchos::rcp_const_cast;
 using Teuchos::rcp_dynamic_cast;
 using Teuchos::ParameterList;
 using Teuchos::sublist;
-using Teuchos::getParametersFromXmlFile;
 
 
 // ************************************************************
@@ -43,7 +33,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, Default_Construction)
                                                  // as no State is set.
 
   auto model = rcp(new Tempus_Test::SinCosModel<double>());
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSolution = rcp_const_cast<Thyra::VectorBase<double> >(inArgsIC.get_x());
   auto icState = Tempus::createSolutionStateX<double>(icSolution);
   sh->addState(icState);
@@ -81,7 +71,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, Full_Construction)
 
   auto history = rcp(new std::vector<RCP<Tempus::SolutionState<double> > >);;
   auto model = rcp(new Tempus_Test::SinCosModel<double>());
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSolution = rcp_const_cast<Thyra::VectorBase<double> >(inArgsIC.get_x());
   Teuchos::RCP<Tempus::SolutionState<double> >
     icState = Tempus::createSolutionStateX<double>(icSolution);
@@ -140,7 +130,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, addState_With_Keep_Newest)
                                                  // as no State is set.
 
   auto model = rcp(new Tempus_Test::DahlquistTestModel<double>(-1.0, false));
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSoln = rcp_const_cast<Thyra::VectorBase<double> >(inArgsIC.get_x());
   auto state0 = Tempus::createSolutionStateX<double>(icSoln);
   state0->setTime (0.0);
@@ -230,7 +220,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, addState_With_Undo)
                                                  // as no State is set.
 
   auto model = rcp(new Tempus_Test::DahlquistTestModel<double>(-1.0, false));
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSoln = rcp_const_cast<Thyra::VectorBase<double> >(inArgsIC.get_x());
   auto state0 = Tempus::createSolutionStateX<double>(icSoln);
   state0->setTime (0.0);
@@ -347,7 +337,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, addState_With_Static)
   sh->setStorageLimit(7);
 
   auto model = rcp(new Tempus_Test::DahlquistTestModel<double>(-1.0, false));
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
 
   // Sequential insertion.
   // ---------------------------------------------------------------------------
@@ -455,7 +445,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, removeState)
   sh->setStorageLimit(7);
 
   auto model = rcp(new Tempus_Test::DahlquistTestModel<double>(-1.0, false));
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
 
   // ---------------------------------------------------------------------------
   for (size_t i=0; i < 13; ++i) {
@@ -511,7 +501,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, initWorkingState_Passing)
                                                  // as no State is set.
 
   auto model = rcp(new Tempus_Test::DahlquistTestModel<double>(-1.0, false));
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSoln = rcp_const_cast<Thyra::VectorBase<double> >(inArgsIC.get_x());
   auto state0 = Tempus::createSolutionStateX<double>(icSoln);
   state0->setTime (0.0);
@@ -564,7 +554,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, initWorkingState_Failing)
                                                  // as no State is set.
 
   auto model = rcp(new Tempus_Test::DahlquistTestModel<double>(-1.0, false));
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSoln = rcp_const_cast<Thyra::VectorBase<double> >(inArgsIC.get_x());
   auto state0 = Tempus::createSolutionStateX<double>(icSoln);
   state0->setTime (0.0);
@@ -637,7 +627,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, promoteWorkingState_Passing)
                                                  // as no State is set.
 
   auto model = rcp(new Tempus_Test::DahlquistTestModel<double>(-1.0, false));
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSoln = rcp_const_cast<Thyra::VectorBase<double> >(inArgsIC.get_x());
   auto state0 = Tempus::createSolutionStateX<double>(icSoln);
   state0->setTime (0.0);
@@ -690,7 +680,7 @@ TEUCHOS_UNIT_TEST(SolutionHistory, promoteWorkingState_Failing)
                                                  // as no State is set.
 
   auto model = rcp(new Tempus_Test::DahlquistTestModel<double>(-1.0, false));
-  Thyra::ModelEvaluatorBase::InArgs<double> inArgsIC =model->getNominalValues();
+  auto inArgsIC = model->getNominalValues();
   auto icSoln = rcp_const_cast<Thyra::VectorBase<double> >(inArgsIC.get_x());
   auto state0 = Tempus::createSolutionStateX<double>(icSoln);
   state0->setTime (0.0);

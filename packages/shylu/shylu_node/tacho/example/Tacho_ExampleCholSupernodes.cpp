@@ -1,6 +1,6 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
-#include <impl/Kokkos_Timer.hpp>
+#include <Kokkos_Timer.hpp>
 
 #include "Tacho_Internal.hpp"
 #include "Tacho_CommandLineParser.hpp"
@@ -11,20 +11,8 @@
 
 using namespace Tacho;
 
-/// select a kokkos task scheudler
-/// - TaskScheduler, TaskSchedulerMultiple, ChaseLevTaskScheduler
-#if defined(TACHO_USE_TASKSCHEDULER)
-template<typename T> using TaskSchedulerType = Kokkos::TaskScheduler<T>;
-static const char * scheduler_name = "TaskScheduler";
-#endif
-#if defined(TACHO_USE_TASKSCHEDULER_MULTIPLE)
 template<typename T> using TaskSchedulerType = Kokkos::TaskSchedulerMultiple<T>;
 static const char * scheduler_name = "TaskSchedulerMultiple";
-#endif
-#if defined(TACHO_USE_CHASELEV_TASKSCHEDULER)
-template<typename T> using TaskSchedulerType = Kokkos::ChaseLevTaskScheduler<T>;
-static const char * scheduler_name = "ChaseLevTaskScheduler";
-#endif
 
 
 int main (int argc, char *argv[]) {
@@ -80,7 +68,7 @@ int main (int argc, char *argv[]) {
     typedef CrsMatrixBase<value_type,host_space> CrsMatrixBaseTypeHost;
     typedef Kokkos::View<value_type**,Kokkos::LayoutLeft,exec_space> DenseMatrixBaseType;
     
-    Kokkos::Impl::Timer timer;
+    Kokkos::Timer timer;
     double t = 0.0;
 
     std::cout << "CholSupernodes:: import input file = " << file << std::endl;

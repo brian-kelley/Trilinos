@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <Kokkos_Core.hpp>
-#include <impl/Kokkos_Timer.hpp>
+#include <Kokkos_Timer.hpp>
 
 static const std::string MM_TEST_FILE="test_double";
 
@@ -14,8 +14,8 @@ static const std::string MM_TEST_FILE="test_double";
 #include "Tacho_config.h"
 #include "Tacho_Util.hpp"
 
-typedef typename Tacho::UseThisDevice<Kokkos::DefaultHostExecutionSpace>::device_type HostDeviceType;
-typedef typename Tacho::UseThisDevice<Kokkos::Cuda>::device_type DeviceType;
+typedef typename Tacho::UseThisDevice<Kokkos::DefaultHostExecutionSpace>::type HostDeviceType;
+typedef typename Tacho::UseThisDevice<Kokkos::Cuda>::type DeviceType;
 
 typedef double ValueType;
 typedef double MagnitudeType;

@@ -1,5 +1,5 @@
 #include <Kokkos_Core.hpp>
-#include <impl/Kokkos_Timer.hpp>
+#include <Kokkos_Timer.hpp>
 
 #include "Tacho_Internal.hpp"
 #include "Tacho_CommandLineParser.hpp"
@@ -33,7 +33,7 @@ int main (int argc, char *argv[]) {
   
   Kokkos::initialize(argc, argv);
 
-  typedef typename UseThisDevice<Kokkos::DefaultHostExecutionSpace>::device_type host_device_type;
+  typedef typename UseThisDevice<Kokkos::DefaultHostExecutionSpace>::type host_device_type;
   printExecSpaceConfiguration<typename host_device_type::execution_space>("HostDevice", false);
 
   int r_val = 0;
@@ -47,7 +47,7 @@ int main (int argc, char *argv[]) {
     mkl_set_dynamic(0);
     mkl_set_num_threads(nthreads);
     
-    Kokkos::Impl::Timer timer;
+    Kokkos::Timer timer;
     double t = 0.0;
     Pardiso pardiso;
 
