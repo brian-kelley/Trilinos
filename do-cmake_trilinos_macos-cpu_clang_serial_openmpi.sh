@@ -126,12 +126,12 @@ cmake \
    -D Xpetra_ENABLE_Epetra=OFF \
    -D Xpetra_ENABLE_EpetraExt=OFF \
    -D Trilinos_ENABLE_Zoltan2=ON \
-   -D Trilinos_ENABLE_STKMesh=OFF \
-   -D Trilinos_ENABLE_STKIO=OFF \
+   -D Trilinos_ENABLE_STKMesh=ON \
+   -D Trilinos_ENABLE_STKIO=ON \
    -D Trilinos_ENABLE_STKTransfer=ON \
    -D Trilinos_ENABLE_STKSearch=ON \
    -D Trilinos_ENABLE_STKUtil=ON \
-   -D Trilinos_ENABLE_STKTopology=OFF \
+   -D Trilinos_ENABLE_STKTopology=ON \
    -D Trilinos_ENABLE_STKSimd=ON \
    -D Trilinos_ENABLE_Pamgen=OFF \
    -D Trilinos_ENABLE_Intrepid2=OFF \

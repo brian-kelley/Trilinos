@@ -26,6 +26,7 @@ SUPERLUDIST_DIR=${SUPERLUDIST_ROOT}
 TRILINOS_HOME=${TRILINOS_REPO_DIR:-$(cd ..; pwd)}
 TRIL_INSTALL_PATH=${TRIL_INSTALL_PATH:-$(cd ..; pwd)}
 
+USE_RDC=ON
 DEFAULT_VARIANT=opt
 DEFAULT_LINKTYPE=static
 DEFAULT_EXECUTIONSPACE=serial
@@ -60,10 +61,12 @@ if [[ "${LINKTYPE:?}" == "static" ]]
 then
   LINK_SHARED=OFF
   LINK_SUFFIX=static
+  USE_RDC=ON
 elif [[ "${LINKTYPE:?}" == "shared" ]]
 then
   LINK_SHARED=ON
   LINK_SUFFIX=shared
+  USE_RDC=off
 else
   echo "ERROR: Invalid link type '${LINKTYPE:?}'!" >&2
   exit 1
@@ -201,12 +204,12 @@ cmake \
    -D Xpetra_ENABLE_Epetra=OFF \
    -D Xpetra_ENABLE_EpetraExt=OFF \
    -D Trilinos_ENABLE_Zoltan2=${BUILD_ALL_PACKAGES:?} \
-   -D Trilinos_ENABLE_STKMesh=OFF \
-   -D Trilinos_ENABLE_STKIO=OFF \
+   -D Trilinos_ENABLE_STKMesh=${USE_RDC} \
+   -D Trilinos_ENABLE_STKIO=${USE_RDC} \
    -D Trilinos_ENABLE_STKTransfer=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKSearch=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKUtil=${BUILD_ALL_PACKAGES:?} \
-   -D Trilinos_ENABLE_STKTopology=OFF \
+   -D Trilinos_ENABLE_STKTopology=${USE_RDC} \
    -D Trilinos_ENABLE_STKSimd=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKCoupling=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_Pamgen=OFF \
@@ -223,7 +226,7 @@ cmake \
    -D Kokkos_ENABLE_CUDA_UVM=ON \
    -D Kokkos_ARCH_VOLTA70=ON \
    -D Kokkos_ENABLE_CUDA_LAMBDA=ON \
-   -D Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=OFF \
+   -D Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=${USE_RDC} \
    \
    -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF \
    -D Kokkos_ENABLE_DEBUG_BOUNDS_CHECK=${BOUNDS_CHECKING} \

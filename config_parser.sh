@@ -15,12 +15,19 @@ fi
 if   [[ ${1} == 'static' || ${2} == 'static' || ${3} == 'static' || ${4} == 'static' || ${5} == 'static' ]]
 then
   LINKTYPE=static
+  RDCON=nordc
+elif [[ ${1} == 'static-rdc' || ${2} == 'static-rdc' || ${3} == 'static-rdc' || ${4} == 'static-rdc' || ${5} == 'static-rdc' ]]
+then
+  LINKTYPE=static
+  RDCON=rdc
 elif [[ ${1} == 'shared' || ${2} == 'shared' || ${3} == 'shared' || ${4} == 'shared' || ${5} == 'shared' ]]
 then
   LINKTYPE=shared
+  RDCON=nordc
 else
   echo " *** You may specify 'static' or 'shared' to this configuration script. Defaulting to '${DEFAULT_LINKTYPE:?}'!"
   LINKTYPE=${DEFAULT_LINKTYPE:?}
+  RDCON=nordc
 fi
 
 if   [[ ${1} == 'serial' || ${2} == 'serial' || ${3} == 'serial' || ${4} == 'serial' || ${5} == 'serial' ]]

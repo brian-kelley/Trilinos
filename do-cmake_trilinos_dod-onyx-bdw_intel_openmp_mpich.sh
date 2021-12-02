@@ -183,12 +183,12 @@ cmake \
    -D Xpetra_ENABLE_Epetra=OFF \
    -D Xpetra_ENABLE_EpetraExt=OFF \
    -D Trilinos_ENABLE_Zoltan2=${BUILD_ALL_PACKAGES:?} \
-   -D Trilinos_ENABLE_STKMesh=OFF \
-   -D Trilinos_ENABLE_STKIO=OFF \
+   -D Trilinos_ENABLE_STKMesh=${BUILD_ALL_PACKAGES:?} \
+   -D Trilinos_ENABLE_STKIO=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKTransfer=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKSearch=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKUtil=${BUILD_ALL_PACKAGES:?} \
-   -D Trilinos_ENABLE_STKTopology=OFF \
+   -D Trilinos_ENABLE_STKTopology=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKSimd=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKCoupling=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_Pamgen=OFF \
