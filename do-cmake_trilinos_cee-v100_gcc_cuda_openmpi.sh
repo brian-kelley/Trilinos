@@ -129,6 +129,13 @@ else
   exit 1
 fi
 
+if [[ $USE_RDC == ON -a $BUILD_ALL_PACKAGES == ON ]]
+then
+    BUILD_STKMESH=ON
+else
+    BUILD_STKMESH=OFF
+fi
+
 echo " *** Installing in: ${TRIL_INSTALL_PATH}/${TRIL_INSTALL_DIR}"
 sleep 3
 
@@ -204,12 +211,12 @@ cmake \
    -D Xpetra_ENABLE_Epetra=OFF \
    -D Xpetra_ENABLE_EpetraExt=OFF \
    -D Trilinos_ENABLE_Zoltan2=${BUILD_ALL_PACKAGES:?} \
-   -D Trilinos_ENABLE_STKMesh=${USE_RDC} \
-   -D Trilinos_ENABLE_STKIO=${USE_RDC} \
+   -D Trilinos_ENABLE_STKMesh=${BUILD_STKMESH:?} \
+   -D Trilinos_ENABLE_STKIO=${BUILD_STKMESH:?} \
    -D Trilinos_ENABLE_STKTransfer=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKSearch=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKUtil=${BUILD_ALL_PACKAGES:?} \
-   -D Trilinos_ENABLE_STKTopology=${USE_RDC} \
+   -D Trilinos_ENABLE_STKTopology=${BUILD_STKMESH:?} \
    -D Trilinos_ENABLE_STKSimd=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKCoupling=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_Pamgen=OFF \
