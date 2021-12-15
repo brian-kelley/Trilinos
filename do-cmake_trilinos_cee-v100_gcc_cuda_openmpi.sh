@@ -129,7 +129,7 @@ else
   exit 1
 fi
 
-if [[ $USE_RDC == ON -a $BUILD_ALL_PACKAGES == ON ]]
+if [[ $USE_RDC == ON && $BUILD_ALL_PACKAGES == ON ]]
 then
     BUILD_STKMESH=ON
 else
