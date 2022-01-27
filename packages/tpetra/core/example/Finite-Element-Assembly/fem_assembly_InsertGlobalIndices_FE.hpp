@@ -354,7 +354,7 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
 
   MeshDatabase mesh(comm,nex,ney,procx,procy);
 
-  /*if(opts.verbose) */mesh.print(std::cout);
+  if(opts.verbose) mesh.print(std::cout);
 
   // Build Tpetra Maps
   // -----------------
@@ -433,12 +433,12 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
                 {
                   global_ordinal_type globalCol = owned_element_to_node_ids(elem, j);
                   Kokkos::pair<global_ordinal_type, global_ordinal_type> edge(globalRow, globalCol);
-                  printf("Testing edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
+                  //printf("Testing edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
                   auto insertResult = hashSet.insert(edge);
                   if(!insertResult.existing())
                   {
                     //New edge: add it to the actual graph
-                    printf("Have new edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
+                    //printf("Have new edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
                     int insertPos = Kokkos::atomic_fetch_add(&entriesPerRow(localRow), size_t(1));
                     unpackedEntries(rowptrs(localRow) + insertPos) = globalCol;
                   }
@@ -487,13 +487,18 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
       //   - node 5 inserts [0, 1, 4, 5]
       for (size_t element_node_idx = 0;
            element_node_idx < owned_element_to_node_ids.extent(1); ++element_node_idx) {
-        std::cout << "Host: inserting " << global_ids_in_row.size() << " entries into global row " << element_node_idx << '\n';
+        //std::cout << "Host: inserting " << global_ids_in_row.size() << " entries into global row " << element_node_idx << '\n';
         fe_graph->insertGlobalIndices (global_ids_in_row[element_node_idx],
                                        global_ids_in_row());
       }
     }
   }
-
+  {
+    auto unpackedEntries = fe_graph->gblInds_wdv.getHostView(Tpetra::Access::ReadWrite);
+    std::cout << "Unpacked entries: ";
+    KokkosKernels::Impl::print_1Dview(unpackedEntries);
+    std::cout << "\n";
+  }
 
   // Call fillComplete on the fe_graph to 'finalize' it.
   {
