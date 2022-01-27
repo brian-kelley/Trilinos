@@ -392,12 +392,12 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
                 {
                   global_ordinal_type globalCol = owned_element_to_node_gids(elem, j);
                   Kokkos::pair<global_ordinal_type, global_ordinal_type> edge(globalRow, globalCol);
-                  printf("Testing edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
+                  //printf("Testing edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
                   auto insertResult = hashSet.insert(edge);
                   if(!insertResult.existing())
                   {
                     //New edge: add it to the actual graph
-                    printf("Have new edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
+                    //printf("Have new edge: %d <-> %d\n", (int) globalRow, (int) globalCol);
                     int insertPos = Kokkos::atomic_fetch_add(&entriesPerRow(localRow), size_t(1));
                     unpackedEntries(rowptrs(localRow) + insertPos) = globalCol;
                   }
