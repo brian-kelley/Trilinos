@@ -184,7 +184,7 @@ cmake \
    -D Trilinos_ENABLE_STKTransfer=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKSearch=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKUtil=${BUILD_ALL_PACKAGES:?} \
-   -D Trilinos_ENABLE_STKTopology=OFF \
+   -D Trilinos_ENABLE_STKTopology=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKSimd=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_STKCoupling=${BUILD_ALL_PACKAGES:?} \
    -D Trilinos_ENABLE_Pamgen=OFF \
