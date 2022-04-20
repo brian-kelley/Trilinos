@@ -32,19 +32,19 @@ if [[ "${VARIANT:?}" == "opt" ]]
 then
   BUILD_TYPE=RELEASE
   BUILD_SUFFIX=opt
-  BUILD_C_FLAGS="-mkl -xAVX"
-  BUILD_CXX_FLAGS="-mkl -xAVX"
-  BUILD_F_FLAGS="-mkl -xAVX"
-  BUILD_LINK_FLAGS="-mkl"
+  BUILD_C_FLAGS=" -xAVX"
+  BUILD_CXX_FLAGS=" -xAVX"
+  BUILD_F_FLAGS=" -xAVX"
+  BUILD_LINK_FLAGS=""
   BOUNDS_CHECKING=OFF
 elif [[ "${VARIANT:?}" == "dbg" ]]
 then
   BUILD_TYPE=DEBUG
   BUILD_SUFFIX=dbg
-  BUILD_C_FLAGS="-mkl -xAVX"
-  BUILD_CXX_FLAGS="-mkl -xAVX"
-  BUILD_F_FLAGS="-mkl -xAVX"
-  BUILD_LINK_FLAGS="-mkl"
+  BUILD_C_FLAGS=" -xAVX"
+  BUILD_CXX_FLAGS=" -xAVX"
+  BUILD_F_FLAGS=" -xAVX"
+  BUILD_LINK_FLAGS=""
   BOUNDS_CHECKING=ON
 else
   echo "ERROR: Invalid variant '${VARIANT:?}'!" >&2
