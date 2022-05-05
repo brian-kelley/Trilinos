@@ -239,11 +239,11 @@ cmake \
    \
    -D TPL_ENABLE_BLAS=ON \
    -D BLAS_LIBRARY_DIRS:PATH="${BLAS_DIR}/lib;/usr/lib64" \
-   -D BLAS_LIBRARY_NAMES:STRING="blas;libgfortran.so.4" \
+   -D BLAS_LIBRARY_NAMES:STRING="blas;libgfortran.so.4;m" \
    \
    -D TPL_ENABLE_LAPACK=ON \
-   -D LAPACK_LIBRARY_DIRS:PATH="${LAPACK_DIR}/lib" \
-   -D LAPACK_LIBRARY_NAMES:STRING="lapack" \
+   -D LAPACK_LIBRARY_DIRS:PATH="${LAPACK_DIR}/lib;/usr/lib64" \
+   -D LAPACK_LIBRARY_NAMES:STRING="lapack;libgfortran.so.4;m" \
    \
    -D TPL_ENABLE_Boost=${BUILD_ALL_PACKAGES:?} \
    -D Boost_INCLUDE_DIRS:PATH=${BOOST_DIR}/include \
