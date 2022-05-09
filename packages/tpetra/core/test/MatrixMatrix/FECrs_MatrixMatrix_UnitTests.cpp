@@ -257,10 +257,10 @@ bool compare_matrices (const Tpetra::CrsMatrix<ST,LO,GO,NT>& A,
   // We do not care about the order in which entries appear, only the "mathematical" object.
   const auto& gA = *A.getGraph();
   const auto& gB = *B.getGraph();
-  const LO num_my_rows = gA.getNodeNumRows();
-  if (num_my_rows!=static_cast<LO>(gB.getNodeNumRows())) {
+  const LO num_my_rows = gA.getLocalNumRows();
+  if (num_my_rows!=static_cast<LO>(gB.getLocalNumRows())) {
     out << "Compare: number of local rows differ on some MPI rank: "
-        << num_my_rows << " vs " << gB.getNodeNumRows() << ".\n";
+        << num_my_rows << " vs " << gB.getLocalNumRows() << ".\n";
     return false;
   }
 
@@ -281,6 +281,9 @@ bool compare_matrices (const Tpetra::CrsMatrix<ST,LO,GO,NT>& A,
   const LO invLO = Teuchos::OrdinalTraits<LO>::invalid();
   const auto& colMapA = *gA.getColMap();
   const auto& colMapB = *gB.getColMap();
+
+  Kokkos::fence(); // must protect UVM access
+
   for (LO irow=0; irow<num_my_rows; ++irow) {
     const GO grow = gA.getRowMap()->getGlobalElement(irow);
 

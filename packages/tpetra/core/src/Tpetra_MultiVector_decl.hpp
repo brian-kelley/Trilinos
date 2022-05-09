@@ -157,6 +157,14 @@ namespace Tpetra {
   Teuchos::ArrayView<const size_t>
   getMultiVectorWhichVectors (const MultiVector<SC, LO, GO, NT>& X);
 
+#ifdef TPETRA_ENABLE_DEPRECATED_CODE
+  // Forward definition needed for friending BlockMultiVector
+  // Need to friend it to prevent BlockMultiVector from issuing
+  // deprecation warnings.
+  template<class Scalar, class LO, class GO, class Node>
+  class BlockMultiVector;
+#endif
+
   /// \brief One or more distributed dense vectors.
   ///
   /// A "multivector" contains one or more dense vectors.  All the
@@ -466,6 +474,9 @@ namespace Tpetra {
                                             Kokkos::LayoutLeft,
                                             device_type>;
     using wrapped_dual_view_type = Details::WrappedDualView<dual_view_type>;
+
+    using host_view_type = typename dual_view_type::t_host;
+    using device_view_type = typename dual_view_type::t_dev;
 
     //@}
     //! @name Constructors and destructor
@@ -1471,7 +1482,7 @@ namespace Tpetra {
 
 #ifdef TPETRA_ENABLE_DEPRECATED_CODE
     //! Clear "modified" flags on both host and device sides.
-    //TPETRA_DEPRECATED
+    TPETRA_DEPRECATED
     void clear_sync_state ();
 
     /// \brief Update data on device or host only if data in the other
@@ -1493,18 +1504,25 @@ namespace Tpetra {
     ///   it, by calling the modify() method with the appropriate
     ///   template parameter.
     template<class TargetDeviceType>
-    //TPETRA_DEPRECATED
+    TPETRA_DEPRECATED
     void sync () {
       view_.getDualView().template sync<TargetDeviceType> ();
     }
 
     //! Synchronize to Host
-    //TPETRA_DEPRECATED
+    TPETRA_DEPRECATED
     void sync_host ();
 
     //! Synchronize to Device
-    //TPETRA_DEPRECATED
+    TPETRA_DEPRECATED
     void sync_device ();
+
+    // Friend needed to prevent deprecation warnings from BlockMultiVector's 
+    // calls to MV's sync* and modify* methods.  The friendship is temporary 
+    // to allow BlockMultiVector to access MultiVector's view_ directly,
+    // rather than call MV's deprecated functions.
+    friend BlockMultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>;
+
 #endif // TPETRA_ENABLE_DEPRECATED_CODE
 
     //! Whether this MultiVector needs synchronization to the given space.
@@ -1527,17 +1545,17 @@ namespace Tpetra {
     /// device type, then mark the device's data as modified.
     /// Otherwise, mark the host's data as modified.
     template<class TargetDeviceType>
-    //TPETRA_DEPRECATED
+    TPETRA_DEPRECATED
     void modify () {
       view_.getDualView().template modify<TargetDeviceType> ();
     }
 
     //! Mark data as modified on the device side.
-    //TPETRA_DEPRECATED
+    TPETRA_DEPRECATED
     void modify_device ();
 
     //! Mark data as modified on the host side.
-    //TPETRA_DEPRECATED
+    TPETRA_DEPRECATED
     void modify_host ();
 #endif // TPETRA_ENABLE_DEPRECATED_CODE
 
@@ -1624,7 +1642,7 @@ namespace Tpetra {
     /// host_view_type hostView = DV.getLocalView<host_execution_space> ();
     /// \endcode
     template<class TargetDeviceType>
-    //TPETRA_DEPRECATED 
+    TPETRA_DEPRECATED 
     typename std::remove_reference<decltype(std::declval<dual_view_type>().template view<TargetDeviceType>())>::type
     getLocalView () const
     {
@@ -1632,11 +1650,11 @@ namespace Tpetra {
     }
 
     //! A local Kokkos::View of host memory. This is a low-level expert function - it requires you to call sync_host() and modify_host() on this MultiVector as needed.
-    //TPETRA_DEPRECATED 
+    TPETRA_DEPRECATED 
     typename dual_view_type::t_host getLocalViewHost () const;
 
     //! A local Kokkos::View of device memory. This is a low-level expert function - it requires you to call sync_device() and modify_device() on this MultiVector as needed.
-    //TPETRA_DEPRECATED 
+    TPETRA_DEPRECATED 
     typename dual_view_type::t_dev getLocalViewDevice () const;
 #endif
 
@@ -1730,6 +1748,7 @@ namespace Tpetra {
          const ViewType& dots) const {
       const Kokkos::View<dot_type*, Kokkos::HostSpace> h_dots("Tpetra::Dots",dots.extent(0));
       this->dot (A, h_dots);
+      // DEEP_COPY REVIEW - NOT TESTED
       Kokkos::deep_copy(dots,h_dots);
     }
 
@@ -1761,6 +1780,7 @@ namespace Tpetra {
       // std::complex conversions, but those two implementations
       // should generally be bitwise compatible.
       // CT: no this can't possible work .....
+      // DEEP_COPY REVIEW - NOT TESTED
       Kokkos::deep_copy (dots, dts);
     }
 
@@ -1859,7 +1879,8 @@ namespace Tpetra {
       using host_norms_view_type = Kokkos::View<mag_type*, Kokkos::HostSpace>;
       host_norms_view_type h_norms ("Tpetra::MV::h_norms", norms.extent (0));
       this->norm1 (h_norms);
-      Kokkos::deep_copy (norms, h_norms);
+      // DEEP_COPY REVIEW - HOST-TO-DEVICE
+      Kokkos::deep_copy (execution_space(), norms, h_norms);
     }
 
     /// \brief Compute the one-norm of each vector (column), storing
@@ -1890,6 +1911,7 @@ namespace Tpetra {
       // Sacado and Stokhos packages are likely to care about this use
       // case.  It could also come up with Kokkos::complex ->
       // std::complex conversion.
+      // DEEP_COPY REVIEW - NOT TESTED
       Kokkos::deep_copy (norms, tmpNorms);
     }
 
@@ -1951,6 +1973,7 @@ namespace Tpetra {
       using host_norms_view_type = Kokkos::View<mag_type*, Kokkos::HostSpace>;
       host_norms_view_type h_norms ("Tpetra::MV::h_norms", norms.extent (0));
       this->norm2 (h_norms);
+      // DEEP_COPY REVIEW - NOT TESTED
       Kokkos::deep_copy (norms, h_norms);
     }
 
@@ -1980,6 +2003,7 @@ namespace Tpetra {
       // Sacado and Stokhos packages are likely to care about this use
       // case.  This could also come up with Kokkos::complex ->
       // std::complex conversion.
+      // DEEP_COPY REVIEW - NOT TESTED
       Kokkos::deep_copy (norms, theNorms);
     }
 
@@ -2034,7 +2058,8 @@ namespace Tpetra {
       using host_norms_view_type = Kokkos::View<mag_type*, Kokkos::HostSpace>;
       host_norms_view_type h_norms ("Tpetra::MV::h_norms", norms.extent (0));
       this->normInf (h_norms);
-      Kokkos::deep_copy (norms, h_norms);
+      // DEEP_COPY REVIEW - HOST-TO-DEVICE
+      Kokkos::deep_copy (execution_space(), norms, h_norms);
     }
 
     /// \brief Compute the infinity-norm of each vector (column),
@@ -2063,6 +2088,7 @@ namespace Tpetra {
       // Sacado and Stokhos packages are likely to care about this use
       // case.  This could also come up with Kokkos::complex ->
       // std::complex conversion.
+      // DEEP_COPY REVIEW - NOT TESTED
       Kokkos::deep_copy (norms, theNorms);
     }
 

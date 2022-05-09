@@ -340,9 +340,9 @@ namespace Tpetra {
       ///
       /// \param myNumEntriesPerRow [out] For my row indices, the number of
       ///   entries per row.  This array has
-      ///   pRowMap->getNodeElementList().size() entries, and is indexed in
+      ///   pRowMap->getLocalElementList().size() entries, and is indexed in
       ///   the same way, so that myNumEntriesPerRow[k] is the number of
-      ///   entries in row pRowMap->getNodeElementList()[k].
+      ///   entries in row pRowMap->getLocalElementList()[k].
       ///
       /// \param myRowPtr [out] The row pointer array for the rows
       ///   that belong to me.  This array has one more entry than
@@ -350,12 +350,12 @@ namespace Tpetra {
       ///   myRowPtr[0] = 0) of myNumEntriesPerRow.
       ///
       /// \param myColInd [out] My rows' column indices.  If myRows =
-      ///   pRowMap->getNodeElementList(), start = sum(myNumEntriesPerRow[0
+      ///   pRowMap->getLocalElementList(), start = sum(myNumEntriesPerRow[0
       ///   .. k-1]), and end = start + myNumEntriesPerRow[k], then
       ///   myColInd[start .. end-1] are the column indices for myRows[k].
       ///
       /// \param myValues [out] My rows' stored matrix values.  If myRows =
-      ///   pRowMap->getNodeElementList(), start = sum(myNumEntriesPerRow[0
+      ///   pRowMap->getLocalElementList(), start = sum(myNumEntriesPerRow[0
       ///   .. k-1]), and end = start + myNumEntriesPerRow[k], then
       ///   myValues[start .. end-1] are the column indices for myRows[k].
       ///
@@ -435,21 +435,21 @@ namespace Tpetra {
 
          // List of the global indices of my rows.  They may or may
          // not be contiguous, and the row map need not be one-to-one.
-         ArrayView<const GO> myRows = pRowMap->getNodeElementList();
+         ArrayView<const GO> myRows = pRowMap->getLocalElementList();
          const size_type myNumRows = myRows.size();
          TEUCHOS_TEST_FOR_EXCEPTION(static_cast<size_t>(myNumRows) !=
-                            pRowMap->getNodeNumElements(),
+                            pRowMap->getLocalNumElements(),
                             std::logic_error,
-                            "pRowMap->getNodeElementList().size() = "
+                            "pRowMap->getLocalElementList().size() = "
                             << myNumRows
-                            << " != pRowMap->getNodeNumElements() = "
-                            << pRowMap->getNodeNumElements() << ".  "
+                            << " != pRowMap->getLocalNumElements() = "
+                            << pRowMap->getLocalNumElements() << ".  "
                             "Please report this bug to the Tpetra developers.");
          TEUCHOS_TEST_FOR_EXCEPTION(myRank == 0 && numEntriesPerRow.size() < myNumRows,
                             std::logic_error,
                             "On Proc 0: numEntriesPerRow.size() = "
                             << numEntriesPerRow.size()
-                            << " != pRowMap->getNodeElementList().size() = "
+                            << " != pRowMap->getLocalElementList().size() = "
                             << myNumRows << ".  Please report this bug to the "
                             "Tpetra developers.");
 
@@ -807,7 +807,7 @@ namespace Tpetra {
 
         // List of the global indices of my rows.
         // They may or may not be contiguous.
-        ArrayView<const GO> myRows = pRowMap->getNodeElementList ();
+        ArrayView<const GO> myRows = pRowMap->getLocalElementList ();
         const size_type myNumRows = myRows.size ();
 
         // Add this processor's matrix entries to the CrsMatrix.
@@ -897,7 +897,7 @@ namespace Tpetra {
 
         // List of the global indices of my rows.
         // They may or may not be contiguous.
-        ArrayView<const GO> myRows = pRowMap->getNodeElementList();
+        ArrayView<const GO> myRows = pRowMap->getLocalElementList();
         const size_type myNumRows = myRows.size();
 
         // Add this processor's matrix entries to the CrsMatrix.
@@ -962,7 +962,7 @@ namespace Tpetra {
 
         // List of the global indices of my rows.
         // They may or may not be contiguous.
-        ArrayView<const GO> myRows = rowMap->getNodeElementList ();
+        ArrayView<const GO> myRows = rowMap->getLocalElementList ();
         const size_type myNumRows = myRows.size ();
 
         // Add this process' matrix entries to the CrsMatrix.
@@ -1554,7 +1554,7 @@ namespace Tpetra {
           }
         }
 
-        Teuchos::Array<size_t> numEntriesPerRow (proc0Map->getNodeNumElements ());
+        Teuchos::Array<size_t> numEntriesPerRow (proc0Map->getLocalNumElements ());
         for (const auto& ent : numEntriesPerRow_map) {
           const local_ordinal_type lclRow = proc0Map->getLocalElement (ent.first);
           numEntriesPerRow[lclRow] = ent.second;
@@ -2705,8 +2705,8 @@ namespace Tpetra {
             for (int p = 0; p < numProcs; ++p) {
               if (myRank == p) {
                 cerr << "-- Proc " << p << " owns "
-                     << pMatrix->getNodeNumCols() << " columns, and "
-                     << pMatrix->getNodeNumEntries() << " entries." << endl;
+                     << pMatrix->getLocalNumCols() << " columns, and "
+                     << pMatrix->getLocalNumEntries() << " entries." << endl;
               }
               pComm->barrier ();
             }
@@ -3250,8 +3250,8 @@ namespace Tpetra {
           for (int p = 0; p < numProcs; ++p) {
             if (myRank == p) {
               cerr << "-- Proc " << p << " owns "
-                   << pMatrix->getNodeNumCols() << " columns, and "
-                   << pMatrix->getNodeNumEntries() << " entries." << endl;
+                   << pMatrix->getLocalNumCols() << " columns, and "
+                   << pMatrix->getLocalNumEntries() << " entries." << endl;
             }
             pComm->barrier ();
           }
@@ -3609,7 +3609,6 @@ namespace Tpetra {
         ArrayRCP<size_t> rowPtr;
         ArrayRCP<global_ordinal_type> colInd;
         ArrayRCP<scalar_type> values;
-        size_t maxNumEntriesPerRow = 0;
 
         // Proc 0 first merges duplicate entries, and then converts
         // the coordinate-format matrix data to CSR.
@@ -3783,15 +3782,13 @@ namespace Tpetra {
 
         RCP<const map_type> gatherRowMap = Details::computeGatherMap (rowMap, err, debug);
         ArrayView<const global_ordinal_type> myRows =
-            gatherRowMap->getNodeElementList ();
+            gatherRowMap->getLocalElementList ();
         const size_type myNumRows = myRows.size ();
         const global_ordinal_type indexBase = gatherRowMap->getIndexBase ();
 
         ArrayRCP<size_t> gatherNumEntriesPerRow = arcp<size_t>(myNumRows);
         for (size_type i_ = 0; i_ < myNumRows; i_++) {
           gatherNumEntriesPerRow[i_] = numEntriesPerRow[myRows[i_]-indexBase];
-          if (gatherNumEntriesPerRow[i_] > maxNumEntriesPerRow)
-            maxNumEntriesPerRow = gatherNumEntriesPerRow[i_];
         }
 
         // Create a matrix using this Map, and fill in on Proc 0.  We
@@ -3840,18 +3837,33 @@ namespace Tpetra {
           values = null;
         } // if myRank == rootRank
 
-        broadcast<int,size_t> (*pComm, 0, &maxNumEntriesPerRow);
-
         RCP<sparse_matrix_type> A;
-        if (colMap.is_null ()) {
-          A = rcp (new sparse_matrix_type (rowMap, maxNumEntriesPerRow));
-        } else {
-          A = rcp (new sparse_matrix_type (rowMap, colMap, maxNumEntriesPerRow));
-        }
         typedef Export<local_ordinal_type, global_ordinal_type, node_type> export_type;
         export_type exp (gatherRowMap, rowMap);
-        A->doExport (*A_proc0, exp, INSERT);
 
+        // Communicate the precise number of nonzeros per row, which was already
+        // calculated above.
+        typedef local_ordinal_type LO;
+        typedef global_ordinal_type GO;
+        typedef Tpetra::MultiVector<GO, LO, GO, node_type> mv_type_go;
+        mv_type_go target_nnzPerRow(rowMap,1);
+        mv_type_go source_nnzPerRow(gatherRowMap,1);
+        Teuchos::ArrayRCP<GO> srcData = source_nnzPerRow.getDataNonConst(0);
+        for (int i=0; i<myNumRows; i++)
+          srcData[i] = gatherNumEntriesPerRow[i];
+        srcData = Teuchos::null;
+        target_nnzPerRow.doExport(source_nnzPerRow,exp,Tpetra::INSERT);
+        Teuchos::ArrayRCP<GO> targetData = target_nnzPerRow.getDataNonConst(0);
+        ArrayRCP<size_t> targetData_size_t = arcp<size_t>(targetData.size());
+        for (int i=0; i<targetData.size(); i++)
+          targetData_size_t[i] = targetData[i];
+
+        if (colMap.is_null ()) {
+          A = rcp (new sparse_matrix_type (rowMap, targetData_size_t()));
+        } else {
+          A = rcp (new sparse_matrix_type (rowMap, colMap, targetData_size_t()));
+        }
+        A->doExport (*A_proc0, exp, INSERT);
         if (callFillComplete) {
           A->fillComplete (domainMap, rangeMap);
         }
@@ -3882,8 +3894,8 @@ namespace Tpetra {
             for (int p = 0; p < numProcs; ++p) {
               if (myRank == p) {
                 cerr << "-- Proc " << p << " owns "
-                     << A->getNodeNumCols() << " columns, and "
-                     << A->getNodeNumEntries() << " entries." << endl;
+                     << A->getLocalNumCols() << " columns, and "
+                     << A->getLocalNumEntries() << " entries." << endl;
               }
               pComm->barrier ();
             }
@@ -4224,6 +4236,7 @@ namespace Tpetra {
         Tuple<GO, 3> dims;
         dims[0] = 0;
         dims[1] = 0;
+        dims[2] = 0;
 
         // Current line number in the input stream.  Only valid on
         // Proc 0.  Various calls will modify this depending on the
@@ -7535,7 +7548,7 @@ namespace Tpetra {
           err->pushTab ();
         }
 
-        const size_t myNumRows = map.getNodeNumElements ();
+        const size_t myNumRows = map.getLocalNumElements ();
         // Use a different tag for the "size" messages than for the
         // "data" messages, in order to help us debug any mix-ups.
         const int sizeTag = 1337;
@@ -7681,7 +7694,7 @@ namespace Tpetra {
           }
         }
         else {
-          ArrayView<const GO> myGblInds = map.getNodeElementList ();
+          ArrayView<const GO> myGblInds = map.getLocalElementList ();
           for (size_t k = 0; k < myNumRows; ++k) {
             const int_type gid = static_cast<int_type> (myGblInds[k]);
             const int_type pid = static_cast<int_type> (myRank);
@@ -8324,7 +8337,7 @@ namespace Tpetra {
         }
 
         // Create map that replicates the range map on pid 0 and is empty for all other pids
-        size_t numLocalRangeEntries = rangeMap->getNodeNumElements();
+        size_t numLocalRangeEntries = rangeMap->getLocalNumElements();
 
         // Create contiguous source map
         RCP<const map_type> allGidsMap = rcp(new map_type(TGOT::invalid(), numLocalRangeEntries,
