@@ -1,4 +1,7 @@
 #!/bin/bash
+echo "WARNING: This script is scheduled for deletion.  If you are seeing this message, please email sebrown@sandia.gov" >&2
+sleep 10
+
 EXTRA_ARGS=$@
 
 COMPILER_DIR=${COMPILER_ROOT}
