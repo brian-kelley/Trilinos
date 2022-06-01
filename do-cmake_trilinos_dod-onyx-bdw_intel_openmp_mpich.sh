@@ -34,7 +34,7 @@ then
   BUILD_C_FLAGS=""
   BUILD_CXX_FLAGS=""
   BUILD_F_FLAGS=""
-  BUILD_LINK_FLAGS=""
+  exe_linker_flags=""
   BOUNDS_CHECKING=OFF
 elif [[ "${VARIANT:?}" == "dbg" ]]
 then
@@ -43,7 +43,7 @@ then
   BUILD_C_FLAGS=""
   BUILD_CXX_FLAGS=""
   BUILD_F_FLAGS=""
-  BUILD_LINK_FLAGS=""
+  exe_linker_flags=""
   BOUNDS_CHECKING=ON
 else
   echo "ERROR: Invalid variant '${VARIANT:?}'!" >&2
@@ -125,7 +125,7 @@ cmake \
    -D CMAKE_C_FLAGS="${BUILD_C_FLAGS}" \
    -D CMAKE_CXX_FLAGS="${BUILD_CXX_FLAGS}" \
    -D CMAKE_Fortran_FLAGS="${BUILD_F_FLAGS}" \
-   -D CMAKE_EXE_LINKER_FLAGS="${BUILD_LINK_FLAGS}" \
+   -D CMAKE_EXE_LINKER_FLAGS="${exe_linker_flags}" \
    -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
    \
    -D TPL_FIND_SHARED_LIBS=${LINK_SHARED:?} \
@@ -276,7 +276,7 @@ cmake \
    -D SuperLUDist_LIBRARY_DIRS:PATH="${SUPERLUDIST_DIR}/lib" \
    -D SuperLUDist_LIBRARY_NAMES:STRING="superlu_dist" \
    \
-   -D Trilinos_EXTRA_LINK_FLAGS:STRING="-L${MPI_DIR}/lib -lmpich" \
+   -D Trilinos_EXTRA_LINK_FLAGS:STRING="${extra_link_flags}" \
    \
    ${extra_cmake_args} \
    ${TRILINOS_HOME}

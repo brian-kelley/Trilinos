@@ -23,7 +23,7 @@ BUILD_SUFFIX=opt
 BUILD_C_FLAGS=""
 BUILD_CXX_FLAGS=""
 BUILD_F_FLAGS=""
-BUILD_LINK_FLAGS="-ldl"
+exe_linker_flags="-ldl"
 BOUNDS_CHECKING=OFF
 
 if   [[ ${1} == 'opt' || ${2} == 'opt' ]]
@@ -74,7 +74,7 @@ cmake \
    -D CMAKE_C_FLAGS="$BUILD_C_FLAGS" \
    -D CMAKE_CXX_FLAGS="$BUILD_CXX_FLAGS" \
    -D CMAKE_Fortran_FLAGS="$BUILD_F_FLAGS" \
-   -D CMAKE_EXE_LINKER_FLAGS="$BUILD_LINK_FLAGS" \
+   -D CMAKE_EXE_LINKER_FLAGS="$exe_linker_flags" \
    -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
    \
    -D Trilinos_VERBOSE_CONFIGURE=FALSE \

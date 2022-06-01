@@ -26,6 +26,8 @@ DEFAULT_PACKAGE=full
 DEFAULT_USE_MPI=mpi
 source $(dirname $(readlink -f ${0}))/config_parser.sh
 extra_cmake_args=$@
+extra_link_flags="-lmpi"
+exe_linker_flags=""
 
 if [[ "${VARIANT:?}" == "opt" ]]
 then
@@ -34,7 +36,6 @@ then
   BUILD_C_FLAGS=" -xAVX"
   BUILD_CXX_FLAGS=" -xAVX"
   BUILD_F_FLAGS=" -xAVX"
-  BUILD_LINK_FLAGS=""
   BOUNDS_CHECKING=OFF
 elif [[ "${VARIANT:?}" == "dbg" ]]
 then
@@ -43,7 +44,6 @@ then
   BUILD_C_FLAGS=" -xAVX"
   BUILD_CXX_FLAGS=" -xAVX"
   BUILD_F_FLAGS=" -xAVX"
-  BUILD_LINK_FLAGS=""
   BOUNDS_CHECKING=ON
 else
   echo "ERROR: Invalid variant '${VARIANT:?}'!" >&2
@@ -123,7 +123,7 @@ cmake \
    -D CMAKE_C_FLAGS="${BUILD_C_FLAGS}" \
    -D CMAKE_CXX_FLAGS="${BUILD_CXX_FLAGS}" \
    -D CMAKE_Fortran_FLAGS="${BUILD_F_FLAGS}" \
-   -D CMAKE_EXE_LINKER_FLAGS="${BUILD_LINK_FLAGS}" \
+   -D CMAKE_EXE_LINKER_FLAGS="${exe_linker_flags}" \
    -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
    \
    -D Trilinos_VERBOSE_CONFIGURE=FALSE \
@@ -272,7 +272,7 @@ cmake \
    -D SuperLUDist_LIBRARY_DIRS:PATH="${SUPERLUDIST_DIR}/lib" \
    -D SuperLUDist_LIBRARY_NAMES:STRING="superlu_dist" \
    \
-   -D Trilinos_EXTRA_LINK_FLAGS:STRING="-lmpi" \
+   -D Trilinos_EXTRA_LINK_FLAGS:STRING="${extra_link_flags}" \
    \
    ${extra_cmake_args} \
    ${TRILINOS_HOME}
