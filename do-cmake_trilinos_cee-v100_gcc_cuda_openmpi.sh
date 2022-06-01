@@ -7,8 +7,6 @@ then
     mkdir -p ${TMPDIR}
 fi
 
-EXTRA_ARGS=$@
-
 COMPILER_DIR=${COMPILER_ROOT}
 MPI_DIR=${MPI_ROOT}
 BLAS_DIR=${CBLAS_ROOT}
@@ -33,6 +31,7 @@ DEFAULT_EXECUTIONSPACE=serial
 DEFAULT_PACKAGE=full
 DEFAULT_USE_MPI=mpi
 source $(dirname $(readlink -f ${0}))/config_parser.sh
+extra_cmake_args=$@
 
 if [[ "${VARIANT:?}" == "opt" ]]
 then
@@ -140,7 +139,7 @@ echo " *** Installing in: ${TRIL_INSTALL_PATH}/${TRIL_INSTALL_DIR}"
 sleep 3
 
 rm -f CMakeCache.txt; rm -rf CMakeFiles
-
+set -x
 cmake \
    -D CMAKE_VERBOSE_MAKEFILE=OFF \
    -D CMAKE_INSTALL_PREFIX:PATH="${TRIL_INSTALL_PATH}/${TRIL_INSTALL_DIR}" \
@@ -309,5 +308,5 @@ cmake \
    \
    -D Trilinos_EXTRA_LINK_FLAGS:STRING="${EXTRA_LINK_FLAGS}" \
    \
-   ${EXTRA_ARGS} \
+   ${extra_cmake_args} \
    "${TRILINOS_HOME}"

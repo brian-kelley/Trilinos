@@ -2,8 +2,6 @@
 set -o errexit
 set -o pipefail
 
-EXTRA_ARGS=$@
-
 COMPILER_DIR=${COMPILER_ROOT}
 MPI_DIR=${MPI_ROOT}
 BLAS_DIR=${CBLAS_ROOT}
@@ -18,7 +16,6 @@ METIS_DIR=${METIS_ROOT}
 PARMETIS_DIR=${PARMETIS_ROOT}
 SUPERLUDIST_DIR=${SUPERLUDIST_ROOT}
 
-
 TRILINOS_HOME=${TRILINOS_REPO_DIR:-$(cd ..; pwd)}
 TRIL_INSTALL_PATH=${TRIL_INSTALL_PATH:-$(cd ..; pwd)}
 
@@ -28,6 +25,7 @@ DEFAULT_EXECUTIONSPACE=openmp
 DEFAULT_PACKAGE=full
 DEFAULT_USE_MPI=mpi
 source $(dirname $(readlink -f ${0}))/config_parser.sh
+extra_cmake_args=$@
 
 if [[ "${VARIANT:?}" == "opt" ]]
 then

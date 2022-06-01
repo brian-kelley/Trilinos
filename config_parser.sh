@@ -65,3 +65,35 @@ else
   echo " *** You may specify 'mpi' or 'nompi' to this configuration script. Defaulting to '${DEFAULT_USE_MPI:?}'!"
   USE_MPI=${DEFAULT_USE_MPI:?}
 fi
+
+already_seen_an_option=false
+for arg in $@
+do
+    arg_is_option=false
+    if [[ ${arg} == "-"* ]]
+    then
+        arg_is_option=true
+    fi
+
+    if [[ ${arg_is_option} != "true" ]] && [[ ${already_seen_an_option} == "true" ]]
+    then
+        echo -e "\nERROR: Already seen a CMake option, cannot then pass a script argument for do-cmake!\nSyntax is 'do-cmake arg1 arg2 arg3 -cmake_option_1 -cmake_option_2 -DCMAKE_VAR_DEFINE_EXAMPLE=2'\n" >&2
+        exit 1
+    fi
+
+    if [[ ${arg_is_option} == "true" ]]
+    then
+        already_seen_an_option=true
+    fi
+done
+
+for arg in $@
+do
+    arg_is_option=false
+    if [[ ${arg} == "-"* ]]
+    then
+        break
+    else
+        shift 1
+    fi
+done

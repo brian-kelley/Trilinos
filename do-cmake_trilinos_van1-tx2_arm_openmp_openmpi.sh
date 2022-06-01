@@ -2,8 +2,6 @@
 set -o errexit
 set -o pipefail
 
-EXTRA_ARGS=$@
-
 COMPILER_DIR=
 MPI_DIR=${MPI_DIR}
 BLAS_DIR=${ARMPL_DIR}
@@ -27,6 +25,7 @@ DEFAULT_EXECUTIONSPACE=openmp
 DEFAULT_PACKAGE=full
 DEFAULT_USE_MPI=mpi
 source $(dirname $(readlink -f ${0}))/config_parser.sh
+extra_cmake_args=$@
 
 if [[ "${VARIANT:?}" == "opt" ]]
 then
