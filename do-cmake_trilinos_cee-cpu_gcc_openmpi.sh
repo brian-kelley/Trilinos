@@ -285,5 +285,5 @@ cmake \
    \
    -D Trilinos_EXTRA_LINK_FLAGS:STRING="${EXTRA_LINK_FLAGS}" \
    \
-   ${EXTRA_ARGS} \
+   ${extra_cmake_args} \
    ${TRILINOS_HOME}

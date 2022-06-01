@@ -275,5 +275,5 @@ cmake \
    \
    -D Trilinos_EXTRA_LINK_FLAGS:STRING="-L${MPI_DIR}/lib -lmpich" \
    \
-   ${EXTRA_ARGS} \
+   ${extra_cmake_args} \
    ${TRILINOS_HOME}

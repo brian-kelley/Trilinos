@@ -279,5 +279,5 @@ cmake \
    \
    -D Trilinos_EXTRA_LINK_FLAGS:STRING="-lmpi_ibm -ldl" \
    \
-   ${EXTRA_ARGS} \
+   ${extra_cmake_args} \
    ${TRILINOS_HOME}
