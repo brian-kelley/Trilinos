@@ -3,7 +3,7 @@ set -o errexit
 set -o pipefail
 
 COMPILER_DIR=
-MPI_DIR=${MPI_DIR}
+MPI_DIR="${MPI_DIR}"
 BLAS_DIR=${ARMPL_DIR}
 LAPACK_DIR=${ARMPL_DIR}
 HDF5_DIR=${HDF5_DIR}
