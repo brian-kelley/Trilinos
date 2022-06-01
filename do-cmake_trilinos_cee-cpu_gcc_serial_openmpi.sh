@@ -1,1 +1,0 @@
-do-cmake_trilinos_cee-cpu_gcc_openmpi.sh
