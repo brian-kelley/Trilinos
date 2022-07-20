@@ -361,14 +361,15 @@ namespace MueLu {
 
                              boundaryNodes(row) = true;
                              if (length > 2) {
-                               decltype(length) colID;
-                               for (colID = 0; colID < length; colID++)
+                               decltype(length) colID = 0;
+                               for (; colID < length; colID++) {
                                  if ((rowView.colidx(colID) != row) &&
                                      (ATS::magnitude(rowView.value(colID)) > tol)) {
                                    if (!boundaryNodes(row))
                                      break;
                                    boundaryNodes(row) = false;
                                  }
+                               }
                                if (colID == length)
                                  boundaryNodes(row) = true;
                              }
