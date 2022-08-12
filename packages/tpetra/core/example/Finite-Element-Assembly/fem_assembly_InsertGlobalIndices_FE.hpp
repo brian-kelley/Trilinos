@@ -401,7 +401,7 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
     using RowptrsDevice = typename fe_graph_type::row_ptrs_device_view_type::non_const_type;
     std::cout << "** Using device graph assembly (TODO).\n";
     //Set elements are global (row,column) tuples
-    HashSet hashSet(1.3 * 16 * owned_plus_shared_map->getNodeNumElements());
+    HashSet hashSet(1.3 * 16 * owned_plus_shared_map->getLocalNumElements());
     int nodesPerElement = owned_element_to_node_ids.extent_int(1);
     //Get the 3-array (unpacked) CRS graph. Its rows follow local indexing, but columns are globally indexed.
     auto rowptrsHost = fe_graph->rowPtrsUnpacked_host_;
