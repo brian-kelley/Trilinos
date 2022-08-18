@@ -446,7 +446,6 @@ int executeInsertGlobalIndicesFESPKokkos_(const Teuchos::RCP<const Teuchos::Comm
       }
     }
   }
-
   // Call fillComplete on the fe_graph to 'finalize' it.
   {
     TimeMonitor timer(*TimeMonitor::getNewTimer("2) FillComplete (Graph)"));
