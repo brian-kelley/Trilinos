@@ -46,7 +46,6 @@
 #include <iomanip>
 #include <sstream>
 
-#include </ascldap/users/bmkelle/BMK_DebugUtils.hpp>
 #include "Tpetra_Core.hpp"
 #include "MatrixMarket_Tpetra.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
@@ -54,7 +53,6 @@
 #include "Teuchos_FancyOStream.hpp"
 #include "Tpetra_Details_makeColMap.hpp"
 #include "KokkosKernels_Sorting.hpp"
-#include "/ascldap/users/bmkelle/BMK_DebugUtils.hpp"
 
 #include "fem_assembly_typedefs.hpp"
 #include "fem_assembly_MeshDatabase.hpp"
