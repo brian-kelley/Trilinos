@@ -725,6 +725,7 @@ namespace TpetraExamples
       // Use makeColMap utility function to do this, given a list of GIDs (duplicates allowed)
       // TODO: add a version of makeColMap to expect non-duplicated remote GIDs, and which takes the local GIDs from domain map.
       // For now, we are just passing in the domain map's owned nodes plus all the nodes adjacent to ghost elements (so there will be duplicates)
+      RCP<TimeMonitor> colMapTimer = rcp(new TimeMonitor(*TimeMonitor::getNewTimer("1a) Graph Column Map")));
       auto localDomMap  = domain_map->getLocalMap();
       auto numLocalNodes = domain_map->getLocalNumElements();
       flag_view failFlag("failFlag");
@@ -752,6 +753,7 @@ namespace TpetraExamples
       RCP<const map_type> column_map;
       Tpetra::Details::makeColMap(column_map, domain_map, colMapGIDs);
       auto localColMap = column_map->getLocalMap();
+      colMapTimer = Teuchos::null;
       // Now build the transpose of the element to node graph (node -> element)
       // The rows are locally indexed, owned nodes (according to row/domain map)
       // The columns are indices into concatenated owned and ghost element lists. So 0..mesh.getNumOwnedElements() are owned, and the rest are ghost.
