@@ -748,11 +748,12 @@ static int ML_DecomposeGraph_with_METIS( ML_Operator *Amatrix,
                                          int *total_nz)
 {
 
-  int i, j,jj,  count, count2, count_start;
+  int i, j,jj,  count, count2;
   int Nrows, Nrows_global,NrowsMETIS, N_nonzeros, N_bdry_nodes;
-  int *wgtflag=NULL, numflag;
+  int *wgtflag=NULL;
   indextype *xadj=NULL, *adjncy=NULL;
 #ifdef HAVE_ML_METIS
+  int numflag;
   indextype *vwgt=NULL, *adjwgt=NULL;
 #endif
   indextype *part=NULL;
@@ -874,8 +875,6 @@ static int ML_DecomposeGraph_with_METIS( ML_Operator *Amatrix,
       /* well eated by METIS.) perm has been allocates of size    */
       /* Nrows, so columns corresponding to external nodes can not*/
       /* be given as input to perm                                */
-
-      count_start = count;
 
       for( j=0 ; j<rowi_N ; j++ ) {
         jj = rowi_col[j];

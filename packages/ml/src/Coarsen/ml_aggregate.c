@@ -2242,7 +2242,6 @@ ML_Operator** ML_repartition_Acoarse(ML *ml, int fine, int coarse,
   ML_Partitioner which_partitioner;
   ML_Aggregate_Viz_Stats *grid_info;
   int N_dimensions=0;
-  int haveCoordinates = 0;
   double t0=0.0,delta=0.0;
 
   StartTimer(&t0);
@@ -2307,7 +2306,6 @@ ML_Operator** ML_repartition_Acoarse(ML *ml, int fine, int coarse,
   which_partitioner = ML_Repartition_Get_Partitioner(ml);
   /* no coordinates supplied */
   if (grid_info == NULL) {
-    haveCoordinates = 0;
     if ((ml->comm->ML_mypid == 0)
         && (ML_Get_PrintLevel() > 0)
         && (which_partitioner == ML_USEZOLTAN)
@@ -2315,7 +2313,6 @@ ML_Operator** ML_repartition_Acoarse(ML *ml, int fine, int coarse,
       printf("ML*WRN* No grid structure found. This is not necessarily an\nML*WRN* error, but repartitioning with Zoltan is impossible.\n\n");
   }
   else if (grid_info->x == NULL || grid_info->y == NULL) {
-    haveCoordinates = 0;
     if ((ml->comm->ML_mypid == 0)
         && (ML_Get_PrintLevel() > 0)
         && (which_partitioner == ML_USEZOLTAN)
@@ -2323,7 +2320,6 @@ ML_Operator** ML_repartition_Acoarse(ML *ml, int fine, int coarse,
       printf("ML*WRN* Either x- or y-coordinates are missing. This is not necessarily an\nML*WRN* error, but repartitioning with Zoltan is impossible.\n\n");
   }
   else {
-    haveCoordinates = 1;
     xcoord = grid_info->x;
     ycoord = grid_info->y;
     zcoord = grid_info->z;

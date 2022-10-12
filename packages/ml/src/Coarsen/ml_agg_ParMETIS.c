@@ -472,11 +472,16 @@ int ML_DecomposeGraph_with_ParMETIS( ML_Operator *Amatrix,
 
   int i, j,jj,  count;
   int Nrows;
-  int *wgtflag=NULL, numflag, *options=NULL, edgecut;
+  int *wgtflag=NULL, *options=NULL;
   indextype *xadj=NULL, *adjncy=NULL;
 #if defined(ML_MPI)
 #if defined(HAVE_ML_PARMETIS)
   indextype *vwgt=NULL, *adjwgt=NULL;
+  int numflag = 0, edgecut = 0;
+  int ncon = 1; /* number of weights of each vertex */
+  /* imbalance tolerance for each vertex weight, 1 is the perfect
+     balance and N_parts being perfect imbalance */
+  float ubvec = 1.05; /* size = ncon */
 #endif
 #endif
   indextype *part=NULL;
@@ -490,9 +495,7 @@ int ML_DecomposeGraph_with_ParMETIS( ML_Operator *Amatrix,
   int mypid = Amatrix->comm->ML_mypid;
   int * offsets = NULL;
   indextype * vtxdist = NULL;
-  int ncon = 1;
   float * tpwgts = NULL;
-  float ubvec; /* size = ncon */
   int * proc_with_parmetis = NULL;
 #ifdef ML_MPI
   MPI_Group orig_group, parmetis_group;
@@ -663,8 +666,6 @@ int ML_DecomposeGraph_with_ParMETIS( ML_Operator *Amatrix,
     puts("ehhhhhhhhhhhhhhhhhhhhhhhhhhhhh? check me !!!!");
     for( i=0 ; i<Nrows ; i++ )
       part[i] = 0;
-    edgecut = 0;
-
   } else {
 
     /* set parameters for ParMETIS */
@@ -673,22 +674,13 @@ int ML_DecomposeGraph_with_ParMETIS( ML_Operator *Amatrix,
     options = (int *)     ML_allocate (4*sizeof(int));
 
     wgtflag[0] = 0;    /* no weights */
-    numflag    = 0;    /* C style */
     options[0] = 0;    /* default options */
-
-    ncon = 1;          /* number of weights of each vertex */
 
     /* fraction of vertex weight that should be distributed to
        each subdomain for each balance constraint */
 
     for( i=0 ; i<N_parts ; i++ )
       tpwgts[i] = 1.0/N_parts;
-
-    /* imbalance tolerance for each vertex weight, 1 is the perfect
-       balance and N_parts being perfect imbalance */
-
-    ubvec = 1.05;
-
   }
 
   /* ********************************************************************** */
@@ -749,7 +741,6 @@ CPU-intensive, but it is safe. The case of N_parts = 1 is treated separately.
 		 __LINE__);
       }
       for( i=0 ; i<Nrows ; i++ ) part[i] = 0;
-      edgecut = 0;
       N_parts = 1;
       ok = 1;
       skip_check = 1;

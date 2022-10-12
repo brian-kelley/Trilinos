@@ -60,7 +60,6 @@ int ML_Create2(ML **ml_ptr, int Nlevels, USR_COMM in_comm)
    ML_DVector      *Amat_Normalization;
    ML_1Level       *SingleLevel;
    char            str[80];
-   ML_Comm         *comm;
    int              *LevelID;
    char            *label;
 
@@ -95,16 +94,15 @@ int ML_Create2(ML **ml_ptr, int Nlevels, USR_COMM in_comm)
      printf("ML_Create: Warning No. of requested levels = %d\n",Nlevels);
    }
 
-comm = (*ml_ptr)->comm;
 if (!ml_defines_have_printed && ML_Get_PrintLevel() > 0) {
 #ifdef HAVE_ML_PARMETIS
-  if (comm->ML_mypid == 0) printf("USing ParMETIS 3.x\n");
+  if ((*ml_ptr)->comm->ML_mypid == 0) printf("USing ParMETIS 3.x\n");
 #endif
 #ifdef ML_NOTALWAYS_LOWEST
-  if (comm->ML_mypid == 0) printf("USing ML_NOTALWAYS_LOWEST\n");
+  if ((*ml_ptr)->comm->ML_mypid == 0) printf("USing ML_NOTALWAYS_LOWEST\n");
 #endif
 #ifdef ML_SYNCH
-  if (comm->ML_mypid == 0) printf("USing ML_SYNCH\n");
+  if ((*ml_ptr)->comm->ML_mypid == 0) printf("USing ML_SYNCH\n");
 #endif
   ml_defines_have_printed = 1;
 }
@@ -1533,10 +1531,10 @@ int ML_Gen_Smoother_LineSmoother( ML *ml , int nl, int pre_or_post,
    else                     myomega = omega;
 
    if (fun == ML_Smoother_LineJacobi) {
-      sprintf(prestr,"LineJac");
+      snprintf(prestr,80,"LineJac");
    }
    else if (fun == ML_Smoother_LineGS) {
-      sprintf(prestr,"LineGS");
+      snprintf(prestr,80,"LineGS");
    }
    else {
       printf("ML_Gen_Smoother_LineSmoother: unknown function\n");
@@ -1548,7 +1546,7 @@ int ML_Gen_Smoother_LineSmoother( ML *ml , int nl, int pre_or_post,
    ML_Smoother_Gen_LineSmootherFacts(&data, &(ml->Amat[nl]), nBlocks, blockIndices, blockOffset);
 
    if (pre_or_post == ML_PRESMOOTHER) {
-      sprintf(str,"%s_pre%d",prestr,nl);
+      snprintf(str,80,"%s_pre%d",prestr,nl);
       ml->pre_smoother[nl].data_destroy = ML_Smoother_Destroy_BGS_Data;
       ml->pre_smoother[nl].pre_or_post=ML_TAG_PRESM;
       ml->pre_smoother[nl].gs_sweep_type= GS_type;
@@ -1556,7 +1554,7 @@ int ML_Gen_Smoother_LineSmoother( ML *ml , int nl, int pre_or_post,
                         (void *) data, fun, ntimes, myomega, str));
    }
    else if (pre_or_post == ML_POSTSMOOTHER) {
-      sprintf(str,"%s_post%d",prestr,nl);
+      snprintf(str,80,"%s_post%d",prestr,nl);
       ml->post_smoother[nl].data_destroy = ML_Smoother_Destroy_BGS_Data;
       ml->post_smoother[nl].gs_sweep_type= GS_type;
       ml->post_smoother[nl].pre_or_post=ML_TAG_POSTSM;
@@ -1564,7 +1562,7 @@ int ML_Gen_Smoother_LineSmoother( ML *ml , int nl, int pre_or_post,
                              (void *) data, fun, ntimes, myomega, str));
    }
    else if (pre_or_post == ML_BOTH) {
-      sprintf(str,"%s_pre%d",prestr,nl);
+      snprintf(str,80,"%s_pre%d",prestr,nl);
       ml->post_smoother[nl].data_destroy = ML_Smoother_Destroy_BGS_Data;
       ml->pre_smoother[nl].pre_or_post=ML_TAG_PRESM;
       ml->pre_smoother[nl].gs_sweep_type= GS_type;
@@ -1572,7 +1570,7 @@ int ML_Gen_Smoother_LineSmoother( ML *ml , int nl, int pre_or_post,
       ml->post_smoother[nl].gs_sweep_type= GS_type;
       ML_Smoother_Set(&(ml->pre_smoother[nl]),
                         (void *) data, fun, ntimes, myomega, str);
-      sprintf(str,"%s_post%d",prestr,nl);
+      snprintf(str,80,"%s_post%d",prestr,nl);
       return(ML_Smoother_Set(&(ml->post_smoother[nl]),
                              (void *) data, fun, ntimes, myomega, str));
    }
@@ -5233,7 +5231,7 @@ int ML_Gen_CoarseSolverSuperLU(ML *ml_handle, int level)
 #if defined(SUPERLU)
    int            i, j, *mat_ia, *mat_ja, nrows, nnz, offset, N_local;
    int            reuse, coarsest_level, flag, space, *cols, nz_ptr;
-   int            getrow_flag, osize, *row_ptr, length, zero_flag;
+   int            osize, *row_ptr, length, zero_flag;
    double         *mat_val, *vals, dsize, di;
    void           *data;
    ML_1Level      *sl;
@@ -5268,10 +5266,7 @@ int nblocks = 1, *block_list, old_upper = 0, count, newptr, me, nnzs;
    }
    row_ptr = (int *) ML_allocate(sizeof(int)*(osize+1));
    space   = osize * 5 + 30;
-   getrow_flag = 0;
-   if ( op->getrow->func_ptr != NULL ) {
-      getrow_flag = 1;
-   } else {
+   if ( op->getrow->func_ptr == NULL ) {
       printf("ML_Gen_CoarseSolverSuperLU error : no getrow function.\n");
       exit(-1);
    }
@@ -5490,7 +5485,7 @@ int nblocks = 1, *block_list, old_upper = 0, count, newptr, me, nnzs;
 #ifdef DSUPERLU
    int               i, offset, N_local;
    int               reuse, coarsest_level, flag, space, *cols, nz_ptr;
-   int               getrow_flag, osize, *row_ptr, length;
+   int               osize, *row_ptr, length;
    int               j, k, k1, k2, next,*ia, *ja;
    int_t             *mat_ia, *mat_ja, nrows, nnz;
    double            *mat_val, *vals, dsize, di, *aa;
@@ -5524,10 +5519,7 @@ int nblocks = 1, *block_list, old_upper = 0, count, newptr, me, nnzs;
    }
    row_ptr = (int *) ML_allocate(sizeof(int)*(osize+1));
    space   = osize * 5 + 30;
-   getrow_flag = 0;
-   if ( op->getrow->func_ptr != NULL ) {
-      getrow_flag = 1;
-   } else {
+   if ( op->getrow->func_ptr == NULL ) {
       printf("ML_Gen_CoarseSolverSuperLU error : no getrow function.\n");
       exit(-1);
    }
@@ -5889,10 +5881,9 @@ int ML_Gen_CoarseSolverAggregation(ML *ml_handle, int level, ML_Aggregate *ag)
 {
    int            i, j, k, offset, N_local;
    int            reuse, coarsest_level, flag, space, *cols = NULL, nz_ptr;
-   int            getrow_flag, osize, *row_ptr, length, zero_flag;
+   int            osize, *row_ptr, length, zero_flag;
    int            local_nlevels, local_clevel;
    double         *vals, dsize, di, *diagonal;
-   void           *data;
    ML_1Level      *sl;
    ML_Operator    *op;
    ML_Matrix_DCSR *csr_mat, *csr2_mat;
@@ -5916,13 +5907,10 @@ int ML_Gen_CoarseSolverAggregation(ML *ml_handle, int level, ML_Aggregate *ag)
       exit(-1);
    }
    op      = (ML_Operator *) &ml_handle->Amat[level];
-   data    = op->data;
    osize   = op->outvec_leng;
    row_ptr = (int *) ML_allocate(sizeof(int)*(osize+1));
    space   = osize * 5 + 30;
-   getrow_flag = 0;
-   if      ( op->getrow->func_ptr != NULL ) getrow_flag = 1;
-   else
+   if ( op->getrow->func_ptr == NULL )
    {
       printf("ML_Gen_CoarseSolverAggregation ERROR : no getrow function.\n");
       exit(-1);
@@ -6441,7 +6429,7 @@ int ML_build_ggb(ML *ml, void *data)
 {
 
   ML                    *ml_ggb=NULL;
-  int                    Nrows, Ncols, Nlocal, Nnz;
+  int                    Nrows, Ncols;
   ML_Operator           *Pmat=NULL, *Qtilde=NULL;
   struct ML_CSR_MSRdata *csr_data, *mydata, *Qtilde_data = NULL;
   int                   *NeighborList, *IndList;
@@ -6462,7 +6450,6 @@ int ML_build_ggb(ML *ml, void *data)
 
   Ncols = mydata->Ncols;
   Nrows = mydata->Nrows;
-  Nnz   = mydata->Nnz;
 
   /* Imported information of the Prolongator */
   csr_data->rowptr  =  mydata->rowptr;
@@ -6499,7 +6486,7 @@ int ML_build_ggb(ML *ml, void *data)
   /*  ML_Operator_Set_ApplyFunc (Pmat, CSR_matvec);  */
 
   nprocs  = ml_ggb->comm->ML_nprocs;           /* Number of processors */
-  Nlocal  =  Pmat->invec_leng;                 /* size of coarse grid vector  */
+  /* Nlocal  =  Pmat->invec_leng;              size of coarse grid vector  */
 
   NeighborList =  (int *) ML_allocate(sizeof(int)*(nprocs-1));
   IndList      =  (int *) ML_allocate(sizeof(int)*Ncols);
@@ -6745,7 +6732,7 @@ int ML_build_ggb(ML *ml, void *data)
 void ML_build_ggb_cheap(ML *ml, void *data)
 {
   ML                    *ml_ggb;
-  int                    Nrows, Ncols, Nlocal, Nnz;
+  int                    Nrows, Ncols;
   ML_Operator           *Pmat,  *Qtilde;
   struct ML_CSR_MSRdata *csr_data, *mydata;
   int                   *NeighborList, *IndList;
@@ -6762,7 +6749,6 @@ void ML_build_ggb_cheap(ML *ml, void *data)
 
   Ncols = mydata->Ncols;
   Nrows = mydata->Nrows;
-  Nnz   = mydata->Nnz;
 
 
   /* Imported information of the Prolongator */
@@ -6802,7 +6788,7 @@ void ML_build_ggb_cheap(ML *ml, void *data)
   /*  ML_Operator_Set_ApplyFunc (Pmat, CSR_matvec);  */
 
   nprocs  = ml_ggb->comm->ML_nprocs;           /* Number of processors */
-  Nlocal  =  Pmat->invec_leng;                 /* size of coarse grid vector  */
+  /* Nlocal  =  Pmat->invec_leng;                 size of coarse grid vector  */
 
   NeighborList =  (int *) ML_allocate(sizeof(int)*(nprocs-1));
   IndList      =  (int *) ML_allocate(sizeof(int)*Ncols);

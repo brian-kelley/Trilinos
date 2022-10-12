@@ -2258,13 +2258,12 @@ void ML_Reitzinger_CheckCommutingProperty(ML *ml_nodes, ML *ml_edges,
   int i;
   double d1, *vec, *Pn_vec, *Tfine_Pn_vec;
   char filename[80];
-  ML_Operator *Pn, *Tfine, *Tcoarse, *Pe, *Ttrans;
+  ML_Operator *Pn, *Tfine, *Tcoarse, *Pe;
 
   /*********************** start of execution *******************************/
 
   Tfine = Tmat_array[finelevel];
   Tcoarse = Tmat_array[coarselevel];
-  Ttrans = Tmat_trans_array[coarselevel];
   Pn = &(ml_nodes->Pmat[coarselevel]);
   Pe = &(ml_edges->Pmat[coarselevel]);
 

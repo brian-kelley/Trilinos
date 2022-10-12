@@ -126,8 +126,11 @@ void  ML_ARPACK_driver(char which[],
   double     a1 , a2  , lamR, lamI;
   char       string[4];
   double     *v=NULL, *workl=NULL, *workd=NULL, *workev=NULL, *d=NULL, *resid=NULL;         /* Pointers used by ARPACK */
-  int        *select=NULL, rvec, *work=NULL;
+  int        *select=NULL, *work=NULL;
   int        proc_id;
+#if defined(HAVE_ML_ARPACK) || defined(HAVE_ML_PARPACK)
+  int rvec;
+#endif
 
   double     *vecx=NULL, *vecy=NULL, *rhs=NULL, *rhs1=NULL;                       /* Dummy Pointers */
   /* FILE       *ifp; */
@@ -317,11 +320,11 @@ void  ML_ARPACK_driver(char which[],
      * may also be computed by setting rvec = 1.
      **********************************************/
 
-    rvec = 1;
     ierr = 0;
     sprintf(string,"A");
 
 #if defined(HAVE_ML_ARPACK) || defined(HAVE_ML_PARPACK)
+    rvec = 1;
     /* C to Fortran wraper function */
     ml_pdneupc__(&comm,&rvec, string, select, d, v, &ldv,
         workev, bmat, &nloc, which, &nev,
@@ -1038,7 +1041,7 @@ int  ML_MGGB_angle( struct ML_Eigenvalue_Struct *eigen_struct,ML *ml,
   int            Nrows, Ncols, level;
   int            ggb_flag = 0, count;
   double         tm;
-  double        *vec, *val;
+  double        *vec;
 
 #ifndef HAVE_ML_PARPACK
   int             i, kk;

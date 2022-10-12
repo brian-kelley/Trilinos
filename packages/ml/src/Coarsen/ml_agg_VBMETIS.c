@@ -2081,9 +2081,10 @@ static int ML_DecomposeGraph_with_VBMETIS( ML_Operator *Amatrix,
 
   int i, j,jj,  count, count2;
   int Nrows, Nrows_global,NrowsMETIS, N_nonzeros, N_bdry_nodes;
-  int *wgtflag=NULL, numflag;
+  int *wgtflag=NULL;
   indextype *xadj=NULL, *adjncy=NULL;
 #ifdef HAVE_ML_METIS
+  int numflag = 0;
   indextype *vwgt=NULL, *adjwgt=NULL;
 #endif
   indextype *part=NULL;
@@ -2167,7 +2168,6 @@ static int ML_DecomposeGraph_with_VBMETIS( ML_Operator *Amatrix,
   /* set parameters */
 
   wgtflag[0] = 0;    /* no weights */
-  numflag    = 0;    /* C style */
 #if defined(HAVE_ML_METIS)
 # if (METIS_VER_MAJOR<5)
   options[0] = 0;    /* default options */

@@ -96,7 +96,6 @@ int ML_Aggregate_CoarsenUser(ML_Aggregate *ml_ag, ML_Operator *Amatrix,
   int * graph_decomposition = NULL;
   ML_Aggregate_Viz_Stats * aggr_viz_and_stats;
   ML_Aggregate_Viz_Stats * grid_info;
-  int Nprocs;
   char * unamalg_bdry = NULL;
   char* label;
   int N_dimensions;
@@ -114,7 +113,6 @@ int ML_Aggregate_CoarsenUser(ML_Aggregate *ml_ag, ML_Operator *Amatrix,
   /* ============================================================= */
 
   mypid                   = comm->ML_mypid;
-  Nprocs                  = comm->ML_nprocs;
   epsilon                 = ml_ag->threshold;
   num_PDE_eqns            = ml_ag->num_PDE_eqns;
   nullspace_dim           = ml_ag->nullspace_dim;
