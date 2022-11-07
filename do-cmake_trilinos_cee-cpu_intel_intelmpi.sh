@@ -4,8 +4,6 @@ set -o pipefail
 
 COMPILER_DIR=${COMPILER_ROOT}
 MPI_DIR=${MPI_ROOT}
-BLAS_DIR=${CBLAS_ROOT}
-LAPACK_DIR=${CBLAS_ROOT}
 HDF5_DIR=${HDF5_ROOT}
 NETCDF_DIR=${NETCDF_ROOT}
 PNETCDF_DIR=${PNETCDF_ROOT}
@@ -118,6 +116,20 @@ then
 else
   echo "ERROR: Invalid using MPI flag '${USE_MPI:?}'!" >&2
   exit 1
+fi
+
+maybescript=${TRILINOS_HOME}/../sparc-devops/linalg.py
+if [[ -f ${maybescript} ]]
+then
+    includes=$(${maybescript} --include-dirs)
+    libdirs=$(${maybescript} --lib-dirs)
+    libnames=$(${maybescript} --library-names)
+else
+    echo "REMARK: 'sparc-devops' not cloned as a part of this checkout; using hard-coded MKL paths"
+    CBLAS=${CBLAS_ROOT}
+    includes="${CBLAS}/mkl/include"
+    libdirs="${CBLAS}/mkl/lib/intel64;${CBLAS}/compiler/lib/intel64"
+    libnames="mkl_intel_lp64;mkl_intel_thread;mkl_core;iomp5"
 fi
 
 echo " *** Installing in: ${TRIL_INSTALL_PATH}/${TRIL_INSTALL_DIR}"
@@ -247,12 +259,14 @@ cmake \
    -D TPL_ENABLE_BinUtils=ON \
    \
    -D TPL_ENABLE_BLAS=ON \
-   -D BLAS_LIBRARY_DIRS:PATH="${BLAS_DIR}/mkl/lib/intel64;${BLAS_DIR}/lib/intel64" \
-   -D BLAS_LIBRARY_NAMES:STRING="mkl_intel_lp64;mkl_intel_thread;mkl_core;iomp5" \
+   -D BLAS_INCLUDE_DIRS:PATH="${includes}" \
+   -D BLAS_LIBRARY_DIRS:PATH="${libdirs}" \
+   -D BLAS_LIBRARY_NAMES:STRING="${libnames}" \
    \
    -D TPL_ENABLE_LAPACK=ON \
-   -D LAPACK_LIBRARY_DIRS:PATH="${LAPACK_DIR}/mkl/lib/intel64;${LAPACK_DIR}/lib/intel64" \
-   -D LAPACK_LIBRARY_NAMES:STRING="mkl_intel_lp64;mkl_intel_thread;mkl_core;iomp5" \
+   -D LAPACK_INCLUDE_DIRS:PATH="${includes}" \
+   -D LAPACK_LIBRARY_DIRS:PATH="${libdirs}" \
+   -D LAPACK_LIBRARY_NAMES:STRING="${libnames}" \
    \
    -D TPL_ENABLE_Boost=${BUILD_ALL_PACKAGES:?} \
    -D Boost_INCLUDE_DIRS:PATH="${BOOST_DIR}/include" \
