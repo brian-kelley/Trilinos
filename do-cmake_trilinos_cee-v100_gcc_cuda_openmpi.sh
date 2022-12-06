@@ -155,7 +155,6 @@ cmake \
    -D CMAKE_Fortran_FLAGS="${BUILD_F_FLAGS}" \
    -D CMAKE_EXE_LINKER_FLAGS="${exe_linker_flags}" \
    -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
-   -D Trilinos_CXX11_FLAGS="-std=c++11 --expt-extended-lambda" \
    \
    -D Gtest_SKIP_INSTALL=TRUE \
    -D Trilinos_VERBOSE_CONFIGURE=FALSE \

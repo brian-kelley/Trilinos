@@ -147,7 +147,6 @@ cmake \
    -D CMAKE_C_FLAGS_RELEASE_OVERRIDE="-DNDEBUG" \
    -D CMAKE_CXX_FLAGS_RELEASE_OVERRIDE="-DNDEBUG" \
    -D CMAKE_Fortran_FLAGS_RELEASE_OVERRIDE="-DNDEBUG" \
-   -D Trilinos_CXX11_FLAGS="-std=c++11 --expt-extended-lambda" \
    \
    -D Gtest_SKIP_INSTALL=TRUE \
    -D Trilinos_VERBOSE_CONFIGURE=FALSE \
