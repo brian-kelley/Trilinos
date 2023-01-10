@@ -142,6 +142,8 @@ cmake \
    -D CMAKE_CXX_COMPILER="${CXX_COMPILER}" \
    -D CMAKE_Fortran_COMPILER="${Fortran_COMPILER}" \
    \
+   -D CMAKE_CXX_STANDARD=17 \
+   \
    -D CMAKE_C_FLAGS="${BUILD_C_FLAGS}" \
    -D CMAKE_CXX_FLAGS="${BUILD_CXX_FLAGS}" \
    -D CMAKE_Fortran_FLAGS="${BUILD_F_FLAGS}" \
