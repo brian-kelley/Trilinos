@@ -637,6 +637,7 @@ IF (Stokhos_ENABLE_Sacado)
     sacado/kokkos/Stokhos_DynamicStridedStorage.hpp
     sacado/kokkos/Stokhos_DynamicThreadedStorage.hpp
     sacado/kokkos/Stokhos_DynamicThreadedStorage_cuda.hpp
+    sacado/kokkos/Stokhos_StorageHelpers.hpp
     sacado/kokkos/Stokhos_mpl_for_each.hpp
     sacado/kokkos/Stokhos_ViewStorage.hpp
     sacado/kokkos/Stokhos_Is_Constant.hpp
@@ -1094,6 +1095,9 @@ IF (Stokhos_ENABLE_Sacado)
     ENDIF()
 
     IF (Stokhos_ENABLE_MueLu)
+      IF (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
+        message(WARNING "Enabling MueLu in Stokhos when compiling with CUDA relocatable device code may cause infinite compile times")
+      ENDIF()
       SET(MUELU_HEADERS "")
       SET(MUELU_CPP_SOURCES Stokhos_Dummy.cpp)
       SET(STOKHOS_MUELU_DEPLIBS "")
@@ -1107,6 +1111,8 @@ IF (Stokhos_ENABLE_Sacado)
         LIST(APPEND MUELU_SC_LO_GO_NO_ETI_CLASSES MueLu::FactoryFactory)
         LIST(APPEND MUELU_SC_LO_GO_NO_ETI_CLASSES MueLu::ParameterListInterpreter)
         LIST(APPEND MUELU_SC_LO_GO_NO_ETI_CLASSES MueLu::MLParameterListInterpreter)
+        LIST(APPEND MUELU_SC_LO_GO_NO_ETI_CLASSES MueLu::RefMaxwell)
+        LIST(APPEND MUELU_SC_LO_GO_NO_ETI_CLASSES MueLu::Maxwell_Utils)
       ENDIF()
 
       IF(Stokhos_ENABLE_Ensemble_Scalar_Type)

@@ -135,6 +135,9 @@ void OutputFile::setup_output_params(OutputParams &params) const
     params.set_additional_attribute_fields(m_additionalAttributeFields);
     params.set_is_restart(m_dbPurpose == stk::io::WRITE_RESTART);
     params.set_enable_edge_io(m_enableEdgeIO);
+
+    params.set_filter_empty_entity_blocks(m_filterEmptyEntityBlocks);
+    params.set_filter_empty_assembly_entity_blocks(m_filterEmptyAssemblyEntityBlocks);
 }
 
 void OutputFile::set_input_region(const Ioss::Region *input_region)
@@ -146,7 +149,7 @@ void OutputFile::set_input_region(const Ioss::Region *input_region)
 }
 
 void OutputFile::write_output_mesh(const stk::mesh::BulkData& bulk_data,
-                                         const std::vector<std::vector<int>> &attributeOrdering)
+                                   const std::vector<std::vector<int>> &attributeOrdering)
 {
     if ( m_meshDefined == false )
     {
@@ -196,8 +199,10 @@ std::vector<stk::mesh::Entity> OutputFile::get_output_entities(const stk::mesh::
 
     std::vector<stk::mesh::Entity> entities;
 
-    stk::io::OutputParams params(*m_region, bulk_data);
-    setup_output_params(params);
+    if (m_outputParams == nullptr){
+      m_outputParams = std::make_shared<stk::io::OutputParams>(*m_region, bulk_data);
+      setup_output_params(*m_outputParams);
+    }
 
     Ioss::GroupingEntity *ge = m_region->get_entity(name);
     ThrowErrorMsgIf (ge == nullptr,
@@ -210,7 +215,7 @@ std::vector<stk::mesh::Entity> OutputFile::get_output_entities(const stk::mesh::
     } else if(type == Ioss::NODESET) {
         part_type = stk::topology::NODE_RANK;
     } else if(type == Ioss::ELEMENTBLOCK) {
-        part_type = params.has_skin_mesh_selector() ? meta.side_rank() : stk::topology::ELEMENT_RANK;
+        part_type = m_outputParams->has_skin_mesh_selector() ? meta.side_rank() : stk::topology::ELEMENT_RANK;
     } else if(type == Ioss::SIDESET) {
         part = meta.get_part(name);
         ThrowRequireMsg(nullptr != part, "Could not find a sideset with name: " + name);
@@ -228,15 +233,15 @@ std::vector<stk::mesh::Entity> OutputFile::get_output_entities(const stk::mesh::
     }
 
     if(type == Ioss::SIDEBLOCK) {
-        Ioss::Region &io_region = params.io_region();
+        Ioss::Region &io_region = m_outputParams->io_region();
         bool ints64bit = db_api_int_size(&io_region) == 8;
         if (ints64bit) {
-            internal_fill_output_entities_for_sideblock<int64_t>(params, ge, part, entities);
+            internal_fill_output_entities_for_sideblock<int64_t>(*m_outputParams, ge, part, entities);
         } else {
-            internal_fill_output_entities_for_sideblock<int>(params, ge, part, entities);
+            internal_fill_output_entities_for_sideblock<int>(*m_outputParams, ge, part, entities);
         }
     } else {
-        get_output_entity_list(ge, part_type, params, entities);
+        get_output_entity_list(ge, part_type, *m_outputParams, entities);
     }
 
     return entities;
@@ -556,7 +561,7 @@ void OutputFile::define_output_fields(const stk::mesh::BulkData& bulk_data,
                                 : m_useNodesetForBlockNodesFields;
 
                         if (use_nodeset) {
-                            std::string nodes_name = partName + s_entity_nodes_suffix;
+                            std::string nodes_name = partName + s_entityNodesSuffix;
                             node_entity = region->get_entity(nodes_name);
                         }
                     }
@@ -645,7 +650,7 @@ int OutputFile::write_defined_output_fields(const stk::mesh::BulkData& bulk_data
                             m_useNodesetForBlockNodesFields;
 
                     if (use_nodeset) {
-                        std::string nodes_name = partName + s_entity_nodes_suffix;
+                        std::string nodes_name = partName + s_entityNodesSuffix;
                         node_entity = region->get_entity(nodes_name);
                     }
                 }
@@ -808,6 +813,16 @@ bool OutputFile::is_skin_mesh() const
 void OutputFile::set_enable_edge_io(bool enableEdgeIO)
 {
     m_enableEdgeIO = enableEdgeIO;
+}
+
+void OutputFile::set_filter_empty_entity_blocks(const bool filterEmptyEntityBlocks)
+{
+  m_filterEmptyEntityBlocks = filterEmptyEntityBlocks;
+}
+
+void OutputFile::set_filter_empty_assembly_entity_blocks(const bool filterEmptyAssemblyEntityBlocks)
+{
+  m_filterEmptyAssemblyEntityBlocks = filterEmptyAssemblyEntityBlocks;
 }
 
 } // namespace impl

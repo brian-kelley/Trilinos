@@ -1,9 +1,14 @@
+#ifndef _MiniEM_DiscreteCurl_hpp_
+#define _MiniEM_DiscreteCurl_hpp_
+
 #include "Panzer_LOCPair_GlobalEvaluationData.hpp"
 #include "Panzer_IntrepidOrientation.hpp"
 #include "Panzer_IntrepidBasisFactory.hpp"
 #include "Intrepid2_OrientationTools.hpp"
 #include "Intrepid2_LagrangianInterpolation.hpp"
+#ifdef PANZER_HAVE_EPETRA_STACK
 #include "Thyra_EpetraThyraWrappers.hpp"
+#endif
 
 class CurlRequestCallback : public Teko::RequestCallback<Teko::LinearOp> {
 private:
@@ -54,7 +59,9 @@ void addDiscreteCurlToRequestHandler(
   typedef panzer::GlobalOrdinal GlobalOrdinal;
 
   typedef typename panzer::BlockedTpetraLinearObjFactory<panzer::Traits,Scalar,LocalOrdinal,GlobalOrdinal> tpetraBlockedLinObjFactory;
+#ifdef PANZER_HAVE_EPETRA_STACK
   typedef typename panzer::BlockedEpetraLinearObjFactory<panzer::Traits,LocalOrdinal> epetraBlockedLinObjFactory;
+#endif
   typedef panzer::GlobalIndexer UGI;
   typedef PHX::Device DeviceSpace;
   typedef Kokkos::HostSpace HostSpace;
@@ -67,7 +74,9 @@ void addDiscreteCurlToRequestHandler(
 
   // must be able to cast to a block linear object factory
   RCP<const tpetraBlockedLinObjFactory > tblof  = rcp_dynamic_cast<const tpetraBlockedLinObjFactory >(linObjFactory);
+#ifdef PANZER_HAVE_EPETRA_STACK
   RCP<const epetraBlockedLinObjFactory > eblof  = rcp_dynamic_cast<const epetraBlockedLinObjFactory >(linObjFactory);
+#endif
   if (tblof != Teuchos::null) {
     typedef typename panzer::BlockedTpetraLinearObjContainer<Scalar,LocalOrdinal,GlobalOrdinal> linObjContainer;
     typedef Tpetra::CrsMatrix<Scalar,LocalOrdinal,GlobalOrdinal,panzer::TpetraNodeType> matrix;
@@ -162,15 +171,14 @@ void addDiscreteCurlToRequestHandler(
     Kokkos::deep_copy(refDofCoeffs_h, refDofCoeffs);
     // set up the topology of each face in an element for computing DOF coefficients
     // in 2D coefficients are same as reference coefficients
-    typename Kokkos::DynRankView<shards::CellTopology,DeviceSpace>::HostMirror
-      sub_topologies(Kokkos::ViewAllocateWithoutInitializing("sub_topologies"), hdivCardinality);
+    shards::CellTopology sub_topologies[hdivCardinality];
     if(dim < 3)
       for(int i = 0; i < hdivCardinality; i++)
         dofCoeffs_h(0,i) = refDofCoeffs_h(i);
     else {
       for(int iface = 0; iface < hdivCardinality; iface++){
         shards::CellTopology sub_topology(topology.getCellTopologyData(dim-1,iface));
-        sub_topologies(iface) = sub_topology;
+        sub_topologies[iface] = sub_topology;
       }
     }
 
@@ -180,7 +188,7 @@ void addDiscreteCurlToRequestHandler(
     Kokkos::deep_copy(curlAtDofCoordsNonOriented, curlAtDofCoordsNonOriented_d);
 
     // create the global curl matrix
-    RCP<matrix> curl_matrix = rcp(new matrix(rowmap,colmap,basisCoeffsLI.extent(1)));
+    RCP<matrix> curl_matrix = rcp(new matrix(rowmap,colmap,hcurlCardinality));
 
     // get IDs for edges and faces
     auto fLIDs_k = face_ugi->getLIDs();
@@ -214,7 +222,7 @@ void addDiscreteCurlToRequestHandler(
         if(dim==3){
           elemOrts(0).getFaceOrientation(fOrt.data(),hdivCardinality);
           for(int iface = 0; iface < hdivCardinality; iface++){
-            Intrepid2::Impl::OrientationTools::getJacobianOfOrientationMap(ortJacobian, sub_topologies(iface), fOrt(iface));
+            Intrepid2::Impl::OrientationTools::getJacobianOfOrientationMap(ortJacobian, sub_topologies[iface], fOrt(iface));
             auto ortJacobianDet = ortJacobian(0,0)*ortJacobian(1,1)-ortJacobian(1,0)*ortJacobian(0,1);
             for(int idim = 0; idim < dim; idim++)
               dofCoeffs_h(0,iface,idim) = refDofCoeffs_h(iface,idim)*ortJacobianDet;
@@ -286,6 +294,7 @@ void addDiscreteCurlToRequestHandler(
     // add curl callback to request handler
     reqHandler->addRequestCallback(Teuchos::rcp(new CurlRequestCallback(thyra_curl)));
 
+#ifdef PANZER_HAVE_EPETRA_STACK
   }  else if (eblof != Teuchos::null) {
 
     typedef typename panzer::BlockedEpetraLinearObjContainer linObjContainer;
@@ -342,37 +351,37 @@ void addDiscreteCurlToRequestHandler(
 
     // get the HCurl and HDiv bases
     auto face_fieldPattern = face_ugi->getFieldPattern(face_basis_name);
-    auto face_basis = rcp_dynamic_cast<const panzer::Intrepid2FieldPattern>(face_fieldPattern,true)->getIntrepidBasis();
+    auto face_basis = rcp_dynamic_cast<const panzer::Intrepid2FieldPattern>(face_fieldPattern,true)->getIntrepidBasis()->getHostBasis();
     auto edge_fieldPattern = edge_ugi->getFieldPattern(edge_basis_name);
-    auto edge_basis = rcp_dynamic_cast<const panzer::Intrepid2FieldPattern>(edge_fieldPattern,true)->getIntrepidBasis();
+    auto edge_basis = rcp_dynamic_cast<const panzer::Intrepid2FieldPattern>(edge_fieldPattern,true)->getIntrepidBasis()->getHostBasis();
 
     // cardinalities
     int hdivCardinality = face_basis->getCardinality();
     int hcurlCardinality = edge_basis->getCardinality();
 
     // allocate some view
-    Kokkos::DynRankView<double,DeviceSpace> dofCoords("dofCoords", 1, hdivCardinality, dim);
-    Kokkos::DynRankView<double,DeviceSpace> basisCoeffsLI("basisCoeffsLI", 1, hcurlCardinality, hdivCardinality);
+    Kokkos::DynRankView<double,HostSpace> dofCoords("dofCoords", 1, hdivCardinality, dim);
+    Kokkos::DynRankView<double,HostSpace> basisCoeffsLI("basisCoeffsLI", 1, hcurlCardinality, hdivCardinality);
     typename Kokkos::DynRankView<Intrepid2::Orientation,DeviceSpace>::HostMirror elemOrts("elemOrts", 1);
     typename Kokkos::DynRankView<GlobalOrdinal, DeviceSpace>::HostMirror elemNodes("elemNodes", 1, numElemVertices);
     typename Kokkos::DynRankView<int, DeviceSpace>::HostMirror fOrt("fOrt", hdivCardinality);
     typename Kokkos::DynRankView<double, DeviceSpace>::HostMirror ortJacobian("ortJacobian", 2, 2);
 
     // the ranks of these depend on dimension
-    Kokkos::DynRankView<double,DeviceSpace> dofCoeffs;
-    Kokkos::DynRankView<double,DeviceSpace> refDofCoeffs;
-    Kokkos::DynRankView<double,DeviceSpace> curlAtDofCoordsNonOriented;
-    Kokkos::DynRankView<double,DeviceSpace> curlAtDofCoords;
+    Kokkos::DynRankView<double,HostSpace> dofCoeffs;
+    Kokkos::DynRankView<double,HostSpace> refDofCoeffs;
+    Kokkos::DynRankView<double,HostSpace> curlAtDofCoordsNonOriented;
+    Kokkos::DynRankView<double,HostSpace> curlAtDofCoords;
     if(dim==3){
-      dofCoeffs                  = Kokkos::DynRankView<double,DeviceSpace>("dofCoeffs", 1, hdivCardinality,dim);
-      refDofCoeffs               = Kokkos::DynRankView<double,DeviceSpace>("refDofCoeffs", hdivCardinality,dim);
-      curlAtDofCoordsNonOriented = Kokkos::DynRankView<double,DeviceSpace>("curlAtDofCoordsNonOriented", 1, hcurlCardinality, hdivCardinality, dim);
-      curlAtDofCoords            = Kokkos::DynRankView<double,DeviceSpace>("curlAtDofCoords", 1, hcurlCardinality, hdivCardinality, dim);
+      dofCoeffs                  = Kokkos::DynRankView<double,HostSpace>("dofCoeffs", 1, hdivCardinality,dim);
+      refDofCoeffs               = Kokkos::DynRankView<double,HostSpace>("refDofCoeffs", hdivCardinality,dim);
+      curlAtDofCoordsNonOriented = Kokkos::DynRankView<double,HostSpace>("curlAtDofCoordsNonOriented", 1, hcurlCardinality, hdivCardinality, dim);
+      curlAtDofCoords            = Kokkos::DynRankView<double,HostSpace>("curlAtDofCoords", 1, hcurlCardinality, hdivCardinality, dim);
     } else {
-      dofCoeffs                  = Kokkos::DynRankView<double,DeviceSpace>("dofCoeffs", 1, hdivCardinality);
-      refDofCoeffs               = Kokkos::DynRankView<double,DeviceSpace>("refDofCoeffs", hdivCardinality);
-      curlAtDofCoordsNonOriented = Kokkos::DynRankView<double,DeviceSpace>("curlAtDofCoordsNonOriented", 1, hcurlCardinality, hdivCardinality);
-      curlAtDofCoords            = Kokkos::DynRankView<double,DeviceSpace>("curlAtDofCoords", 1, hcurlCardinality, hdivCardinality);
+      dofCoeffs                  = Kokkos::DynRankView<double,HostSpace>("dofCoeffs", 1, hdivCardinality);
+      refDofCoeffs               = Kokkos::DynRankView<double,HostSpace>("refDofCoeffs", hdivCardinality);
+      curlAtDofCoordsNonOriented = Kokkos::DynRankView<double,HostSpace>("curlAtDofCoordsNonOriented", 1, hcurlCardinality, hdivCardinality);
+      curlAtDofCoords            = Kokkos::DynRankView<double,HostSpace>("curlAtDofCoords", 1, hcurlCardinality, hdivCardinality);
     }
     face_basis->getDofCoeffs(refDofCoeffs);
 
@@ -381,15 +390,14 @@ void addDiscreteCurlToRequestHandler(
     Kokkos::deep_copy(refDofCoeffs_h, refDofCoeffs);
     // set up the topology of each face in an element for computing DOF coefficients
     // in 2D coefficients are same as reference coefficients
-    typename Kokkos::DynRankView<shards::CellTopology,DeviceSpace>::HostMirror
-      sub_topologies(Kokkos::ViewAllocateWithoutInitializing("sub_topologies"), hdivCardinality);
+    shards::CellTopology sub_topologies[hdivCardinality];
     if(dim < 3)
       for(int i = 0; i < hdivCardinality; i++)
         dofCoeffs_h(0,i) = refDofCoeffs_h(i);
     else {
       for(int iface = 0; iface < hdivCardinality; iface++){
         shards::CellTopology sub_topology(topology.getCellTopologyData(dim-1,iface));
-        sub_topologies(iface) = sub_topology;
+        sub_topologies[iface] = sub_topology;
       }
     }
 
@@ -421,7 +429,7 @@ void addDiscreteCurlToRequestHandler(
         if(dim==3){
           elemOrts(0).getFaceOrientation(fOrt.data(),hdivCardinality);
           for(int iface = 0; iface < hdivCardinality; iface++){
-            Intrepid2::Impl::OrientationTools::getJacobianOfOrientationMap(ortJacobian, sub_topologies(iface), fOrt(iface));
+            Intrepid2::Impl::OrientationTools::getJacobianOfOrientationMap(ortJacobian, sub_topologies[iface], fOrt(iface));
             auto ortJacobianDet = ortJacobian(0,0)*ortJacobian(1,1)-ortJacobian(1,0)*ortJacobian(0,1);
             for(int idim = 0; idim < dim; idim++)
               dofCoeffs_h(0,iface,idim) = refDofCoeffs_h(iface,idim)*ortJacobianDet;
@@ -430,11 +438,11 @@ void addDiscreteCurlToRequestHandler(
 	Kokkos::deep_copy(dofCoeffs, dofCoeffs_h);
 
         //orient basis
-	Kokkos::DynRankView<Intrepid2::Orientation,DeviceSpace> elemOrts_d("elemOrts_d", 1);
-	Kokkos::deep_copy(elemOrts_d, elemOrts);
+	// Kokkos::DynRankView<Intrepid2::Orientation,DeviceSpace> elemOrts_d("elemOrts_d", 1);
+	// Kokkos::deep_copy(elemOrts_d, elemOrts);
         ots::modifyBasisByOrientation(curlAtDofCoords,
                                       curlAtDofCoordsNonOriented,
-                                      elemOrts_d,
+                                      elemOrts,
                                       edge_basis.get());
 
         //get basis coefficients (dofs)
@@ -505,7 +513,9 @@ void addDiscreteCurlToRequestHandler(
 
     // add curl callback to request handler
     reqHandler->addRequestCallback(Teuchos::rcp(new CurlRequestCallback(thyra_curl)));
-
+#endif
   } else
     TEUCHOS_ASSERT(false);
 }
+
+#endif

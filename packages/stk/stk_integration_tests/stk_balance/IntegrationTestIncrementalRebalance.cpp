@@ -37,18 +37,18 @@ public:
                                                   const double defaultWeight,
                                                   bool incrementalRebalance)
     : m_stkMeshBulkData(stkMeshBulkData),
-      m_weightField(weightField),
-      m_defaultWeight(defaultWeight),
       m_incrementalRebalance(incrementalRebalance)
   {
-    method = "parmetis";
+    m_method = "parmetis";
+    setVertexWeightMethod(stk::balance::VertexWeightMethod::FIELD);
+    setVertexWeightFieldName(weightField.name());
+    setDefaultFieldWeight(defaultWeight);
   }
   virtual ~FieldVertexWeightSettingsWithSearchForParticles() = default;
 
   using stk::balance::GraphCreationSettings::getToleranceForFaceSearch;
 
   virtual double getGraphEdgeWeight(stk::topology element1Topology, stk::topology element2Topology) const { return 1.0; }
-  virtual bool areVertexWeightsProvidedViaFields() const { return true; }
   virtual bool includeSearchResultsInGraph() const { return true; }
   virtual bool getEdgesForParticlesUsingSearch() const { return true; }
   virtual bool setVertexWeightsBasedOnNumberAdjacencies() const { return false; }
@@ -56,17 +56,9 @@ public:
   virtual double getToleranceForFaceSearch() const { return 0.005; }
   virtual int getGraphVertexWeight(stk::topology type) const { return 1; }
   virtual double getImbalanceTolerance() const { return 1.05; }
-  virtual void setDecompMethod(const std::string& input_method) { method = input_method;}
-  virtual std::string getDecompMethod() const { return method; }
+  virtual void setDecompMethod(const std::string& input_method) { m_method = input_method;}
+  virtual std::string getDecompMethod() const { return m_method; }
   virtual bool incrementalRebalance() const { return m_incrementalRebalance; }
-
-  virtual double getGraphVertexWeight(stk::mesh::Entity entity, int criteria_index = 0) const
-  {
-    const double *weight = stk::mesh::field_data(m_weightField, entity);
-    if(weight) return *weight;
-
-    return m_defaultWeight;
-  }
 
 protected:
   FieldVertexWeightSettingsWithSearchForParticles() = delete;
@@ -74,8 +66,6 @@ protected:
   FieldVertexWeightSettingsWithSearchForParticles& operator=(const FieldVertexWeightSettingsWithSearchForParticles&) = delete;
 
   const stk::mesh::BulkData & m_stkMeshBulkData;
-  const stk::balance::DoubleFieldType &m_weightField;
-  const double m_defaultWeight;
   bool m_incrementalRebalance;
 };
 

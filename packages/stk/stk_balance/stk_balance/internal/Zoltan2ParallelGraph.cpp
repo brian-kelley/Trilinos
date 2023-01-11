@@ -3,6 +3,7 @@
 #include <stk_balance/balanceUtils.hpp>
 #include <stk_balance/internal/privateDeclarations.hpp>
 #include <stk_balance/internal/StkBalanceUtils.hpp>
+#include <stk_balance/setup/DefaultSettings.hpp>
 #include <stk_util/util/SortAndUnique.hpp>
 #include <stk_util/util/human_bytes.hpp>
 
@@ -13,7 +14,7 @@ void Zoltan2ParallelGraph::adjust_vertex_weights(const stk::balance::BalanceSett
 {
   const stk::mesh::Part & locallyOwnedPart =  stkMeshBulkData.mesh_meta_data().locally_owned_part();
 
-  if (balanceSettings.areVertexWeightsProvidedViaFields())
+  if (balanceSettings.getVertexWeightMethod() == stk::balance::VertexWeightMethod::FIELD)
   {
     stk::mesh::EntityVector entitiesToBalance;
     const bool sortById = true;
@@ -112,7 +113,8 @@ stk::balance::GraphEdge create_graph_edge(const stk::mesh::BulkData &bulk,
   const stk::topology element1Topology = bulk.bucket(element1).topology();
   const stk::topology element2Topology = bulk.bucket(element2).topology();
   const stk::mesh::EntityId element2Id = stk::balance::internal::get_local_id(localIds, element2);
-  double edgeWeight = balanceSettings.getGraphEdgeWeight(element1Topology, element2Topology);
+  double edgeWeight = balanceSettings.getGraphEdgeWeight(element1Topology, element2Topology) *
+                      balanceSettings.getGraphEdgeWeightMultiplier();
   int vertex2ParallelOwner = 0;
 
   return stk::balance::GraphEdge(element1, element2Id, vertex2ParallelOwner, edgeWeight);
@@ -126,7 +128,8 @@ stk::balance::GraphEdge create_graph_edge(const stk::mesh::BulkData &bulk,
   const stk::topology element1Topology = bulk.bucket(element1).topology();
   const stk::topology element2Topology = bulk.bucket(element2).topology();
   const stk::mesh::EntityId element2Id = bulk.identifier(element2);
-  double edgeWeight = balanceSettings.getGraphEdgeWeight(element1Topology, element2Topology);
+  double edgeWeight = balanceSettings.getGraphEdgeWeight(element1Topology, element2Topology) *
+                      balanceSettings.getGraphEdgeWeightMultiplier();
   int vertex2ParallelOwner = bulk.parallel_owner_rank(element2);
 
   return stk::balance::GraphEdge(element1, element2Id, vertex2ParallelOwner, edgeWeight);
@@ -309,7 +312,23 @@ void Zoltan2ParallelGraph::createGraphEdgesUsingNodeConnectivity(stk::mesh::Bulk
         mVertexIds[local_id] = getAdjacencyId(stkMeshBulkData, elementOfConcern, useLocalIds, localIds);
 
         if (not stk::balance::internal::should_omit_spider_element(stkMeshBulkData, balanceSettings, elementOfConcern)) {
-          mVertexWeights[local_id] = balanceSettings.getGraphVertexWeight(bucket.topology());
+          if (balanceSettings.getVertexWeightMethod() == stk::balance::VertexWeightMethod::CONSTANT) {
+            mVertexWeights[local_id] = 1;
+          }
+          else if (balanceSettings.getVertexWeightMethod() == stk::balance::VertexWeightMethod::TOPOLOGY) {
+            mVertexWeights[local_id] = balanceSettings.getGraphVertexWeight(bucket.topology());
+          }
+          else if (balanceSettings.getVertexWeightMethod() == stk::balance::VertexWeightMethod::CONNECTIVITY) {
+            const stk::mesh::Field<double> & connectivityWeights = *balanceSettings.getVertexConnectivityWeightField(stkMeshBulkData);
+            mVertexWeights[local_id] = *stk::mesh::field_data(connectivityWeights, elementOfConcern);
+          }
+          else if (balanceSettings.getVertexWeightMethod() == stk::balance::VertexWeightMethod::FIELD) {
+            mVertexWeights[local_id] = 0; //real field weights set in adjust_vertex_weights
+          }
+          else {
+            ThrowErrorMsg("Unknown vertex weight method: " << vertex_weight_method_name(balanceSettings.getVertexWeightMethod()));
+          }
+
           stk::balance::internal::fillEntityCentroid(stkMeshBulkData, coord, elementOfConcern, &mVertexCoordinates[local_id*spatialDimension]);
           graphEdgeCreator.create_graph_edges_for_element(elementOfConcern, graphEdges);
         }

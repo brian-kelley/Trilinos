@@ -60,6 +60,14 @@
 
 #if defined(HAVE_MUELU_STRATIMIKOS) && defined(HAVE_MUELU_THYRA)
 
+// This is not as general as possible, but should be good enough for most builds.
+#if (defined(HAVE_MUELU_TPETRA) && \
+     ((defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_FLOAT) && !defined(HAVE_TPETRA_INST_COMPLEX_DOUBLE) && !defined(HAVE_TPETRA_INST_COMPLEX_FLOAT)) || \
+      (!defined(HAVE_TPETRA_INST_DOUBLE) && !defined(HAVE_TPETRA_INST_FLOAT) && defined(HAVE_TPETRA_INST_COMPLEX_DOUBLE) && defined(HAVE_TPETRA_INST_COMPLEX_FLOAT)) || \
+      (defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_FLOAT) && defined(HAVE_TPETRA_INST_COMPLEX_DOUBLE) && defined(HAVE_TPETRA_INST_COMPLEX_FLOAT))))
+# define MUELU_CAN_USE_MIXED_PRECISION
+#endif
+
 namespace Thyra {
 
   using Teuchos::RCP;
@@ -108,7 +116,7 @@ namespace Thyra {
     typedef Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node>           XpMat;
     typedef Thyra::LinearOpBase<Scalar>                                      ThyLinOpBase;
     typedef Thyra::XpetraLinearOp<Scalar, LocalOrdinal, GlobalOrdinal, Node> ThyXpOp;
-#if defined(HAVE_MUELU_TPETRA) && defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_FLOAT)
+#if defined(MUELU_CAN_USE_MIXED_PRECISION)
     typedef Xpetra::TpetraHalfPrecisionOperator<Scalar,LocalOrdinal,GlobalOrdinal,Node> XpHalfPrecOp;
     typedef Xpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>           XpMV;
     typedef typename XpHalfPrecOp::HalfScalar                                     HalfScalar;
@@ -163,11 +171,32 @@ namespace Thyra {
       // Convert to Xpetra
       std::list<std::string> convertXpetra = {"Coordinates", "Nullspace", "Kn", "D0"};
       for (auto it = convertXpetra.begin(); it != convertXpetra.end(); ++it)
-        replaceWithXpetra<Scalar,LocalOrdinal,GlobalOrdinal,Node>(paramList,*it);
+        Converters<Scalar,LocalOrdinal,GlobalOrdinal,Node>::replaceWithXpetra(paramList,*it);
+
+      std::list<std::string> sublists = {"maxwell1: 11list", "maxwell1: 22list"};
+      for (auto itSublist = sublists.begin(); itSublist != sublists.end(); ++itSublist)
+      if (paramList.isSublist(*itSublist)) {
+        ParameterList& sublist = paramList.sublist(*itSublist);
+        for (int lvlNo=0; lvlNo < 10; ++lvlNo) {
+          if (sublist.isSublist("level " + std::to_string(lvlNo) + " user data")) {
+            ParameterList& lvlList = sublist.sublist("level " + std::to_string(lvlNo) + " user data");
+            std::list<std::string> convertKeys;
+            for (auto it = lvlList.begin(); it != lvlList.end(); ++it)
+              convertKeys.push_back(lvlList.name(it));
+            for (auto it = convertKeys.begin(); it != convertKeys.end(); ++it)
+              Converters<Scalar,LocalOrdinal,GlobalOrdinal,Node>::replaceWithXpetra(lvlList,*it);
+          }
+        }
+      }
+
+      ParameterList& sublist = paramList.sublist("maxwell1: 11list");
+      if (sublist.isParameter("D0")) {
+        Converters<Scalar,LocalOrdinal,GlobalOrdinal,Node>::replaceWithXpetra(sublist,"D0");
+      }
 
       paramList.set<bool>("Maxwell1: use as preconditioner", true);
       if (useHalfPrecision) {
-#if defined(HAVE_MUELU_TPETRA) && defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_FLOAT)
+#if defined(MUELU_CAN_USE_MIXED_PRECISION)
 
         // convert to half precision
         RCP<XphMat> halfA = Xpetra::convertToHalfPrecision(A);
@@ -210,7 +239,7 @@ namespace Thyra {
 
       RCP<ThyXpOp> thyXpOp = rcp_dynamic_cast<ThyXpOp>(thyra_precOp, true);
       RCP<XpOp>    xpOp    = thyXpOp->getXpetraOperator();
-#if defined(HAVE_MUELU_TPETRA) && defined(HAVE_TPETRA_INST_DOUBLE) && defined(HAVE_TPETRA_INST_FLOAT)
+#if defined(MUELU_CAN_USE_MIXED_PRECISION)
       RCP<XpHalfPrecOp> xpHalfPrecOp = rcp_dynamic_cast<XpHalfPrecOp>(xpOp);
       if (!xpHalfPrecOp.is_null()) {
         RCP<MueLu::Maxwell1<HalfScalar,LocalOrdinal,GlobalOrdinal,Node> > preconditioner = rcp_dynamic_cast<MueLu::Maxwell1<HalfScalar,LocalOrdinal,GlobalOrdinal,Node>>(xpHalfPrecOp->GetHalfPrecisionOperator(), true);

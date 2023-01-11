@@ -45,7 +45,7 @@ using stk::unit_test_util::build_mesh;
 class RebalanceFileOutput : public MeshFixtureRebalance
 {
 public:
-  virtual void rebalance_mesh(int numFinalProcs, const std::string & decompMethod = "rcb") override
+  void rebalance_mesh(int numFinalProcs, const std::string & decompMethod = "rcb")
   {
     m_balanceSettings.set_is_rebalancing(true);
     m_balanceSettings.set_output_filename(get_output_file_name());
@@ -101,12 +101,13 @@ TEST_F(RebalanceFileOutput, CheckSharingInformation)
   int global_num_elems = counts[stk::topology::ELEM_RANK];
 
   const std::string outputFilename = "TemporaryOutputFile.g";
+  stk::io::OutputParams params(get_bulk());
   stk::io::write_file_for_subdomain(outputFilename,
                                     get_bulk().parallel_rank(),
                                     get_bulk().parallel_size(),
                                     global_num_nodes,
                                     global_num_elems,
-                                    get_bulk(),
+                                    params,
                                     nodeSharingInfo);
 
   verify_node_sharing_info(nodeSharingInfo, outputFilename);

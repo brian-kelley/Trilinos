@@ -346,8 +346,6 @@ char *io_getline_int(const char *prompt)
         io_gl_newline();
         io_gl_cleanup();
         return io_gl_buf;
-        /*NOTREACHED*/
-        break;
       case '\001':
         io_gl_fixup(io_gl_prompt, -1, 0); /* ^A */
         break;
@@ -610,7 +608,7 @@ static void io_gl_fixup(const char *prompt, int change, int cursor)
     io_gl_beep();
     cursor = 0;
   }
-  int extra; /* adjusts when shift (scroll) happens */
+  int extra = 0; /* adjusts when shift (scroll) happens */
   if (off_right || (off_left && cursor < io_gl_shift + io_gl_width - io_gl_scroll / 2)) {
     extra = 2; /* shift the scrolling boundary */
   }

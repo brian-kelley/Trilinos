@@ -261,12 +261,14 @@ TEST(UnitTestingOfThrowMacros, NGP_ThrowRequireMsg)
 {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(_OPENMP) || defined(KOKKOS_ENABLE_HIP)
   // Unable to test a device-side abort, as this eventually results in a throw
-  // inside Kokkos::finalize_all().
+  // inside Kokkos::finalize().
   // Also, OpenMP seems to produce an abort (in adddition to a throw?).
   //
   // testNGPThrowRequireMsg();
+  std::cout<<"NGP_ThrowRequireMsg: #if cuda, openmp or hip"<<std::endl;
 #else
 #ifdef NEW_ENOUGH_GCC
+  std::cout<<"NGP_ThrowRequireMsg: #ifdef new-enough-gcc"<<std::endl;
 //For now, only test this on gcc compilers more recent than major version 4.
 //A Trilinos pre-push test platform, 4.8.4 seems to produce an abort instead
 //of a throw for this test.
@@ -279,6 +281,7 @@ TEST(UnitTestingOfThrowMacros, NGP_ThrowRequireMsg)
                                "Error occurred at: stk_unit_tests/stk_util/util/UnitTestThrowMacros.cpp:";
     std::string expectedMsg2 = "Error: Error testing whatever\n";
     std::string message = ex.what();
+  std::cout<<"NGP_ThrowRequireMsg: caught, comparing strings"<<std::endl;
     EXPECT_NE(message.find(expectedMsg1), std::string::npos);
     EXPECT_NE(message.find(expectedMsg2), std::string::npos);
   }
@@ -301,11 +304,13 @@ TEST(UnitTestingOfThrowMacros, NGP_ThrowRequire)
 {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(_OPENMP) || defined(KOKKOS_ENABLE_HIP)
   // Unable to test a device-side abort, as this eventually results in a throw
-  // inside Kokkos::finalize_all().
+  // inside Kokkos::finalize().
   //
   // testNGPThrowRequire();
+  std::cout<<"NGP_ThrowRequire: #if cuda, openmp or hip"<<std::endl;
 #else
 #ifdef NEW_ENOUGH_GCC
+  std::cout<<"NGP_ThrowRequire: #ifdef new-enough-gcc"<<std::endl;
   try {
     testNGPThrowRequire();
   }
@@ -313,6 +318,7 @@ TEST(UnitTestingOfThrowMacros, NGP_ThrowRequire)
     const char * expectedMsg = "Requirement( test == true ) FAILED\n"
                                "Error occurred at: stk_unit_tests/stk_util/util/UnitTestThrowMacros.cpp:";
     std::string message = ex.what();
+  std::cout<<"NGP_ThrowRequire: caught, comparing strings"<<std::endl;
     EXPECT_NE(message.find(expectedMsg), std::string::npos);
   }
 #endif
@@ -333,7 +339,7 @@ TEST(UnitTestingOfThrowMacros, NGP_ThrowAssertMsg_debug)
 {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(_OPENMP) || defined(KOKKOS_ENABLE_HIP)
   // Unable to test a device-side abort, as this eventually results in a throw
-  // inside Kokkos::finalize_all().
+  // inside Kokkos::finalize().
   //
   // testNGPThrowAssertMsg();
 #else
@@ -367,7 +373,7 @@ TEST(UnitTestingOfThrowMacros, NGP_ThrowAssertMsg_release)
 {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(_OPENMP) || defined(KOKKOS_ENABLE_HIP)
   // Unable to test a device-side abort, as this eventually results in a throw
-  // inside Kokkos::finalize_all().
+  // inside Kokkos::finalize().
   //
   // testNGPThrowAssertMsg();
 #else
@@ -390,7 +396,7 @@ TEST(UnitTestingOfThrowMacros, NGP_ThrowErrorMsgIf)
 {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(_OPENMP) || defined(KOKKOS_ENABLE_HIP)
   // Unable to test a device-side abort, as this eventually results in a throw
-  // inside Kokkos::finalize_all().
+  // inside Kokkos::finalize().
   //
   // testNGPThrowErrorMsgIf();
 #else
@@ -422,7 +428,7 @@ TEST(UnitTestingOfThrowMacros, NGP_ThrowErrorIf)
 {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(_OPENMP) || defined(KOKKOS_ENABLE_HIP)
   // Unable to test a device-side abort, as this eventually results in a throw
-  // inside Kokkos::finalize_all().
+  // inside Kokkos::finalize().
   //
   // testNGPThrowErrorIf();
 #else
@@ -451,7 +457,7 @@ TEST(UnitTestingOfThrowMacros, NGP_ThrowErrorMsg)
 {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(_OPENMP) || defined(KOKKOS_ENABLE_HIP)
   // Unable to test a device-side abort, as this eventually results in a throw
-  // inside Kokkos::finalize_all().
+  // inside Kokkos::finalize().
   //
   // testNGPThrowErrorMsg();
 #else

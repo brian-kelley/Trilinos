@@ -33,6 +33,7 @@
 #include "stk_mesh/baseImpl/MeshImplUtils.hpp"     // for connect_edge_to_el...
 #include "stk_topology/topology.hpp"               // for topology, topology...
 #include "stk_util/diag/StringUtil.hpp"            // for case_strcmp
+#include "stk_util/environment/RuntimeWarning.hpp"
 #include "stk_util/parallel/CommSparse.hpp"        // for CommSparse, pack_a...
 #include "stk_util/parallel/ParallelComm.hpp"      // for CommBuffer
 #include "stk_util/util/ReportHandler.hpp"         // for ThrowRequireMsg
@@ -58,15 +59,13 @@ void process_nodeblocks(Ioss::Region &region, stk::mesh::MetaData &meta)
   stk::mesh::FieldBase * coord_field = nullptr;
   if (meta.is_using_simple_fields()) {
     coord_field = &meta.declare_field<double>(stk::topology::NODE_RANK, meta.coordinate_field_name());
-    stk::mesh::put_field_on_mesh(*coord_field, meta.universal_part(), meta.spatial_dimension(),
-                                 (stk::mesh::FieldTraits<stk::mesh::Field<double>>::data_type*)nullptr);
-    stk::io::set_field_output_type(*coord_field, "Vector_3D");
+    stk::mesh::put_field_on_mesh(*coord_field, meta.universal_part(), meta.spatial_dimension(), nullptr);
+    stk::io::set_field_output_type(*coord_field, stk::io::FieldOutputType::VECTOR_3D);
   }
   else {
     coord_field = &meta.declare_field<stk::mesh::Field<double, stk::mesh::Cartesian>>(stk::topology::NODE_RANK,
                                                                                       meta.coordinate_field_name());
-    stk::mesh::put_field_on_mesh(*coord_field, meta.universal_part(), meta.spatial_dimension(),
-                                 (stk::mesh::FieldTraits<stk::mesh::Field<double, stk::mesh::Cartesian>>::data_type*)nullptr);
+    stk::mesh::put_field_on_mesh(*coord_field, meta.universal_part(), meta.spatial_dimension(), nullptr);
   }
 
   stk::io::set_field_role(*coord_field, Ioss::Field::MESH);
@@ -79,10 +78,10 @@ void process_nodeblocks(Ioss::Region &region, stk::mesh::MetaData &meta)
 
 
 
-void process_elementblocks(Ioss::Region &region, stk::mesh::MetaData &meta)
+void process_elementblocks(Ioss::Region &region, stk::mesh::MetaData &meta, TopologyErrorHandler handler)
 {
   const Ioss::ElementBlockContainer& elem_blocks = region.get_element_blocks();
-  stk::io::default_part_processing(elem_blocks, meta);
+  stk::io::default_part_processing(elem_blocks, meta, handler);
 }
 
 void process_nodesets_without_distribution_factors(Ioss::Region &region, stk::mesh::MetaData &meta)
@@ -113,8 +112,7 @@ void process_nodesets(Ioss::Region &region, stk::mesh::MetaData &meta)
         meta.declare_field<double>(stk::topology::NODE_RANK, nodesetDistFieldName);
 
       stk::io::set_field_role(distribution_factors_field_per_nodeset, Ioss::Field::MESH);
-      stk::mesh::put_field_on_mesh(distribution_factors_field_per_nodeset, *part,
-                                   (stk::mesh::FieldTraits<stk::mesh::Field<double>>::data_type*) nullptr);
+      stk::mesh::put_field_on_mesh(distribution_factors_field_per_nodeset, *part, nullptr);
     }
   }
 }
@@ -158,12 +156,10 @@ void process_surface_entity(Ioss::SideSet *sset, stk::mesh::MetaData &meta)
         stk::io::set_distribution_factor_field(*sb_part, *distribution_factors_field);
         int side_node_count = sb->topology()->number_nodes();
         if (meta.is_using_simple_fields()) {
-          stk::mesh::put_field_on_mesh(*distribution_factors_field, *sb_part, side_node_count,
-                                       (stk::mesh::FieldTraits<stk::mesh::Field<double>>::data_type*)nullptr);
+          stk::mesh::put_field_on_mesh(*distribution_factors_field, *sb_part, side_node_count, nullptr);
         }
         else {
-          stk::mesh::put_field_on_mesh(*distribution_factors_field, *sb_part, side_node_count,
-                                       (stk::mesh::FieldTraits<stk::mesh::Field<double, stk::mesh::ElementNode>>::data_type*)nullptr);
+          stk::mesh::put_field_on_mesh(*distribution_factors_field, *sb_part, side_node_count, nullptr);
         }
       }
     }
@@ -268,10 +264,23 @@ void process_surface_entity(const Ioss::SideSet* sset, stk::mesh::BulkData & bul
         if (stk::io::include_entity(block)) {
             std::vector<INT> elem_side ;
 
-            stk::mesh::Part *sb_part = get_part_for_grouping_entity(*region, meta, block);
-            if (sb_part == nullptr)
-            {
-               sb_part = get_part_for_grouping_entity(*region, meta, sset);
+            stk::mesh::Part *sbPart = get_part_for_grouping_entity(*region, meta, block);
+            if (sbPart == nullptr) {
+               sbPart = get_part_for_grouping_entity(*region, meta, sset);
+            }
+
+            stk::mesh::SideSet *sbSideSet = nullptr;
+            if(nullptr != sbPart) {
+                if(sbPart->id() != stkSideSetPart->id())
+                  stk::RuntimeWarning() << "process_surface_entity: sideblock " << sbPart->name() << " with id " << sbPart->id()
+                                        << " does not have the same id as parent sideset "
+                                        << stkSideSetPart->name() << " with id " << stkSideSetPart->id();
+
+                const stk::mesh::Part& sbParentPart = stk::mesh::get_sideset_parent(*sbPart);
+
+                if(sbParentPart.mesh_meta_data_ordinal() != stkSideSetPart->mesh_meta_data_ordinal()) {
+                  sbSideSet = & bulk.create_sideset(*sbPart);
+                }
             }
 
             stk::mesh::EntityRank elem_rank = stk::topology::ELEMENT_RANK;
@@ -288,8 +297,8 @@ void process_surface_entity(const Ioss::SideSet* sset, stk::mesh::BulkData & bul
             block->get_field_data("element_side", elem_side);
             stk::mesh::PartVector add_parts;
 
-            if(nullptr != sb_part) {
-                add_parts.push_back(sb_part);
+            if(nullptr != sbPart) {
+                add_parts.push_back(sbPart);
             }
 
             // Get topology of the sides being defined to see if they
@@ -326,8 +335,12 @@ void process_surface_entity(const Ioss::SideSet* sset, stk::mesh::BulkData & bul
 
                     ThrowRequireMsg((par_dimen == 1) || (par_dimen == 2), "Invalid value for par_dimen:" << par_dimen);
 
-                    if(nullptr != stkSideSet) {
-                        stkSideSet->add({elem, side_ordinal});
+                    if(nullptr != sbSideSet) {
+                        sbSideSet->add({elem, side_ordinal});
+                    } else {
+                         if(nullptr != stkSideSet) {
+                           stkSideSet->add({elem, side_ordinal});
+                         }
                     }
 
                     if (par_dimen == 1) {
@@ -644,16 +657,16 @@ void process_edge_blocks(Ioss::Region &region, stk::mesh::BulkData &bulk)
     }
 }
 
-void process_face_blocks(Ioss::Region &region, stk::mesh::MetaData &meta)
+void process_face_blocks(Ioss::Region &region, stk::mesh::MetaData &meta, TopologyErrorHandler handler)
 {
   const Ioss::FaceBlockContainer& face_blocks = region.get_face_blocks();
-  stk::io::default_part_processing(face_blocks, meta);
+  stk::io::default_part_processing(face_blocks, meta, handler);
 }
 
-void process_edge_blocks(Ioss::Region &region, stk::mesh::MetaData &meta)
+void process_edge_blocks(Ioss::Region &region, stk::mesh::MetaData &meta, TopologyErrorHandler handler)
 {
   const Ioss::EdgeBlockContainer& edge_blocks = region.get_edge_blocks();
-  stk::io::default_part_processing(edge_blocks, meta);
+  stk::io::default_part_processing(edge_blocks, meta, handler);
 }
 
 void process_assemblies(Ioss::Region &region, stk::mesh::MetaData &meta)

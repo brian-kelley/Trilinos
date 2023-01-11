@@ -321,16 +321,15 @@ namespace MueLu {
 
     (void)MUELU_TEST_AND_SET_VAR(paramList, "debug: graph level", int, this->graphOutputLevel_);
 
+    // Generic data saving (this saves the data on all levels)
+    if(paramList.isParameter("save data"))
+      this->dataToSave_ = Teuchos::getArrayFromStringParameter<std::string>(paramList,"save data");
+
     // Save level data
     if (paramList.isSublist("export data")) {
       ParameterList printList = paramList.sublist("export data");
 
-      if (printList.isParameter("A"))
-        this->matricesToPrint_     = Teuchos::getArrayFromStringParameter<int>(printList, "A");
-      if (printList.isParameter("P"))
-        this->prolongatorsToPrint_ = Teuchos::getArrayFromStringParameter<int>(printList, "P");
-      if (printList.isParameter("R"))
-        this->restrictorsToPrint_  = Teuchos::getArrayFromStringParameter<int>(printList, "R");
+      // Vectors, aggregates and other things that need special handling
       if (printList.isParameter("Nullspace"))
         this->nullspaceToPrint_  = Teuchos::getArrayFromStringParameter<int>(printList, "Nullspace");
       if (printList.isParameter("Coordinates"))
@@ -339,9 +338,17 @@ namespace MueLu {
         this->aggregatesToPrint_  = Teuchos::getArrayFromStringParameter<int>(printList, "Aggregates");
       if (printList.isParameter("pcoarsen: element to node map"))
         this->elementToNodeMapsToPrint_  = Teuchos::getArrayFromStringParameter<int>(printList, "pcoarsen: element to node map");
+
+      // If we asked for an arbitrary matrix to be printed, we do that here
+      for(auto iter = printList.begin(); iter != printList.end(); iter++) {
+        const std::string & name = printList.name(iter);
+        // Ignore the special cases
+        if(name == "Nullspace" || name == "Coordinates" || name == "Aggregates" || name == "pcoarsen: element to node map")
+          continue;
+
+        this->matricesToPrint_[name] = Teuchos::getArrayFromStringParameter<int>(printList, name);
+      }
     }
-    if(paramList.isParameter("save data"))
-      this->dataToSave_ = Teuchos::getArrayFromStringParameter<std::string>(paramList,"save data");
 
     // Set verbosity parameter
     VerbLevel oldVerbLevel = VerboseObject::GetDefaultVerbLevel();
@@ -955,7 +962,6 @@ namespace MueLu {
          paramList.isParameter("coarse: type")   ||
          paramList.isParameter("coarse: params");
      if (MUELU_TEST_PARAM_2LIST(paramList, defaultList, "coarse: type", std::string, "none")) {
-       this->GetOStream(Warnings0) << "No coarse grid solver" << std::endl;
        manager.SetFactory("CoarseSolver", Teuchos::null);
 
      } else if (isCustomCoarseSolver) {
@@ -1080,7 +1086,8 @@ namespace MueLu {
      else {
        MUELU_KOKKOS_FACTORY_NO_DECL(dropFactory, CoalesceDropFactory, CoalesceDropFactory_kokkos);
        ParameterList dropParams;
-       dropParams.set("lightweight wrap", true);
+       if (!rcp_dynamic_cast<CoalesceDropFactory>(dropFactory).is_null())
+         dropParams.set("lightweight wrap", true);
        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "aggregation: drop scheme",             std::string, dropParams);
        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "aggregation: row sum drop tol",        double, dropParams);
        MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "aggregation: block diagonal: interleaved blocksize", int, dropParams);
@@ -1583,9 +1590,9 @@ namespace MueLu {
     // === Repartitioning ===
     MUELU_SET_VAR_2LIST(paramList, defaultList, "reuse: type", std::string, reuseType);
     MUELU_SET_VAR_2LIST(paramList, defaultList, "repartition: enable", bool, enableRepart);
-    MUELU_SET_VAR_2LIST(paramList, defaultList, "repartition: use subcommunicators in place", bool, enableInPlace);
     if (enableRepart) {
 #ifdef HAVE_MPI
+      MUELU_SET_VAR_2LIST(paramList, defaultList, "repartition: use subcommunicators in place", bool, enableInPlace);
       // Short summary of the issue: RebalanceTransferFactory shares ownership
       // of "P" with SaPFactory, and therefore, changes the stored version.
       // That means that if SaPFactory generated P, and stored it on the level,
@@ -1887,6 +1894,7 @@ namespace MueLu {
       MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "semicoarsen: number of levels", int,         togglePParams);
       MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "semicoarsen: coarsen rate",     int,         semicoarsenPParams);
       MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "semicoarsen: piecewise constant", bool,      semicoarsenPParams);
+      MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "semicoarsen: piecewise linear", bool,      semicoarsenPParams);
       MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "semicoarsen: calculate nonsym restriction", bool, semicoarsenPParams);
       MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "linedetection: orientation",    std::string, linedetectionParams);
       MUELU_TEST_AND_SET_PARAM_2LIST(paramList, defaultList, "linedetection: num layers",     int,         linedetectionParams);
@@ -2379,13 +2387,13 @@ namespace MueLu {
         ParameterList foo = hieraList.sublist("DataToWrite");
         std::string dataName = "Matrices";
         if (foo.isParameter(dataName))
-          this->matricesToPrint_ = Teuchos::getArrayFromStringParameter<int>(foo, dataName);
+          this->matricesToPrint_["A"] = Teuchos::getArrayFromStringParameter<int>(foo, dataName);
         dataName = "Prolongators";
         if (foo.isParameter(dataName))
-          this->prolongatorsToPrint_ = Teuchos::getArrayFromStringParameter<int>(foo, dataName);
+          this->matricesToPrint_["P"] = Teuchos::getArrayFromStringParameter<int>(foo, dataName);
         dataName = "Restrictors";
         if (foo.isParameter(dataName))
-          this->restrictorsToPrint_ = Teuchos::getArrayFromStringParameter<int>(foo, dataName);
+          this->matricesToPrint_["R"] = Teuchos::getArrayFromStringParameter<int>(foo, dataName);
       }
 
       // Get level configuration

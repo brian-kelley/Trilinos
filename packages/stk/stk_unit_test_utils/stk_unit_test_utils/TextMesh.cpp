@@ -76,12 +76,16 @@ private:
 
      std::string nodesetDistFieldName = "distribution_factors_" + nodesetData.name;
 
-     stk::mesh::Field<double>& distributionFactorsFieldPerNodeset =
-         m_meta.declare_field<stk::mesh::Field<double>>(stk::topology::NODE_RANK, nodesetDistFieldName);
+     stk::mesh::Field<double> * distributionFactorsFieldPerNodeset = nullptr;
+     if (m_meta.is_using_simple_fields()) {
+       distributionFactorsFieldPerNodeset = &m_meta.declare_field<double>(stk::topology::NODE_RANK, nodesetDistFieldName);
+     }
+     else {
+       distributionFactorsFieldPerNodeset = &m_meta.declare_field<stk::mesh::Field<double>>(stk::topology::NODE_RANK, nodesetDistFieldName);
+     }
 
-     stk::io::set_field_role(distributionFactorsFieldPerNodeset, Ioss::Field::MESH);
-     stk::mesh::put_field_on_mesh(distributionFactorsFieldPerNodeset, *part,
-         (stk::mesh::FieldTraits<stk::mesh::Field<double>>::data_type*) nullptr);
+     stk::io::set_field_role(*distributionFactorsFieldPerNodeset, Ioss::Field::MESH);
+     stk::mesh::put_field_on_mesh(*distributionFactorsFieldPerNodeset, *part, nullptr);
    }
  }
 
@@ -92,8 +96,7 @@ private:
 
    if (nullptr != distributionFactorsField) {
      stk::io::set_distribution_factor_field(*sideBlockPart, *distributionFactorsField);
-     stk::mesh::put_field_on_mesh(*distributionFactorsField, *sideBlockPart, sideBlock.numNodesPerSide,
-         (stk::mesh::FieldTraits<stk::mesh::Field<double, stk::mesh::ElementNode>>::data_type*) nullptr);
+     stk::mesh::put_field_on_mesh(*distributionFactorsField, *sideBlockPart, sideBlock.numNodesPerSide, nullptr);
    }
  }
 
@@ -104,8 +107,7 @@ private:
 
    if (nullptr != distributionFactorsField) {
      stk::io::set_distribution_factor_field(*sideBlockPart, *distributionFactorsField);
-     stk::mesh::put_field_on_mesh(*distributionFactorsField, *sideBlockPart, sideBlock.numNodesPerSide,
-         (stk::mesh::FieldTraits<stk::mesh::Field<double>>::data_type*) nullptr);
+     stk::mesh::put_field_on_mesh(*distributionFactorsField, *sideBlockPart, sideBlock.numNodesPerSide, nullptr);
    }
  }
 
@@ -268,15 +270,15 @@ private:
   void declare_coordinate_field_with_type()
   {
     F& coordsField = m_meta.declare_field<F>(stk::topology::NODE_RANK, m_meta.coordinate_field_name());
-    stk::mesh::put_field_on_mesh(coordsField, m_meta.universal_part(), m_data.spatialDim, static_cast<double*>(nullptr));
+    stk::mesh::put_field_on_mesh(coordsField, m_meta.universal_part(), m_data.spatialDim, nullptr);
   }
 
   template<typename T>
   void declare_coordinate_field_with_datatype()
   {
     stk::mesh::Field<T>& coordsField = m_meta.declare_field<T>(stk::topology::NODE_RANK, m_meta.coordinate_field_name());
-    stk::mesh::put_field_on_mesh(coordsField, m_meta.universal_part(), m_data.spatialDim, static_cast<double*>(nullptr));
-    stk::io::set_field_output_type(coordsField, "Vector_3D");
+    stk::mesh::put_field_on_mesh(coordsField, m_meta.universal_part(), m_data.spatialDim, nullptr);
+    stk::io::set_field_output_type(coordsField, stk::io::FieldOutputType::VECTOR_3D);
   }
 
   const TextMeshData& m_data;

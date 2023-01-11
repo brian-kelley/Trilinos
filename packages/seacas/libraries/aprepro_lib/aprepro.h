@@ -91,7 +91,7 @@ namespace SEAMS {
     /// construct a new parser aprepro context
     Aprepro();
     ~Aprepro();
-    Aprepro(const Aprepro &) = delete;
+    Aprepro(const Aprepro &)            = delete;
     Aprepro &operator=(const Aprepro &) = delete;
 
     enum class SYMBOL_TYPE {
@@ -236,6 +236,9 @@ namespace SEAMS {
 
     // For substitution history.
     std::vector<history_data> history{};
+
+    // For repeatble and user-friendly help/dump output.
+    std::vector<SEAMS::symrec *> get_sorted_sym_table() const;
 
     mutable int parseErrorCount{0};
     mutable int parseWarningCount{0};

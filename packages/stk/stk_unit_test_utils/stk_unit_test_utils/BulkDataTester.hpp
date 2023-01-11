@@ -44,6 +44,7 @@
 #include <stk_mesh/baseImpl/BucketRepository.hpp>  // for BucketRepository
 #include <stk_mesh/baseImpl/MeshImplUtils.hpp>
 #include <stk_mesh/baseImpl/elementGraph/ElemElemGraph.hpp>
+#include <stk_mesh/baseImpl/CommEntityMods.hpp>
 
 namespace stk { namespace unit_test_util {
 
@@ -146,7 +147,7 @@ public:
         this->resolve_ownership_of_modified_entities(shared_new);
     }
 
-    std::pair<stk::mesh::EntityComm*,bool> my_entity_comm_map_insert(stk::mesh::Entity entity, const stk::mesh::EntityCommInfo & val)
+    std::pair<int,bool> my_entity_comm_map_insert(stk::mesh::Entity entity, const stk::mesh::EntityCommInfo & val)
     {
         return BulkData::entity_comm_map_insert(entity, val);
     }
@@ -224,13 +225,19 @@ public:
     void my_internal_resolve_shared_modify_delete()
     {
         stk::mesh::EntityVector entitiesNoLongerShared;
-        this->m_meshModification.internal_resolve_shared_modify_delete(entitiesNoLongerShared);
+        stk::mesh::EntityProcVec entitiesToRemoveFromSharing;
+        this->m_meshModification.delete_shared_entities_which_are_no_longer_in_owned_closure(entitiesToRemoveFromSharing); 
+        
+        stk::mesh::impl::CommEntityMods commEntityMods(*this, internal_comm_db(), internal_comm_list());
+        commEntityMods.communicate(stk::mesh::impl::CommEntityMods::PACK_SHARED);
+        this->m_meshModification.internal_resolve_shared_modify_delete(commEntityMods.get_shared_mods(), entitiesToRemoveFromSharing, entitiesNoLongerShared);
     }
 
     void my_internal_resolve_ghosted_modify_delete()
     {
-        stk::mesh::EntityVector entitiesNoLongerShared;
-        this->internal_resolve_ghosted_modify_delete(entitiesNoLongerShared);
+        stk::mesh::impl::CommEntityMods commEntityMods(*this, internal_comm_db(), internal_comm_list());
+        commEntityMods.communicate(stk::mesh::impl::CommEntityMods::PACK_GHOSTED);
+        this->m_meshModification.internal_resolve_ghosted_modify_delete(commEntityMods.get_ghosted_mods());
     }
 
     void my_internal_resolve_parallel_create()
@@ -280,18 +287,12 @@ public:
         set_state(entity,entity_state);
     }
 
-    void my_delete_shared_entities_which_are_no_longer_in_owned_closure()
+    void my_ghost_entities_and_fields(stk::mesh::Ghosting & ghosting, stk::mesh::EntityProcVec&& new_send)
     {
-        stk::mesh::EntityProcVec entitiesToRemoveFromSharing;
-        delete_shared_entities_which_are_no_longer_in_owned_closure(entitiesToRemoveFromSharing);
+        ghost_entities_and_fields(ghosting, std::move(new_send));
     }
 
-    void my_ghost_entities_and_fields(stk::mesh::Ghosting & ghosting, const std::set<stk::mesh::EntityProc , stk::mesh::EntityLess>& new_send)
-    {
-        ghost_entities_and_fields(ghosting, new_send);
-    }
-
-    void my_add_closure_entities(const stk::mesh::Ghosting& ghosting, const stk::mesh::EntityProcVec& entities, std::set <stk::mesh::EntityProc , stk::mesh::EntityLess > &entitiesWithClosure)
+    void my_add_closure_entities(const stk::mesh::Ghosting& ghosting, const stk::mesh::EntityProcVec& entities, stk::mesh::EntityProcVec& entitiesWithClosure)
     {
         add_closure_entities(ghosting, entities, entitiesWithClosure);
     }

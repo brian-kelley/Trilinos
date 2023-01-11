@@ -45,7 +45,18 @@
 // Only include forward declarations so any overloads appear before they
 // might be used inside Kokkos
 #include "Kokkos_View_UQ_PCE_Fwd.hpp"
+
+// We are hooking into Kokkos Core internals here
+// Need to define this macro since we include non-public headers
+#ifndef KOKKOS_IMPL_PUBLIC_INCLUDE
+#define KOKKOS_IMPL_PUBLIC_INCLUDE
+#define KOKKOS_IMPL_PUBLIC_INCLUDE_NOTDEFINED_CORE
+#endif
 #include "Kokkos_Layout.hpp"
+#ifdef KOKKOS_IMPL_PUBLIC_INCLUDE_NOTDEFINED_CORE
+#undef KOKKOS_IMPL_PUBLIC_INCLUDE
+#undef KOKKOS_IMPL_PUBLIC_INCLUDE_NOTDEFINED_CORE
+#endif
 
 #include "Kokkos_AnalyzeStokhosShape.hpp"
 #include "Kokkos_View_Utils.hpp"
@@ -548,11 +559,17 @@ void deep_copy( const ExecSpace &,
     else {
 
       typedef View< typename src_type::non_const_data_type ,
-                    typename src_type::array_layout ,
+                    std::conditional_t<std::is_same<typename src_type::array_layout,
+                                                    Kokkos::LayoutStride>::value,
+                                       Kokkos::LayoutRight,
+                                       typename src_type::array_layout>,
                     typename src_type::execution_space > tmp_src_type;
       typedef typename tmp_src_type::array_type tmp_src_array_type;
       typedef View< typename dst_type::non_const_data_type ,
-                    typename dst_type::array_layout ,
+                    std::conditional_t<std::is_same<typename dst_type::array_layout,
+                                                    Kokkos::LayoutStride>::value,
+                                       Kokkos::LayoutRight,
+                                       typename dst_type::array_layout>,
                     typename dst_type::execution_space > tmp_dst_type;
       typedef typename tmp_dst_type::array_type tmp_dst_array_type;
 
@@ -666,6 +683,35 @@ void deep_copy( const View<DT,DP...> & dst ,
   Kokkos::fence();
   Kokkos::deep_copy(exec_space(), dst, src);
   Kokkos::fence();
+}
+
+namespace Impl {
+
+template <unsigned N, typename... Args>
+KOKKOS_FUNCTION std::enable_if_t<
+    N == View<Args...>::Rank &&
+    std::is_same<typename ViewTraits<Args...>::specialize,
+                 Kokkos::Experimental::Impl::ViewPCEContiguous>::value,
+    View<Args...>>
+as_view_of_rank_n(View<Args...> v) {
+  return v;
+}
+
+// Placeholder implementation to compile generic code for DynRankView; should
+// never be called
+template <unsigned N, typename T, typename... Args>
+std::enable_if_t<
+    N != View<T, Args...>::Rank &&
+        std::is_same<typename ViewTraits<T, Args...>::specialize,
+                     Kokkos::Experimental::Impl::ViewPCEContiguous>::value,
+    View<typename RankDataType<typename View<T, Args...>::value_type, N>::type,
+         Args...>>
+as_view_of_rank_n(View<T, Args...>) {
+  Kokkos::Impl::throw_runtime_exception(
+      "Trying to get at a View of the wrong rank");
+  return {};
+}
+
 }
 
 }
@@ -1369,6 +1415,15 @@ public:
     }
 
     return record ;
+  }
+
+  template< class ... P >
+  SharedAllocationRecord<> *
+  allocate_shared( ViewCtorProp< P... > const & prop
+                 , typename Traits::array_layout const & layout
+                 , bool /*execution_space_specified*/)
+  {
+    return allocate_shared(prop, layout);
   }
 
 };

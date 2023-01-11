@@ -35,6 +35,10 @@
 #ifndef stk_mesh_impl_AuraGhosting_hpp
 #define stk_mesh_impl_AuraGhosting_hpp
 
+#include <stk_mesh/base/Types.hpp>
+#include <stk_mesh/base/EntityProcMapping.hpp>
+#include <vector>
+
 namespace stk {
 namespace mesh {
 
@@ -54,12 +58,13 @@ public:
 
 protected:
     virtual void fill_send_aura_entities(BulkData& bulkData,
-                                         EntityProcMapping& sendAuraEntityProcs,
-                                         const EntityProcMapping& entitySharing);
+                                         EntityProcMapping& sendAuraEntityProcs);
 
     virtual void change_ghosting(BulkData& bulkData,
-                                 EntityProcMapping& entityProcMapping,
-                                 const EntityProcMapping& entitySharing);
+                                 EntityProcMapping& entityProcMapping);
+private:
+  EntityProcMapping m_sendAura;
+  std::vector<EntityProc> m_scratchSpace;
 };
 
 }}} // end namepsace stk mesh impl

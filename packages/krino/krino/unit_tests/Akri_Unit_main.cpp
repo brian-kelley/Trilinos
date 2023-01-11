@@ -24,9 +24,11 @@ int main(int argc, char **argv) {
 
   krino::Startup startup__(argc, argv);
 
-  Kokkos::ScopeGuard guard(argc, argv);
-
-  stk::unit_test_util::create_parallel_output(sierra::Env::parallel_rank());
+  std::unique_ptr<Kokkos::ScopeGuard> guard =
+    !Kokkos::is_initialized() && !Kokkos::is_finalized()?
+    std::make_unique<Kokkos::ScopeGuard>(argc,argv) : nullptr;
+    
+  stk::unit_test_util::simple_fields::create_parallel_output(sierra::Env::parallel_rank());
 
   return RUN_ALL_TESTS();
 }

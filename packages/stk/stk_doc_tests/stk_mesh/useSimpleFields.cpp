@@ -87,7 +87,7 @@ TEST(stkMeshHowTo, useSimpleFields)
   double initialPressureValue = 4.4;
   stk::mesh::put_field_on_entire_mesh_with_initial_value(pressureField, &initialPressureValue);
   stk::mesh::put_field_on_mesh(displacementsField, metaData.universal_part(), 3, nullptr);
-  stk::io::set_field_output_type(displacementsField, "Vector_3D");
+  stk::io::set_field_output_type(displacementsField, stk::io::FieldOutputType::VECTOR_3D);
 
   stk::mesh::BulkData& mesh = *bulkPtr;
   create_two_tet_element_mesh(mesh);
@@ -148,10 +148,10 @@ TEST(stkMeshHowTo, declareVectorFields_omitOutputType_noSubscriptNaming)
   DoubleField& displacements = metaData.declare_field<double>(stk::topology::NODE_RANK, "displacements");
 
   unsigned fieldLength = 3;
-  stk::mesh::put_field_on_mesh(velocities, metaData.universal_part(), fieldLength, static_cast<double*>(nullptr));
-  stk::mesh::put_field_on_mesh(displacements, metaData.universal_part(), fieldLength, static_cast<double*>(nullptr));
+  stk::mesh::put_field_on_mesh(velocities, metaData.universal_part(), fieldLength, nullptr);
+  stk::mesh::put_field_on_mesh(displacements, metaData.universal_part(), fieldLength, nullptr);
 
-  stk::io::set_field_output_type(velocities, "Vector_3D");
+  stk::io::set_field_output_type(velocities, stk::io::FieldOutputType::VECTOR_3D);
 
   stk::mesh::BulkData& mesh = *bulkPtr;
   create_single_tet_element(mesh);

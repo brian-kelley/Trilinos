@@ -217,14 +217,7 @@ namespace { // (anonymous)
          << ".  Please report this bug to the Tpetra developers.");
     }
 
-    dual_view_type dv (d_view, Kokkos::create_mirror_view (d_view));
-    // Whether or not the user cares about the initial contents of the
-    // MultiVector, the device and host views are out of sync.  We
-    // prefer to work in device memory.  The way to ensure this
-    // happens is to mark the device view as modified.
-    dv.modify_device ();
-
-    return wrapped_dual_view_type(dv);
+    return wrapped_dual_view_type(d_view);
   }
 
   // Convert 1-D Teuchos::ArrayView to an unmanaged 1-D host Kokkos::View.
@@ -1791,8 +1784,8 @@ namespace Tpetra {
     // - The number of vectors needs to be 1, otherwise we need to
     //   reorder the received data.
     if ((dual_view_type::impl_dualview_is_single_device::value ||
-         (Details::Behavior::assumeMpiIsCudaAware () && !this->need_sync_device()) ||
-         (!Details::Behavior::assumeMpiIsCudaAware () && !this->need_sync_host())) &&
+         (Details::Behavior::assumeMpiIsGPUAware () && !this->need_sync_device()) ||
+         (!Details::Behavior::assumeMpiIsGPUAware () && !this->need_sync_host())) &&
         areRemoteLIDsContiguous &&
         (CM == INSERT || CM == REPLACE) &&
         (getNumVectors() == 1) &&
@@ -4451,30 +4444,6 @@ namespace Tpetra {
     return Kokkos::Compat::persistingView (X_col.d_view);
   }
 
-
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void
-  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  clear_sync_state () {
-    view_.getOriginalDualView().clear_sync_state ();
-  }
-
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void
-  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  sync_host () {
-    view_.getOriginalDualView().sync_host ();
-  }
-
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void
-  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  sync_device () {
-    view_.getOriginalDualView().sync_device ();
-  }
-#endif // TPETRA_ENABLE_DEPRECATED_CODE
-
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   bool
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
@@ -4488,38 +4457,6 @@ namespace Tpetra {
   need_sync_device () const {
     return  view_.need_sync_device ();
   }
-
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void
-  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  modify_device () {
-    view_.getOriginalDualView().modify_device ();
-  }
-
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void
-  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  modify_host () {
-    view_.getOriginalDualView().modify_host ();
-  }
-#endif // TPETRA_ENABLE_DEPRECATED_CODE
-
-#ifdef TPETRA_ENABLE_DEPRECATED_CODE
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  typename MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type::t_dev
-  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  getLocalViewDevice () const {
-    return view_.getDualView().view_device ();
-  }
-
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  typename MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::dual_view_type::t_host
-  MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
-  getLocalViewHost () const {
-    return view_.getDualView().view_host ();
-  }
-#endif // TPETRA_ENABLE_DEPRECATED_CODE
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   std::string
