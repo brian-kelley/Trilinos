@@ -130,7 +130,6 @@ cmake \
    \
    -D TPL_FIND_SHARED_LIBS=${LINK_SHARED:?} \
    \
-   -D Gtest_SKIP_INSTALL=TRUE \
    -D Trilinos_VERBOSE_CONFIGURE=FALSE \
    -D Trilinos_ENABLE_ALL_PACKAGES=OFF \
    -D Trilinos_ENABLE_SECONDARY_TESTED_CODE=OFF \
@@ -221,7 +220,7 @@ cmake \
    -D TPL_ENABLE_X11=OFF \
    -D TPL_ENABLE_Matio=OFF \
    \
-   -D Trilinos_ENABLE_Gtest=${BUILD_ALL_PACKAGES:?} \
+   -D Trilinos_ENABLE_Gtest=OFF \
    \
    -D Trilinos_ENABLE_TriKota=OFF \
    -D DAKOTA_ENABLE_TESTS=OFF \
