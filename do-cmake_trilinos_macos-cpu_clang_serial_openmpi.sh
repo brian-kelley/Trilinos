@@ -61,7 +61,9 @@ sleep 3
 
 rm -f CMakeCache.txt; rm -rf CMakeFiles
 
+(type ninja && ninja --version) && GENERATOR_FLAG="-GNinja" || GENERATOR_FLAG=""
 cmake \
+   ${GENERATOR_FLAG} \
    -D CMAKE_VERBOSE_MAKEFILE=FALSE \
    -D CMAKE_INSTALL_PREFIX:PATH=${TRIL_INSTALL_PATH}/${TRIL_INSTALL_DIR} \
    -D CMAKE_BUILD_TYPE:STRING=${BUILD_TYPE} \
