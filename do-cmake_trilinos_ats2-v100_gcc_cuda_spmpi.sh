@@ -67,7 +67,7 @@ if [[ "${LINKTYPE:?}" == "static" ]]
 then
   LINK_SHARED=OFF
   LINK_SUFFIX=static
-  if [[  ${RDC_ON} == "rdc" ]]
+  if [[  ${RDCON} == "rdc" ]]
   then
     LINK_SUFFIX=static-rdc
   fi
