@@ -120,15 +120,15 @@
 typedef Kokkos::Serial HostExec;
 typedef Kokkos::HostSpace HostMem;
 typedef Kokkos::Device<HostExec,HostMem> HostDevice;
-typedef Kokkos::Compat::KokkosSerialWrapperNode HostNode;
+typedef Tpetra::KokkosCompat::KokkosSerialWrapperNode HostNode;
 #ifdef DREAM_USE_CUDA
   typedef Kokkos::Cuda DeviceExec;
   typedef Kokkos::CudaSpace DeviceMem;
-  typedef Kokkos::Compat::KokkosCudaWrapperNode DeviceNode;
+  typedef Tpetra::KokkosCompat::KokkosCudaWrapperNode DeviceNode;
 #else
   typedef Kokkos::Serial DeviceExec;
   typedef Kokkos::HostSpace DeviceMem;
-  typedef Kokkos::Compat::KokkosSerialWrapperNode DeviceNode;
+  typedef Tpetra::KokkosCompat::KokkosSerialWrapperNode DeviceNode;
 #endif
 typedef Kokkos::Device<DeviceExec,DeviceMem> DeviceDevice;
 
@@ -446,10 +446,10 @@ int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int arg
   const int num_procs = comm->getSize();
   {
     // Necessary typedefs
-    using SC = double;
-    using LO = int;
-    using GO = long long;
-    using NO = Tpetra::MultiVector<>::node_type;
+    using SC = Scalar;
+    using LO = LocalOrdinal;
+    using GO = GlobalOrdinal;
+    using NO = Node;
     //using map_type = Xpetra::Map<>; // unused
     using MV = Xpetra::MultiVector<SC,LO,GO,NO>;
 
