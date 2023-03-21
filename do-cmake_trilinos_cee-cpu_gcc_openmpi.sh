@@ -27,7 +27,8 @@ DEFAULT_USE_MPI=mpi
 source $(dirname $(readlink -f ${0}))/config_parser.sh
 extra_cmake_args=$@
 extra_link_flags=""
-exe_linker_flags=""
+exe_linker_flags="-lm -ldl -lz"
+
 
 if [[ "${VARIANT:?}" == "opt" ]]
 then
@@ -119,6 +120,10 @@ else
   echo "ERROR: Invalid using MPI flag '${USE_MPI:?}'!" >&2
   exit 1
 fi
+
+CBLAS_INCLUDE_DIRS=${CBLAS_ROOT}/include
+CBLAS_LIB_DIRS="${CBLAS_ROOT}/lib/intel64;${CBLAS_COMPILER_LIBPATH}"
+CBLAS_LIB_NAMES="mkl_intel_lp64;mkl_intel_thread;mkl_core;iomp5"
 
 rm -f CMakeCache.txt; rm -rf CMakeFiles
 
@@ -245,12 +250,14 @@ cmake \
    -D TPL_ENABLE_BinUtils=ON \
    \
    -D TPL_ENABLE_BLAS=ON \
-   -D BLAS_LIBRARY_DIRS:PATH="${BLAS_DIR}/mkl/lib/intel64;${BLAS_DIR}/lib/intel64" \
-   -D BLAS_LIBRARY_NAMES:STRING="mkl_intel_lp64;mkl_intel_thread;mkl_core;iomp5" \
+   -D BLAS_INCLUDE_DIRS:PATH=${CBLAS_INCLUDE_DIRS} \
+   -D BLAS_LIBRARY_DIRS:PATH=${CBLAS_LIB_DIRS} \
+   -D BLAS_LIBRARY_NAMES:STRING=${CBLAS_LIB_NAMES} \
    \
    -D TPL_ENABLE_LAPACK=ON \
-   -D LAPACK_LIBRARY_DIRS:PATH="${LAPACK_DIR}/mkl/lib/intel64;${LAPACK_DIR}/lib/intel64" \
-   -D LAPACK_LIBRARY_NAMES:STRING="mkl_intel_lp64;mkl_intel_thread;mkl_core;iomp5" \
+   -D LAPACK_INCLUDE_DIRS:PATH=${CBLAS_INCLUDE_DIRS} \
+   -D LAPACK_LIBRARY_DIRS:PATH=${CBLAS_LIB_DIRS} \
+   -D LAPACK_LIBRARY_NAMES:STRING=${CBLAS_LIB_NAMES} \
    \
    -D TPL_ENABLE_Boost=${BUILD_ALL_PACKAGES:?} \
    -D Boost_INCLUDE_DIRS:PATH="${BOOST_DIR}/include" \
@@ -260,6 +267,7 @@ cmake \
    -D BoostLib_LIBRARY_DIRS:PATH="${BOOST_DIR}/lib" \
    \
    -D HDF5_ROOT:PATH="${HDF5_DIR}" \
+   -D HDF5_LIBRARIES:PATH="${HDF5_DIR}/lib/libhdf5_hl.a;${HDF5_DIR}/lib/libhdf5.a" \
    -D HDF5_NO_SYSTEM_PATHS=ON \
    \
    -D PNetCDF_ROOT:PATH="${PNETCDF_DIR}" \
