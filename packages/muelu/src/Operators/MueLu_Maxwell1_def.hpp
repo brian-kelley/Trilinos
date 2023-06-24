@@ -107,8 +107,6 @@ namespace MueLu {
      
       // Hardwiring options to ensure ML compatibility
       newList.sublist("maxwell1: 22list").set("use kokkos refactor", false);
-      newList.sublist("maxwell1: 22list").set("tentative: constant column sums", false);
-      newList.sublist("maxwell1: 22list").set("tentative: calculate qr", false);
 
       newList.sublist("maxwell1: 11list").set("use kokkos refactor", false);
       newList.sublist("maxwell1: 11list").set("tentative: constant column sums", false);
@@ -464,6 +462,7 @@ namespace MueLu {
     // Copy the relevant (2,2) data to the (1,1) hierarchy
     Hierarchy11_ = rcp(new Hierarchy("Maxwell1 (1,1)"));
     RCP<Matrix> OldSmootherMatrix;
+    RCP<Level>  OldEdgeLevel;
     for(int i=0; i<Hierarchy22_->GetNumLevels(); i++) {
       Hierarchy11_->AddNewLevel();
       RCP<Level> NodeL = Hierarchy22_->GetLevel(i);
@@ -479,11 +478,17 @@ namespace MueLu {
         EdgeL->Set("NodeAggMatrix",NodeAggMatrix);
         EdgeL->Set("NodeMatrix",Kn_Smoother_0);
         OldSmootherMatrix = Kn_Smoother_0;
+        OldEdgeLevel = EdgeL;
       }
       else {
         // Set the Nodal P
+        // NOTE:  ML uses normalized prolongators for the aggregation hierarchy
+        // and then prolongators of all 1's for doing the Reitzinger prolongator
+        // generation for the edge hierarchy.
         auto NodalP = NodeL->Get<RCP<Matrix> >("P");
-        EdgeL->Set("Pnodal",NodalP);
+        auto NodalP_ones = Utilities::ReplaceNonZerosWithOnes(NodalP);
+        TEUCHOS_TEST_FOR_EXCEPTION(NodalP_ones.is_null(), Exceptions::RuntimeError, "Applying ones to prolongator failed");        
+        EdgeL->Set("Pnodal",NodalP_ones);
 
         // If we repartition a processor away, a RCP<Operator> is stuck
         // on the level instead of an RCP<Matrix>
@@ -494,16 +499,25 @@ namespace MueLu {
             // hierarchy from the smoothing hierarchy.
 
             // ML does a *fixed* 1e-10 diagonal repair on the Nodal Smoothing Matrix
-            // We will duplicate that unless told otherwise.
-            double thresh = parameterList_.get("maxwell1: nodal smoother fix zero diagonal threshold",1e-10);
+            // This fix is applied *after* the next level is generated, but before the smoother is.
+            // We can see this behavior from ML, though it isn't 100% clear from the code *how* it happens.
+            // So, here we turn the fix off, then once we've generated the new matrix, we fix the old one.
+
+            // Generate the new matrix
             Teuchos::ParameterList RAPlist;
-            if(thresh > 0.0) {
-              RAPlist.set("rap: fix zero diagonals", true);
-              RAPlist.set("rap: fix zero diagonals threshold",thresh);
-            }
-            
-            RCP<Matrix> NewKn = Maxwell_Utils<SC,LO,GO,NO>::PtAPWrapper(OldSmootherMatrix,NodalP,RAPlist,labelstr);
+            RAPlist.set("rap: fix zero diagonals", false);
+            RCP<Matrix> NewKn = Maxwell_Utils<SC,LO,GO,NO>::PtAPWrapper(OldSmootherMatrix,NodalP_ones,RAPlist,labelstr);
             EdgeL->Set("NodeMatrix",NewKn);
+
+            // Fix the old one
+            double thresh = parameterList_.get("maxwell1: nodal smoother fix zero diagonal threshold",1e-10);
+            if(thresh > 0.0) {
+              printf("CMS: Reparing diagonal after next level generation\n");
+              Scalar replacement = Teuchos::ScalarTraits<Scalar>::one();
+              Xpetra::MatrixUtils<SC,LO,GO,NO>::CheckRepairMainDiagonal(OldSmootherMatrix, true, GetOStream(Warnings1), thresh, replacement);
+            }
+            OldEdgeLevel->Set("NodeMatrix",OldSmootherMatrix);
+
             OldSmootherMatrix = NewKn;
           }
           else {          
@@ -516,6 +530,8 @@ namespace MueLu {
           EdgeL->Set("NodeMatrix",NodeOp);
           EdgeL->Set("NodeAggMatrix",NodeOp);
         }
+
+        OldEdgeLevel = EdgeL;            
       }
 
       // Get the importer if we have one (for repartitioning)
@@ -604,13 +620,11 @@ namespace MueLu {
 
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,Node> > Maxwell1<Scalar,LocalOrdinal,GlobalOrdinal,Node>::generate_kn() const {
-    using Teuchos::rcp_const_cast;
-    double thresh = parameterList_.get("maxwell1: nodal smoother fix zero diagonal threshold",1e-10);
+
+    // This is important, as we'll be doing diagonal repair *after* the next-level matrix is generated, not before
     Teuchos::ParameterList RAPlist;
-    if(thresh > 0.0) {
-      RAPlist.set("rap: fix zero diagonals", true);
-      RAPlist.set("rap: fix zero diagonals threshold",thresh);
-    }
+    RAPlist.set("rap: fix zero diagonals", false);
+
     std::string labelstr = "NodeMatrix (Level 0)";
     RCP<Matrix> rv =  Maxwell_Utils<SC,LO,GO,NO>::PtAPWrapper(SM_Matrix_,D0_Matrix_,RAPlist,labelstr);
     return rv;
