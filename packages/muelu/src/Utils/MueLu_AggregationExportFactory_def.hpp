@@ -157,6 +157,7 @@ namespace MueLu {
     LocalOrdinal DofsPerNode                 = Get< LocalOrdinal >            (fineLevel,"DofsPerNode");
     Teuchos::RCP<AmalgamationInfo> amalgInfo = Get< RCP<AmalgamationInfo> >   (fineLevel,"UnAmalgamationInfo");
     Teuchos::RCP<Matrix> Amat = Get<RCP<Matrix> >(fineLevel, "A");
+    LocalOrdinal numRows = Amat->getLocalNumRows();
     Teuchos::RCP<Matrix> Ac;
     if(doCoarseGraphEdges_)
       Ac = Get<RCP<Matrix> >(coarseLevel, "A");
@@ -168,19 +169,39 @@ namespace MueLu {
       fineGraph = Get<RCP<GraphBase> >(fineLevel, "Graph");
     if(doCoarseGraphEdges_)
       coarseGraph = Get<RCP<GraphBase> >(coarseLevel, "Graph");
+    int dofsPerCoord = 1;
+    int nodesPerCoord = 1;
+    int numLocalCoords = 0;
     if(useVTK) //otherwise leave null, will not be accessed by non-vtk code
     {
       coords = Get<RCP<CoordinateMultiVector> >(fineLevel, "Coordinates");
       coords_ = coords;
+      numLocalCoords = coords_->getLocalLength();
       if(doCoarseGraphEdges_)
         coordsCoarse = Get<RCP<CoordinateMultiVector> >(coarseLevel, "Coordinates");
       dims_ = coords->getNumVectors();  //2D or 3D?
+
+      LocalOrdinal numCoords = coords->getLocalLength();
+      if(numRows % numCoords != 0)
+        throw std::logic_error("AggregationExportFactory: number of rows in matrix not divisible by number of coordinates given.");
+      //How many rows of A correspond to one coordinate point?
+      dofsPerCoord = numRows / numCoords;
+
       if(numProcs > 1)
       {
-        if (aggregates->AggregatesCrossProcessors())
-        { // Do we want to use the map from aggregates here instead of the map from A? Using the map from A seems to be problematic with multiple dofs per node
-          RCP<Import> coordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coords->getMap(), Amat->getColMap());
-          RCP<CoordinateMultiVector> ghostedCoords = Xpetra::MultiVectorFactory<coordinate_type, LocalOrdinal, GlobalOrdinal, Node>::Build(Amat->getColMap(), dims_);
+        if(doFineGraphEdges_)
+        {
+          //Create the overlapping map for ghosted coordinates (it's just A's column map, but with 1 dof/node)
+          auto colMap = Amat->getColMap();
+          auto colMapIndices = colMap->getLocalElementList();
+          Teuchos::Array<GlobalOrdinal> coordColMapIndices(colMapIndices.size() / DofsPerNode);
+          for(size_t i = 0; i < size_t(coordColMapIndices.size()); i++)
+          {
+            coordColMapIndices[i] = colMapIndices[i * DofsPerNode] / DofsPerNode;
+          }
+          auto coordColMap = Xpetra::MapFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(colMap->lib(), colMap->getGlobalNumElements() / DofsPerNode, coordColMapIndices(), 0, colMap->getComm());
+          RCP<Import> coordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coords->getMap(), coordColMap);
+          RCP<CoordinateMultiVector> ghostedCoords = Xpetra::MultiVectorFactory<coordinate_type, LocalOrdinal, GlobalOrdinal, Node>::Build(coordColMap, dims_);
           ghostedCoords->doImport(*coords, *coordImporter, Xpetra::INSERT);
           coords = ghostedCoords;
           coords_ = ghostedCoords;
@@ -199,6 +220,12 @@ namespace MueLu {
     Teuchos::RCP<LocalOrdinalMultiVector> vertex2AggId_vector = aggregates->GetVertex2AggId();
     Teuchos::RCP<LocalOrdinalVector>      procWinner_vector   = aggregates->GetProcWinner();
     Teuchos::ArrayRCP<LocalOrdinal>       vertex2AggId        = aggregates->GetVertex2AggId()->getDataNonConst(0);
+    if(useVTK)
+    {
+      if(vertex2AggId.size() % numLocalCoords)
+        throw std::logic_error("AggregationExportFactory: number of nodes (length of vertex2AggId) is not divisible by number of coordinates given.");
+      nodesPerCoord = vertex2AggId.size() / numLocalCoords;
+    }
     Teuchos::ArrayRCP<LocalOrdinal>       procWinner          = aggregates->GetProcWinner()->getDataNonConst(0);
 
     vertex2AggId_ = vertex2AggId;
@@ -215,10 +242,7 @@ namespace MueLu {
       numAggsGlobal [i] += numAggsGlobal[i-1];
       minGlobalAggId[i]  = numAggsGlobal[i-1];
     }
-    if(numProcs == 0)
-      aggsOffset_ = 0;
-    else
-      aggsOffset_ = minGlobalAggId[myRank];
+    this->aggsOffset_ = minGlobalAggId[myRank];
     ArrayRCP<LO>            aggStart;
     ArrayRCP<GlobalOrdinal> aggToRowMap;
     amalgInfo->UnamalgamateAggregates(*aggregates, aggStart, aggToRowMap);
@@ -272,7 +296,6 @@ namespace MueLu {
       //Make sure we have coordinates
       TEUCHOS_TEST_FOR_EXCEPTION(coords.is_null(), Exceptions::RuntimeError,"AggExportFactory could not get coordinates, but they are required for VTK output.");
       numAggs_ = numAggs;
-      numNodes_ = coords->getLocalLength();
       //Get the sizes of the aggregates to speed up grabbing node IDs
       aggSizes_ = aggregates->ComputeAggregateSizesArrayRCP();
       myRank_ = myRank;
@@ -285,8 +308,8 @@ namespace MueLu {
       vector<int> vertices;
       vector<int> geomSizes;
       string indent = "";
-      nodeMap_ = Amat->getMap();
-      for(LocalOrdinal i = 0; i < numNodes_; i++)
+      rowMap_ = Amat->getMap();
+      for(LocalOrdinal i = 0; i < numRows; i++)
       {
         isRoot_.push_back(aggregates->IsRoot(i));
       }
@@ -299,33 +322,29 @@ namespace MueLu {
         pvtu.close();
       }
       if(aggStyle == "Point Cloud")
-        this->doPointCloud(vertices, geomSizes, numAggs_, numNodes_);
+        this->doPointCloud(vertices, geomSizes, numAggs_, vertex2AggId_.size());
       else if(aggStyle == "Jacks")
-        this->doJacks(vertices, geomSizes, numAggs_, numNodes_, isRoot_, vertex2AggId_);
-      else if(aggStyle == "Jacks++") //Not actually implemented
-        doJacksPlus_(vertices, geomSizes);
-      else if(aggStyle == "Convex Hulls")
-        doConvexHulls(vertices, geomSizes);
+        this->doJacks(vertices, geomSizes, numAggs_, vertex2AggId_.size(), isRoot_, vertex2AggId_);
       else
       {
-        GetOStream(Warnings0) << "   Unrecognized agg style.\n   Possible values are Point Cloud, Jacks, Jacks++, and Convex Hulls.\n   Defaulting to Point Cloud." << std::endl;
-        aggStyle = "Point Cloud";
-        this->doPointCloud(vertices, geomSizes, numAggs_, numNodes_);
+        if(aggStyle != "Convex Hulls")
+          GetOStream(Warnings0) << "   Unrecognized agg style.\n   Possible values are Point Cloud, Jacks, Jacks++, and Convex Hulls.\n   Defaulting to Convex Hulls." << std::endl;
+        doConvexHulls(vertex2AggId_.size(), vertices, geomSizes);
       }
-      writeFile_(fout, aggStyle, vertices, geomSizes);
+      writeFile_(fout, aggStyle, vertices, geomSizes, nodesPerCoord);
       if(doCoarseGraphEdges_)
       {
         string fname = filenameToWrite;
         string cEdgeFile = fname.insert(fname.rfind(".vtu"), "-coarsegraph");
         std::ofstream edgeStream(cEdgeFile.c_str());
-        doGraphEdges_(edgeStream, Ac, coarseGraph, false, DofsPerNode);
+        doGraphEdges_(edgeStream, Ac, coarseGraph, false, dofsPerCoord);
       }
       if(doFineGraphEdges_)
       {
         string fname = filenameToWrite;
         string fEdgeFile = fname.insert(fname.rfind(".vtu"), "-finegraph");
         std::ofstream edgeStream(fEdgeFile.c_str());
-        doGraphEdges_(edgeStream, Amat, fineGraph, true, DofsPerNode);
+        doGraphEdges_(edgeStream, Amat, fineGraph, true, dofsPerCoord);
       }
       if(myRank == 0 && pL.get<bool>("aggregation: output file: build colormap"))
       {
@@ -336,23 +355,17 @@ namespace MueLu {
   }
 
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doJacksPlus_(std::vector<int>& /* vertices */, std::vector<int>& /* geomSizes */) const
-  {
-    //TODO
-  }
-
-  template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doConvexHulls(std::vector<int>& vertices, std::vector<int>& geomSizes) const
+  void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doConvexHulls(LocalOrdinal numRows, std::vector<int>& vertices, std::vector<int>& geomSizes) const
   {
     Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> xCoords = coords_->getData(0);
     Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> yCoords = coords_->getData(1);
     Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> zCoords = Teuchos::null;
 
     if(dims_ == 2) {  
-      this->doConvexHulls2D(vertices, geomSizes, numAggs_, numNodes_, isRoot_, vertex2AggId_, xCoords, yCoords);
+      this->doConvexHulls2D(vertices, geomSizes, numAggs_, numRows, isRoot_, vertex2AggId_, xCoords, yCoords);
     } else {
       zCoords = coords_->getData(2);
-      this->doConvexHulls3D(vertices, geomSizes, numAggs_, numNodes_, isRoot_, vertex2AggId_, xCoords, yCoords, zCoords);
+      this->doConvexHulls3D(vertices, geomSizes, numAggs_, numRows, isRoot_, vertex2AggId_, xCoords, yCoords, zCoords);
     }
   }
 
@@ -360,23 +373,39 @@ namespace MueLu {
   void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doGraphEdges_(std::ofstream& fout, Teuchos::RCP<Matrix>& A, Teuchos::RCP<GraphBase>& G, bool fine, int dofs) const
   {
     using namespace std;
+
+    LocalOrdinal numRows = A->getLocalNumRows();
+
     ArrayView<const Scalar> values;
     ArrayView<const LocalOrdinal> neighbors;
-    //Allow two different colors of connections (by setting "aggregates" scalar to CONTRAST_1 or CONTRAST_2)
-    vector<pair<int, int> > vert1; //vertices (node indices)
-    vector<pair<int, int> > vert2; //size of every cell is assumed to be 2 vertices, since all edges are drawn as lines
+    //Set "node" and "aggregate" values in these VTK files to CONTRAST_1 or CONTRAST_2. In the custom colormap,
+    //these values are mapped to colors that contrast with the color gradient used for the actual aggregates.
+    vector<pair<int, int> > edges; // Non-filtered edges (present in both graph and matrix), color as CONTRAST_1.
+    vector<pair<int, int> > edgesFilt; // Filtered/dropped edges (in graph but dropped from matrix), color as CONTRAST_2.
     
-    Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> xCoords = coords_->getData(0);
-    Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> yCoords = coords_->getData(1);
+    //Fine-level coordinates
+    Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> xCoords = Teuchos::null;
+    Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> yCoords = Teuchos::null;
     Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> zCoords = Teuchos::null;
-    if(dims_ == 3)
-      zCoords = coords_->getData(2);
+    if(fine)
+    {
+      xCoords = coords_->getData(0);
+      yCoords = coords_->getData(1);
+      if(dims_ == 3)
+        zCoords = coords_->getData(2);
+    }
 
-    Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> cx = coordsCoarse_->getData(0);
-    Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> cy = coordsCoarse_->getData(1);
+    //Coarse-level coordinates
+    Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> cx = Teuchos::null;
+    Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> cy = Teuchos::null;
     Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> cz = Teuchos::null;
-    if(dims_ == 3)
-      cz = coordsCoarse_->getData(2);
+    if(!fine)
+    {
+      cx = coordsCoarse_->getData(0);
+      cy = coordsCoarse_->getData(1);
+      if(dims_ == 3)
+        cz = coordsCoarse_->getData(2);
+    }
 
     if(A->isGloballyIndexed())
     {
@@ -395,20 +424,20 @@ namespace MueLu {
             if(neighbors[gEdge] == indices[aEdge])
             {
               //graph and matrix both have this edge, wasn't filtered, show as color 1
-              vert1.push_back(pair<int, int>(int(globRow), neighbors[gEdge]));
+              edges.push_back(pair<int, int>(int(globRow), neighbors[gEdge]));
               gEdge++;
               aEdge++;
             }
             else
             {
               //graph contains an edge at gEdge which was filtered from A, show as color 2
-              vert2.push_back(pair<int, int>(int(globRow), neighbors[gEdge]));
+              edgesFilt.push_back(pair<int, int>(int(globRow), neighbors[gEdge]));
               gEdge++;
             }
           }
           else //for multiple DOF problems, don't try to detect filtered edges and ignore A
           {
-            vert1.push_back(pair<int, int>(int(globRow), neighbors[gEdge]));
+            edges.push_back(pair<int, int>(int(globRow), neighbors[gEdge]));
             gEdge++;
           }
         }
@@ -416,119 +445,102 @@ namespace MueLu {
     }
     else
     {
-      ArrayView<const LocalOrdinal> indices;
       for(LocalOrdinal locRow = 0; locRow < LocalOrdinal(A->getLocalNumRows()); locRow++)
       {
+        ArrayView<const LocalOrdinal> indices;
+        A->getLocalRowView(locRow, indices, values);
         if(dofs == 1)
-          A->getLocalRowView(locRow, indices, values);
-        neighbors = G->getNeighborVertices(locRow);
+          neighbors = G->getNeighborVertices(locRow);
         //Add those local indices (columns) to the list of connections (which are pairs of the form (localM, localN))
-        int gEdge = 0;
-        int aEdge = 0;
-        while(gEdge != int(neighbors.size()))
+        if(dofs == 1)
         {
-          if(dofs == 1)
+          int gEdge = 0;
+          int aEdge = 0;
+          while(gEdge != int(neighbors.size()))
           {
             if(neighbors[gEdge] == indices[aEdge])
             {
-              vert1.push_back(pair<int, int>(locRow, neighbors[gEdge]));
+              edges.push_back(pair<int, int>(locRow, neighbors[gEdge]));
               gEdge++;
               aEdge++;
             }
             else
             {
-              vert2.push_back(pair<int, int>(locRow, neighbors[gEdge]));
+              edgesFilt.push_back(pair<int, int>(locRow, neighbors[gEdge]));
               gEdge++;
             }
           }
-          else
+        }
+        else
+        {
+          // Multiple dofs/node: don't try to mark filtered edges
+          for(auto nei : indices)
           {
-            vert1.push_back(pair<int, int>(locRow, neighbors[gEdge]));
-            gEdge++;
+            edges.push_back(pair<int, int>(locRow, nei));
           }
         }
       }
     }
-    for(size_t i = 0; i < vert1.size(); i ++)
+    //Put the edge endpoints in ascending order: (i,j) where i < j
+    //so that we can de-duplicate them
+    for(auto& e : edges)
     {
-      if(vert1[i].first > vert1[i].second)
-      {
-        int temp = vert1[i].first;
-        vert1[i].first = vert1[i].second;
-        vert1[i].second = temp;
-      }
+      if(e.first > e.second)
+        std::swap(e.first, e.second);
     }
-    for(size_t i = 0; i < vert2.size(); i++)
+    for(auto& e : edgesFilt)
     {
-      if(vert2[i].first > vert2[i].second)
-      {
-        int temp = vert2[i].first;
-        vert2[i].first = vert2[i].second;
-        vert2[i].second = temp;
-      }
+      if(e.first > e.second)
+        std::swap(e.first, e.second);
     }
-    sort(vert1.begin(), vert1.end());
-    vector<pair<int, int> >::iterator newEnd = unique(vert1.begin(), vert1.end()); //remove duplicate edges
-    vert1.erase(newEnd, vert1.end());
-    sort(vert2.begin(), vert2.end());
-    newEnd = unique(vert2.begin(), vert2.end());
-    vert2.erase(newEnd, vert2.end());
-    vector<int> points1;
-    points1.reserve(2 * vert1.size());
-    for(size_t i = 0; i < vert1.size(); i++)
-    {
-      points1.push_back(vert1[i].first);
-      points1.push_back(vert1[i].second);
-    }
-    vector<int> points2;
-    points2.reserve(2 * vert2.size());
-    for(size_t i = 0; i < vert2.size(); i++)
-    {
-      points2.push_back(vert2[i].first);
-      points2.push_back(vert2[i].second);
-    }
-    vector<int> unique1 = this->makeUnique(points1);
-    vector<int> unique2 = this->makeUnique(points2);
+    sort(edges.begin(), edges.end());
+    vector<pair<int, int> >::iterator newEnd = unique(edges.begin(), edges.end()); //remove duplicate edges
+    edges.erase(newEnd, edges.end());
+    sort(edgesFilt.begin(), edgesFilt.end());
+    newEnd = unique(edgesFilt.begin(), edgesFilt.end());
+    edgesFilt.erase(newEnd, edgesFilt.end());
+
+    //Normally, output every row once (with node/agg/processor and coordinate data).
+    //But if there are any filtered edges, also output them a second time for drawing
+    //filtered edges with a different color (by using value CONTRAST_2 for node/edge)
+    LocalOrdinal numPointsToOutput = numRows;
+    if(edgesFilt.size())
+      numPointsToOutput *= 2;
+
     fout << "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\">" << endl;
     fout << "  <UnstructuredGrid>" << endl;
-    fout << "    <Piece NumberOfPoints=\"" << unique1.size() + unique2.size() << "\" NumberOfCells=\"" << vert1.size() + vert2.size() << "\">" << endl;
+    fout << "    <Piece NumberOfPoints=\"" << numPointsToOutput << "\" NumberOfCells=\"" << edges.size() + edgesFilt.size() << "\">" << endl;
     fout << "      <PointData Scalars=\"Node Aggregate Processor\">" << endl;
     fout << "        <DataArray type=\"Int32\" Name=\"Node\" format=\"ascii\">" << endl; //node and aggregate will be set to CONTRAST_1|2, but processor will have its actual value
     string indent = "          ";
     fout << indent;
-    for(size_t i = 0; i < unique1.size(); i++)
+    for(LocalOrdinal i = 0; i < numPointsToOutput; i++)
     {
-      fout << CONTRAST_1_ << " ";
+      if(i < numRows)
+        fout << CONTRAST_1_ << " ";
+      else
+        fout << CONTRAST_2_ << " ";
       if(i % 25 == 24)
-        fout << endl << indent;
-    }
-    for(size_t i = 0; i < unique2.size(); i++)
-    {
-      fout << CONTRAST_2_ << " ";
-      if((i + 2 * vert1.size()) % 25 == 24)
         fout << endl << indent;
     }
     fout << endl;
     fout << "        </DataArray>" << endl;
     fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">" << endl;
     fout << indent;
-    for(size_t i = 0; i < unique1.size(); i++)
+    for(LocalOrdinal i = 0; i < numPointsToOutput; i++)
     {
-      fout << CONTRAST_1_ << " ";
+      if(i < numRows)
+        fout << CONTRAST_1_ << " ";
+      else
+        fout << CONTRAST_2_ << " ";
       if(i % 25 == 24)
-        fout << endl << indent;
-    }
-    for(size_t i = 0; i < unique2.size(); i++)
-    {
-      fout << CONTRAST_2_ << " ";
-      if((i + 2 * vert2.size()) % 25 == 24)
         fout << endl << indent;
     }
     fout << endl;
     fout << "        </DataArray>" << endl;
     fout << "        <DataArray type=\"Int32\" Name=\"Processor\" format=\"ascii\">" << endl;
     fout << indent;
-    for(size_t i = 0; i < unique1.size() + unique2.size(); i++)
+    for(LocalOrdinal i = 0; i < numPointsToOutput; i++)
     {
       fout << myRank_ << " ";
       if(i % 25 == 24)
@@ -540,13 +552,15 @@ namespace MueLu {
     fout << "      <Points>" << endl;
     fout << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
     fout << indent;
-    for(size_t i = 0; i < unique1.size(); i++)
+    for(LocalOrdinal i = 0; i < numPointsToOutput; i++)
     {
+      LocalOrdinal row = i % numRows;
+      LocalOrdinal coordRow = row / dofs;
       if(fine)
       {
-        fout << xCoords[unique1[i]] << " " << yCoords[unique1[i]] << " ";
+        fout << xCoords[coordRow] << " " << yCoords[coordRow] << " ";
         if(dims_ == 3)
-          fout << zCoords[unique1[i]] << " ";
+          fout << zCoords[coordRow] << " ";
         else
           fout << "0 ";
         if(i % 2)
@@ -554,35 +568,12 @@ namespace MueLu {
       }
       else
       {
-        fout << cx[unique1[i]] << " " << cy[unique1[i]] << " ";
+        fout << cx[coordRow] << " " << cy[coordRow] << " ";
         if(dims_ == 3)
-          fout << cz[unique1[i]] << " ";
+          fout << cz[coordRow] << " ";
         else
           fout << "0 ";
         if(i % 2)
-          fout << endl << indent;
-      }
-    }
-    for(size_t i = 0; i < unique2.size(); i++)
-    {
-      if(fine)
-      {
-        fout << xCoords[unique2[i]] << " " << yCoords[unique2[i]] << " ";
-        if(dims_ == 3)
-          fout << zCoords[unique2[i]] << " ";
-        else
-          fout << "0 ";
-        if(i % 2)
-          fout << endl << indent;
-      }
-      else
-      {
-        fout << cx[unique2[i]] << " " << cy[unique2[i]] << " ";
-        if(dims_ == 3)
-          fout << cz[unique2[i]] << " ";
-        else
-          fout << "0 ";
-        if((i + unique1.size()) % 2)
           fout << endl << indent;
       }
     }
@@ -592,16 +583,16 @@ namespace MueLu {
     fout << "      <Cells>" << endl;
     fout << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << endl;
     fout << indent;
-    for(size_t i = 0; i < points1.size(); i++)
+    for(size_t i = 0; i < edges.size(); i++)
     {
-      fout << points1[i] << " ";
-      if(i % 10 == 9)
+      fout << edges[i].first << " " << edges[i].second << " ";
+      if(i % 6 == 5)
         fout << endl << indent;
     }
-    for(size_t i = 0; i < points2.size(); i++)
+    for(size_t i = 0; i < edgesFilt.size(); i++)
     {
-      fout << points2[i] + unique1.size() << " ";
-      if((i + points1.size()) % 10 == 9)
+      fout << edgesFilt[i].first + numRows << " " << edgesFilt[i].second + numRows << " ";
+      if(i % 6 == 5)
         fout << endl << indent;
     }
     fout << endl;
@@ -609,7 +600,7 @@ namespace MueLu {
     fout << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
     fout << indent;
     int offset = 0;
-    for(size_t i = 0; i < vert1.size() + vert2.size(); i++)
+    for(size_t i = 0; i < edges.size() + edgesFilt.size(); i++)
     {
       offset += 2;
       fout << offset << " ";
@@ -620,8 +611,9 @@ namespace MueLu {
     fout << "        </DataArray>"  << endl;
     fout << "        <DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">" << endl;
     fout << indent;
-    for(size_t i = 0; i < vert1.size() + vert2.size(); i++)
+    for(size_t i = 0; i < edges.size() + edgesFilt.size(); i++)
     {
+      //VTK type 3 is a line segment
       fout << "3 ";
       if(i % 25 == 24)
         fout << endl << indent;
@@ -635,7 +627,7 @@ namespace MueLu {
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFile_(std::ofstream& fout, std::string styleName, std::vector<int>& vertices, std::vector<int>& geomSizes) const
+  void AggregationExportFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFile_(std::ofstream& fout, std::string styleName, std::vector<int>& vertices, std::vector<int>& geomSizes, int dofs) const
   {
     using namespace std;
     
@@ -644,26 +636,25 @@ namespace MueLu {
     Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> zCoords = Teuchos::null;
     if(dims_ == 3)
       zCoords = coords_->getData(2);
+
+    LocalOrdinal numNodes = vertex2AggId_.size();
     
-    vector<int> uniqueFine = this->makeUnique(vertices);
     string indent = "      ";
     fout << "<!--" << styleName << " Aggregates Visualization-->" << endl;
     fout << "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\">" << endl;
     fout << "  <UnstructuredGrid>" << endl;
-    fout << "    <Piece NumberOfPoints=\"" << uniqueFine.size() << "\" NumberOfCells=\"" << geomSizes.size() << "\">" << endl;
+    fout << "    <Piece NumberOfPoints=\"" << numNodes << "\" NumberOfCells=\"" << geomSizes.size() << "\">" << endl;
     fout << "      <PointData Scalars=\"Node Aggregate Processor\">" << endl;
     fout << "        <DataArray type=\"Int32\" Name=\"Node\" format=\"ascii\">" << endl;
     indent = "          ";
     fout << indent;
-    bool localIsGlobal = GlobalOrdinal(nodeMap_->getGlobalNumElements()) == GlobalOrdinal(nodeMap_->getLocalNumElements());
-    for(size_t i = 0; i < uniqueFine.size(); i++)
+    bool localIsGlobal = GlobalOrdinal(rowMap_->getGlobalNumElements()) == GlobalOrdinal(rowMap_->getLocalNumElements());
+    for(LocalOrdinal i = 0; i < numNodes; i++)
     {
       if(localIsGlobal)
-      {
-        fout << uniqueFine[i] << " "; //if all nodes are on this processor, do not map from local to global
-      }
+        fout << i << " "; //if all nodes are on this processor, do not map from local to global
       else
-        fout << nodeMap_->getGlobalElement(uniqueFine[i]) << " ";
+        fout << rowMap_->getGlobalElement(i) << " ";
       if(i % 10 == 9)
         fout << endl << indent;
     }
@@ -671,12 +662,12 @@ namespace MueLu {
     fout << "        </DataArray>" << endl;
     fout << "        <DataArray type=\"Int32\" Name=\"Aggregate\" format=\"ascii\">" << endl;
     fout << indent;
-    for(size_t i = 0; i < uniqueFine.size(); i++)
+    for(LocalOrdinal i = 0; i < numNodes; i++)
     {
-      if(vertex2AggId_[uniqueFine[i]]==-1)
-        fout << vertex2AggId_[uniqueFine[i]] << " ";
+      if(vertex2AggId_[i]==-1)
+        fout << vertex2AggId_[i] << " ";
       else
-        fout << aggsOffset_ + vertex2AggId_[uniqueFine[i]] << " ";
+        fout << aggsOffset_ + vertex2AggId_[i] << " ";
       if(i % 10 == 9)
         fout << endl << indent;
     }
@@ -684,7 +675,7 @@ namespace MueLu {
     fout << "        </DataArray>" << endl;
     fout << "        <DataArray type=\"Int32\" Name=\"Processor\" format=\"ascii\">" << endl;
     fout << indent;
-    for(size_t i = 0; i < uniqueFine.size(); i++)
+    for(LocalOrdinal i = 0; i < numNodes; i++)
     {
       fout << myRank_ << " ";
       if(i % 20 == 19)
@@ -696,13 +687,14 @@ namespace MueLu {
     fout << "      <Points>" << endl;
     fout << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
     fout << indent;
-    for(size_t i = 0; i < uniqueFine.size(); i++)
+    for(LocalOrdinal i = 0; i < numNodes; i++)
     {
-      fout << xCoords[uniqueFine[i]] << " " << yCoords[uniqueFine[i]] << " ";
+      LocalOrdinal localCoord = i / dofs;
+      fout << xCoords[localCoord] << " " << yCoords[localCoord] << " ";
       if(dims_ == 2)
         fout << "0 ";
       else
-        fout << zCoords[uniqueFine[i]] << " ";
+        fout << zCoords[localCoord] << " ";
       if(i % 3 == 2)
         fout << endl << indent;
     }

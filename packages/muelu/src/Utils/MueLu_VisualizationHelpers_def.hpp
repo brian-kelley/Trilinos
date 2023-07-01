@@ -91,35 +91,37 @@ namespace MueLu {
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doJacks(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& isRoot, const ArrayRCP<LO>& vertex2AggId) {
     //For each aggregate, find the root node then connect it with the other nodes in the aggregate
     //Doesn't matter the order, as long as all edges are found.
+    std::vector<std::vector<int>> allAggs(numLocalAggs);
+    for(LocalOrdinal i = 0; i < numFineNodes; i++)
+      allAggs[vertex2AggId[i]].push_back(i);
     vertices.reserve(vertices.size() + 3 * (numFineNodes - numLocalAggs));
     geomSizes.reserve(vertices.size() + 2 * (numFineNodes - numLocalAggs));
-    int root = 0;
-    for(int i = 0; i < numLocalAggs; i++) //TODO: Replace this O(n^2) with a better way
+    for(int i = 0; i < numLocalAggs; i++)
     {
-      while(!isRoot[root])
-        root++;
-      int numInAggFound = 0;
-      for(int j = 0; j < numFineNodes; j++)
+      auto& aggNodes = allAggs[i];
+      int root = -1;
+      for(auto n : aggNodes)
       {
-        if(j == root) //don't make a connection from the root to itself
+        if(isRoot[n])
         {
-          numInAggFound++;
-          continue;
-        }
-        if(vertex2AggId[root] == vertex2AggId[j])
-        {
-          vertices.push_back(root);
-          vertices.push_back(j);
-          geomSizes.push_back(2);
-          //Also draw the free endpoint explicitly for the current line
-          vertices.push_back(j);
-          geomSizes.push_back(1);
-          numInAggFound++;
-          //if(numInAggFound == aggSizes_[vertex2AggId_[root]]) //don't spend more time looking if done with that root
-          //  break;
+          root = n;
+          break;
         }
       }
-      root++; //get set up to look for the next root
+      if(root == -1)
+        throw std::logic_error("VisualizationHelpers::doJacks: aggregate has no root");
+      for(auto n : aggNodes)
+      {
+        // Don't draw an edge from root to itself
+        if(n == root)
+          continue;
+        vertices.push_back(root);
+        vertices.push_back(n);
+        geomSizes.push_back(2);
+        //Also draw the free endpoint explicitly for the current line
+        vertices.push_back(n);
+        geomSizes.push_back(1);
+      }
     }
   }
 
@@ -128,16 +130,14 @@ namespace MueLu {
 
     // This algorithm is based on Andrew's Monotone Chain variant of the Graham Scan for Convex Hulls.  It adds
     // a colinearity check which we'll need for our viz.
+    std::vector<std::vector<int>> allAggs(numLocalAggs);
+    for(LocalOrdinal i = 0; i < numFineNodes; i++)
+      allAggs[vertex2AggId[i]].push_back(i);
     for(int agg = 0; agg < numLocalAggs; agg++) {
-      std::vector<int> aggNodes;
-      for(int i = 0; i < numFineNodes; i++) {
-        if(vertex2AggId[i] == agg)
-          aggNodes.push_back(i);
-      }
-
-      //have a list of nodes in the aggregate
+      auto& aggNodes = allAggs[agg];
+      ////have a list of nodes in the aggregate
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
-               "CoarseningVisualization::doConvexHulls2D: aggregate contains zero nodes!");
+               "VisualizationHelpers::doConvexHulls2D: aggregate contains zero nodes!");
       if(aggNodes.size() == 1) {
         vertices.push_back(aggNodes.front());
         geomSizes.push_back(1);
@@ -223,20 +223,19 @@ namespace MueLu {
 
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::doConvexHulls3D(std::vector<int>& vertices, std::vector<int>& geomSizes, LO numLocalAggs, LO numFineNodes, const std::vector<bool>& /* isRoot */, const ArrayRCP<LO>& vertex2AggId, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& yCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>& zCoords) {
+    std::vector<std::list<int>> allAggs(numLocalAggs);
+    for(LocalOrdinal i = 0; i < numFineNodes; i++)
+      allAggs[vertex2AggId[i]].push_back(i);
     //Use 3D quickhull algo.
     //Vector of node indices representing triangle vertices
     //Note: Calculate the hulls first since will only include point data for points in the hulls
     //Effectively the size() of vertIndices after each hull is added to it
     typedef std::list<int>::iterator Iter;
     for(int agg = 0; agg < numLocalAggs; agg++) {
-      std::list<int> aggNodes; //At first, list of all nodes in the aggregate. As nodes are enclosed or included by/in hull, remove them
-      for(int i = 0; i < numFineNodes; i++) {
-        if(vertex2AggId[i] == agg)
-          aggNodes.push_back(i);
-      }
+      std::list<int>& aggNodes = allAggs[agg]; //At first, list of all nodes in the aggregate. As nodes are enclosed or included by/in hull, remove them
       //First, check anomalous cases
       TEUCHOS_TEST_FOR_EXCEPTION(aggNodes.size() == 0, Exceptions::RuntimeError,
-               "CoarseningVisualization::doConvexHulls3D: aggregate contains zero nodes!");
+               "VisualizationHelpers::doConvexHulls3D: aggregate contains zero nodes!");
       if(aggNodes.size() == 1) {
         vertices.push_back(aggNodes.front());
         geomSizes.push_back(1);
@@ -963,39 +962,6 @@ namespace MueLu {
       //if(debug_it > 100) exit(0); //break;
     }
     return hull;
-  }
-
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  std::vector<int> VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::makeUnique(std::vector<int>& vertices) const
-  {
-    using namespace std;
-    vector<int> uniqueNodes = vertices;
-    sort(uniqueNodes.begin(), uniqueNodes.end());
-    vector<int>::iterator newUniqueFineEnd = unique(uniqueNodes.begin(), uniqueNodes.end());
-    uniqueNodes.erase(newUniqueFineEnd, uniqueNodes.end());
-    //uniqueNodes is now a sorted list of the nodes whose info actually goes in file
-    //Now replace values in vertices with locations of the old values in uniqueFine
-    for(int i = 0; i < int(vertices.size()); i++)
-    {
-      int lo = 0;
-      int hi = uniqueNodes.size() - 1;
-      int mid = 0;
-      int search = vertices[i];
-      while(lo <= hi)
-      {
-        mid = lo + (hi - lo) / 2;
-        if(uniqueNodes[mid] == search)
-          break;
-        else if(uniqueNodes[mid] > search)
-          hi = mid - 1;
-        else
-          lo = mid + 1;
-      }
-      if(uniqueNodes[mid] != search)
-        throw runtime_error("Issue in makeUnique_() - a point wasn't found in list.");
-      vertices[i] = mid;
-    }
-    return uniqueNodes;
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>

@@ -118,7 +118,6 @@ namespace MueLu {
     AggregationExportFactory() :
       doFineGraphEdges_(false),
       doCoarseGraphEdges_(false),
-      numNodes_(0),
       numAggs_(0),
       dims_(0),
       myRank_(-1),
@@ -151,12 +150,12 @@ namespace MueLu {
 
   private:
     //Break different viz styles into separate functions for organization:
-    void doJacksPlus_(std::vector<int>& vertices, std::vector<int>& geomSizes) const;
-    void doConvexHulls(std::vector<int>& vertices, std::vector<int>& geomSizes) const;
-    void doGraphEdges_(std::ofstream& fout, Teuchos::RCP<Matrix>& A, Teuchos::RCP<GraphBase>& G, bool fine, int dofs) const; //add geometry to display node connections from a matrix. Connections in graph but not matrix have different color.
+    void doConvexHulls(LocalOrdinal numRows, std::vector<int>& vertices, std::vector<int>& geomSizes) const;
+    //! Display node connections from a matrix. Dropped/filtered edges (those present in the graph but not the matrix) have a different color.
+    void doGraphEdges_(std::ofstream& fout, Teuchos::RCP<Matrix>& A, Teuchos::RCP<GraphBase>& G, bool fine, int dofs) const; 
 
     // write VTK data
-    void writeFile_(std::ofstream& fout, std::string styleName, std::vector<int>& vertices, std::vector<int>& geomSizes) const;
+    void writeFile_(std::ofstream& fout, std::string styleName, std::vector<int>& vertices, std::vector<int>& geomSizes, int dofs) const;
     void buildColormap_() const;
     void writePVTU_(std::ofstream& pvtu, std::string baseFname, int numProcs) const;
 
@@ -172,12 +171,11 @@ namespace MueLu {
     mutable std::vector<bool> isRoot_;
     mutable bool doFineGraphEdges_;
     mutable bool doCoarseGraphEdges_;
-    mutable int numNodes_;
     mutable int numAggs_;
     mutable int dims_;
     mutable int myRank_;
-    mutable Teuchos::RCP<const Map> nodeMap_; //map used in A and Coordinates to map local ordinals to global ordinals. Need the whole map especially if it's not contiguous.
-    mutable Teuchos::RCP<const Map> nodeMapCoarse_; //Map for Ac
+    mutable Teuchos::RCP<const Map> rowMap_; //row map of A; maps local ordinals to global ordinals. Not compatible with coords if dofs/node > 1.
+    mutable Teuchos::RCP<const Map> rowMapCoarse_; //Map for Ac
     mutable int aggsOffset_;            //in a global list of aggregates, the offset of local aggregate indices
   }; // class AggregationExportFactory
 } // namespace MueLu

@@ -168,7 +168,6 @@ namespace MueLu {
     static std::vector<int> giftWrap(std::vector<myVec2>& points, std::vector<int>& nodes, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & xCoords, const Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & yCoords);
 
     std::string replaceAll(std::string result, const std::string& replaceWhat, const std::string& replaceWithWhat) const;
-    std::vector<int> makeUnique(std::vector<int>& vertices) const; //!< replaces node indices in vertices with compressed unique indices, and returns list of unique points
   }; // class VisualizationHelpers
 } // namespace MueLu
 
