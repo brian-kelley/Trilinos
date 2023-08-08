@@ -181,11 +181,14 @@ namespace MueLu {
         coordsCoarse = Get<RCP<CoordinateMultiVector> >(coarseLevel, "Coordinates");
       dims_ = coords->getNumVectors();  //2D or 3D?
 
-      LocalOrdinal numCoords = coords->getLocalLength();
-      if(numRows % numCoords != 0)
-        throw std::logic_error("AggregationExportFactory: number of rows in matrix not divisible by number of coordinates given.");
+      if(numRows % numLocalCoords != 0)
+      {
+        std::ostringstream oss;
+        oss << "AggregationExportFactory: number of rows in matrix (" << numRows << ") is not divisible by number of coordinates given (" << numLocalCoords << ").";
+        throw std::logic_error(oss.str());
+      }
       //How many rows of A correspond to one coordinate point?
-      dofsPerCoord = numRows / numCoords;
+      dofsPerCoord = numRows / numLocalCoords;
 
       if(numProcs > 1)
       {
@@ -223,7 +226,11 @@ namespace MueLu {
     if(useVTK)
     {
       if(vertex2AggId.size() % numLocalCoords)
-        throw std::logic_error("AggregationExportFactory: number of nodes (length of vertex2AggId) is not divisible by number of coordinates given.");
+      {
+        std::ostringstream oss;
+        oss << "AggregationExportFactory: number of nodes (length of vertex2AggId, " << vertex2AggId.size() << ") is not divisible by number of coordinates given (" << numLocalCoords << ").";
+        throw std::logic_error(oss.str());
+      }
       nodesPerCoord = vertex2AggId.size() / numLocalCoords;
     }
     Teuchos::ArrayRCP<LocalOrdinal>       procWinner          = aggregates->GetProcWinner()->getDataNonConst(0);

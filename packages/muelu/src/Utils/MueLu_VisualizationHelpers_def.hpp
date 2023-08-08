@@ -1089,7 +1089,7 @@ namespace MueLu {
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-  void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFileVTKCells(std::ofstream & fout, std::vector<int> & /* uniqueFine */, std::vector<LocalOrdinal> & vertices, std::vector<LocalOrdinal> & geomSize) const {
+  void VisualizationHelpers<Scalar, LocalOrdinal, GlobalOrdinal, Node>::writeFileVTKCells(std::ofstream & fout, std::vector<LocalOrdinal> & vertices, std::vector<LocalOrdinal> & geomSize) const {
     std::string indent = "      ";
     fout << "      <Cells>" << std::endl;
     fout << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << std::endl;

@@ -89,12 +89,6 @@ namespace MueLu {
 
     if(pL.get<bool>("visualization: fine graph edges"))
       Input(fineLevel, "Graph");
-#if 0
-    if(pL.get<bool>("visualization: coarse graph edges")) {
-      Input(coarseLevel, "Coordinates");
-      Input(coarseLevel, "Graph");
-    }
-#endif
   }
 
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
@@ -302,67 +296,25 @@ namespace MueLu {
       std::string fEdgeFile = fEdgeFineFile.insert(fEdgeFineFile.rfind(".vtu"), "-finegraph");
       std::ofstream edgeStream(fEdgeFile.c_str());
 
-      std::vector<int> uniqueFineEdges = this->makeUnique(fine_edges_vertices);
-      this->writeFileVTKOpening(edgeStream, uniqueFineEdges, fine_edges_geomSize);
-      this->writeFileVTKNodes(edgeStream, uniqueFineEdges, nodeMap);
-      this->writeFileVTKData(edgeStream, uniqueFineEdges, myAggOffset, vertex2AggId, comm->getRank());
-      this->writeFileVTKCoordinates(edgeStream, uniqueFineEdges, xCoords, yCoords, zCoords, coords->getNumVectors());
-      this->writeFileVTKCells(edgeStream, uniqueFineEdges, fine_edges_vertices, fine_edges_geomSize);
+      this->writeFileVTKOpening(edgeStream, fine_edges_vertices, fine_edges_geomSize);
+      this->writeFileVTKNodes(edgeStream, fine_edges_vertices, nodeMap);
+      this->writeFileVTKData(edgeStream, fine_edges_vertices, myAggOffset, vertex2AggId, comm->getRank());
+      this->writeFileVTKCoordinates(edgeStream, fine_edges_vertices, xCoords, yCoords, zCoords, coords->getNumVectors());
+      this->writeFileVTKCells(edgeStream, fine_edges_vertices, fine_edges_geomSize);
       this->writeFileVTKClosing(edgeStream);
       edgeStream.close();
     }
-
-    // communicate fine level coordinates if necessary
-#if 0 // we don't have access to the coarse graph
-    if (pL.get<bool>("visualization: coarse graph edges")) {
-      RCP<GraphBase> coarseGraph = Get<RCP<GraphBase> >(coarseLevel, "Graph");
-
-      Teuchos::RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > coarsecoords = Get<RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > >(coarseLevel, "Coordinates");
-
-      RCP<Import> coarsecoordImporter = Xpetra::ImportFactory<LocalOrdinal, GlobalOrdinal, Node>::Build(coarsecoords->getMap(), coarseGraph->GetImportMap());
-      RCP<Xpetra::MultiVector<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node> > coarseghostedCoords = Xpetra::MultiVectorFactory<typename Teuchos::ScalarTraits<Scalar>::coordinateType, LocalOrdinal, GlobalOrdinal, Node>::Build(coarseGraph->GetImportMap(), coarsecoords->getNumVectors());
-      coarseghostedCoords->doImport(*coarsecoords, *coarsecoordImporter, Xpetra::INSERT);
-      coarsecoords = coarseghostedCoords;
-
-      Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> cx = Teuchos::arcp_reinterpret_cast<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>(coarsecoords->getData(0));
-      Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> cy = Teuchos::arcp_reinterpret_cast<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>(coarsecoords->getData(1));
-      Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> cz = Teuchos::null;
-      if(coarsecoords->getNumVectors() == 3) {
-        cz = Teuchos::arcp_reinterpret_cast<const typename Teuchos::ScalarTraits<Scalar>::coordinateType>(coarsecoords->getData(2));
-      }
-
-      Teuchos::RCP<const Map> coarsenodeMap = coarsecoords->getMap();
-
-      std::vector<LocalOrdinal> coarse_edges_vertices;
-      std::vector<LocalOrdinal> coarse_edges_geomSize;
-      this->doGraphEdges(coarse_edges_vertices, coarse_edges_geomSize, coarseGraph, cx, cy, cz);
-
-      std::string cEdgeFineFile = this->getFileName(comm->getSize(), comm->getRank(), coarseLevel.GetLevelID(), pL);
-      std::string cEdgeFile = cEdgeFineFile.insert(cEdgeFineFile.rfind(".vtu"), "-coarsegraph");
-      std::ofstream cedgeStream(cEdgeFile.c_str());
-
-      std::vector<int> uniqueCoarseEdges = this->makeUnique(coarse_edges_vertices);
-      this->writeFileVTKOpening(cedgeStream, uniqueCoarseEdges, coarse_edges_geomSize);
-      this->writeFileVTKNodes(cedgeStream, uniqueCoarseEdges, coarsenodeMap);
-      //this->writeFileVTKData(edgeStream, uniqueCoarseEdges, myAggOffset, vertex2AggId, comm->getRank());
-      this->writeFileVTKCoordinates(cedgeStream, uniqueCoarseEdges, cx, cy, cz, coarsecoords->getNumVectors());
-      this->writeFileVTKCells(cedgeStream, uniqueCoarseEdges, coarse_edges_vertices, coarse_edges_geomSize);
-      this->writeFileVTKClosing(cedgeStream);
-      cedgeStream.close();
-    }
-#endif
 
     if(pL.get<int>("visualization: start level") <= fineLevel.GetLevelID()) {
       // write out coarsening information
       std::string filenameToWrite = this->getFileName(comm->getSize(), comm->getRank(), fineLevel.GetLevelID(), pL);
       std::ofstream fout (filenameToWrite.c_str());
 
-      std::vector<int> uniqueFine = this->makeUnique(vertices);
-      this->writeFileVTKOpening(fout, uniqueFine, geomSize);
-      this->writeFileVTKNodes(fout, uniqueFine, nodeMap);
-      this->writeFileVTKData(fout, uniqueFine, myAggOffset, vertex2AggId, comm->getRank());
-      this->writeFileVTKCoordinates(fout, uniqueFine, xCoords, yCoords, zCoords, coords->getNumVectors());
-      this->writeFileVTKCells(fout, uniqueFine, vertices, geomSize);
+      this->writeFileVTKOpening(fout, vertices, geomSize);
+      this->writeFileVTKNodes(fout, vertices, nodeMap);
+      this->writeFileVTKData(fout, vertices, myAggOffset, vertex2AggId, comm->getRank());
+      this->writeFileVTKCoordinates(fout, vertices, xCoords, yCoords, zCoords, coords->getNumVectors());
+      this->writeFileVTKCells(fout, vertices, geomSize);
       this->writeFileVTKClosing(fout);
       fout.close();
 

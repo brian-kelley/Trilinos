@@ -133,7 +133,7 @@ namespace MueLu {
     void writeFileVTKNodes(std::ofstream & fout, std::vector<int> & uniqueFine, Teuchos::RCP<const Map> & nodeMap) const;
     void writeFileVTKData(std::ofstream & fout, std::vector<int> & uniqueFine, LocalOrdinal myAggOffset, ArrayRCP<LocalOrdinal> & vertex2AggId, int myRank) const;
     void writeFileVTKCoordinates(std::ofstream & fout, std::vector<int> & uniqueFine, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & fx, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & fy, Teuchos::ArrayRCP<const typename Teuchos::ScalarTraits<Scalar>::coordinateType> & fz, int dim) const;
-    void writeFileVTKCells(std::ofstream & fout, std::vector<int> & uniqueFine, std::vector<LocalOrdinal> & vertices, std::vector<LocalOrdinal> & geomSize) const;
+    void writeFileVTKCells(std::ofstream & fout, std::vector<LocalOrdinal> & vertices, std::vector<LocalOrdinal> & geomSize) const;
     void writeFileVTKClosing(std::ofstream & fout) const;
     void writePVTU(std::ofstream& pvtu, std::string baseFname, int numProcs, bool bFineEdges = false, bool bCoarseEdges = false) const;
     void buildColormap() const;
