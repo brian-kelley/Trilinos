@@ -127,7 +127,7 @@ build_problem (Teuchos::ParameterList& test_params,
       std::cout << "*** Note: comm has " << comm->getSize() << " ranks.\n";
       auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(std::cout));
       std::cout << "*** map's descr:\n";
-      rowMap->describe(out, Teuchos::VERB_HIGH);
+      rowMap->describe(*out, Teuchos::VERB_HIGH);
       A = reader_type::readSparseFile (mm_file, rowMap, colMap, rowMap, rowMap);
     }
     else {
