@@ -123,6 +123,11 @@ build_problem (Teuchos::ParameterList& test_params,
         std::cout << "Matrix Market file for row Map of the sparse matrix A: " << map_mm_file << std::endl;
       }
       rowMap = reader_type::readMapFile(map_mm_file, comm);
+      std::cout << "*** Loaded row map from " << map_mm_file << "\n";
+      std::cout << "*** Note: comm has " << comm->getSize() << " ranks.\n";
+      auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(std::cout));
+      std::cout << "*** map's descr:\n";
+      rowMap->describe(out, Teuchos::VERB_HIGH);
       A = reader_type::readSparseFile (mm_file, rowMap, colMap, rowMap, rowMap);
     }
     else {
