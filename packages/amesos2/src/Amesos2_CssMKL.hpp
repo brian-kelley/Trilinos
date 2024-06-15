@@ -1,9 +1,9 @@
 // @HEADER
+//
 // ***********************************************************************
 //
-//           Panzer: A partial differential equation assembly
-//       engine for strongly coupled complex multiphysics systems
-//                 Copyright (2011) Sandia Corporation
+//           Amesos2: Templated Direct Sparse Solver Package 
+//                  Copyright 2011 Sandia Corporation
 //
 // Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
 // the U.S. Government retains certain rights in this software.
@@ -35,18 +35,20 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Questions? Contact Roger P. Pawlowski (rppawlo@sandia.gov) and
-// Eric C. Cyr (eccyr@sandia.gov)
+// Questions? Contact Michael A. Heroux (maherou@sandia.gov)
+//
 // ***********************************************************************
+//
 // @HEADER
 
-#include "PanzerAdaptersSTK_config.hpp"
 
-#include "Panzer_STK_ModelEvaluatorFactory.hpp"
-#include "Panzer_STK_ModelEvaluatorFactory_impl.hpp"
+#ifndef AMESOS2_CSSMKL_HPP
+#define AMESOS2_CSSMKL_HPP
 
-namespace panzer_stk {
+#include "Amesos2_CssMKL_decl.hpp"
 
-  template class ModelEvaluatorFactory<double>;
+#ifndef HAVE_AMESOS2_EXPLICIT_INSTANTIATION
+#  include "Amesos2_CssMKL_def.hpp"
+#endif
 
-}
+#endif  // AMESOS2_CSSMKL_HPP
