@@ -73,6 +73,7 @@ struct inner_layout< LayoutContiguous<Layout, Stride> > {
 
 } // namespace Kokkos
 
+// FIXME This is evil and needs refactoring urgently.
 // Make LayoutContiguous<Layout> equivalent to Layout
 namespace std {
 
@@ -82,13 +83,22 @@ namespace std {
   };
 
   template <class Layout, unsigned Stride>
+  static constexpr bool is_same_v< Kokkos::LayoutContiguous<Layout,Stride>, Layout> = is_same<Kokkos::LayoutContiguous<Layout,Stride>, Layout>::value;
+
+  template <class Layout, unsigned Stride>
   struct is_same< Layout, Kokkos::LayoutContiguous<Layout,Stride> > {
     static const bool value = true;
   };
 
+  template <class Layout, unsigned Stride>
+  static constexpr bool is_same_v< Layout, Kokkos::LayoutContiguous<Layout,Stride>> = is_same<Kokkos::LayoutContiguous<Layout,Stride>, Layout>::value;
 }
 
+#if KOKKOS_VERSION >= 40499
+#include "View/Kokkos_ViewMapping.hpp"
+#else
 #include "impl/Kokkos_ViewMapping.hpp"
+#endif
 
 namespace Kokkos {
 namespace Impl {
