@@ -165,3 +165,7 @@ rsync.*
 .idea
 
 *_build
+
+# clangd server stuff
+.cache/
+compile_commands.json
