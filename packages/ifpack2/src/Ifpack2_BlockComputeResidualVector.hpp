@@ -945,12 +945,18 @@ namespace Ifpack2 {
         }
 
         if constexpr (is_device<execution_space>::value) {
+          #ifdef KOKKOS_ENABLE_HIP
+          constexpr bool is_hip = std::is_same_v<execution_space, Kokkos::HIP>;
+          #else
+          constexpr bool is_hip = false;
+          #endif
+
           const local_ordinal_type blocksize = blocksize_requested;
-          // const local_ordinal_type team_size = 8;
-          // const local_ordinal_type vector_size = ComputeResidualVectorRecommendedVectorSize<execution_space>(blocksize, team_size);
-          // const size_t shmem_size = (blocksize+2)*blocksize*sizeof(btdm_scalar_type);
           const local_ordinal_type team_size = 8;
-          const local_ordinal_type vector_size = 8;
+          // BMK: The recommended vector size heuristic was found to be worse than hardcoding to 8 on HIP
+          // for this kernel (see #13610).
+          local_ordinal_type vector_size = is_hip ? 8 : ComputeResidualVectorRecommendedVectorSize<execution_space>(blocksize, team_size);
+          // const size_t shmem_size = (blocksize+2)*blocksize*sizeof(btdm_scalar_type);
           const size_t shmem_team_size = blocksize*sizeof(btdm_scalar_type);
           const size_t shmem_thread_size = blocksize*sizeof(btdm_scalar_type);
           // local_ordinal_type vl_power_of_two = 1;
@@ -959,13 +965,13 @@ namespace Ifpack2 {
           // const local_ordinal_type vl = vl_power_of_two > vector_length ? vector_length : vl_power_of_two;
 #define BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(B)  \
           if (compute_owned) {                                          \
-            const auto policy = Kokkos::TeamPolicy<execution_space,OverlapTag<0,B>,Kokkos::LaunchBounds<64> > \
+            const auto policy = Kokkos::TeamPolicy<execution_space,OverlapTag<0,B>> \
               (rowidx2part.extent(0), team_size, vector_size).set_scratch_size( \
                 0,Kokkos::PerTeam(shmem_team_size),Kokkos::PerThread(shmem_thread_size));    \
             Kokkos::parallel_for                                        \
               ("ComputeResidual::TeamPolicy::run<OverlapTag<0> >", policy, *this); \
           } else {                                                      \
-            const auto policy = Kokkos::TeamPolicy<execution_space,OverlapTag<1,B>,Kokkos::LaunchBounds<64> > \
+            const auto policy = Kokkos::TeamPolicy<execution_space,OverlapTag<1,B>> \
               (rowidx2part.extent(0), team_size, vector_size).set_scratch_size( \
                 0,Kokkos::PerTeam(shmem_team_size),Kokkos::PerThread(shmem_thread_size));    \
             Kokkos::parallel_for                                        \
