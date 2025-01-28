@@ -171,6 +171,7 @@ namespace Ifpack2 {
       using local_ordinal_type = typename impl_type::local_ordinal_type;
       using size_type = typename impl_type::size_type;
       using impl_scalar_type = typename impl_type::impl_scalar_type;
+      using scalar_traits = Kokkos::ArithTraits<impl_scalar_type>;
       using magnitude_type = typename impl_type::magnitude_type;
       using btdm_scalar_type = typename impl_type::btdm_scalar_type;
       using btdm_magnitude_type = typename impl_type::btdm_magnitude_type;
@@ -219,6 +220,7 @@ namespace Ifpack2 {
       const ConstUnmanaged<local_ordinal_type_1d_view> partptr;
       const ConstUnmanaged<local_ordinal_type_1d_view> lclrow;
       const ConstUnmanaged<local_ordinal_type_1d_view> dm2cm;
+      int blocksPerBatch; // BMK: only used by GPU, haveBlockMatrix == true case
       const bool is_dm2cm_active;
       const bool hasBlockCrsMatrix;
 
@@ -561,47 +563,111 @@ namespace Ifpack2 {
         const local_ordinal_type num_vectors = y_packed_scalar.extent(2);
         const local_ordinal_type num_local_rows = lclrow.extent(0);
 
+        // Allocate scratch buffers. Will process up to blocksPerBatch block entries at a time.
+        // * Ascratch will hold values from A, with the same layout (contiguous LayoutRight blocks)
+        // * xscratch will hold values from x OR x_remote
+        impl_scalar_type* Ascratch = (impl_scalar_type*) member.team_shmem().get_shmem(blocksize_square * blocksPerBatch * sizeof(impl_scalar_type));
+        impl_scalar_type* xscratch = (impl_scalar_type*) member.team_shmem().get_shmem(blocksize * blocksPerBatch * sizeof(impl_scalar_type));
+        impl_scalar_type* yscratch = (impl_scalar_type*) member.team_shmem().get_shmem(blocksize * sizeof(impl_scalar_type));
+        local_ordinal_type* batchColumnIndices = (local_ordinal_type*) member.team_shmem().get_shmem(blocksPerBatch * sizeof(local_ordinal_type));
+        local_ordinal_type* batchColumns = (local_ordinal_type*) member.team_shmem().get_shmem(blocksPerBatch * sizeof(local_ordinal_type));
+
         // subview pattern
         using subview_1D_right_t = decltype(Kokkos::subview(b, block_range, 0));
         using subview_1D_stride_t = decltype(Kokkos::subview(y_packed_scalar, 0, block_range, 0, 0));
-        subview_1D_right_t bb(nullptr, blocksize);
-        subview_1D_right_t xx(nullptr, blocksize);
-        subview_1D_right_t xx_remote(nullptr, blocksize);
+        // Pre-declare yy with the correct stride to view a single block and single column of the result y.
         subview_1D_stride_t yy(nullptr, Kokkos::LayoutStride(blocksize, y_packed_scalar.stride_1()));
-        auto A_block_cst = ConstUnmanaged<tpetra_block_access_view_type>(NULL, blocksize, blocksize);
+
         auto colindsub_used = overlap ? colindsub_remote : colindsub;
         auto rowptr_used = overlap ? rowptr_remote : rowptr;
 
         const local_ordinal_type lr = lclrow(rowidx);
-        const local_ordinal_type row = lr*blocksize;
-        for (local_ordinal_type col = 0; col < num_vectors; ++col) {
-          yy.assign_data(&y_packed_scalar(pri, 0, col, v));
-          if (!overlap) {
-            // y := b
-            bb.assign_data(&b(row, col));
-            if (member.team_rank() == 0)
-              VectorCopy(member, blocksize, bb, yy);
+        const local_ordinal_type row = lr * blocksize;
+
+        const size_type A_k0 = A_block_rowptr(lr);
+        const size_type rowBegin = rowptr_used(lr);
+        const local_ordinal_type rowLen = rowptr_used(lr + 1) - rowBegin;
+
+        for(local_ordinal_type batch = 0; batch < rowLen; batch += blocksPerBatch) {
+          local_ordinal_type numBatch = (batch + blocksPerBatch > rowLen) ? (rowLen - batch) : blocksPerBatch;
+          // Read columns and their indices for this batch
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(member, numBatch),
+              [=](local_ordinal_type i)
+              {
+                const size_type j = A_k0 + colindsub_used[rowBegin + batch + i];
+                batchColumnIndices[i] = j;
+                batchColumns[i] = A_colind[j];
+              });
+          member.team_barrier();
+          // Read A's values for this batch (coalesced)
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(member, numBatch * blocksize_square),
+              [=](local_ordinal_type i)
+              {
+                local_ordinal_type block = i / blocksize_square;
+                size_type blockOffset = batchColumnIndices[block] * blocksize_square;
+                Ascratch[i] = tpetra_values(blockOffset + i);
+              });
+          // Don't need a barrier right away. Still have to load x and y before Ascratch is used.
+          for (local_ordinal_type col = 0; col < num_vectors; ++col) {
+            // Load all x values for the current batch and column vector.
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(member, numBatch * blocksize),
+                [=](local_ordinal_type i)
+                {
+                  local_ordinal_type block = i / blocksize;
+                  local_ordinal_type scalarInBlock = i % blocksize;
+                  local_ordinal_type A_colind = batchColumns[block];
+                  if ((async && A_colind < num_local_rows) || (!async && !overlap)) {
+                    local_ordinal_type loc = is_dm2cm_active ? dm2cm[A_colind] : A_colind;
+                    xscratch[i] = x(loc * blocksize + scalarInBlock, col);
+                  } else {
+                    local_ordinal_type loc = A_colind - num_local_rows;
+                    xscratch[i] = x_remote(loc * blocksize + scalarInBlock, col);
+                  }
+                });
+            // Load initial y entries (or zero-init) once
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(member, blocksize),
+                [=](int i)
+                {
+                  if constexpr (!overlap) {
+                    // Load initial y values from b
+                    yscratch[i] = b(row + i, col);
+                  }
+                  else {
+                    // In overlap case, initialize to zero
+                    yscratch[i] = scalar_traits::zero();
+                  }
+                });
+            member.team_barrier();
+            // Compute the reductions using A, x values from scratch.
+            // TODO: use segmented reduce here to use all threads in the team efficiently
+            Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize),
+                [=](local_ordinal_type i)
+                {
+                  impl_scalar_type sum;
+                  Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, numBatch * blocksize),
+                      [=](local_ordinal_type j, impl_scalar_type& update)
+                      {
+                        local_ordinal_type block = j / blocksize;
+                        local_ordinal_type scalarInBlock = j % blocksize;
+                        update += Ascratch[block * blocksize_square + i * blocksize + scalarInBlock] * xscratch[j];
+                      }, sum);
+                  Kokkos::single(Kokkos::PerThread(member),
+                    [=]()
+                    {
+                      yscratch[i] -= sum;
+                    });
+                });
+            member.team_barrier();
+            // Write back results to y_packed_scalar.
+            // Use yy (1D strided subview) to help with indexing.
+            yy.assign_data(&y_packed_scalar(pri, 0, col, v));
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(member, blocksize),
+                [=](int i)
+                {
+                  yy(i) = yscratch[i];
+                });
             member.team_barrier();
           }
-
-          // y -= Rx
-          const size_type A_k0 = A_block_rowptr[lr];
-          Kokkos::parallel_for
-            (Kokkos::TeamThreadRange(member, rowptr_used[lr], rowptr_used[lr+1]),
-            [&](const local_ordinal_type &k) {
-              const size_type j = A_k0 + colindsub_used[k];
-              A_block_cst.assign_data( &tpetra_values(j*blocksize_square) );
-              const local_ordinal_type A_colind_at_j = A_colind[j];
-              if ((async && A_colind_at_j < num_local_rows) || (!async && !overlap)) {
-                const auto loc = is_dm2cm_active ? dm2cm[A_colind_at_j] : A_colind_at_j;
-                xx.assign_data( &x(loc*blocksize, col) );
-                VectorGemv(member, blocksize, A_block_cst, xx, yy);
-              } else {
-                const auto loc = A_colind_at_j - num_local_rows;
-                xx_remote.assign_data( &x_remote(loc*blocksize, col) );
-                VectorGemv(member, blocksize, A_block_cst, xx_remote, yy);
-              }
-            });
         }
       }
 
@@ -721,10 +787,7 @@ namespace Ifpack2 {
           const local_ordinal_type blocksize = blocksize_requested;
           const local_ordinal_type team_size = 8;
           const local_ordinal_type vector_size = ComputeResidualVectorRecommendedVectorSize<execution_space>(blocksize, team_size);
-          // local_ordinal_type vl_power_of_two = 1;
-          // for (;vl_power_of_two<=blocksize_requested;vl_power_of_two*=2);
-          // vl_power_of_two *= (vl_power_of_two < blocksize_requested ? 2 : 1);
-          // const local_ordinal_type vl = vl_power_of_two > vector_length ? vector_length : vl_power_of_two;
+          // TODO: compute shmem requirement for hasBlockCrsMatrix path!!!
 #define BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(B) {                \
             if(this->hasBlockCrsMatrix) { \
               const Kokkos::TeamPolicy<execution_space,AsyncTag<B, true> >      \
@@ -815,10 +878,7 @@ namespace Ifpack2 {
           const local_ordinal_type blocksize = blocksize_requested;
           const local_ordinal_type team_size = 8;
           const local_ordinal_type vector_size = ComputeResidualVectorRecommendedVectorSize<execution_space>(blocksize, team_size);
-          // local_ordinal_type vl_power_of_two = 1;
-          // for (;vl_power_of_two<=blocksize_requested;vl_power_of_two*=2);
-          // vl_power_of_two *= (vl_power_of_two < blocksize_requested ? 2 : 1);
-          // const local_ordinal_type vl = vl_power_of_two > vector_length ? vector_length : vl_power_of_two;
+          // TODO: compute shmem requirement for hasBlockCrsMatrix path!!! (Both compute_owned and !compute_owned paths)
 #define BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(B)  \
           if(this->hasBlockCrsMatrix) { \
             if (compute_owned) {                                          \
