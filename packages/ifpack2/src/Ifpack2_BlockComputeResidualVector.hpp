@@ -662,16 +662,12 @@ namespace Ifpack2 {
 
         // Initialize y to b, unless we're processing the nonowned/overlap columns.
         if(!overlap) {
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(member, num_vectors),
-            [=](int col)
+          Kokkos::parallel_for(
+            Kokkos::TeamVectorMDRange<Kokkos::Rank<2, Kokkos::Iterate::Right>, member_type>
+            (member, num_vectors, blocksize),
+            [=](int col, int j)
             {
-              subview_1D_stride_t yy(&y_packed_scalar(pri, 0, col, v), Kokkos::LayoutStride(blocksize, y_packed_scalar.stride_1()));
-              const impl_scalar_type* bb = &b(row, col);
-              Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, blocksize),
-                [=](int j)
-                {
-                  yy(j) = bb[j];
-                });
+              y_packed_scalar(pri, j, col, v) = b(row + j, col);
             });
           member.team_barrier();
         }
