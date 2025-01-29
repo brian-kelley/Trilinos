@@ -677,31 +677,35 @@ namespace Ifpack2 {
               VectorCopy(member, blocksize, bb, yy);
             member.team_barrier();
           }
-
-          // y -= Rx
-          const size_type A_k0 = A_block_rowptr[lr];
-          Kokkos::parallel_for
-            (Kokkos::TeamThreadRange(member, rowBegin, rowBegin + rowLen),
-            [&](const local_ordinal_type &k) {
-              const size_type j = A_k0 + colindsub_used[k];
-              A_block_cst.assign_data( &tpetra_values(j*blocksize_square) );
-              const local_ordinal_type A_colind_at_j = A_colind[j];
-              if ((async && A_colind_at_j < num_local_rows) || (!async && !overlap)) {
-                const auto loc = is_dm2cm_active ? dm2cm[A_colind_at_j] : A_colind_at_j;
-                xx.assign_data( &x(loc*blocksize, col) );
-                VectorGemv(member, blocksize, A_block_cst, xx, yy);
-              } else {
-                const auto loc = A_colind_at_j - num_local_rows;
-                xx.assign_data( &x_remote(loc*blocksize, col) );
-                VectorGemv(member, blocksize, A_block_cst, xx, yy);
-              }
-            });
         }
 
+        for(local_ordinal_type batch = 0; batch < rowLen; batch += blocksPerBatch) {
+          local_ordinal_type numBatch = (batch + blocksPerBatch > rowLen) ? (rowLen - batch) : blocksPerBatch;
+
+          for (local_ordinal_type col = 0; col < num_vectors; ++col) {
+            yy.assign_data(&y_packed_scalar(pri, 0, col, v));
+
+            // y -= Rx
+            Kokkos::parallel_for
+              (Kokkos::TeamThreadRange(member, numBatch),
+              [&](const local_ordinal_type &k) {
+                const size_type j = A_k0 + colindsub_used[rowBegin + batch + k];
+                A_block_cst.assign_data( &tpetra_values(j*blocksize_square) );
+                const local_ordinal_type A_colind_at_j = A_colind[j];
+                if ((async && A_colind_at_j < num_local_rows) || (!async && !overlap)) {
+                  const auto loc = is_dm2cm_active ? dm2cm[A_colind_at_j] : A_colind_at_j;
+                  xx.assign_data( &x(loc*blocksize, col) );
+                  VectorGemv(member, blocksize, A_block_cst, xx, yy);
+                } else {
+                  const auto loc = A_colind_at_j - num_local_rows;
+                  xx.assign_data( &x_remote(loc*blocksize, col) );
+                  VectorGemv(member, blocksize, A_block_cst, xx, yy);
+                }
+              });
+          }
+        }
 
         /*
-
-
         for(local_ordinal_type batch = 0; batch < rowLen; batch += blocksPerBatch) {
           local_ordinal_type numBatch = (batch + blocksPerBatch > rowLen) ? (rowLen - batch) : blocksPerBatch;
           // Read columns and their indices for this batch
