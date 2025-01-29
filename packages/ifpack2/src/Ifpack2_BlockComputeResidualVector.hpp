@@ -331,7 +331,7 @@ namespace Ifpack2 {
           });
       }
 
-      // BMK: This version coalesces accesses to AA for LayoutRight blocks.
+      // BMK: This version coalesces AA accesses (with LayoutRight blocks)
       template<typename AAViewType, typename xxViewType, typename yyViewType>
       KOKKOS_INLINE_FUNCTION
       void
@@ -545,6 +545,75 @@ namespace Ifpack2 {
         }
       }
 
+      // Helpers to construct policies for the following kernel (GPU + BlockCrsMatrix).
+      // Also produces batch as output paramater.
+      // (batch is number of A/x blocks loaded into scratch at a time)
+      template<typename Tag>
+      inline Kokkos::TeamPolicy<execution_space, Tag> getGPUBlockPolicy(size_type totalBlocks, local_ordinal_type numRows, int& batch)
+      {
+        using Policy = Kokkos::TeamPolicy<execution_space, Tag>;
+        using ScratchSpace = typename execution_space::scratch_memory_space;
+        using ScalarScratch = Kokkos::View<impl_scalar_type*, ScratchSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+        using LOScratch = Kokkos::View<local_ordinal_type*, ScratchSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+
+        local_ordinal_type bs = blocksize_requested;
+        local_ordinal_type bs2 = bs * bs;
+        // Get max scratch available to team, in bytes.
+        // Kernel does reductions so reserve some space for Kokkos's internal allocations.
+        Policy policy(numRows, 1, 1);
+        int maxScratch = policy.scratch_size_max(0) - 64;
+        // Compute average blocks per row, rounding up.
+        // Note: this is optimized for the structured grid case, where entries per row is nearly constant.
+        // It will still work for other cases but then some teams will have to loop over more batches than others.
+        local_ordinal_type blocksPerRow = (totalBlocks + numRows - 1) / numRows;
+        if(blocksPerRow == 0)
+          blocksPerRow = 1;
+        // Compute shared mem usage per block in the batch.
+        int scratchPerBlock =
+            ScalarScratch::shmem_size(bs2) // A
+          + ScalarScratch::shmem_size(bs) // x
+          + LOScratch::shmem_size(1) * 2;
+
+        //std::cout << "Scratch per block in batch : " << scratchPerBlock << '\n';
+ 
+        // fixedScratch: for yscratch, whose size doesn't depend on batch
+        int fixedScratch = ScalarScratch::shmem_size(bs);
+          // bs * sizeof(impl_scalar_type);
+        maxScratch -= fixedScratch;
+        // Get max batch size based on shared mem constraint
+        int maxBatch = maxScratch / scratchPerBlock;
+        batch = Kokkos::min<int>(maxBatch, blocksPerRow);
+
+        int totalScratch =
+            ScalarScratch::shmem_size(bs2 * batch) // A
+          + ScalarScratch::shmem_size(bs * batch) // x
+          + ScalarScratch::shmem_size(bs) // y
+          + LOScratch::shmem_size(batch) * 2;
+
+        // Now determine team size and vector length.
+        // For vector length, just pick 2^k that will cover blocksPerRow*bs if possible
+        int vecMax = policy.vector_length_max();
+        int vectorLength = 1;
+        while(vectorLength < vecMax && vectorLength < blocksPerRow*bs)
+          vectorLength *= 2;
+        // Finally, aim for team size such that teamSize*vectorLength >= batch*bs2
+        // Equivalently (with rounding up): teamSize >= batch * bs2 / vectorLength
+        int teamSizeIdeal = (batch * bs2 + vectorLength - 1) / vectorLength;
+        // TODO: tune this - better to use smaller teams?
+        policy = Policy(numRows, 1, vectorLength);
+        policy.set_scratch_size(0, Kokkos::PerTeam(totalScratch));
+        int teamSizeMax = policy.team_size_max(*this, Kokkos::ParallelForTag());
+        int teamSize = Kokkos::min<int>(teamSizeIdeal, teamSizeMax);
+        // Ensure teamSize*vectorLength fills up at least one warp/wavefront,
+        // otherwise the unused lanes are wasted
+
+        if(teamSize*vectorLength < vecMax)
+          teamSize = vecMax / vectorLength;
+        //std::cout << "Mean blocks per row: " << blocksPerRow << '\n';
+        //std::cout << "Tag " << demangledType<Tag>() << " policy params: batch " << batch << ", teamsize " << teamSize << ", vectorLength " << vectorLength << ", scratch per team " << totalScratch << '\n';
+        return Policy(numRows, teamSize, vectorLength).set_scratch_size(0, Kokkos::PerTeam(totalScratch));
+      }
+
       // GPU implementation for hasBlockCrsMatrix == true
       template<int B, bool async, bool overlap>
       KOKKOS_INLINE_FUNCTION
@@ -566,11 +635,17 @@ namespace Ifpack2 {
         // Allocate scratch buffers. Will process up to blocksPerBatch block entries at a time.
         // * Ascratch will hold values from A, with the same layout (contiguous LayoutRight blocks)
         // * xscratch will hold values from x OR x_remote
-        impl_scalar_type* Ascratch = (impl_scalar_type*) member.team_shmem().get_shmem(blocksize_square * blocksPerBatch * sizeof(impl_scalar_type));
-        impl_scalar_type* xscratch = (impl_scalar_type*) member.team_shmem().get_shmem(blocksize * blocksPerBatch * sizeof(impl_scalar_type));
-        impl_scalar_type* yscratch = (impl_scalar_type*) member.team_shmem().get_shmem(blocksize * sizeof(impl_scalar_type));
-        local_ordinal_type* batchColumnIndices = (local_ordinal_type*) member.team_shmem().get_shmem(blocksPerBatch * sizeof(local_ordinal_type));
-        local_ordinal_type* batchColumns = (local_ordinal_type*) member.team_shmem().get_shmem(blocksPerBatch * sizeof(local_ordinal_type));
+        // * yscratch will hold results before writing them out together
+
+        using ScratchSpace = typename execution_space::scratch_memory_space;
+        using ScalarScratch = Kokkos::View<impl_scalar_type*, ScratchSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+        using LOScratch = Kokkos::View<local_ordinal_type*, ScratchSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+
+        ScalarScratch Ascratch(member.team_scratch(0), blocksize_square * blocksPerBatch);
+        ScalarScratch xscratch(member.team_scratch(0), blocksize * blocksPerBatch);
+        ScalarScratch yscratch(member.team_scratch(0), blocksize);
+        LOScratch batchColumnIndices(member.team_scratch(0), blocksPerBatch);
+        LOScratch batchColumns(member.team_scratch(0), blocksPerBatch);
 
         // subview pattern
         using subview_1D_right_t = decltype(Kokkos::subview(b, block_range, 0));
@@ -604,8 +679,9 @@ namespace Ifpack2 {
               [=](local_ordinal_type i)
               {
                 local_ordinal_type block = i / blocksize_square;
-                size_type blockOffset = batchColumnIndices[block] * blocksize_square;
-                Ascratch[i] = tpetra_values(blockOffset + i);
+                local_ordinal_type scalarInBlock = i % blocksize_square;
+                size_type blockOffset = size_type(batchColumnIndices[block]) * blocksize_square;
+                Ascratch[i] = tpetra_values(blockOffset + scalarInBlock);
               });
           // Don't need a barrier right away. Still have to load x and y before Ascratch is used.
           for (local_ordinal_type col = 0; col < num_vectors; ++col) {
@@ -639,7 +715,8 @@ namespace Ifpack2 {
                 });
             member.team_barrier();
             // Compute the reductions using A, x values from scratch.
-            // TODO: use segmented reduce here to use all threads in the team efficiently
+            // TODO: use segmented reduce (via TeamVector scan) instead, to use all threads in the team efficiently
+            // Though this (which reads everything from shared) is probably decent
             Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize),
                 [=](local_ordinal_type i)
                 {
@@ -664,7 +741,10 @@ namespace Ifpack2 {
             Kokkos::parallel_for(Kokkos::TeamVectorRange(member, blocksize),
                 [=](int i)
                 {
-                  yy(i) = yscratch[i];
+                  if constexpr(overlap)
+                    yy(i) += yscratch[i];
+                  else
+                    yy(i) = yscratch[i];
                 });
             member.team_barrier();
           }
@@ -677,7 +757,6 @@ namespace Ifpack2 {
       void
       operator() (const GeneralTag<B, async, overlap, false>&, const member_type &member) const {
         const local_ordinal_type blocksize = (B == 0 ? blocksize_requested : B);
-        const local_ordinal_type blocksize_square = blocksize*blocksize;
 
         // constants
         const local_ordinal_type rowidx = member.league_rank();
@@ -785,18 +864,19 @@ namespace Ifpack2 {
 
         if constexpr(is_device<execution_space>::value) {
           const local_ordinal_type blocksize = blocksize_requested;
-          const local_ordinal_type team_size = 8;
-          const local_ordinal_type vector_size = ComputeResidualVectorRecommendedVectorSize<execution_space>(blocksize, team_size);
-          // TODO: compute shmem requirement for hasBlockCrsMatrix path!!!
 #define BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(B) {                \
             if(this->hasBlockCrsMatrix) { \
-              const Kokkos::TeamPolicy<execution_space,AsyncTag<B, true> >      \
-                policy(rowidx2part.extent(0), team_size, vector_size);    \
+              int batch; \
+              auto policy = \
+                getGPUBlockPolicy<AsyncTag<B, true>>(colindsub.extent(0), rowidx2part.extent(0), batch); \
+              blocksPerBatch = batch; \
               Kokkos::parallel_for                                        \
                 ("ComputeResidual::TeamPolicy::run<AsyncTag>",            \
                  policy, *this); \
             } \
             else { \
+              const local_ordinal_type team_size = 8; \
+              const local_ordinal_type vector_size = ComputeResidualVectorRecommendedVectorSize<execution_space>(blocksize, team_size); \
               const Kokkos::TeamPolicy<execution_space,AsyncTag<B, false> >      \
                 policy(rowidx2part.extent(0), team_size, vector_size);    \
               Kokkos::parallel_for                                        \
@@ -805,15 +885,15 @@ namespace Ifpack2 {
             } \
           } break
           switch (blocksize_requested) {
-          case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
+          //case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
           case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-          case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-          case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-          case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-          case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-          case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-          case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-          case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
+          //case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
+          //case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
+          //case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
+          //case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
+          //case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
+          //case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
+          //case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
           default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
           }
 #undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
@@ -834,15 +914,15 @@ namespace Ifpack2 {
           } break
 
           switch (blocksize_requested) {
-          case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
+          //case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
           case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-          case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-          case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-          case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-          case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-          case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-          case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-          case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
+          //case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
+          //case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
+          //case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
+          //case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
+          //case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
+          //case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
+          //case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
           default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
           }
 #undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
@@ -876,24 +956,27 @@ namespace Ifpack2 {
 
         if constexpr (is_device<execution_space>::value) {
           const local_ordinal_type blocksize = blocksize_requested;
-          const local_ordinal_type team_size = 8;
-          const local_ordinal_type vector_size = ComputeResidualVectorRecommendedVectorSize<execution_space>(blocksize, team_size);
-          // TODO: compute shmem requirement for hasBlockCrsMatrix path!!! (Both compute_owned and !compute_owned paths)
 #define BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(B)  \
           if(this->hasBlockCrsMatrix) { \
             if (compute_owned) {                                          \
-              const Kokkos::TeamPolicy<execution_space,OverlapTag<0, B, true> > \
-                policy(rowidx2part.extent(0), team_size, vector_size);    \
+              int batch; \
+              auto policy = \
+                getGPUBlockPolicy<OverlapTag<0, B, true>>(colindsub.extent(0), rowidx2part.extent(0), batch); \
+              blocksPerBatch = batch; \
               Kokkos::parallel_for                                        \
                 ("ComputeResidual::TeamPolicy::run<OverlapTag<0> >", policy, *this); \
             } else {                                                      \
-              const Kokkos::TeamPolicy<execution_space,OverlapTag<1, B, true> > \
-                policy(rowidx2part.extent(0), team_size, vector_size);    \
+              int batch; \
+              auto policy = \
+                getGPUBlockPolicy<OverlapTag<1, B, true>>(colindsub_remote.extent(0), rowidx2part.extent(0), batch); \
+              blocksPerBatch = batch; \
               Kokkos::parallel_for                                        \
                 ("ComputeResidual::TeamPolicy::run<OverlapTag<1> >", policy, *this); \
             } \
           } \
           else { \
+            const local_ordinal_type team_size = 8; \
+            const local_ordinal_type vector_size = ComputeResidualVectorRecommendedVectorSize<execution_space>(blocksize, team_size); \
             if (compute_owned) {                                          \
               const Kokkos::TeamPolicy<execution_space,OverlapTag<0, B, false> > \
                 policy(rowidx2part.extent(0), team_size, vector_size);    \
@@ -908,15 +991,15 @@ namespace Ifpack2 {
           } \
           break
           switch (blocksize_requested) {
-          case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
+          //case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
           case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-          case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-          case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-          case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-          case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-          case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-          case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-          case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
+          //case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
+          //case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
+          //case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
+          //case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
+          //case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
+          //case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
+          //case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
           default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
           }
 #undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
@@ -951,15 +1034,15 @@ namespace Ifpack2 {
           break
 
           switch (blocksize_requested) {
-          case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
+          //case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
           case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-          case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-          case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-          case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-          case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-          case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-          case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-          case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
+          //case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
+          //case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
+          //case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
+          //case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
+          //case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
+          //case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
+          //case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
           default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
           }
 #undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
