@@ -594,7 +594,7 @@ namespace Ifpack2 {
         // For vector length, just pick 2^k that will cover blocksPerRow*bs if possible
         int vecMax = policy.vector_length_max();
         int vectorLength = 1;
-        while(vectorLength < vecMax && vectorLength < blocksPerRow*bs)
+        while(vectorLength < vecMax && vectorLength < batch*bs)
           vectorLength *= 2;
         // Finally, aim for team size such that teamSize*vectorLength >= batch*bs2
         // Equivalently (with rounding up): teamSize >= batch * bs2 / vectorLength
@@ -606,11 +606,8 @@ namespace Ifpack2 {
         int teamSize = Kokkos::min<int>(teamSizeIdeal, teamSizeMax);
         // Ensure teamSize*vectorLength fills up at least one warp/wavefront,
         // otherwise the unused lanes are wasted
-
         if(teamSize*vectorLength < vecMax)
           teamSize = vecMax / vectorLength;
-        //std::cout << "Mean blocks per row: " << blocksPerRow << '\n';
-        //std::cout << "Tag " << demangledType<Tag>() << " policy params: batch " << batch << ", teamsize " << teamSize << ", vectorLength " << vectorLength << ", scratch per team " << totalScratch << '\n';
         return Policy(numRows, teamSize, vectorLength).set_scratch_size(0, Kokkos::PerTeam(totalScratch));
       }
 
@@ -707,6 +704,10 @@ namespace Ifpack2 {
                 [=](local_ordinal_type i)
                 {
                   if(i < blocksize) {
+                    // Initialize yscratch before computing Ax.
+                    // In fast singleVecSingleBatch case, this is
+                    // where we initialize y := b. In all other cases,
+                    // init to zero because yscratch will be added into y later.
                     if(singleVecSingleBatch && !overlap)
                       yscratch[i] = b(row + i, 0);
                     else
@@ -717,6 +718,9 @@ namespace Ifpack2 {
                     local_ordinal_type block = i / blocksize;
                     local_ordinal_type scalarInBlock = i % blocksize;
                     local_ordinal_type A_colind = batchColumns[block];
+                    // Load x entries from the correct vector.
+                    // - If async, then we decide at runtime which columns are owned vs. non-owned
+                    // - If !async, then at compile time overlap determines this for all entries.
                     if ((async && A_colind < num_local_rows) || (!async && !overlap)) {
                       local_ordinal_type loc = is_dm2cm_active ? dm2cm[A_colind] : A_colind;
                       xscratch[i] = x(loc * blocksize + scalarInBlock, col);
@@ -728,8 +732,7 @@ namespace Ifpack2 {
                 });
             member.team_barrier();
             // Compute the reductions using A, x values from scratch.
-            // TODO: use segmented reduce (via TeamVector scan) instead, to use all threads in the team efficiently
-            // Though this (which reads everything from shared) is probably decent
+            // Use a ThreadVector reduction per row.
             Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize),
                 [=](local_ordinal_type i)
                 {
