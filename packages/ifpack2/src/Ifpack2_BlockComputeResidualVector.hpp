@@ -660,8 +660,15 @@ namespace Ifpack2 {
         const size_type rowBegin = rowptr_used(lr);
         const local_ordinal_type rowLen = rowptr_used(lr + 1) - rowBegin;
 
-        // Initialize y to b, unless we're processing the nonowned/overlap columns.
-        if(!overlap) {
+        // Are we in the fast case, where we can compute the single column
+        // of y in scratch only?
+        const bool singleVecSingleBatch = (blocksPerBatch >= rowLen) && num_vectors == 1;
+
+        // Initialize y to b in the !overlap case if one of these is true:
+        // * rowLen == 0, meaning the loop over batches below will not be entered
+        // * we are not able to take the fast path where y is computed in shared only,
+        //   so y must be initialized in global.
+        if(!overlap && (rowLen == 0 || !singleVecSingleBatch)) {
           Kokkos::parallel_for(
             Kokkos::TeamVectorMDRange<Kokkos::Rank<2, Kokkos::Iterate::Right>, member_type>
             (member, num_vectors, blocksize),
@@ -700,7 +707,10 @@ namespace Ifpack2 {
                 [=](local_ordinal_type i)
                 {
                   if(i < blocksize) {
-                    yscratch[i] = scalar_traits::zero();
+                    if(singleVecSingleBatch && !overlap)
+                      yscratch[i] = b(row + i, 0);
+                    else
+                      yscratch[i] = scalar_traits::zero();
                   }
                   else {
                     i -= blocksize;
@@ -744,7 +754,10 @@ namespace Ifpack2 {
             Kokkos::parallel_for(Kokkos::TeamVectorRange(member, blocksize),
                 [=](int i)
                 {
-                  yy(i) += yscratch[i];
+                  if(!overlap && singleVecSingleBatch)
+                    yy(i) = yscratch[i];
+                  else
+                    yy(i) += yscratch[i];
                 });
             member.team_barrier();
           }
