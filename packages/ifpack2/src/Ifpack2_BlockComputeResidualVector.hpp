@@ -681,6 +681,7 @@ namespace Ifpack2 {
           member.team_barrier();
         }
 
+        /*
         for(local_ordinal_type batch = 0; batch < rowLen; batch += blocksPerBatch) {
           local_ordinal_type numBatch = (batch + blocksPerBatch > rowLen) ? (rowLen - batch) : blocksPerBatch;
 
@@ -708,8 +709,8 @@ namespace Ifpack2 {
           }
           member.team_barrier();
         }
+        */
 
-        /*
         for(local_ordinal_type batch = 0; batch < rowLen; batch += blocksPerBatch) {
           local_ordinal_type numBatch = (batch + blocksPerBatch > rowLen) ? (rowLen - batch) : blocksPerBatch;
           // Read columns and their indices for this batch
@@ -732,32 +733,26 @@ namespace Ifpack2 {
               });
           // Don't need a barrier right away. Still have to load x and y before Ascratch is used.
           for (local_ordinal_type col = 0; col < num_vectors; ++col) {
-            // Load all x values for the current batch and column vector.
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(member, numBatch * blocksize),
+            // Init yscratch to zero, and
+            // load all x values for the current batch and column vector.
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(member, blocksize + numBatch * blocksize),
                 [=](local_ordinal_type i)
                 {
-                  local_ordinal_type block = i / blocksize;
-                  local_ordinal_type scalarInBlock = i % blocksize;
-                  local_ordinal_type A_colind = batchColumns[block];
-                  if ((async && A_colind < num_local_rows) || (!async && !overlap)) {
-                    local_ordinal_type loc = is_dm2cm_active ? dm2cm[A_colind] : A_colind;
-                    xscratch[i] = x(loc * blocksize + scalarInBlock, col);
-                  } else {
-                    local_ordinal_type loc = A_colind - num_local_rows;
-                    xscratch[i] = x_remote(loc * blocksize + scalarInBlock, col);
-                  }
-                });
-            // Load initial y entries (or zero-init) once (only during the first batch)
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(member, blocksize),
-                [=](int i)
-                {
-                  if (!overlap && batch == 0) {
-                    // Load initial y values from b
-                    yscratch[i] = b(row + i, col);
+                  if(i < blocksize) {
+                    yscratch[i] = scalar_traits::zero();
                   }
                   else {
-                    // In overlap case, initialize to zero
-                    yscratch[i] = scalar_traits::zero();
+                    i -= blocksize;
+                    local_ordinal_type block = i / blocksize;
+                    local_ordinal_type scalarInBlock = i % blocksize;
+                    local_ordinal_type A_colind = batchColumns[block];
+                    if ((async && A_colind < num_local_rows) || (!async && !overlap)) {
+                      local_ordinal_type loc = is_dm2cm_active ? dm2cm[A_colind] : A_colind;
+                      xscratch[i] = x(loc * blocksize + scalarInBlock, col);
+                    } else {
+                      local_ordinal_type loc = A_colind - num_local_rows;
+                      xscratch[i] = x_remote(loc * blocksize + scalarInBlock, col);
+                    }
                   }
                 });
             member.team_barrier();
@@ -784,19 +779,15 @@ namespace Ifpack2 {
             member.team_barrier();
             // Write back results to y_packed_scalar.
             // Use yy (1D strided subview) to help with indexing.
-            yy.assign_data(&y_packed_scalar(pri, 0, col, v));
+            subview_1D_stride_t yy(&y_packed_scalar(pri, 0, col, v), Kokkos::LayoutStride(blocksize, y_packed_scalar.stride_1()));
             Kokkos::parallel_for(Kokkos::TeamVectorRange(member, blocksize),
                 [=](int i)
                 {
-                  if (!overlap && batch == 0)
-                    yy(i) = yscratch[i];
-                  else
-                    yy(i) += yscratch[i];
+                  yy(i) += yscratch[i];
                 });
             member.team_barrier();
           }
         }
-        */
       }
 
       // GPU implementation for hasBlockCrsMatrix == false
