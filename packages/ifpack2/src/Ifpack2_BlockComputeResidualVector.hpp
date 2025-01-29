@@ -652,9 +652,7 @@ namespace Ifpack2 {
         using subview_1D_stride_t = decltype(Kokkos::subview(y_packed_scalar, 0, block_range, 0, 0));
 
         // Pre-declare yy with the correct stride to view a single block and single column of the result y.
-        subview_1D_right_t bb(nullptr, blocksize);
         subview_1D_right_t xx(nullptr, blocksize);
-        subview_1D_stride_t yy(nullptr, Kokkos::LayoutStride(blocksize, y_packed_scalar.stride_1()));
 
         auto colindsub_used = overlap ? colindsub_remote : colindsub;
         auto rowptr_used = overlap ? rowptr_remote : rowptr;
@@ -668,21 +666,26 @@ namespace Ifpack2 {
 
         auto A_block_cst = ConstUnmanaged<tpetra_block_access_view_type>(NULL, blocksize, blocksize);
 
-        for (local_ordinal_type col = 0; col < num_vectors; ++col) {
-          yy.assign_data(&y_packed_scalar(pri, 0, col, v));
-          if (!overlap) {
-            // y := b
-            bb.assign_data(&b(row, col));
-            if (member.team_rank() == 0)
-              VectorCopy(member, blocksize, bb, yy);
-            member.team_barrier();
-          }
+        if(!overlap) {
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(member, num_vectors),
+            [=](int col)
+            {
+              subview_1D_stride_t yy(&y_packed_scalar(pri, 0, col, v), Kokkos::LayoutStride(blocksize, y_packed_scalar.stride_1()));
+              const impl_scalar_type* bb = &b(row, col);
+              Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, blocksize),
+                [=](int j)
+                {
+                  yy(j) = bb[j];
+                });
+            });
+          member.team_barrier();
         }
 
         for(local_ordinal_type batch = 0; batch < rowLen; batch += blocksPerBatch) {
           local_ordinal_type numBatch = (batch + blocksPerBatch > rowLen) ? (rowLen - batch) : blocksPerBatch;
 
           for (local_ordinal_type col = 0; col < num_vectors; ++col) {
+            subview_1D_stride_t yy(nullptr, Kokkos::LayoutStride(blocksize, y_packed_scalar.stride_1()));
             yy.assign_data(&y_packed_scalar(pri, 0, col, v));
 
             // y -= Rx
@@ -703,6 +706,7 @@ namespace Ifpack2 {
                 }
               });
           }
+          member.team_barrier();
         }
 
         /*
@@ -743,11 +747,11 @@ namespace Ifpack2 {
                     xscratch[i] = x_remote(loc * blocksize + scalarInBlock, col);
                   }
                 });
-            // Load initial y entries (or zero-init) once
+            // Load initial y entries (or zero-init) once (only during the first batch)
             Kokkos::parallel_for(Kokkos::TeamVectorRange(member, blocksize),
                 [=](int i)
                 {
-                  if constexpr (!overlap) {
+                  if (!overlap && batch == 0) {
                     // Load initial y values from b
                     yscratch[i] = b(row + i, col);
                   }
@@ -784,10 +788,10 @@ namespace Ifpack2 {
             Kokkos::parallel_for(Kokkos::TeamVectorRange(member, blocksize),
                 [=](int i)
                 {
-                  if constexpr(overlap)
-                    yy(i) += yscratch[i];
-                  else
+                  if (!overlap && batch == 0)
                     yy(i) = yscratch[i];
+                  else
+                    yy(i) += yscratch[i];
                 });
             member.team_barrier();
           }
