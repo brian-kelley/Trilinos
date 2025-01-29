@@ -648,11 +648,7 @@ namespace Ifpack2 {
         LOScratch batchColumns(member.team_scratch(0), blocksPerBatch);
 
         // subview pattern
-        using subview_1D_right_t = decltype(Kokkos::subview(b, block_range, 0));
         using subview_1D_stride_t = decltype(Kokkos::subview(y_packed_scalar, 0, block_range, 0, 0));
-
-        // Pre-declare yy with the correct stride to view a single block and single column of the result y.
-        subview_1D_right_t xx(nullptr, blocksize);
 
         auto colindsub_used = overlap ? colindsub_remote : colindsub;
         auto rowptr_used = overlap ? rowptr_remote : rowptr;
@@ -664,8 +660,7 @@ namespace Ifpack2 {
         const size_type rowBegin = rowptr_used(lr);
         const local_ordinal_type rowLen = rowptr_used(lr + 1) - rowBegin;
 
-        auto A_block_cst = ConstUnmanaged<tpetra_block_access_view_type>(NULL, blocksize, blocksize);
-
+        // Initialize y to b, unless we're processing the nonowned/overlap columns.
         if(!overlap) {
           Kokkos::parallel_for(Kokkos::TeamThreadRange(member, num_vectors),
             [=](int col)
@@ -680,36 +675,6 @@ namespace Ifpack2 {
             });
           member.team_barrier();
         }
-
-        /*
-        for(local_ordinal_type batch = 0; batch < rowLen; batch += blocksPerBatch) {
-          local_ordinal_type numBatch = (batch + blocksPerBatch > rowLen) ? (rowLen - batch) : blocksPerBatch;
-
-          for (local_ordinal_type col = 0; col < num_vectors; ++col) {
-            subview_1D_stride_t yy(nullptr, Kokkos::LayoutStride(blocksize, y_packed_scalar.stride_1()));
-            yy.assign_data(&y_packed_scalar(pri, 0, col, v));
-
-            // y -= Rx
-            Kokkos::parallel_for
-              (Kokkos::TeamThreadRange(member, numBatch),
-              [&](const local_ordinal_type &k) {
-                const size_type j = A_k0 + colindsub_used[rowBegin + batch + k];
-                A_block_cst.assign_data( &tpetra_values(j*blocksize_square) );
-                const local_ordinal_type A_colind_at_j = A_colind[j];
-                if ((async && A_colind_at_j < num_local_rows) || (!async && !overlap)) {
-                  const auto loc = is_dm2cm_active ? dm2cm[A_colind_at_j] : A_colind_at_j;
-                  xx.assign_data( &x(loc*blocksize, col) );
-                  VectorGemv(member, blocksize, A_block_cst, xx, yy);
-                } else {
-                  const auto loc = A_colind_at_j - num_local_rows;
-                  xx.assign_data( &x_remote(loc*blocksize, col) );
-                  VectorGemv(member, blocksize, A_block_cst, xx, yy);
-                }
-              });
-          }
-          member.team_barrier();
-        }
-        */
 
         for(local_ordinal_type batch = 0; batch < rowLen; batch += blocksPerBatch) {
           local_ordinal_type numBatch = (batch + blocksPerBatch > rowLen) ? (rowLen - batch) : blocksPerBatch;
