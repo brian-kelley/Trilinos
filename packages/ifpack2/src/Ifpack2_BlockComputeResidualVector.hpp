@@ -602,12 +602,13 @@ namespace Ifpack2 {
         // TODO: tune this - better to use smaller teams?
         policy = Policy(numRows, 1, vectorLength);
         policy.set_scratch_size(0, Kokkos::PerTeam(totalScratch));
-        int teamSizeMax = policy.team_size_max(*this, Kokkos::ParallelForTag());
+        int teamSizeMax = policy.team_size_recommended(*this, Kokkos::ParallelForTag());
         int teamSize = Kokkos::min<int>(teamSizeIdeal, teamSizeMax);
         // Ensure teamSize*vectorLength fills up at least one warp/wavefront,
         // otherwise the unused lanes are wasted
         if(teamSize*vectorLength < vecMax)
           teamSize = vecMax / vectorLength;
+        std::cout << "Kernel params: league " << numRows << ", team " << teamSize << ", vector " << vectorLength << ", scratch " << totalScratch << '\n';
         return Policy(numRows, teamSize, vectorLength).set_scratch_size(0, Kokkos::PerTeam(totalScratch));
       }
 
@@ -687,7 +688,13 @@ namespace Ifpack2 {
                 batchColumns[i] = A_colind[j];
               });
           member.team_barrier();
-          // Read A's values for this batch (coalesced)
+          // Read A's values for this batch (coalesced, aligned)
+          size_type blockOffset = size_type(batchColumnIndices[0]) * blocksize_square;
+          // Align reads to cache line - 128 B
+          int shift = static_cast<size_t>(&tpetra_values(blockOffset)) % 128;
+
+
+          Ascratch[i] = tpetra_values(blockOffset + scalarInBlock);
           Kokkos::parallel_for(Kokkos::TeamVectorRange(member, numBatch * blocksize_square),
               [=](local_ordinal_type i)
               {
@@ -901,15 +908,15 @@ namespace Ifpack2 {
             } \
           } break
           switch (blocksize_requested) {
-          //case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
+          case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
           case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-          //case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-          //case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-          //case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-          //case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-          //case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-          //case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-          //case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
+          case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
+          case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
+          case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
+          case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
+          case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
+          case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
+          case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
           default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
           }
 #undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
@@ -930,15 +937,15 @@ namespace Ifpack2 {
           } break
 
           switch (blocksize_requested) {
-          //case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
+          case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
           case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-          //case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-          //case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-          //case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-          //case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-          //case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-          //case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-          //case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
+          case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
+          case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
+          case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
+          case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
+          case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
+          case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
+          case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
           default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
           }
 #undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
@@ -1007,15 +1014,15 @@ namespace Ifpack2 {
           } \
           break
           switch (blocksize_requested) {
-          //case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
+          case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
           case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-          //case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-          //case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-          //case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-          //case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-          //case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-          //case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-          //case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
+          case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
+          case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
+          case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
+          case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
+          case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
+          case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
+          case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
           default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
           }
 #undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
@@ -1050,15 +1057,15 @@ namespace Ifpack2 {
           break
 
           switch (blocksize_requested) {
-          //case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
+          case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
           case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-          //case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-          //case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-          //case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-          //case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-          //case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-          //case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-          //case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
+          case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
+          case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
+          case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
+          case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
+          case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
+          case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
+          case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
           default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
           }
 #undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
