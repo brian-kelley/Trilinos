@@ -2783,10 +2783,11 @@ namespace Ifpack2 {
       using btdm_scalar_scratch_type_3d_view = Scratch<typename impl_type::btdm_scalar_type_3d_view>;
 
       using internal_vector_type = typename impl_type::internal_vector_type;
+      int vector_length;
       static constexpr int vector_length = impl_type::vector_length;
       static constexpr int internal_vector_length = impl_type::internal_vector_length;
 
-      /// team policy member type
+      /// team policy member type (only for getting member_type; the actual executed policies use tags)
       using team_policy_type = Kokkos::TeamPolicy<execution_space>;
       using member_type = typename team_policy_type::member_type;
 
@@ -2812,7 +2813,6 @@ namespace Ifpack2 {
       // diagonal safety
       const magnitude_type tiny;
       const local_ordinal_type vector_loop_size;
-      const local_ordinal_type vector_length_value;
 
       bool hasBlockCrsMatrix;
 
@@ -2873,8 +2873,7 @@ namespace Ifpack2 {
         blocksize_square(blocksize*blocksize),
         // diagonal weight to avoid zero pivots
         tiny(tiny_),
-        vector_loop_size(vector_length/internal_vector_length),
-        vector_length_value(vector_length) {
+         {
           using crs_matrix_type = typename impl_type::tpetra_crs_matrix_type;
           using block_crs_matrix_type = typename impl_type::tpetra_block_crs_matrix_type;
 
@@ -2891,6 +2890,12 @@ namespace Ifpack2 {
             A_point_rowptr = A_crs->getCrsGraph()->getLocalGraphDevice().row_map;
             A_values = A_crs->getLocalValuesDevice (Tpetra::Access::ReadOnly);
           }
+          // Normally, we try to always use the compile-time hardcoded vector_length
+          // and internal_vector_length defined in KokkosBatched.
+          // But if there is not sufficient shared memory to allocate blocksize_square scalars per vector lane,
+          // we must shrink the vector_length.
+          vector_loop_size = vector_length / internal_vector_length;
+
         }
 
     private:
@@ -3090,7 +3095,7 @@ namespace Ifpack2 {
       }
 
       template<typename AAViewType,
-               typename WWViewType>
+               typename WViewType>
       KOKKOS_INLINE_FUNCTION
       void
       factorize_subline(const member_type &member,
@@ -3098,7 +3103,7 @@ namespace Ifpack2 {
                 const local_ordinal_type &nrows,
                 const local_ordinal_type &v,
                 const AAViewType &AA,
-                const WWViewType &WW) const {
+                const WViewType &W) const {
 
         typedef ExtractAndFactorizeTridiagsDefaultModeAndAlgo
           <typename execution_space::memory_space> default_mode_and_algo_type;
@@ -3150,7 +3155,6 @@ namespace Ifpack2 {
           }
         } else {
           // for block jacobi invert a matrix here
-          auto W = Kokkos::subview(WW, Kokkos::ALL(), Kokkos::ALL(), v);
           KB::Copy<member_type,KB::Trans::NoTranspose,default_mode_type>
             ::invoke(member, A, W);
           KB::SetIdentity<member_type,default_mode_type>
@@ -3160,6 +3164,8 @@ namespace Ifpack2 {
                    KB::Side::Left,KB::Uplo::Lower,KB::Trans::NoTranspose,KB::Diag::Unit,
                    default_mode_type,default_algo_type>
             ::invoke(member, one, W, A);
+          // Barrier since Trsm both reads and writes A, and doesn't have its own barrier at the end.
+          member.team_barrier();
           KB::Trsm<member_type,
                    KB::Side::Left,KB::Uplo::Upper,KB::Trans::NoTranspose,KB::Diag::NonUnit,
                    default_mode_type,default_algo_type>
@@ -3191,7 +3197,7 @@ namespace Ifpack2 {
         const local_ordinal_type nrows = partptr_sub(subpartidx,1) - partptr_sub(subpartidx,0);
 
         internal_vector_scratch_type_3d_view
-          WW(member.team_scratch(0), blocksize, blocksize, vector_loop_size);
+          WW(member.team_scratch(0), blocksize, blocksize, vector_length);
 
 #ifdef IFPACK2_BLOCKTRIDICONTAINER_USE_PRINTF
         printf("rank = %d, i0 = %d, npacks = %d, nrows = %d, packidx = %d, subpartidx = %d, partidx = %d, local_subpartidx = %d;\n", member.league_rank(), i0, npacks, nrows, packidx, subpartidx, partidx, local_subpartidx);
@@ -3200,7 +3206,8 @@ namespace Ifpack2 {
 
         if (vector_loop_size == 1) {
           extract(partidx, local_subpartidx, npacks);
-          factorize_subline(member, i0, nrows, 0, internal_vector_values, WW);
+          auto W = Kokkos::subview(WW, Kokkos::ALL(), Kokkos::ALL(), 0);
+          factorize_subline(member, i0, nrows, 0, internal_vector_values, W);
         } else {
           Kokkos::parallel_for
             (Kokkos::ThreadVectorRange(member, vector_loop_size),
@@ -3211,10 +3218,13 @@ namespace Ifpack2 {
 #endif
               if (vbeg < npacks)
                 extract(member, partidx+vbeg, local_subpartidx, npacks, vbeg);
-              // this is not safe if vector loop size is different from vector size of 
-              // the team policy. we always make sure this when constructing the team policy
-              member.team_barrier();
-              factorize_subline(member, i0, nrows, v, internal_vector_values, WW);
+            });
+          member.team_barrier();
+          Kokkos::parallel_for
+            (Kokkos::ThreadVectorRange(member, vector_loop_size),
+	     [&](const local_ordinal_type &v) {
+              auto W = Kokkos::subview(WW, Kokkos::ALL(), Kokkos::ALL(), v % vector_length);
+              factorize_subline(member, i0, nrows, v, internal_vector_values, W);
             });
         }
       }
@@ -3285,34 +3295,40 @@ namespace Ifpack2 {
         const local_ordinal_type local_subpartidx = subpartidx/n_parts;
         const local_ordinal_type partidx = subpartidx%n_parts;
 
-        const local_ordinal_type npacks = packptr_sub(packidx+1) - subpartidx;
         const local_ordinal_type i0 = pack_td_ptr(partidx,local_subpartidx);
         const local_ordinal_type r0 = part2packrowidx0_sub(partidx,local_subpartidx);
         const local_ordinal_type nrows = partptr_sub(subpartidx,1) - partptr_sub(subpartidx,0);
         const local_ordinal_type num_vectors = blocksize;
 
-        (void) npacks;
-
-        internal_vector_scratch_type_3d_view
-          WW(member.team_scratch(0), blocksize, num_vectors, vector_loop_size);
-        if (local_subpartidx == 0) {
-          Kokkos::parallel_for
-            (Kokkos::ThreadVectorRange(member, vector_loop_size),[&](const int &v) {
-              solveMultiVector<impl_type, internal_vector_scratch_type_3d_view> (member, blocksize, i0, r0, nrows, v, internal_vector_values, Kokkos::subview(e_internal_vector_values, 0, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), WW, true);
-            });
-        }
-        else if (local_subpartidx == (local_ordinal_type) part2packrowidx0_sub.extent(1) - 2) {
-          Kokkos::parallel_for
-            (Kokkos::ThreadVectorRange(member, vector_loop_size),[&](const int &v) {
-              solveMultiVector<impl_type, internal_vector_scratch_type_3d_view> (member, blocksize, i0, r0, nrows, v, internal_vector_values, Kokkos::subview(e_internal_vector_values, 1, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), WW);
-            });
-        }
-        else {
-          Kokkos::parallel_for
-            (Kokkos::ThreadVectorRange(member, vector_loop_size),[&](const int &v) {
-              solveMultiVector<impl_type, internal_vector_scratch_type_3d_view> (member, blocksize, i0, r0, nrows, v, internal_vector_values, Kokkos::subview(e_internal_vector_values, 0, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), WW, true);
-              solveMultiVector<impl_type, internal_vector_scratch_type_3d_view> (member, blocksize, i0, r0, nrows, v, internal_vector_values, Kokkos::subview(e_internal_vector_values, 1, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), WW); 
-            });
+        internal_vector_scratch_type_3d_view(
+          WW(member.team_scratch(0), blocksize, num_vectors, vector_length));
+        // Depending on how much scratch is available, may have to process the vector_loop_size
+        // different vectors in chunks. Always choosing vector_length to evenly divide vector_loop_size.
+        for(local_ordinal_type chunk = 0; chunk < vector_loop_size; chunk += vector_length) {
+          if(chunk)
+            member.team_barrier();
+          // Get subviews for internal_vector_values and e_internal_vector_values for this chunk
+          auto internal_vector_values_chunk = Kokkos::subview(internal_vector_values, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::make_pair(chunk, chunk + vector_loop_size));
+          auto e_internal_vector_values_chunk = Kokkos::subview(e_internal_vector_values, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::make_pair(chunk, chunk + vector_loop_size));
+          if (local_subpartidx == 0) {
+            Kokkos::parallel_for
+              (Kokkos::ThreadVectorRange(member, vector_loop_size),[&](const int &v) {
+                solveMultiVector<impl_type, internal_vector_scratch_type_3d_view> (member, blocksize, i0, r0, nrows, v, internal_vector_values_chunk, Kokkos::subview(e_internal_vector_values_chunk, 0, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), WW, true);
+              });
+          }
+          else if (local_subpartidx == (local_ordinal_type) part2packrowidx0_sub.extent(1) - 2) {
+            Kokkos::parallel_for
+              (Kokkos::ThreadVectorRange(member, vector_loop_size),[&](const int &v) {
+                solveMultiVector<impl_type, internal_vector_scratch_type_3d_view> (member, blocksize, i0, r0, nrows, v, internal_vector_values_chunk, Kokkos::subview(e_internal_vector_values_chunk, 1, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), WW);
+              });
+          }
+          else {
+            Kokkos::parallel_for
+              (Kokkos::ThreadVectorRange(member, vector_loop_size),[&](const int &v) {
+                solveMultiVector<impl_type, internal_vector_scratch_type_3d_view> (member, blocksize, i0, r0, nrows, v, internal_vector_values_chunk, Kokkos::subview(e_internal_vector_values_chunk, 0, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), WW, true);
+                solveMultiVector<impl_type, internal_vector_scratch_type_3d_view> (member, blocksize, i0, r0, nrows, v, internal_vector_values_chunk, Kokkos::subview(e_internal_vector_values_chunk, 1, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), WW); 
+              });
+          }
         }
       }
 
@@ -3333,9 +3349,6 @@ namespace Ifpack2 {
         const local_ordinal_type i0 = pack_td_ptr(partidx,local_subpartidx);
         //const local_ordinal_type r0 = part2packrowidx0_sub(partidx,local_subpartidx);
         //const local_ordinal_type nrows = partptr_sub(subpartidx,1) - partptr_sub(subpartidx,0);
-
-        internal_vector_scratch_type_3d_view
-          WW(member.team_scratch(0), blocksize, blocksize, vector_loop_size);
 
         // Compute S = D - C E
 
@@ -3440,24 +3453,37 @@ namespace Ifpack2 {
         const local_ordinal_type nrows = 2*(pack_td_ptr_schur.extent(1)-1);
 
         internal_vector_scratch_type_3d_view
-          WW(member.team_scratch(0), blocksize, blocksize, vector_loop_size);
+          WW(member.team_scratch(0), blocksize, blocksize, vector_length);
         
 #ifdef IFPACK2_BLOCKTRIDICONTAINER_USE_PRINTF
         printf("FactorizeSchurTag rank = %d, i0 = %d, nrows = %d, vector_loop_size = %d;\n", member.league_rank(), i0, nrows, vector_loop_size);
 #endif
 
         if (vector_loop_size == 1) {
-          factorize_subline(member, i0, nrows, 0, internal_vector_values_schur, WW);
+          auto W = Kokkos::subview(WW, Kokkos::ALL(), Kokkos::ALL(), 0);
+          factorize_subline(member, i0, nrows, 0, internal_vector_values_schur, W);
         } else {
           Kokkos::parallel_for
             (Kokkos::ThreadVectorRange(member, vector_loop_size),
 	     [&](const local_ordinal_type &v) {
-              factorize_subline(member, i0, nrows, v, internal_vector_values_schur, WW);
+               auto W = Kokkos::subview(WW, Kokkos::ALL(), Kokkos::ALL(), v % vector_length);
+               factorize_subline(member, i0, nrows, v, internal_vector_values_schur, W);
             });
         }
       }
 
       void run() {
+        /* Note BMK: tags which use scratch of size bs * bs * vector_loop_size
+         *
+         * ExtractAndFactorizeSubLineTag
+         * ComputeETag
+         * FactorizeSchurTag
+         *
+         * Internal functions called by these, which use scratch:
+         * 
+         * factorize_subline
+         * solveMultiVector
+         */
         IFPACK2_BLOCKTRIDICONTAINER_PROFILER_REGION_BEGIN;
         const local_ordinal_type team_size =
           ExtractAndFactorizeTridiagsDefaultModeAndAlgo<typename execution_space::memory_space>::
@@ -3574,7 +3600,6 @@ namespace Ifpack2 {
 
         IFPACK2_BLOCKTRIDICONTAINER_PROFILER_REGION_END;
       }
-
     };
 
     ///
@@ -3654,7 +3679,6 @@ namespace Ifpack2 {
           packed_multivector(pmv) {}
 
       // TODO:: modify this routine similar to the team level functions
-      // inline  ---> FIXME HIP: should not need the KOKKOS_INLINE_FUNCTION below...
       KOKKOS_INLINE_FUNCTION
       void
       operator() (const local_ordinal_type &packidx) const {
@@ -3902,7 +3926,7 @@ namespace Ifpack2 {
       using impl_scalar_type_1d_view = typename impl_type::impl_scalar_type_1d_view;
       using impl_scalar_type_2d_view_tpetra = typename impl_type::impl_scalar_type_2d_view_tpetra;
 
-      /// team policy types
+      /// team policy member type (only for getting member_type; the actual executed policies use tags)
       using team_policy_type = Kokkos::TeamPolicy<execution_space>;
       using member_type = typename team_policy_type::member_type;
 
