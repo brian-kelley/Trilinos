@@ -329,6 +329,7 @@ namespace Ifpack2 {
       // tpetra multivector values (layout left): may need to change the typename more explicitly
       typedef Kokkos::View<impl_scalar_type**,Kokkos::LayoutLeft,device_type> impl_scalar_type_2d_view;
       typedef Kokkos::View<impl_scalar_type**,Kokkos::LayoutLeft,node_device_type> impl_scalar_type_2d_view_tpetra;
+      typedef Kokkos::View<const impl_scalar_type**,Kokkos::LayoutLeft,node_device_type> const_impl_scalar_type_2d_view_tpetra;
 
       // packed data always use layout right
       typedef Kokkos::View<vector_type*,device_type> vector_type_1d_view;
