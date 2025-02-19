@@ -50,6 +50,7 @@
 
 #include "Ifpack2_BlockHelper.hpp"
 #include "Ifpack2_BlockComputeResidualVector.hpp"
+#include "Ifpack2_BlockComputeResidualAndSolve.hpp"
 
 //#include <KokkosBlas2_gemv.hpp>
 
@@ -3677,6 +3678,11 @@ namespace Ifpack2 {
           Kokkos::parallel_for("ExtractAndFactorize::TeamPolicy::run<ExtractAndFactorizeFusedJacobiTag>",
                               policy, *this);
         }
+        std::cout << "flat_td_ptr for each row: ";
+        auto tdptr = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), flat_td_ptr);
+        for(size_t i = 0; i < tdptr.extent(0); i++)
+          std::cout << flat_td_ptr(i, 0);
+        std::cout << '\n';
         auto dinv_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), d_inv);
         std::cout << "Computed dinv: " << dinv_host.extent(0) << "x" << dinv_host.extent(1) << "x" << dinv_host.extent(2) << '\n';
         for(size_t i = 0; i < dinv_host.extent(0); i++) {
@@ -5111,60 +5117,242 @@ namespace Ifpack2 {
       int sweep = 0;
       for (;sweep<max_num_sweeps;++sweep) {
         // General path: with separate residual, solve tridiags, and local norm computation
-        if(!btdm.use_fused_jacobi) {
-          if (is_y_zero) {
-            // pmv := x(lclrow)
-            multivector_converter.run(XX);
+        if (is_y_zero) {
+          // pmv := x(lclrow)
+          multivector_converter.run(XX);
+        } else {
+          if (is_seq_method_requested) {
+            // SEQ METHOD IS TESTING ONLY
+
+            // y := x - R y
+            Z.doImport(Y, *tpetra_importer, Tpetra::REPLACE);
+            compute_residual_vector.run(YY, XX, ZZ);
+
+            // pmv := y(lclrow).
+            multivector_converter.run(YY);
           } else {
-            if (is_seq_method_requested) {
-              // SEQ METHOD IS TESTING ONLY
-
-              // y := x - R y
-              Z.doImport(Y, *tpetra_importer, Tpetra::REPLACE);
-              compute_residual_vector.run(YY, XX, ZZ);
-
-              // pmv := y(lclrow).
-              multivector_converter.run(YY);
-            } else {
-              // fused y := x - R y and pmv := y(lclrow);
-              // real use case does not use overlap comp and comm
-              if (overlap_communication_and_computation || !is_async_importer_active) {
-                if (is_async_importer_active) async_importer->asyncSendRecv(YY);
-                // OverlapTag, compute_owned = true
-                compute_residual_vector.run(pmv, XX, YY, remote_multivector, true);
-                if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
-                  if (is_async_importer_active) async_importer->cancel();
-                  break;
-                }
-                if (is_async_importer_active) {
-                  async_importer->syncRecv();
-                  // OverlapTag, compute_owned = false
-                  compute_residual_vector.run(pmv, XX, YY, remote_multivector, false);
-                }
-              } else {
-                if (is_async_importer_active)
-                  async_importer->syncExchange(YY);
-                if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
-                // AsyncTag
-                compute_residual_vector.run(pmv, XX, YY, remote_multivector);
+            // fused y := x - R y and pmv := y(lclrow);
+            // real use case does not use overlap comp and comm
+            if (overlap_communication_and_computation || !is_async_importer_active) {
+              if (is_async_importer_active) async_importer->asyncSendRecv(YY);
+              // OverlapTag, compute_owned = true
+              compute_residual_vector.run(pmv, XX, YY, remote_multivector, true);
+              if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
+                if (is_async_importer_active) async_importer->cancel();
+                break;
               }
+              if (is_async_importer_active) {
+                async_importer->syncRecv();
+                // OverlapTag, compute_owned = false
+                compute_residual_vector.run(pmv, XX, YY, remote_multivector, false);
+              }
+            } else {
+              if (is_async_importer_active)
+                async_importer->syncExchange(YY);
+              if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
+              // AsyncTag
+              compute_residual_vector.run(pmv, XX, YY, remote_multivector);
             }
           }
-          // pmv := inv(D) pmv.
-          solve_tridiags.run(YY, W);
-          if (is_norm_manager_active) {
-            // y(lclrow) = (b - a) y(lclrow) + a pmv, with b = 1 always.
-            BlockHelperDetails::reduceVector<MatrixType>(W, norm_manager.getBuffer());
+        }
+        // pmv := inv(D) pmv.
+        solve_tridiags.run(YY, W);
+        // Compute norm.
+        if (is_norm_manager_active) {
+          // y(lclrow) = (b - a) y(lclrow) + a pmv, with b = 1 always.
+          BlockHelperDetails::reduceVector<MatrixType>(W, norm_manager.getBuffer());
+          if (sweep + 1 == max_num_sweeps) {
+            norm_manager.ireduce(sweep, true);
+            norm_manager.checkDone(sweep + 1, tolerance, true);
+          } else {
+            norm_manager.ireduce(sweep);
           }
         }
-        else {
-          // Use a single kernel that fuses residual, application of D^-1, and local squared norm
-        }
-        if (sweep + 1 == max_num_sweeps) {
-          norm_manager.ireduce(sweep, true);
-          norm_manager.checkDone(sweep + 1, tolerance, true);
+        is_y_zero = false;
+      }
+
+      //sqrt the norms for the caller's use.
+      if (is_norm_manager_active) norm_manager.finalize();
+
+      return sweep;
+    }
+
+    template<typename MatrixType>
+    int
+    applyFusedBlockJacobi(
+                       const Teuchos::RCP<const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_row_matrix_type> &A,
+                       const Teuchos::RCP<const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_crs_graph_type> &G,
+                       const Teuchos::RCP<const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_import_type> &tpetra_importer,
+                       const Teuchos::RCP<AsyncableImport<MatrixType> > &async_importer,
+                       const bool overlap_communication_and_computation,
+                       // tpetra interface
+                       const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &X,  // tpetra interface
+                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &Y,  // tpetra interface
+                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &Z,  // temporary tpetra interface (seq_method)
+                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type_1d_view &W,  // temporary tpetra interface (diff)
+                       // local object interface
+                       const BlockHelperDetails::PartInterface<MatrixType> &interf, // mesh interface
+                       const BlockTridiags<MatrixType> &btdm, // packed block tridiagonal matrices
+                       const BlockHelperDetails::AmD<MatrixType> &amd, // R = A - D
+                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::vector_type_1d_view &work, // workspace for packed multivector of right hand side
+                       /* */ BlockHelperDetails::NormManager<MatrixType> &norm_manager,
+                       // preconditioner parameters
+                       const typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type &damping_factor,
+                       /* */ bool is_y_zero,
+                       const int max_num_sweeps,
+                       const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tol,
+                       const int check_tol_every) {
+      IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::ApplyFusedBlockJacobi", ApplyFusedBlockJacobi);
+
+      using impl_type = BlockHelperDetails::ImplType<MatrixType>;
+      using node_memory_space = typename impl_type::node_memory_space;
+      using local_ordinal_type = typename impl_type::local_ordinal_type;
+      using size_type = typename impl_type::size_type;
+      using impl_scalar_type = typename impl_type::impl_scalar_type;
+      using magnitude_type = typename impl_type::magnitude_type;
+      using local_ordinal_type_1d_view = typename impl_type::local_ordinal_type_1d_view;
+      using tpetra_multivector_type = typename impl_type::tpetra_multivector_type;
+      using impl_scalar_type_1d_view = typename impl_type::impl_scalar_type_1d_view;
+
+      // either tpetra importer or async importer must be active
+      TEUCHOS_TEST_FOR_EXCEPT_MSG(!tpetra_importer.is_null() && !async_importer.is_null(),
+                                  "Neither Tpetra importer nor Async importer is null.");
+      // max number of sweeps should be positive number
+      TEUCHOS_TEST_FOR_EXCEPT_MSG(max_num_sweeps <= 0,
+                                  "Maximum number of sweeps must be >= 1.");
+
+      // const parameters
+      const bool is_seq_method_requested = !tpetra_importer.is_null();
+      const bool is_async_importer_active = !async_importer.is_null();
+      const bool is_norm_manager_active = tol > Kokkos::ArithTraits<magnitude_type>::zero();
+      const magnitude_type tolerance = tol*tol;
+      const local_ordinal_type blocksize = btdm.values.extent(1);
+      const local_ordinal_type num_vectors = Y.getNumVectors();
+      const local_ordinal_type num_blockrows = interf.part2packrowidx0_back;
+
+      const impl_scalar_type zero(0.0);
+
+      TEUCHOS_TEST_FOR_EXCEPT_MSG(is_norm_manager_active && is_seq_method_requested,
+                                  "The seq method for applyInverseJacobi, " <<
+                                  "which in any case is for developer use only, " <<
+                                  "does not support norm-based termination.");
+      const bool device_accessible_from_host = Kokkos::SpaceAccessibility<
+        Kokkos::DefaultHostExecutionSpace, node_memory_space>::accessible;
+      TEUCHOS_TEST_FOR_EXCEPTION(is_seq_method_requested && !device_accessible_from_host,
+                                 std::invalid_argument,
+                                 "The seq method for applyInverseJacobi, " <<
+                                 "which in any case is for developer use only, " <<
+                                 "only supports memory spaces accessible from host.");
+
+      // if workspace is needed more, resize it
+      const size_type work_span_required = num_blockrows*num_vectors*blocksize;
+      if (work.span() < work_span_required)
+        work = vector_type_1d_view("vector workspace 1d view", work_span_required);
+
+      // construct W
+      const local_ordinal_type W_size = interf.packptr.extent(0)-1;
+      if (local_ordinal_type(W.extent(0)) < W_size)
+        W = impl_scalar_type_1d_view("W", W_size);
+
+      typename impl_type::impl_scalar_type_2d_view_tpetra remote_multivector;
+      {
+        if (is_seq_method_requested) {
+          if (Z.getNumVectors() != Y.getNumVectors())
+            Z = tpetra_multivector_type(tpetra_importer->getTargetMap(), num_vectors, false);
         } else {
-          norm_manager.ireduce(sweep);
+          if (is_async_importer_active) {
+            // create comm data buffer and keep it here
+            async_importer->createDataBuffer(num_vectors);
+            remote_multivector = async_importer->getRemoteMultiVectorLocalView();
+          }
+        }
+      }
+
+      // wrap the workspace with 3d view
+      vector_type_3d_view pmv(work.data(), num_blockrows, blocksize, num_vectors);
+      const auto XX = X.getLocalViewDevice(Tpetra::Access::ReadOnly);
+      const auto YY = Y.getLocalViewDevice(Tpetra::Access::ReadWrite);
+      const auto ZZ = Z.getLocalViewDevice(Tpetra::Access::ReadWrite);
+      if (is_y_zero) Kokkos::deep_copy(YY, zero);
+
+      MultiVectorConverter<MatrixType> multivector_converter(interf, pmv);
+      SolveTridiags<MatrixType> solve_tridiags(interf, btdm, pmv,
+                                               damping_factor, is_norm_manager_active);
+
+      const local_ordinal_type_1d_view dummy_local_ordinal_type_1d_view;
+
+
+      auto A_crs = Teuchos::rcp_dynamic_cast<const typename impl_type::tpetra_crs_matrix_type>(A);
+      auto A_bcrs = Teuchos::rcp_dynamic_cast<const typename impl_type::tpetra_block_crs_matrix_type>(A);
+
+      bool hasBlockCrsMatrix = ! A_bcrs.is_null ();
+
+      // This is OK here to use the graph of the A_crs matrix and a block size of 1
+      const auto g = hasBlockCrsMatrix ? A_bcrs->getCrsGraph() : *(A_crs->getCrsGraph()); // tpetra crs graph object
+
+      BlockHelperDetails::ComputeResidualVector<MatrixType>
+        compute_residual_vector(amd, G->getLocalGraphDevice(), g.getLocalGraphDevice(), blocksize, interf,
+                                is_async_importer_active ? async_importer->dm2cm : dummy_local_ordinal_type_1d_view,
+                                hasBlockCrsMatrix);
+
+      // norm manager workspace resize
+      if (is_norm_manager_active)
+        norm_manager.setCheckFrequency(check_tol_every);
+
+      // iterate
+      int sweep = 0;
+      for (;sweep<max_num_sweeps;++sweep) {
+        // General path: with separate residual, solve tridiags, and local norm computation
+        if (is_y_zero) {
+          // pmv := x(lclrow)
+          multivector_converter.run(XX);
+        } else {
+          if (is_seq_method_requested) {
+            // SEQ METHOD IS TESTING ONLY
+
+            // y := x - R y
+            Z.doImport(Y, *tpetra_importer, Tpetra::REPLACE);
+            compute_residual_vector.run(YY, XX, ZZ);
+
+            // pmv := y(lclrow).
+            multivector_converter.run(YY);
+          } else {
+            // fused y := x - R y and pmv := y(lclrow);
+            // real use case does not use overlap comp and comm
+            if (overlap_communication_and_computation || !is_async_importer_active) {
+              if (is_async_importer_active) async_importer->asyncSendRecv(YY);
+              // OverlapTag, compute_owned = true
+              compute_residual_vector.run(pmv, XX, YY, remote_multivector, true);
+              if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
+                if (is_async_importer_active) async_importer->cancel();
+                break;
+              }
+              if (is_async_importer_active) {
+                async_importer->syncRecv();
+                // OverlapTag, compute_owned = false
+                compute_residual_vector.run(pmv, XX, YY, remote_multivector, false);
+              }
+            } else {
+              if (is_async_importer_active)
+                async_importer->syncExchange(YY);
+              if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
+              // AsyncTag
+              compute_residual_vector.run(pmv, XX, YY, remote_multivector);
+            }
+          }
+        }
+        // pmv := inv(D) pmv.
+        solve_tridiags.run(YY, W);
+        // Compute norm.
+        if (is_norm_manager_active) {
+          // y(lclrow) = (b - a) y(lclrow) + a pmv, with b = 1 always.
+          BlockHelperDetails::reduceVector<MatrixType>(W, norm_manager.getBuffer());
+          if (sweep + 1 == max_num_sweeps) {
+            norm_manager.ireduce(sweep, true);
+            norm_manager.checkDone(sweep + 1, tolerance, true);
+          } else {
+            norm_manager.ireduce(sweep);
+          }
         }
         is_y_zero = false;
       }
