@@ -367,21 +367,38 @@ namespace Ifpack2 {
     IFPACK2_BLOCKHELPER_TIMER("BlockTriDiContainer::applyInverseJacobi", applyInverseJacobi);
     int r_val = 0;
     {
-      r_val = BlockTriDiContainerDetails::applyInverseJacobi<MatrixType>
-        (impl_->A,
-         impl_->blockGraph,
-         impl_->tpetra_importer, 
-         impl_->async_importer,
-         impl_->overlap_communication_and_computation,
-         X, Y, impl_->Z, impl_->W,
-         impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
-         impl_->work,
-         impl_->norm_manager,
-         in.dampingFactor,
-         in.zeroStartingSolution,
-         in.maxNumSweeps,
-         in.tolerance,
-         in.checkToleranceEvery);
+      if(!impl_->block_tridiags.use_fused_jacobi) {
+        r_val = BlockTriDiContainerDetails::applyInverseJacobi<MatrixType>
+          (impl_->A,
+           impl_->blockGraph,
+           impl_->tpetra_importer, 
+           impl_->async_importer,
+           impl_->overlap_communication_and_computation,
+           X, Y, impl_->Z, impl_->W,
+           impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
+           impl_->work,
+           impl_->norm_manager,
+           in.dampingFactor,
+           in.zeroStartingSolution,
+           in.maxNumSweeps,
+           in.tolerance,
+           in.checkToleranceEvery);
+      }
+      else {
+        r_val = BlockTriDiContainerDetails::applyFusedBlockJacobi<MatrixType>
+          (impl_->tpetra_importer, 
+           impl_->async_importer,
+           impl_->overlap_communication_and_computation,
+           X, Y,
+           impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
+           impl_->work,
+           impl_->norm_manager,
+           in.dampingFactor,
+           in.zeroStartingSolution,
+           in.maxNumSweeps,
+           in.tolerance,
+           in.checkToleranceEvery);
+      }
     }
     IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
     return r_val;
