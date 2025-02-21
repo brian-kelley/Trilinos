@@ -391,7 +391,7 @@ namespace Ifpack2 {
            impl_->overlap_communication_and_computation,
            X, Y,
            impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
-           impl_->work,
+           impl_->work_flat,
            impl_->norm_manager,
            in.dampingFactor,
            in.zeroStartingSolution,

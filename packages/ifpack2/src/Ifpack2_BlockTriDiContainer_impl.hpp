@@ -2887,7 +2887,6 @@ namespace Ifpack2 {
                                 btdm_.e_values.extent(2),
                                 btdm_.e_values.extent(3),
                                 vector_length/internal_vector_length),
-        d_inv(btdm_.d_inv),
         scalar_values((btdm_scalar_type*)btdm_.values.data(),
                       btdm_.values.extent(0),
                       btdm_.values.extent(1),
@@ -2904,6 +2903,7 @@ namespace Ifpack2 {
                       btdm_.e_values.extent(2),
                       btdm_.e_values.extent(3),
                       vector_length),
+        d_inv(btdm_.d_inv),
         blocksize(btdm_.values.extent(1)),
         blocksize_square(blocksize*blocksize),
         // diagonal weight to avoid zero pivots
@@ -5190,7 +5190,7 @@ namespace Ifpack2 {
                        const BlockHelperDetails::PartInterface<MatrixType> &interf, // mesh interface
                        const BlockTridiags<MatrixType> &btdm, // packed block tridiagonal matrices
                        const BlockHelperDetails::AmD<MatrixType> &amd, // R = A - D
-                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::vector_type_1d_view &work, // workspace
+                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type_1d_view &work, // workspace
                        /* */ BlockHelperDetails::NormManager<MatrixType> &norm_manager,
                        // preconditioner parameters
                        const typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type &damping_factor,
@@ -5209,6 +5209,7 @@ namespace Ifpack2 {
       using local_ordinal_type_1d_view = typename impl_type::local_ordinal_type_1d_view;
       using tpetra_multivector_type = typename impl_type::tpetra_multivector_type;
       using impl_scalar_type_1d_view = typename impl_type::impl_scalar_type_1d_view;
+      using impl_scalar_type_2d_view_tpetra = typename impl_type::impl_scalar_type_2d_view_tpetra;
 
       // the tpetra importer and async importer can't both be active
       TEUCHOS_TEST_FOR_EXCEPT_MSG(!tpetra_importer.is_null() && !async_importer.is_null(),
@@ -5221,11 +5222,9 @@ namespace Ifpack2 {
       const bool is_async_importer_active = !async_importer.is_null();
       const bool is_norm_manager_active = tol > Kokkos::ArithTraits<magnitude_type>::zero();
       const magnitude_type tolerance = tol*tol;
-      const local_ordinal_type blocksize = d_inv.extent(1);
+      const local_ordinal_type blocksize = btdm.d_inv.extent(1);
       const local_ordinal_type num_vectors = Y.getNumVectors();
       const local_ordinal_type num_blockrows = interf.nparts;
-
-      const impl_scalar_type zero(0.0);
 
       typename impl_type::impl_scalar_type_2d_view_tpetra remote_multivector;
       {
@@ -5239,7 +5238,7 @@ namespace Ifpack2 {
       const auto XX = X.getLocalViewDevice(Tpetra::Access::ReadOnly);
       const auto YY = Y.getLocalViewDevice(Tpetra::Access::ReadWrite);
 
-      const bool two_stage_residual =
+      const bool two_pass_residual =
         overlap_communication_and_computation && is_async_importer_active;
 
       // Calculate the required work size and reallocate it if not already big enough.
@@ -5252,13 +5251,18 @@ namespace Ifpack2 {
           " = " << size_t(num_blockrows) * blocksize * num_vectors << '\n');
       size_type work_required = size_type(num_blockrows) * blocksize * num_vectors;
       if (work.extent(0) < work_required) {
-        work = vector_type_1d_view("vector workspace 1d view", work_required);
+        work = impl_scalar_type_1d_view("flat workspace 1d view", work_required);
       }
 
       Unmanaged<impl_scalar_type_2d_view_tpetra> y_doublebuf(work.data(), num_blockrows * blocksize, num_vectors);
 
-      BlockHelperDetails::ComputeResidualAndSolve<MatrixType>
-        compute_residual_and_solve(amd, btdm, blocksize, damping_factor);
+      // Create the required functors upfront (this is inexpensive - all shallow copies)
+      BlockHelperDetails::ComputeResidualAndSolve_SolveOnly<MatrixType>
+        functor_solve_only(amd, btdm.d_inv, blocksize, damping_factor);
+      BlockHelperDetails::ComputeResidualAndSolve_1Pass<MatrixType>
+        functor_1pass(amd, btdm.d_inv, blocksize, damping_factor);
+      BlockHelperDetails::ComputeResidualAndSolve_2Pass<MatrixType>
+        functor_2pass(amd, btdm.d_inv, blocksize, damping_factor);
 
       // norm manager workspace resize
       if (is_norm_manager_active)
@@ -5277,19 +5281,25 @@ namespace Ifpack2 {
         if (is_y_zero) {
           // If y is initially zero, then we are just computing y := damping_factor * Dinv * x
           // and local_norm_sq is the squared norm of Dinv * x.
-          local_norm_sq = compute_residual_and_solve.run_y_zero(XX, y_buffers[current_y]);
+          std::cout << "First iter (y == 0): computing Dinv * x\n";
+          local_norm_sq = functor_solve_only.run(XX, y_buffers[1-current_y]);
+          Kokkos::fence();
+          std::cout << "Done.\n";
         } else {
           // real use case does not use overlap comp and comm
           if (overlap_communication_and_computation || !is_async_importer_active) {
             if (is_async_importer_active) async_importer->asyncSendRecv(y_buffers[current_y]);
-            if(two_stage_residual) {
-              // Stage 1 computes partial_residual, but doesn't apply Dinv or produce a norm yet
-              compute_residual_and_solve.run_stage1(XX, y_buffers[current_y], remote_multivector);
+            if(two_pass_residual) {
+              std::cout << "Running 1st pass of 2-pass residual/solve.\n";
+              // Pass 1 computes owned residual and stores into new y buffer,
+              // but doesn't apply Dinv or produce a norm yet
+              functor_2pass.run_pass1(XX, y_buffers[current_y], y_buffers[1-current_y]);
             }
             else {
               // This case happens if running with single rank.
               // There are no remote columns, so residual and solve can happen in one step.
-              local_norm_sq = compute_residual_and_solve.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
+              std::cout << "Running single-rank case (1-pass owned only)\n";
+              local_norm_sq = functor_1pass.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
             }
             if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
               if (is_async_importer_active) async_importer->cancel();
@@ -5298,18 +5308,19 @@ namespace Ifpack2 {
             if (is_async_importer_active) {
               async_importer->syncRecv();
               // Stage 2 finishes computing the residual, then applies Dinv and computes norm.
-              local_norm_sq = compute_residual_and_solve.run_stage2(y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
+              std::cout << "Running 2nd pass of 2-pass residual/solve.\n";
+              local_norm_sq = functor_2pass.run_pass2(y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
             }
           } else {
             if (is_async_importer_active)
               async_importer->syncExchange(y_buffers[current_y]);
             if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
             // Full residual, Dinv apply, and norm in one kernel
-            local_norm_sq = compute_residual_and_solve.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
+            std::cout << "Running single pass (old AsyncTag) residual/solve.\n";
+            local_norm_sq = functor_1pass.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
           }
-          // flip y buffers for next iteration, or termination if we reached max_num_sweeps.
-          current_y = 1 - current_y;
         }
+        std::cout << "Computed local squared update norm: " << local_norm_sq << '\n';
         // Compute global norm.
         if (is_norm_manager_active) {
           *norm_manager.getBuffer() = local_norm_sq;
@@ -5321,6 +5332,8 @@ namespace Ifpack2 {
           }
         }
         is_y_zero = false;
+        // flip y buffers for next iteration, or termination if we reached max_num_sweeps.
+        current_y = 1 - current_y;
       }
       if(current_y == 1) {
         // We finished iterating with y in the double buffer, so copy it to the user's vector.
@@ -5358,7 +5371,11 @@ namespace Ifpack2 {
       part_interface_type part_interface;
       block_tridiags_type block_tridiags; // D
       amd_type a_minus_d; // R = A - D
-      mutable typename impl_type::vector_type_1d_view work; // right hand side workspace
+
+      // vector workspace is used for general block tridi case
+      mutable typename impl_type::vector_type_1d_view work; // right hand side workspace (1D view of vector)
+      // scalar workspace is used for fused block jacobi case
+      mutable typename impl_type::impl_scalar_type_1d_view work_flat; // right hand side workspace (1D view of scalar)
       mutable norm_manager_type norm_manager;
     };
 
