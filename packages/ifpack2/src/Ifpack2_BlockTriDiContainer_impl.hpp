@@ -2194,34 +2194,9 @@ namespace Ifpack2 {
         BlockHelperDetails::precompute_A_x_offsets<MatrixType>(amd, interf, g, dm2cm, blocksize, ownedRemoteSeparate);
       }
 
-      // Decide whether to use the fused block Jacobi path,
-      // and if so allocate d_inv.
-      // Note: currently the fused path is only implemented on GPUs, but it could be added for CPUs as well.
-      if(use_fused_jacobi) {
+      // If using fused block Jacobi path, allocate diagonal inverses here (d_inv).
+      if(use_fused_jacobi)
         btdm.d_inv = btdm_scalar_type_3d_view(do_not_initialize_tag("btdm.d_inv"), interf.nparts, blocksize, blocksize);
-        std::cout << "** symbolic: Using fused Jacobi path\n";
-      }
-      else
-        std::cout << "^^ symbolic: Using general path\n";
-
-      /*
-      auto tdptr = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), btdm.flat_td_ptr);
-      std::cout << "flat_td_ptr (" << tdptr.extent(0) << 'x' << tdptr.extent(1) << "):\n";
-      for(size_t i = 0; i < tdptr.extent(0); i++) {
-        for(size_t j = 0; j < tdptr.extent(1); j++) {
-          std::cout << tdptr(i, 0) << " ";
-        }
-        std::cout << '\n';
-      }
-      std::cout << '\n';
-
-      auto acs = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), btdm.A_colindsub);
-      std::cout << "A_colindsub (" << acs.extent(0) << "):\n";
-      for(size_t i = 0; i < acs.extent(0); i++) {
-        std::cout << acs(i) << " ";
-      }
-      std::cout << '\n';
-      */
 
       IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
     }
@@ -3698,34 +3673,12 @@ namespace Ifpack2 {
       }
 
       void run_fused_jacobi() {
-        std::cout << "** Hello from FusedJacobi extract+factorize **\n";
         IFPACK2_BLOCKTRIDICONTAINER_PROFILER_REGION_BEGIN;
         const local_ordinal_type team_size =
           ExtractAndFactorizeTridiagsDefaultModeAndAlgo<typename execution_space::memory_space>::
           recommended_team_size(blocksize, vector_length, 1);
         const local_ordinal_type per_team_scratch =
           btdm_scalar_scratch_type_3d_view::shmem_size(blocksize, blocksize, vector_length);
-
-        std::cout << "Diag blocks before inverting:\n";
-        {
-          auto rp = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), A_block_rowptr);
-          auto cs = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), A_colindsub);
-          auto val  = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), A_values);
-          int nrows = d_inv.extent(0);
-          for(int i = 0; i < nrows; i++) {
-            std::cout << "Row " << i << ":\n";
-            size_type Aj = rp(i) + cs(i);
-            // View the diagonal block of A in row as 2D row-major
-            Kokkos::View<impl_scalar_type**, Kokkos::LayoutRight, Kokkos::HostSpace>
-              A_diag(val.data() + Aj * blocksize_square, blocksize, blocksize);
-            for(size_t j = 0; j < blocksize; j++) {
-              for(size_t k = 0; k < blocksize; k++) {
-                std::cout << A_diag(j, k) << " ";
-              }
-              std::cout << '\n';
-            }
-          }
-        }
         {
           IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::NumericPhase::ExtractAndFactorizeFusedJacobi", ExtractAndFactorizeFusedJacobiTag);
           Kokkos::TeamPolicy<execution_space, ExtractAndFactorizeFusedJacobiTag>
@@ -3734,17 +3687,6 @@ namespace Ifpack2 {
           policy.set_scratch_size(ScratchLevel, Kokkos::PerTeam(per_team_scratch));
           Kokkos::parallel_for("ExtractAndFactorize::TeamPolicy::run<ExtractAndFactorizeFusedJacobiTag>",
                               policy, *this);
-        }
-        auto dinv_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), d_inv);
-        std::cout << "Computed dinv: " << dinv_host.extent(0) << "x" << dinv_host.extent(1) << "x" << dinv_host.extent(2) << '\n';
-        for(size_t i = 0; i < dinv_host.extent(0); i++) {
-          std::cout << "\n\nBlock " << i << ":\n";
-          for(size_t j = 0; j < dinv_host.extent(1); j++) {
-            for(size_t k = 0; k < dinv_host.extent(2); k++) {
-              std::cout << dinv_host(i, j, k) << " ";
-            }
-            std::cout << '\n';
-          }
         }
         IFPACK2_BLOCKTRIDICONTAINER_PROFILER_REGION_END;
       }
@@ -3777,14 +3719,10 @@ namespace Ifpack2 {
       if(scratch_required < max_scratch) {
         // Can use level 0 scratch
         ExtractAndFactorizeTridiags<MatrixType, 0> function(btdm, interf, A, G, tiny);
-        if(!use_fused_jacobi) {
-          std::cout << "^^ Factorizing with general path!\n";
+        if(!use_fused_jacobi)
           function.run();
-        }
-        else {
-          std::cout << "**  Factorizing with fused jacobi path (inverting D blocks)\n";
+        else
           function.run_fused_jacobi();
-        }
       }
       else {
         // Not enough level 0 scratch, so fall back to level 1
@@ -5065,7 +5003,6 @@ namespace Ifpack2 {
                        const int max_num_sweeps,
                        const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tol,
                        const int check_tol_every) {
-      std::cout << "^^ Hello from general apply!! ^^\n";
       IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::ApplyInverseJacobi", ApplyInverseJacobi);
 
       using impl_type = BlockHelperDetails::ImplType<MatrixType>;
@@ -5253,7 +5190,6 @@ namespace Ifpack2 {
                        const int max_num_sweeps,
                        const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tol,
                        const int check_tol_every) {
-      std::cout << "** Hello from fused Jacobi apply!! **\n";
       using impl_type = BlockHelperDetails::ImplType<MatrixType>;
       using node_memory_space = typename impl_type::node_memory_space;
       using local_ordinal_type = typename impl_type::local_ordinal_type;
@@ -5330,22 +5266,17 @@ namespace Ifpack2 {
 
       // iterate
       int sweep = 0;
-      std::cout << "Running for up to " << max_num_sweeps << " sweeps\n";
       for (;sweep<max_num_sweeps;++sweep) {
         magnitude_type local_norm_sq = 0;
         if (is_y_zero) {
           // If y is initially zero, then we are just computing y := damping_factor * Dinv * x
           // and local_norm_sq is the squared norm of Dinv * x.
-          std::cout << "First iter (y == 0): computing Dinv * x\n";
           local_norm_sq = functor_solve_only.run(XX, y_buffers[1-current_y]);
-          Kokkos::fence();
-          std::cout << "Done.\n";
         } else {
           // real use case does not use overlap comp and comm
           if (overlap_communication_and_computation || !is_async_importer_active) {
             if (is_async_importer_active) async_importer->asyncSendRecv(y_buffers[current_y]);
             if(two_pass_residual) {
-              std::cout << "Running 1st pass of 2-pass residual/solve.\n";
               // Pass 1 computes owned residual and stores into new y buffer,
               // but doesn't apply Dinv or produce a norm yet
               functor_2pass.run_pass1(XX, y_buffers[current_y], y_buffers[1-current_y]);
@@ -5353,37 +5284,25 @@ namespace Ifpack2 {
             else {
               // This case happens if running with single rank.
               // There are no remote columns, so residual and solve can happen in one step.
-              std::cout << "Running single-rank case (1-pass owned only)\n";
               local_norm_sq = functor_1pass.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
             }
             if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
               if (is_async_importer_active) async_importer->cancel();
-              std::cout << "Terminating early since norm below tolerance (2-pass case)\n";
               break;
             }
             if (is_async_importer_active) {
               async_importer->syncRecv();
               // Stage 2 finishes computing the residual, then applies Dinv and computes norm.
-              std::cout << "Running 2nd pass of 2-pass residual/solve.\n";
               local_norm_sq = functor_2pass.run_pass2(y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
             }
           } else {
             if (is_async_importer_active)
               async_importer->syncExchange(y_buffers[current_y]);
-            if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
-              std::cout << "Terminating early since norm below tolerance (single-pass case)\n";
-              break;
-            }
+            if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
             // Full residual, Dinv apply, and norm in one kernel
-            std::cout << "Running single pass (old AsyncTag) residual/solve.\n";
             local_norm_sq = functor_1pass.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
           }
         }
-        std::cout << "Computed local squared update norm: " << local_norm_sq << '\n';
-        Kokkos::fence();
-        std::cout << "Y vector after: ";
-        KokkosKernels::Impl::print_1Dview(std::cout, Kokkos::subview(y_buffers[1-current_y], Kokkos::ALL(), 0));
-        std::cout << std::endl;
 
         // Compute global norm.
         if (is_norm_manager_active) {
