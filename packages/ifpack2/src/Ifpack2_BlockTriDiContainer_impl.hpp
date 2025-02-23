@@ -1581,9 +1581,6 @@ namespace Ifpack2 {
       // inv(A_00)*A_01 block values.
       vector_type_4d_view e_values;
 
-      // Whether to use fused block Jacobi.
-      bool use_fused_jacobi = false;
-
       // For fused residual+solve block Jacobi case,
       // this contains the diagonal block inverses in flat, local row indexing:
       // d_inv(row, :, :) gives the row-major block for row.
@@ -1868,7 +1865,8 @@ namespace Ifpack2 {
                          BlockHelperDetails::AmD<MatrixType> &amd,
                          const bool overlap_communication_and_computation,
                          const Teuchos::RCP<AsyncableImport<MatrixType> > &async_importer,
-                         bool useSeqMethod) {
+                         bool useSeqMethod,
+                         bool use_fused_jacobi) {
       IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::SymbolicPhase", SymbolicPhase);
 
       using impl_type = BlockHelperDetails::ImplType<MatrixType>;
@@ -2199,10 +2197,31 @@ namespace Ifpack2 {
       // Decide whether to use the fused block Jacobi path,
       // and if so allocate d_inv.
       // Note: currently the fused path is only implemented on GPUs, but it could be added for CPUs as well.
-      if(BlockHelperDetails::is_device<execution_space>::value && !useSeqMethod && hasBlockCrsMatrix && interf.max_partsz == 1) {
-        btdm.use_fused_jacobi = true;
+      if(use_fused_jacobi) {
         btdm.d_inv = btdm_scalar_type_3d_view(do_not_initialize_tag("btdm.d_inv"), interf.nparts, blocksize, blocksize);
+        std::cout << "** symbolic: Using fused Jacobi path\n";
       }
+      else
+        std::cout << "^^ symbolic: Using general path\n";
+
+      /*
+      auto tdptr = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), btdm.flat_td_ptr);
+      std::cout << "flat_td_ptr (" << tdptr.extent(0) << 'x' << tdptr.extent(1) << "):\n";
+      for(size_t i = 0; i < tdptr.extent(0); i++) {
+        for(size_t j = 0; j < tdptr.extent(1); j++) {
+          std::cout << tdptr(i, 0) << " ";
+        }
+        std::cout << '\n';
+      }
+      std::cout << '\n';
+
+      auto acs = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), btdm.A_colindsub);
+      std::cout << "A_colindsub (" << acs.extent(0) << "):\n";
+      for(size_t i = 0; i < acs.extent(0); i++) {
+        std::cout << acs(i) << " ";
+      }
+      std::cout << '\n';
+      */
 
       IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
     }
@@ -2813,6 +2832,8 @@ namespace Ifpack2 {
       using internal_vector_scratch_type_3d_view = Scratch<typename impl_type::internal_vector_type_3d_view>;
       using btdm_scalar_scratch_type_3d_view = Scratch<typename impl_type::btdm_scalar_type_3d_view>;
       using tpetra_block_access_view_type = typename impl_type::tpetra_block_access_view_type; // block crs (layout right)
+      using local_crs_graph_type = typename impl_type::local_crs_graph_type;
+      using colinds_view = typename local_crs_graph_type::entries_type;
 
       using internal_vector_type = typename impl_type::internal_vector_type;
       static constexpr int vector_length = impl_type::vector_length;
@@ -2832,6 +2853,7 @@ namespace Ifpack2 {
       // block crs matrix (it could be Kokkos::UVMSpace::size_type, which is int)
       using size_type_1d_view_tpetra = Kokkos::View<size_t*,typename impl_type::node_device_type>;
       ConstUnmanaged<size_type_1d_view_tpetra> A_block_rowptr;
+      ConstUnmanaged<colinds_view> A_colinds;
       ConstUnmanaged<size_type_1d_view_tpetra> A_point_rowptr;
       ConstUnmanaged<impl_scalar_type_1d_view_tpetra> A_values;
       // block tridiags
@@ -2920,6 +2942,8 @@ namespace Ifpack2 {
           A_block_rowptr = G_->getLocalGraphDevice().row_map;
           if (hasBlockCrsMatrix) {
             A_values = const_cast<block_crs_matrix_type*>(A_bcrs.get())->getValuesDeviceNonConst();
+            // A_colinds only used in fused Jacobi path
+            A_colinds = A_bcrs->getCrsGraph().getLocalIndicesDevice();
           }
           else {
             A_point_rowptr = A_crs->getCrsGraph()->getLocalGraphDevice().row_map;
@@ -3272,9 +3296,20 @@ namespace Ifpack2 {
             local_ordinal_type row = member.league_rank() * vector_length + v;
             // diagEntry has index of diagonal within row
             auto W = Kokkos::subview(WW, Kokkos::ALL(), Kokkos::ALL(), v);
+            // TODO: precompute diagonal offsets in symbolic, or figure
+            // out how to use flat_td_ptr/A_colindsub to get diags
             if(row < nrows) {
-              size_type diagEntry = flat_td_ptr(row, 0);
-              size_type Aj = A_block_rowptr(row) + A_colindsub(diagEntry);
+              size_type rowBegin = A_block_rowptr(row);
+              size_type rowEnd = A_block_rowptr(row + 1);
+              size_type Aj = A_colinds.extent(0);
+              for(Aj = rowBegin; Aj < rowEnd; Aj++) {
+                if(A_colinds(Aj) == row)
+                  break;
+              }
+              if(Aj == A_colinds.extent(0)) {
+                Kokkos::abort("Failed to find diagonal!");
+              }
+              //printf("Hello from row %d: rowbegin = %d, colindsub = %d, j = %d\n", (int) row, (int) A_block_rowptr(row), (int) A_colindsub(row), (int) Aj);
               // View the diagonal block of A in row as 2D row-major
               auto A_diag = ConstUnmanaged<tpetra_block_access_view_type>(
                   A_values.data() + Aj * blocksize_square, blocksize, blocksize);
@@ -3663,12 +3698,34 @@ namespace Ifpack2 {
       }
 
       void run_fused_jacobi() {
+        std::cout << "** Hello from FusedJacobi extract+factorize **\n";
         IFPACK2_BLOCKTRIDICONTAINER_PROFILER_REGION_BEGIN;
         const local_ordinal_type team_size =
           ExtractAndFactorizeTridiagsDefaultModeAndAlgo<typename execution_space::memory_space>::
           recommended_team_size(blocksize, vector_length, 1);
         const local_ordinal_type per_team_scratch =
           btdm_scalar_scratch_type_3d_view::shmem_size(blocksize, blocksize, vector_length);
+
+        std::cout << "Diag blocks before inverting:\n";
+        {
+          auto rp = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), A_block_rowptr);
+          auto cs = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), A_colindsub);
+          auto val  = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), A_values);
+          int nrows = d_inv.extent(0);
+          for(int i = 0; i < nrows; i++) {
+            std::cout << "Row " << i << ":\n";
+            size_type Aj = rp(i) + cs(i);
+            // View the diagonal block of A in row as 2D row-major
+            Kokkos::View<impl_scalar_type**, Kokkos::LayoutRight, Kokkos::HostSpace>
+              A_diag(val.data() + Aj * blocksize_square, blocksize, blocksize);
+            for(size_t j = 0; j < blocksize; j++) {
+              for(size_t k = 0; k < blocksize; k++) {
+                std::cout << A_diag(j, k) << " ";
+              }
+              std::cout << '\n';
+            }
+          }
+        }
         {
           IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::NumericPhase::ExtractAndFactorizeFusedJacobi", ExtractAndFactorizeFusedJacobiTag);
           Kokkos::TeamPolicy<execution_space, ExtractAndFactorizeFusedJacobiTag>
@@ -3678,11 +3735,6 @@ namespace Ifpack2 {
           Kokkos::parallel_for("ExtractAndFactorize::TeamPolicy::run<ExtractAndFactorizeFusedJacobiTag>",
                               policy, *this);
         }
-        std::cout << "flat_td_ptr for each row: ";
-        auto tdptr = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), flat_td_ptr);
-        for(size_t i = 0; i < tdptr.extent(0); i++)
-          std::cout << flat_td_ptr(i, 0);
-        std::cout << '\n';
         auto dinv_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), d_inv);
         std::cout << "Computed dinv: " << dinv_host.extent(0) << "x" << dinv_host.extent(1) << "x" << dinv_host.extent(2) << '\n';
         for(size_t i = 0; i < dinv_host.extent(0); i++) {
@@ -3707,7 +3759,8 @@ namespace Ifpack2 {
                         const Teuchos::RCP<const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_crs_graph_type> &G,
                         const BlockHelperDetails::PartInterface<MatrixType> &interf,
                         BlockTridiags<MatrixType> &btdm,
-                        const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tiny) {
+                        const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tiny,
+                        bool use_fused_jacobi) {
       using impl_type = BlockHelperDetails::ImplType<MatrixType>;
       using execution_space = typename impl_type::execution_space;
       using team_policy_type = Kokkos::TeamPolicy<execution_space>;
@@ -3724,20 +3777,19 @@ namespace Ifpack2 {
       if(scratch_required < max_scratch) {
         // Can use level 0 scratch
         ExtractAndFactorizeTridiags<MatrixType, 0> function(btdm, interf, A, G, tiny);
-        std::cout << "Hello from BTD numeric (normal scratch path)!\n";
-        if(!btdm.use_fused_jacobi) {
-          std::cout << "  Running normal line LU path\n";
+        if(!use_fused_jacobi) {
+          std::cout << "^^ Factorizing with general path!\n";
           function.run();
         }
         else {
-          std::cout << "  Running fused jacobi path (inverting D blocks)\n";
+          std::cout << "**  Factorizing with fused jacobi path (inverting D blocks)\n";
           function.run_fused_jacobi();
         }
       }
       else {
         // Not enough level 0 scratch, so fall back to level 1
         ExtractAndFactorizeTridiags<MatrixType, 1> function(btdm, interf, A, G, tiny);
-        if(!btdm.use_fused_jacobi)
+        if(!use_fused_jacobi)
           function.run();
         else
           function.run_fused_jacobi();
@@ -5013,6 +5065,7 @@ namespace Ifpack2 {
                        const int max_num_sweeps,
                        const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tol,
                        const int check_tol_every) {
+      std::cout << "^^ Hello from general apply!! ^^\n";
       IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::ApplyInverseJacobi", ApplyInverseJacobi);
 
       using impl_type = BlockHelperDetails::ImplType<MatrixType>;
@@ -5177,9 +5230,11 @@ namespace Ifpack2 {
       return sweep;
     }
 
-    template<typename MatrixType>
+    // fused block Jacobi apply for a specific block size B
+    // (or B = 0 for general case). 
+    template<typename MatrixType, int B>
     int
-    applyFusedBlockJacobi(
+    applyFusedBlockJacobi_Impl(
                        const Teuchos::RCP<const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_import_type> &tpetra_importer,
                        const Teuchos::RCP<AsyncableImport<MatrixType> > &async_importer,
                        const bool overlap_communication_and_computation,
@@ -5198,8 +5253,7 @@ namespace Ifpack2 {
                        const int max_num_sweeps,
                        const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tol,
                        const int check_tol_every) {
-      IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::ApplyFusedBlockJacobi", ApplyFusedBlockJacobi);
-
+      std::cout << "** Hello from fused Jacobi apply!! **\n";
       using impl_type = BlockHelperDetails::ImplType<MatrixType>;
       using node_memory_space = typename impl_type::node_memory_space;
       using local_ordinal_type = typename impl_type::local_ordinal_type;
@@ -5257,11 +5311,11 @@ namespace Ifpack2 {
       Unmanaged<impl_scalar_type_2d_view_tpetra> y_doublebuf(work.data(), num_blockrows * blocksize, num_vectors);
 
       // Create the required functors upfront (this is inexpensive - all shallow copies)
-      BlockHelperDetails::ComputeResidualAndSolve_SolveOnly<MatrixType>
+      BlockHelperDetails::ComputeResidualAndSolve_SolveOnly<MatrixType, B>
         functor_solve_only(amd, btdm.d_inv, blocksize, damping_factor);
-      BlockHelperDetails::ComputeResidualAndSolve_1Pass<MatrixType>
+      BlockHelperDetails::ComputeResidualAndSolve_1Pass<MatrixType, B>
         functor_1pass(amd, btdm.d_inv, blocksize, damping_factor);
-      BlockHelperDetails::ComputeResidualAndSolve_2Pass<MatrixType>
+      BlockHelperDetails::ComputeResidualAndSolve_2Pass<MatrixType, B>
         functor_2pass(amd, btdm.d_inv, blocksize, damping_factor);
 
       // norm manager workspace resize
@@ -5276,6 +5330,7 @@ namespace Ifpack2 {
 
       // iterate
       int sweep = 0;
+      std::cout << "Running for up to " << max_num_sweeps << " sweeps\n";
       for (;sweep<max_num_sweeps;++sweep) {
         magnitude_type local_norm_sq = 0;
         if (is_y_zero) {
@@ -5303,6 +5358,7 @@ namespace Ifpack2 {
             }
             if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
               if (is_async_importer_active) async_importer->cancel();
+              std::cout << "Terminating early since norm below tolerance (2-pass case)\n";
               break;
             }
             if (is_async_importer_active) {
@@ -5314,13 +5370,21 @@ namespace Ifpack2 {
           } else {
             if (is_async_importer_active)
               async_importer->syncExchange(y_buffers[current_y]);
-            if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
+            if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
+              std::cout << "Terminating early since norm below tolerance (single-pass case)\n";
+              break;
+            }
             // Full residual, Dinv apply, and norm in one kernel
             std::cout << "Running single pass (old AsyncTag) residual/solve.\n";
             local_norm_sq = functor_1pass.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
           }
         }
         std::cout << "Computed local squared update norm: " << local_norm_sq << '\n';
+        Kokkos::fence();
+        std::cout << "Y vector after: ";
+        KokkosKernels::Impl::print_1Dview(std::cout, Kokkos::subview(y_buffers[1-current_y], Kokkos::ALL(), 0));
+        std::cout << std::endl;
+
         // Compute global norm.
         if (is_norm_manager_active) {
           *norm_manager.getBuffer() = local_norm_sq;
@@ -5342,6 +5406,53 @@ namespace Ifpack2 {
 
       //sqrt the norms for the caller's use.
       if (is_norm_manager_active) norm_manager.finalize();
+      return sweep;
+    }
+
+    template<typename MatrixType>
+    int
+    applyFusedBlockJacobi(
+                       const Teuchos::RCP<const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_import_type> &tpetra_importer,
+                       const Teuchos::RCP<AsyncableImport<MatrixType> > &async_importer,
+                       const bool overlap_communication_and_computation,
+                       // tpetra interface
+                       const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &X,  // tpetra interface
+                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &Y,  // tpetra interface
+                       // local object interface
+                       const BlockHelperDetails::PartInterface<MatrixType> &interf, // mesh interface
+                       const BlockTridiags<MatrixType> &btdm, // packed block tridiagonal matrices
+                       const BlockHelperDetails::AmD<MatrixType> &amd, // R = A - D
+                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type_1d_view &work, // workspace
+                       /* */ BlockHelperDetails::NormManager<MatrixType> &norm_manager,
+                       // preconditioner parameters
+                       const typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type &damping_factor,
+                       /* */ bool is_y_zero,
+                       const int max_num_sweeps,
+                       const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tol,
+                       const int check_tol_every) {
+      IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::ApplyFusedBlockJacobi", ApplyFusedBlockJacobi);
+      int blocksize = btdm.d_inv.extent(1);
+      int sweep = 0;
+#define BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI(B) {                \
+        sweep = applyFusedBlockJacobi_Impl<MatrixType, B>( \
+            tpetra_importer, async_importer, overlap_communication_and_computation, \
+            X, Y, interf, btdm, amd, work, \
+            norm_manager, damping_factor, is_y_zero, \
+            max_num_sweeps, tol, check_tol_every); \
+      } break
+      switch (blocksize) {
+        case   3: BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI( 3);
+        case   5: BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI( 5);
+        case   7: BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI( 7);
+        case   9: BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI( 9);
+        case  10: BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI(10);
+        case  11: BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI(11);
+        case  16: BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI(16);
+        case  17: BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI(17);
+        case  18: BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI(18);
+        default : BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI( 0);
+      }
+#undef BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI
 
       return sweep;
     }
@@ -5371,6 +5482,9 @@ namespace Ifpack2 {
       part_interface_type part_interface;
       block_tridiags_type block_tridiags; // D
       amd_type a_minus_d; // R = A - D
+
+      // whether to use fused block Jacobi path
+      bool use_fused_jacobi;
 
       // vector workspace is used for general block tridi case
       mutable typename impl_type::vector_type_1d_view work; // right hand side workspace (1D view of vector)

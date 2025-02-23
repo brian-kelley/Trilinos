@@ -18,7 +18,7 @@ namespace Ifpack2::BlockHelperDetails {
   // note: the 3 functor types is a workaround for kokkos issue #7794.
   // Otherwise there would be one functor and multiple versions of operator(), each with a different tag.
 
-  template<typename MatrixType>
+  template<typename MatrixType, int B>
   struct ComputeResidualAndSolve_1Pass {
     using impl_type = BlockHelperDetails::ImplType<MatrixType>;
     using node_device_type = typename impl_type::node_device_type;
@@ -68,9 +68,6 @@ namespace Ifpack2::BlockHelperDetails {
 
   public:
 
-    template<int B>
-    struct SinglePassTag {};
-
     ComputeResidualAndSolve_1Pass(
           const AmD<MatrixType> &amd,
           const btdm_scalar_type_3d_view& d_inv_,
@@ -84,10 +81,9 @@ namespace Ifpack2::BlockHelperDetails {
         damping_factor(damping_factor_)
     {}
 
-    template<int B>
     KOKKOS_INLINE_FUNCTION
     void
-    operator() (const SinglePassTag<B>, const member_type &member, magnitude_type& update_norm) const {
+    operator() (const member_type &member, magnitude_type& update_norm) const {
       const local_ordinal_type blocksize = (B == 0 ? blocksize_requested : B);
       const local_ordinal_type rowidx = member.league_rank();
       const local_ordinal_type row = rowidx * blocksize;
@@ -192,38 +188,23 @@ namespace Ifpack2::BlockHelperDetails {
       const local_ordinal_type nrows = d_inv.extent(0);
 
       magnitude_type norm_sq;
-#define BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(B) {                \
-        const local_ordinal_type team_size = 8; \
-        const local_ordinal_type vector_size = 8; \
-        const size_t shmem_team_size = 2 * blocksize*sizeof(impl_scalar_type); \
-        const size_t shmem_thread_size = blocksize*sizeof(impl_scalar_type); \
-        Kokkos::TeamPolicy<execution_space,SinglePassTag<B> >      \
-          policy(nrows, team_size, vector_size);    \
-        policy.set_scratch_size(0,Kokkos::PerTeam(shmem_team_size),Kokkos::PerThread(shmem_thread_size)); \
-        Kokkos::parallel_reduce                                        \
-          ("ComputeResidualAndSolve::TeamPolicy::SinglePass",            \
-           policy, *this, norm_sq); \
-      } break
-      switch (blocksize_requested) {
-        case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
-        case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-        case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-        case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-        case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-        case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-        case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-        case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-        case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
-        default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
-      }
-#undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
+      const local_ordinal_type team_size = 8; 
+      const local_ordinal_type vector_size = 8;
+      const size_t shmem_team_size = 2 * blocksize*sizeof(impl_scalar_type);
+      const size_t shmem_thread_size = blocksize*sizeof(impl_scalar_type);
+      Kokkos::TeamPolicy<execution_space>     
+        policy(nrows, team_size, vector_size);    
+      policy.set_scratch_size(0,Kokkos::PerTeam(shmem_team_size),Kokkos::PerThread(shmem_thread_size));
+      Kokkos::parallel_reduce                                        
+        ("ComputeResidualAndSolve::TeamPolicy::SinglePass",           
+         policy, *this, norm_sq);
       IFPACK2_BLOCKHELPER_PROFILER_REGION_END;
       IFPACK2_BLOCKHELPER_TIMER_FENCE(execution_space)
       return norm_sq;
     }
   };
 
-  template<typename MatrixType>
+  template<typename MatrixType, int B>
   struct ComputeResidualAndSolve_2Pass {
     using impl_type = BlockHelperDetails::ImplType<MatrixType>;
     using node_device_type = typename impl_type::node_device_type;
@@ -251,11 +232,9 @@ namespace Ifpack2::BlockHelperDetails {
     enum : int { max_blocksize = 32 };
 
     // Tag for computing residual with owned columns only (pass 1)
-    template<int B>
     struct OwnedTag {};
 
     // Tag for finishing the residual with nonowned columns, and solving/norming (pass 2)
-    template<int B>
     struct NonownedTag {};
 
   private:
@@ -293,10 +272,9 @@ namespace Ifpack2::BlockHelperDetails {
         damping_factor(damping_factor_)
     {}
 
-    template<int B>
     KOKKOS_INLINE_FUNCTION
     void
-    operator() (const OwnedTag<B>, const member_type &member) const {
+    operator() (const OwnedTag, const member_type &member) const {
       const local_ordinal_type blocksize = (B == 0 ? blocksize_requested : B);
       const local_ordinal_type rowidx = member.league_rank();
       const local_ordinal_type row = rowidx * blocksize;
@@ -355,10 +333,9 @@ namespace Ifpack2::BlockHelperDetails {
       }
     }
 
-    template<int B>
     KOKKOS_INLINE_FUNCTION
     void
-    operator() (const NonownedTag<B>, const member_type &member, magnitude_type& update_norm) const {
+    operator() (const NonownedTag, const member_type &member, magnitude_type& update_norm) const {
       const local_ordinal_type blocksize = (B == 0 ? blocksize_requested : B);
       const local_ordinal_type rowidx = member.league_rank();
       const local_ordinal_type row = rowidx * blocksize;
@@ -454,31 +431,16 @@ namespace Ifpack2::BlockHelperDetails {
       const local_ordinal_type blocksize = blocksize_requested;
       const local_ordinal_type nrows = d_inv.extent(0);
 
-#define BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(B) {                \
-        const local_ordinal_type team_size = 8; \
-        const local_ordinal_type vector_size = 8; \
-        const size_t shmem_team_size = blocksize*sizeof(impl_scalar_type); \
-        const size_t shmem_thread_size = blocksize*sizeof(impl_scalar_type); \
-        Kokkos::TeamPolicy<execution_space,OwnedTag<B> >      \
-          policy(nrows, team_size, vector_size);    \
-        policy.set_scratch_size(0,Kokkos::PerTeam(shmem_team_size),Kokkos::PerThread(shmem_thread_size)); \
-        Kokkos::parallel_for \
-          ("ComputeResidualAndSolve::TeamPolicy::Pass1",            \
-           policy, *this); \
-      } break
-      switch (blocksize_requested) {
-        case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
-        case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-        case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-        case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-        case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-        case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-        case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-        case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-        case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
-        default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
-      }
-#undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
+      const local_ordinal_type team_size = 8; 
+      const local_ordinal_type vector_size = 8; 
+      const size_t shmem_team_size = blocksize*sizeof(impl_scalar_type); 
+      const size_t shmem_thread_size = blocksize*sizeof(impl_scalar_type); 
+      Kokkos::TeamPolicy<execution_space,OwnedTag>
+        policy(nrows, team_size, vector_size);    
+      policy.set_scratch_size(0,Kokkos::PerTeam(shmem_team_size),Kokkos::PerThread(shmem_thread_size)); 
+      Kokkos::parallel_for 
+        ("ComputeResidualAndSolve::TeamPolicy::Pass1",  
+         policy, *this);
       IFPACK2_BLOCKHELPER_PROFILER_REGION_END;
       IFPACK2_BLOCKHELPER_TIMER_FENCE(execution_space)
     }
@@ -499,38 +461,23 @@ namespace Ifpack2::BlockHelperDetails {
       const local_ordinal_type nrows = d_inv.extent(0);
 
       magnitude_type norm_sq;
-#define BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(B) {                \
-        const local_ordinal_type team_size = 8; \
-        const local_ordinal_type vector_size = 8; \
-        const size_t shmem_team_size = 2 * blocksize*sizeof(impl_scalar_type); \
-        const size_t shmem_thread_size = blocksize*sizeof(impl_scalar_type); \
-        Kokkos::TeamPolicy<execution_space,NonownedTag<B> >      \
-          policy(nrows, team_size, vector_size);    \
-        policy.set_scratch_size(0,Kokkos::PerTeam(shmem_team_size),Kokkos::PerThread(shmem_thread_size)); \
-        Kokkos::parallel_reduce                                        \
-          ("ComputeResidualAndSolve::TeamPolicy::Pass2",            \
-           policy, *this, norm_sq); \
-      } break
-      switch (blocksize_requested) {
-        case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
-        case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-        case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-        case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-        case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-        case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-        case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-        case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-        case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
-        default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
-      }
-#undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
+      const local_ordinal_type team_size = 8; 
+      const local_ordinal_type vector_size = 8; 
+      const size_t shmem_team_size = 2 * blocksize*sizeof(impl_scalar_type); 
+      const size_t shmem_thread_size = blocksize*sizeof(impl_scalar_type); 
+      Kokkos::TeamPolicy<execution_space,NonownedTag >      
+        policy(nrows, team_size, vector_size);    
+      policy.set_scratch_size(0,Kokkos::PerTeam(shmem_team_size),Kokkos::PerThread(shmem_thread_size)); 
+      Kokkos::parallel_reduce                                        
+        ("ComputeResidualAndSolve::TeamPolicy::Pass2",            
+         policy, *this, norm_sq); 
       IFPACK2_BLOCKHELPER_PROFILER_REGION_END;
       IFPACK2_BLOCKHELPER_TIMER_FENCE(execution_space)
       return norm_sq;
     }
   };
 
-  template<typename MatrixType>
+  template<typename MatrixType, int B>
   struct ComputeResidualAndSolve_SolveOnly {
     using impl_type = BlockHelperDetails::ImplType<MatrixType>;
     using node_device_type = typename impl_type::node_device_type;
@@ -556,9 +503,6 @@ namespace Ifpack2::BlockHelperDetails {
 
     // enum for max blocksize and vector length
     enum : int { max_blocksize = 32 };
-
-    template<int B>
-    struct SolveTag {};
 
   private:
     ConstUnmanaged<impl_scalar_type_2d_view_tpetra> b;
@@ -595,10 +539,9 @@ namespace Ifpack2::BlockHelperDetails {
         damping_factor(damping_factor_)
     {}
 
-    template<int B>
     KOKKOS_INLINE_FUNCTION
     void
-    operator() (const SolveTag<B>, const member_type &member, magnitude_type& update_norm) const {
+    operator() (const member_type &member, magnitude_type& update_norm) const {
       const local_ordinal_type blocksize = (B == 0 ? blocksize_requested : B);
       const local_ordinal_type rowidx = member.league_rank() * member.team_size() + member.team_rank();
       const local_ordinal_type row = rowidx * blocksize;
@@ -629,7 +572,7 @@ namespace Ifpack2::BlockHelperDetails {
               impl_scalar_type y_update = local_DinvAx[k];
               magnitude_type ydiff = Kokkos::ArithTraits<impl_scalar_type>::abs(y_update);
               update += ydiff * ydiff;
-              y(row + k, col) = y_update;
+              y(row + k, col) = damping_factor * y_update;
             }, norm);
           Kokkos::single(Kokkos::PerThread(member),
             [&]() {
@@ -650,30 +593,15 @@ namespace Ifpack2::BlockHelperDetails {
       const local_ordinal_type nrows = d_inv.extent(0);
 
       magnitude_type norm_sq;
-#define BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(B) {                \
-        const local_ordinal_type team_size = 8; \
-        const local_ordinal_type vector_size = 8; \
-        const size_t shmem_thread_size = blocksize*sizeof(impl_scalar_type); \
-        Kokkos::TeamPolicy<execution_space,SolveTag<B> >      \
-          policy((nrows + team_size - 1) / team_size, team_size, vector_size);    \
-        policy.set_scratch_size(0,Kokkos::PerThread(shmem_thread_size)); \
-        Kokkos::parallel_reduce                                        \
-          ("ComputeResidualAndSolve::TeamPolicy::y_zero",            \
-           policy, *this, norm_sq); \
-      } break
-      switch (blocksize_requested) {
-        case   3: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 3);
-        case   5: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 5);
-        case   7: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 7);
-        case   9: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 9);
-        case  10: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(10);
-        case  11: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(11);
-        case  16: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(16);
-        case  17: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(17);
-        case  18: BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL(18);
-        default : BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL( 0);
-      }
-#undef BLOCKTRIDICONTAINER_DETAILS_COMPUTERESIDUAL
+      const local_ordinal_type team_size = 8; 
+      const local_ordinal_type vector_size = 8; 
+      const size_t shmem_thread_size = blocksize*sizeof(impl_scalar_type); 
+      Kokkos::TeamPolicy<execution_space>
+        policy((nrows + team_size - 1) / team_size, team_size, vector_size);
+      policy.set_scratch_size(0,Kokkos::PerThread(shmem_thread_size));
+      Kokkos::parallel_reduce                         
+        ("ComputeResidualAndSolve::TeamPolicy::y_zero",
+         policy, *this, norm_sq);
       IFPACK2_BLOCKHELPER_PROFILER_REGION_END;
       IFPACK2_BLOCKHELPER_TIMER_FENCE(execution_space)
       return norm_sq;
