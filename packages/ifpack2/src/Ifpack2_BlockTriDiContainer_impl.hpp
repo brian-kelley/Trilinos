@@ -5178,6 +5178,7 @@ namespace Ifpack2 {
                        // tpetra interface
                        const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &X,  // tpetra interface
                        /* */ typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &Y,  // tpetra interface
+                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type_1d_view &W, // temporary tpetra interface (diff)
                        // local object interface
                        const BlockHelperDetails::PartInterface<MatrixType> &interf, // mesh interface
                        const BlockTridiags<MatrixType> &btdm, // packed block tridiagonal matrices
@@ -5241,18 +5242,22 @@ namespace Ifpack2 {
           " = " << size_t(num_blockrows) * blocksize * num_vectors << '\n');
       size_type work_required = size_type(num_blockrows) * blocksize * num_vectors;
       if (work.extent(0) < work_required) {
-        work = impl_scalar_type_1d_view("flat workspace 1d view", work_required);
+        work = impl_scalar_type_1d_view(do_not_initialize_tag("flat workspace 1d view"), work_required);
       }
 
       Unmanaged<impl_scalar_type_2d_view_tpetra> y_doublebuf(work.data(), num_blockrows * blocksize, num_vectors);
 
+      // construct W
+      if (W.extent(0) < size_t(num_blockrows))
+        W = impl_scalar_type_1d_view(do_not_initialize_tag("W"), num_blockrows);
+
       // Create the required functors upfront (this is inexpensive - all shallow copies)
       BlockHelperDetails::ComputeResidualAndSolve_SolveOnly<MatrixType, B>
-        functor_solve_only(amd, btdm.d_inv, blocksize, damping_factor);
+        functor_solve_only(amd, btdm.d_inv, W, blocksize, damping_factor);
       BlockHelperDetails::ComputeResidualAndSolve_1Pass<MatrixType, B>
-        functor_1pass(amd, btdm.d_inv, blocksize, damping_factor);
+        functor_1pass(amd, btdm.d_inv, W, blocksize, damping_factor);
       BlockHelperDetails::ComputeResidualAndSolve_2Pass<MatrixType, B>
-        functor_2pass(amd, btdm.d_inv, blocksize, damping_factor);
+        functor_2pass(amd, btdm.d_inv, W, blocksize, damping_factor);
 
       // norm manager workspace resize
       if (is_norm_manager_active)
@@ -5266,12 +5271,10 @@ namespace Ifpack2 {
 
       // iterate
       int sweep = 0;
-      for (;sweep<max_num_sweeps;++sweep) {
-        magnitude_type local_norm_sq = 0;
+      for (;sweep < max_num_sweeps; ++sweep) {
         if (is_y_zero) {
           // If y is initially zero, then we are just computing y := damping_factor * Dinv * x
-          // and local_norm_sq is the squared norm of Dinv * x.
-          local_norm_sq = functor_solve_only.run(XX, y_buffers[1-current_y]);
+          functor_solve_only.run(XX, y_buffers[1-current_y]);
         } else {
           // real use case does not use overlap comp and comm
           if (overlap_communication_and_computation || !is_async_importer_active) {
@@ -5284,7 +5287,7 @@ namespace Ifpack2 {
             else {
               // This case happens if running with single rank.
               // There are no remote columns, so residual and solve can happen in one step.
-              local_norm_sq = functor_1pass.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
+              functor_1pass.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
             }
             if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
               if (is_async_importer_active) async_importer->cancel();
@@ -5293,20 +5296,20 @@ namespace Ifpack2 {
             if (is_async_importer_active) {
               async_importer->syncRecv();
               // Stage 2 finishes computing the residual, then applies Dinv and computes norm.
-              local_norm_sq = functor_2pass.run_pass2(y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
+              functor_2pass.run_pass2(y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
             }
           } else {
             if (is_async_importer_active)
               async_importer->syncExchange(y_buffers[current_y]);
             if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
             // Full residual, Dinv apply, and norm in one kernel
-            local_norm_sq = functor_1pass.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
+            functor_1pass.run(XX, y_buffers[current_y], remote_multivector, y_buffers[1-current_y]);
           }
         }
 
         // Compute global norm.
         if (is_norm_manager_active) {
-          *norm_manager.getBuffer() = local_norm_sq;
+          BlockHelperDetails::reduceVector<MatrixType>(W, norm_manager.getBuffer());
           if (sweep + 1 == max_num_sweeps) {
             norm_manager.ireduce(sweep, true);
             norm_manager.checkDone(sweep + 1, tolerance, true);
@@ -5337,6 +5340,7 @@ namespace Ifpack2 {
                        // tpetra interface
                        const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &X,  // tpetra interface
                        /* */ typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &Y,  // tpetra interface
+                       /* */ typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type_1d_view &W, // temporary tpetra interface (diff)
                        // local object interface
                        const BlockHelperDetails::PartInterface<MatrixType> &interf, // mesh interface
                        const BlockTridiags<MatrixType> &btdm, // packed block tridiagonal matrices
@@ -5355,7 +5359,7 @@ namespace Ifpack2 {
 #define BLOCKTRIDICONTAINER_APPLY_FUSED_JACOBI(B) {                \
         sweep = applyFusedBlockJacobi_Impl<MatrixType, B>( \
             tpetra_importer, async_importer, overlap_communication_and_computation, \
-            X, Y, interf, btdm, amd, work, \
+            X, Y, W, interf, btdm, amd, work, \
             norm_manager, damping_factor, is_y_zero, \
             max_num_sweeps, tol, check_tol_every); \
       } break

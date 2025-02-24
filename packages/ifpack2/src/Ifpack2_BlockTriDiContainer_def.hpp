@@ -171,11 +171,13 @@ namespace Ifpack2 {
     const bool useSeqMethod = false;
     const bool overlapCommAndComp = false;
     initInternal(matrix, importer, overlapCommAndComp, useSeqMethod);
-    bool hasBlockCrs = !Teuchos::rcp_dynamic_cast<const block_crs_matrix_type>(matrix).is_null();
+    auto matrixBCRS = Teuchos::rcp_dynamic_cast<const block_crs_matrix_type>(matrix);
+    bool hasBlockCrs = !matrixBCRS.is_null();
+    bool onePartitionPerRow = hasBlockCrs && partitions.size() == size_t(matrixBCRS->getLocalNumRows());
     // Decide upfront whether the fused block Jacobi path can be used.
     impl_->use_fused_jacobi = 
       BlockHelperDetails::is_device<typename Helpers::execution_space>::value \
-      && !useSeqMethod && hasBlockCrs && !partitions.size();
+      && hasBlockCrs && (!partitions.size() || onePartitionPerRow);
     n_subparts_per_part_ = -1;
     block_size_ = -1;
     IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
@@ -195,10 +197,15 @@ namespace Ifpack2 {
     using Helpers = BlockHelperDetails::ImplType<MatrixType>;
     IFPACK2_BLOCKHELPER_TIMER("BlockTriDiContainer::BlockTriDiContainer", BlockTriDiContainer);
     initInternal(matrix, Teuchos::null, overlapCommAndComp, useSeqMethod, block_size, explicitConversion);
-    bool hasBlockCrs = !Teuchos::rcp_dynamic_cast<const block_crs_matrix_type>(matrix).is_null();
+    auto matrixBCRS = Teuchos::rcp_dynamic_cast<const block_crs_matrix_type>(matrix);
+    bool hasBlockCrs = !matrixBCRS.is_null();
+    bool onePartitionPerRow = hasBlockCrs && partitions.size() == size_t(matrixBCRS->getLocalNumRows());
+    // Jacobi case can be represented in two ways:
+    // - partitions is empty
+    // - partitions has length equal to local number of rows (meaning all line lengths must be 1)
     impl_->use_fused_jacobi = 
       BlockHelperDetails::is_device<typename Helpers::execution_space>::value \
-      && !useSeqMethod && hasBlockCrs && !partitions.size();
+      && !useSeqMethod && hasBlockCrs && (!partitions.size() || onePartitionPerRow);
     n_subparts_per_part_ = n_subparts_per_part;
     block_size_ = block_size;
     IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
@@ -337,7 +344,7 @@ namespace Ifpack2 {
         (impl_->tpetra_importer, 
          impl_->async_importer,
          impl_->overlap_communication_and_computation,
-         X, Y,
+         X, Y, impl_->W,
          impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
          impl_->work_flat,
          impl_->norm_manager,
@@ -420,7 +427,7 @@ namespace Ifpack2 {
           (impl_->tpetra_importer, 
            impl_->async_importer,
            impl_->overlap_communication_and_computation,
-           X, Y,
+           X, Y, impl_->W,
            impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
            impl_->work_flat,
            impl_->norm_manager,

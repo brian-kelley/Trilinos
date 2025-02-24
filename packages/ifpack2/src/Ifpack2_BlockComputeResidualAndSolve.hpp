@@ -64,6 +64,9 @@ namespace Ifpack2::BlockHelperDetails {
     // diagonal block inverses
     const ConstUnmanaged<btdm_scalar_type_3d_view> d_inv;
 
+    // squared update norms
+    const Unmanaged<impl_scalar_type_1d_view> W;
+
     impl_scalar_type damping_factor;
 
   public:
@@ -71,6 +74,7 @@ namespace Ifpack2::BlockHelperDetails {
     ComputeResidualAndSolve_1Pass(
           const AmD<MatrixType> &amd,
           const btdm_scalar_type_3d_view& d_inv_,
+          const impl_scalar_type_1d_view& W_,
           const local_ordinal_type &blocksize_requested_,
           const impl_scalar_type& damping_factor_)
       : tpetra_values(amd.tpetra_values),
@@ -78,12 +82,13 @@ namespace Ifpack2::BlockHelperDetails {
         A_x_offsets(amd.A_x_offsets),
         A_x_offsets_remote(amd.A_x_offsets_remote),
         d_inv(d_inv_),
+        W(W_),
         damping_factor(damping_factor_)
     {}
 
     KOKKOS_INLINE_FUNCTION
     void
-    operator() (const member_type &member, magnitude_type& update_norm) const {
+    operator() (const member_type &member) const {
       const local_ordinal_type blocksize = (B == 0 ? blocksize_requested : B);
       const local_ordinal_type rowidx = member.league_rank();
       const local_ordinal_type row = rowidx * blocksize;
@@ -98,6 +103,7 @@ namespace Ifpack2::BlockHelperDetails {
       impl_scalar_type * local_DinvAx = reinterpret_cast<impl_scalar_type *>(member.team_scratch(0).get_shmem(blocksize*sizeof(impl_scalar_type)));
       impl_scalar_type * local_x = reinterpret_cast<impl_scalar_type *>(member.thread_scratch(0).get_shmem(blocksize*sizeof(impl_scalar_type)));
 
+      impl_scalar_type norm = 0;
       for (local_ordinal_type col = 0; col < num_vectors; ++col) {
         if(col)
           member.team_barrier();
@@ -143,38 +149,37 @@ namespace Ifpack2::BlockHelperDetails {
           });
         member.team_barrier();
         // Compute local_DinvAx = D^-1 * local_Ax
-        if(member.team_rank() == 0) {
-          Kokkos::parallel_for(
-            Kokkos::ThreadVectorRange(member, blocksize),
-            [&](const local_ordinal_type &k0) {
-              impl_scalar_type val = 0;
-              for(int k1=0; k1<blocksize; k1++)
-                val += d_inv(rowidx, k0, k1) * local_Ax[k1];
-              local_DinvAx[k0] = val;
-          });
-          // local_DinvAx is fully computed. Now compute the
-          // squared y update norm and update y (using damping factor).
-          impl_scalar_type norm;
-          Kokkos::parallel_reduce(
-            Kokkos::ThreadVectorRange(member, blocksize),
-            [&](const local_ordinal_type& k, impl_scalar_type& update) {
-              // Compute the change in y (assuming damping_factor == 1) for this entry.
-              impl_scalar_type old_y = x(row + k, col);
-              impl_scalar_type y_update = local_DinvAx[k] - old_y;
-              magnitude_type ydiff = Kokkos::ArithTraits<impl_scalar_type>::abs(y_update);
-              update += ydiff * ydiff;
-              y(row + k, col) = old_y + damping_factor * y_update;
-            }, norm);
-          Kokkos::single(Kokkos::PerThread(member),
-            [&]() {
-              update_norm += norm;
-            });
-        }
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize),
+          [&](const local_ordinal_type &k0) {
+            Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, blocksize),
+            [&](const local_ordinal_type& k1, impl_scalar_type& update) {
+              update += d_inv(rowidx, k0, k1) * local_Ax[k1];
+            }, local_DinvAx[k0]);
+        });
+        member.team_barrier();
+        // local_DinvAx is fully computed. Now compute the
+        // squared y update norm and update y (using damping factor).
+        impl_scalar_type colNorm;
+        Kokkos::parallel_reduce(
+          Kokkos::TeamVectorRange(member, blocksize),
+          [&](const local_ordinal_type& k, impl_scalar_type& update) {
+            // Compute the change in y (assuming damping_factor == 1) for this entry.
+            impl_scalar_type old_y = x(row + k, col);
+            impl_scalar_type y_update = local_DinvAx[k] - old_y;
+            magnitude_type ydiff = Kokkos::ArithTraits<impl_scalar_type>::abs(y_update);
+            //update += ydiff * ydiff;
+            y(row + k, col) = old_y + damping_factor * y_update;
+          }, colNorm);
+        norm += colNorm;
       }
+      Kokkos::single(Kokkos::PerTeam(member),
+        [&]() {
+          W(rowidx) = norm;
+        });
     }
 
     // Launch SinglePass version (owned + nonowned residual, plus Dinv in a single kernel)
-    magnitude_type run(
+    void run(
          const ConstUnmanaged<impl_scalar_type_2d_view_tpetra>& b_,
          const ConstUnmanaged<impl_scalar_type_2d_view_tpetra>& x_,
          const ConstUnmanaged<impl_scalar_type_2d_view_tpetra>& x_remote_,
@@ -187,20 +192,20 @@ namespace Ifpack2::BlockHelperDetails {
       const local_ordinal_type blocksize = blocksize_requested;
       const local_ordinal_type nrows = d_inv.extent(0);
 
-      magnitude_type norm_sq;
       const local_ordinal_type team_size = 8; 
       const local_ordinal_type vector_size = 8;
-      const size_t shmem_team_size = 2 * blocksize*sizeof(impl_scalar_type);
-      const size_t shmem_thread_size = blocksize*sizeof(impl_scalar_type);
+      // team: local_Ax, local_DinvAx
+      const size_t shmem_team_size = 2 * blocksize * sizeof(impl_scalar_type);
+      // thread: local_x
+      const size_t shmem_thread_size = blocksize * sizeof(impl_scalar_type);
       Kokkos::TeamPolicy<execution_space>     
         policy(nrows, team_size, vector_size);    
       policy.set_scratch_size(0,Kokkos::PerTeam(shmem_team_size),Kokkos::PerThread(shmem_thread_size));
-      Kokkos::parallel_reduce                                        
+      Kokkos::parallel_for
         ("ComputeResidualAndSolve::TeamPolicy::SinglePass",           
-         policy, *this, norm_sq);
+         policy, *this);
       IFPACK2_BLOCKHELPER_PROFILER_REGION_END;
       IFPACK2_BLOCKHELPER_TIMER_FENCE(execution_space)
-      return norm_sq;
     }
   };
 
@@ -256,12 +261,16 @@ namespace Ifpack2::BlockHelperDetails {
     // diagonal block inverses
     const ConstUnmanaged<btdm_scalar_type_3d_view> d_inv;
 
+    // squared update norms
+    const Unmanaged<impl_scalar_type_1d_view> W;
+
     impl_scalar_type damping_factor;
 
   public:
     ComputeResidualAndSolve_2Pass(
           const AmD<MatrixType> &amd,
           const btdm_scalar_type_3d_view& d_inv_,
+          const impl_scalar_type_1d_view& W_,
           const local_ordinal_type &blocksize_requested_,
           const impl_scalar_type& damping_factor_)
       : tpetra_values(amd.tpetra_values),
@@ -269,6 +278,7 @@ namespace Ifpack2::BlockHelperDetails {
         A_x_offsets(amd.A_x_offsets),
         A_x_offsets_remote(amd.A_x_offsets_remote),
         d_inv(d_inv_),
+        W(W_),
         damping_factor(damping_factor_)
     {}
 
@@ -348,6 +358,7 @@ namespace Ifpack2::BlockHelperDetails {
       impl_scalar_type * local_DinvAx = reinterpret_cast<impl_scalar_type *>(member.team_scratch(0).get_shmem(blocksize*sizeof(impl_scalar_type)));
       impl_scalar_type * local_x = reinterpret_cast<impl_scalar_type *>(member.thread_scratch(0).get_shmem(blocksize*sizeof(impl_scalar_type)));
 
+      impl_scalar_type norm = 0;
       for (local_ordinal_type col = 0; col < num_vectors; ++col) {
         if(col)
           member.team_barrier();
@@ -398,7 +409,7 @@ namespace Ifpack2::BlockHelperDetails {
           });
           // local_DinvAx is fully computed. Now compute the
           // squared y update norm and update y (using damping factor).
-          impl_scalar_type norm;
+          impl_scalar_type colNorm;
           Kokkos::parallel_reduce(
             Kokkos::ThreadVectorRange(member, blocksize),
             [&](const local_ordinal_type& k, impl_scalar_type& update) {
@@ -408,13 +419,14 @@ namespace Ifpack2::BlockHelperDetails {
               magnitude_type ydiff = Kokkos::ArithTraits<impl_scalar_type>::abs(y_update);
               update += ydiff * ydiff;
               y(row + k, col) = old_y + damping_factor * y_update;
-            }, norm);
-          Kokkos::single(Kokkos::PerThread(member),
-            [&]() {
-              update_norm += norm;
-            });
+            }, colNorm);
+          norm += colNorm;
         }
       }
+      Kokkos::single(Kokkos::PerTeam(member),
+        [&]() {
+          W(rowidx) = norm;
+        });
     }
 
     // Launch pass 1 of the 2-pass version.
@@ -523,12 +535,16 @@ namespace Ifpack2::BlockHelperDetails {
     // diagonal block inverses
     const ConstUnmanaged<btdm_scalar_type_3d_view> d_inv;
 
+    // squared update norms
+    const Unmanaged<impl_scalar_type_1d_view> W;
+
     impl_scalar_type damping_factor;
 
   public:
     ComputeResidualAndSolve_SolveOnly(
           const AmD<MatrixType> &amd,
           const btdm_scalar_type_3d_view& d_inv_,
+          const impl_scalar_type_1d_view& W_,
           const local_ordinal_type &blocksize_requested_,
           const impl_scalar_type& damping_factor_)
       : tpetra_values(amd.tpetra_values),
@@ -536,22 +552,24 @@ namespace Ifpack2::BlockHelperDetails {
         A_x_offsets(amd.A_x_offsets),
         A_x_offsets_remote(amd.A_x_offsets_remote),
         d_inv(d_inv_),
+        W(W_),
         damping_factor(damping_factor_)
     {}
 
     KOKKOS_INLINE_FUNCTION
     void
-    operator() (const member_type &member, magnitude_type& update_norm) const {
+    operator() (const member_type &member) const {
       const local_ordinal_type blocksize = (B == 0 ? blocksize_requested : B);
       const local_ordinal_type rowidx = member.league_rank() * member.team_size() + member.team_rank();
       const local_ordinal_type row = rowidx * blocksize;
       const local_ordinal_type num_vectors = b.extent(1);
 
       // Get shared allocation for a local copy of x, Ax, and A
-      impl_scalar_type * local_DinvAx = reinterpret_cast<impl_scalar_type *>(member.thread_scratch(0).get_shmem(blocksize*sizeof(impl_scalar_type)));
+      impl_scalar_type* local_DinvAx = reinterpret_cast<impl_scalar_type *>(member.thread_scratch(0).get_shmem(blocksize*sizeof(impl_scalar_type)));
 
       if(rowidx >= (local_ordinal_type) d_inv.extent(0)) return;
 
+      impl_scalar_type norm = 0;
       for (local_ordinal_type col = 0; col < num_vectors; ++col) {
         // Compute local_DinvAx = D^-1 * local_Ax
         Kokkos::parallel_for(
@@ -564,7 +582,7 @@ namespace Ifpack2::BlockHelperDetails {
             local_DinvAx[k0] = val;
           });
 
-          impl_scalar_type norm;
+          impl_scalar_type colNorm;
           Kokkos::parallel_reduce(
             Kokkos::ThreadVectorRange(member, blocksize),
             [&](const local_ordinal_type& k, impl_scalar_type& update) {
@@ -573,15 +591,19 @@ namespace Ifpack2::BlockHelperDetails {
               magnitude_type ydiff = Kokkos::ArithTraits<impl_scalar_type>::abs(y_update);
               update += ydiff * ydiff;
               y(row + k, col) = damping_factor * y_update;
-            }, norm);
-          Kokkos::single(Kokkos::PerThread(member),
-            [&]() {
-              update_norm += norm;
-            });
+            }, colNorm);
+          norm += colNorm;
       }
+      Kokkos::single(Kokkos::PerThread(member),
+        [&]() {
+          W(rowidx) = norm;
+        });
     }
 
-    magnitude_type run(
+    // ComputeResidualAndSolve_SolveOnly::run does the solve for the first iteration, when
+    // the initial guess for y is zero. This means the residual vector is just b.
+    // The kernel applies the inverse diags to b to find y, and also puts the partial squared update norms (1 per row) into W.
+    void run(
          const ConstUnmanaged<impl_scalar_type_2d_view_tpetra>& b_,
          const Unmanaged<impl_scalar_type_2d_view_tpetra>& y_) {
       IFPACK2_BLOCKHELPER_PROFILER_REGION_BEGIN;
@@ -599,12 +621,11 @@ namespace Ifpack2::BlockHelperDetails {
       Kokkos::TeamPolicy<execution_space>
         policy((nrows + team_size - 1) / team_size, team_size, vector_size);
       policy.set_scratch_size(0,Kokkos::PerThread(shmem_thread_size));
-      Kokkos::parallel_reduce                         
+      Kokkos::parallel_for
         ("ComputeResidualAndSolve::TeamPolicy::y_zero",
-         policy, *this, norm_sq);
+         policy, *this);
       IFPACK2_BLOCKHELPER_PROFILER_REGION_END;
       IFPACK2_BLOCKHELPER_TIMER_FENCE(execution_space)
-      return norm_sq;
     }
   };
 
