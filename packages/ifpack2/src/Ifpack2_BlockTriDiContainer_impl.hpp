@@ -5248,7 +5248,7 @@ namespace Ifpack2 {
       Unmanaged<impl_scalar_type_2d_view_tpetra> y_doublebuf(work.data(), num_blockrows * blocksize, num_vectors);
 
       // construct W
-      if (W.extent(0) < size_t(num_blockrows))
+      if (W.extent(0) != size_t(num_blockrows))
         W = impl_scalar_type_1d_view(do_not_initialize_tag("W"), num_blockrows);
 
       // Create the required functors upfront (this is inexpensive - all shallow copies)

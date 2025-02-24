@@ -167,7 +167,7 @@ namespace Ifpack2::BlockHelperDetails {
             impl_scalar_type old_y = x(row + k, col);
             impl_scalar_type y_update = local_DinvAx[k] - old_y;
             magnitude_type ydiff = Kokkos::ArithTraits<impl_scalar_type>::abs(y_update);
-            //update += ydiff * ydiff;
+            update += ydiff * ydiff;
             y(row + k, col) = old_y + damping_factor * y_update;
           }, colNorm);
         norm += colNorm;
@@ -398,30 +398,28 @@ namespace Ifpack2::BlockHelperDetails {
           });
         member.team_barrier();
         // Compute local_DinvAx = D^-1 * local_Ax
-        if(member.team_rank() == 0) {
-          Kokkos::parallel_for(
-            Kokkos::ThreadVectorRange(member, blocksize),
-            [&](const local_ordinal_type &k0) {
-              impl_scalar_type val = 0;
-              for(int k1=0; k1<blocksize; k1++)
-                val += d_inv(rowidx, k0, k1) * local_Ax[k1];
-              local_DinvAx[k0] = val;
-          });
-          // local_DinvAx is fully computed. Now compute the
-          // squared y update norm and update y (using damping factor).
-          impl_scalar_type colNorm;
-          Kokkos::parallel_reduce(
-            Kokkos::ThreadVectorRange(member, blocksize),
-            [&](const local_ordinal_type& k, impl_scalar_type& update) {
-              // Compute the change in y (assuming damping_factor == 1) for this entry.
-              impl_scalar_type old_y = x(row + k, col);
-              impl_scalar_type y_update = local_DinvAx[k] - old_y;
-              magnitude_type ydiff = Kokkos::ArithTraits<impl_scalar_type>::abs(y_update);
-              update += ydiff * ydiff;
-              y(row + k, col) = old_y + damping_factor * y_update;
-            }, colNorm);
-          norm += colNorm;
-        }
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize),
+          [&](const local_ordinal_type& k0) {
+          Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, blocksize),
+            [&](const local_ordinal_type &k1, impl_scalar_type& update) {
+              update += d_inv(rowidx, k0, k1) * local_Ax[k1];
+            }, local_DinvAx[k0]);
+        });
+        member.team_barrier();
+        // local_DinvAx is fully computed. Now compute the
+        // squared y update norm and update y (using damping factor).
+        impl_scalar_type colNorm;
+        Kokkos::parallel_reduce(
+          Kokkos::TeamVectorRange(member, blocksize),
+          [&](const local_ordinal_type& k, impl_scalar_type& update) {
+            // Compute the change in y (assuming damping_factor == 1) for this entry.
+            impl_scalar_type old_y = x(row + k, col);
+            impl_scalar_type y_update = local_DinvAx[k] - old_y;
+            magnitude_type ydiff = Kokkos::ArithTraits<impl_scalar_type>::abs(y_update);
+            update += ydiff * ydiff;
+            y(row + k, col) = old_y + damping_factor * y_update;
+          }, colNorm);
+        norm += colNorm;
       }
       Kokkos::single(Kokkos::PerTeam(member),
         [&]() {
