@@ -1581,6 +1581,10 @@ namespace Ifpack2 {
       // inv(A_00)*A_01 block values.
       vector_type_4d_view e_values;
 
+      // The following are for fused block Jacobi only.
+      // For block row i, diag_offset(i)...diag_offset(i + bs^2)
+      // is the range of scalars for the diagonal block.
+      size_type_1d_view diag_offsets;
       // For fused residual+solve block Jacobi case,
       // this contains the diagonal block inverses in flat, local row indexing:
       // d_inv(row, :, :) gives the row-major block for row.
@@ -2194,9 +2198,23 @@ namespace Ifpack2 {
         BlockHelperDetails::precompute_A_x_offsets<MatrixType>(amd, interf, g, dm2cm, blocksize, ownedRemoteSeparate);
       }
 
-      // If using fused block Jacobi path, allocate diagonal inverses here (d_inv).
-      if(use_fused_jacobi)
+      // If using fused block Jacobi path, allocate diagonal inverses here (d_inv) and find diagonal offsets.
+      if(use_fused_jacobi) {
         btdm.d_inv = btdm_scalar_type_3d_view(do_not_initialize_tag("btdm.d_inv"), interf.nparts, blocksize, blocksize);
+        btdm.diag_offsets = size_type_1d_view(do_not_initialize_tag("btdm.diag_offsets"), interf.nparts);
+        auto rowptr = A_bcrs->getCrsGraph().getLocalRowPtrsDevice();
+        auto entries = A_bcrs->getCrsGraph().getLocalIndicesDevice();
+        Kokkos::parallel_for(Kokkos::RangePolicy<execution_space>(0, interf.nparts),
+          KOKKOS_LAMBDA(local_ordinal_type row)
+          {
+            size_type rowBegin = rowptr(row);
+            size_type rowEnd = rowptr(row + 1);
+            for(size_type Aj = rowBegin; Aj < rowEnd; Aj++) {
+              if(entries(Aj) == row)
+                btdm.diag_offsets(row) = Aj * blocksize * blocksize;
+            }
+          });
+      }
 
       IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
     }
@@ -2791,6 +2809,7 @@ namespace Ifpack2 {
       /// views
       using local_ordinal_type_1d_view = typename impl_type::local_ordinal_type_1d_view;
       using local_ordinal_type_2d_view = typename impl_type::local_ordinal_type_2d_view;
+      using size_type_1d_view = typename impl_type::size_type_1d_view;
       using size_type_2d_view = typename impl_type::size_type_2d_view;
       using impl_scalar_type_1d_view_tpetra = typename impl_type::impl_scalar_type_1d_view_tpetra;
       /// vectorization
@@ -2839,6 +2858,7 @@ namespace Ifpack2 {
       const Unmanaged<btdm_scalar_type_4d_view> scalar_values, scalar_values_schur;
       const Unmanaged<btdm_scalar_type_5d_view> e_scalar_values;
       const Unmanaged<btdm_scalar_type_3d_view> d_inv;
+      const Unmanaged<size_type_1d_view> diag_offsets;
       // shared information
       const local_ordinal_type blocksize, blocksize_square;
       // diagonal safety
@@ -2901,6 +2921,7 @@ namespace Ifpack2 {
                       btdm_.e_values.extent(3),
                       vector_length),
         d_inv(btdm_.d_inv),
+        diag_offsets(btdm_.diag_offsets),
         blocksize(btdm_.values.extent(1)),
         blocksize_square(blocksize*blocksize),
         // diagonal weight to avoid zero pivots
@@ -3261,61 +3282,56 @@ namespace Ifpack2 {
         using default_algo_type = typename default_mode_and_algo_type::algo_type;
         // When fused block Jacobi can be used, the mapping between local rows and parts is trivial (i <-> i)
         // We can simply pull the diagonal entry from A into d_inv
-        btdm_scalar_scratch_type_3d_view WW(member.team_scratch(ScratchLevel), blocksize, blocksize, vector_length);
+        btdm_scalar_scratch_type_3d_view WW1(member.team_scratch(ScratchLevel), vector_length / 2, blocksize, blocksize);
+        btdm_scalar_scratch_type_3d_view WW2(member.team_scratch(ScratchLevel), vector_length / 2, blocksize, blocksize);
         const auto one = Kokkos::ArithTraits<btdm_magnitude_type>::one();
         const local_ordinal_type nrows = lclrow.extent(0);
-
         Kokkos::parallel_for
-          (Kokkos::ThreadVectorRange(member, vector_length),
+          (Kokkos::ThreadVectorRange(member, vector_length / 2),
 	   [&](const local_ordinal_type &v) {
-            local_ordinal_type row = member.league_rank() * vector_length + v;
+            local_ordinal_type row = member.league_rank() * vector_length / 2 + v;
             // diagEntry has index of diagonal within row
-            auto W = Kokkos::subview(WW, Kokkos::ALL(), Kokkos::ALL(), v);
-            // TODO: precompute diagonal offsets in symbolic, or figure
-            // out how to use flat_td_ptr/A_colindsub to get diags
+            auto W1 = Kokkos::subview(WW1, v, Kokkos::ALL(), Kokkos::ALL());
+            auto W2 = Kokkos::subview(WW2, v, Kokkos::ALL(), Kokkos::ALL());
             if(row < nrows) {
-              size_type rowBegin = A_block_rowptr(row);
-              size_type rowEnd = A_block_rowptr(row + 1);
-              size_type Aj = A_colinds.extent(0);
-              for(Aj = rowBegin; Aj < rowEnd; Aj++) {
-                if(A_colinds(Aj) == row)
-                  break;
-              }
-              if(Aj == A_colinds.extent(0)) {
-                Kokkos::abort("Failed to find diagonal!");
-              }
-              //printf("Hello from row %d: rowbegin = %d, colindsub = %d, j = %d\n", (int) row, (int) A_block_rowptr(row), (int) A_colindsub(row), (int) Aj);
               // View the diagonal block of A in row as 2D row-major
-              auto A_diag = ConstUnmanaged<tpetra_block_access_view_type>(
-                  A_values.data() + Aj * blocksize_square, blocksize, blocksize);
-              // Load diag into scratch slice W
-              KB::Copy<member_type,KB::Trans::NoTranspose,default_mode_type>
-                ::invoke(member, A_diag, W);
+              const impl_scalar_type* A_diag = A_values.data() + diag_offsets(row);
+              // Copy the diag into scratch slice W1
+              // (copying elements directly is better than KokkosBatched copy)
+              Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize * blocksize),
+                [&](int i)
+                {
+                  W1.data()[i] = A_diag[i];
+                });
+              // and set W2 to identity in preparation to invert with 2 x Trsm
+              KB::SetIdentity<member_type,default_mode_type>
+                ::invoke(member, W2);
             }
             member.team_barrier();
             if(row < nrows) {
               // LU factorize in-place
               KB::LU<member_type, default_mode_type,KB::Algo::LU::Unblocked>
-                ::invoke(member, W, tiny);
-            }
-            member.team_barrier();
-            Unmanaged<btdm_scalar_type_2d_view> d_inv_block(NULL, blocksize, blocksize);
-            if(row < nrows) {
-              d_inv_block.assign_data(&d_inv(row, 0, 0));
-              // Compute d_inv_block as the inverse of A_diag, using L,U factors in W
-              KB::SetIdentity<member_type,default_mode_type>
-                ::invoke(member, d_inv_block);
+                ::invoke(member, W1, tiny);
             }
             member.team_barrier();
             if(row < nrows) {
               KB::Trsm<member_type,
                        KB::Side::Left,KB::Uplo::Lower,KB::Trans::NoTranspose,KB::Diag::Unit,
                        default_mode_type,default_algo_type>
-                ::invoke(member, one, W, d_inv_block);
+                ::invoke(member, one, W1, W2);
               KB::Trsm<member_type,
                        KB::Side::Left,KB::Uplo::Upper,KB::Trans::NoTranspose,KB::Diag::NonUnit,
                        default_mode_type,default_algo_type>
-                ::invoke(member, one, W, d_inv_block);
+                ::invoke(member, one, W1, W2);
+            }
+            member.team_barrier();
+            if(row < nrows) {
+              Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize * blocksize),
+                [&](int i)
+                {
+                  auto d_inv_block = &d_inv(row, 0, 0);
+                  d_inv_block[i] = W2.data()[i];
+                });
             }
           });
       }
@@ -3674,15 +3690,16 @@ namespace Ifpack2 {
 
       void run_fused_jacobi() {
         IFPACK2_BLOCKTRIDICONTAINER_PROFILER_REGION_BEGIN;
+        constexpr int half_vector_length = vector_length / 2;
         const local_ordinal_type team_size =
           ExtractAndFactorizeTridiagsDefaultModeAndAlgo<typename execution_space::memory_space>::
-          recommended_team_size(blocksize, vector_length, 1);
+          recommended_team_size(blocksize, half_vector_length, 1);
         const local_ordinal_type per_team_scratch =
           btdm_scalar_scratch_type_3d_view::shmem_size(blocksize, blocksize, vector_length);
         {
           IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::NumericPhase::ExtractAndFactorizeFusedJacobi", ExtractAndFactorizeFusedJacobiTag);
           Kokkos::TeamPolicy<execution_space, ExtractAndFactorizeFusedJacobiTag>
-            policy((lclrow.extent(0) + vector_length - 1) / vector_length, team_size, vector_length);
+            policy((lclrow.extent(0) + half_vector_length - 1) / half_vector_length, team_size, half_vector_length);
 
           policy.set_scratch_size(ScratchLevel, Kokkos::PerTeam(per_team_scratch));
           Kokkos::parallel_for("ExtractAndFactorize::TeamPolicy::run<ExtractAndFactorizeFusedJacobiTag>",
