@@ -102,14 +102,14 @@ class DropFunctor {
       } else if constexpr (measure == Misc::SignedRugeStuebenMeasure) {
         auto neg_aij        = -ATS::real(val);
         auto max_neg_aik    = eps * ATS::real(diag(rlid));
-        results(offset + k) = Kokkos::max((neg_aij <= max_neg_aik) ? DROP : KEEP,
+        results(offset + k) = Kokkos::max((neg_aij < max_neg_aik) ? DROP : KEEP,
                                           results(offset + k));
       } else if constexpr (measure == Misc::SignedSmoothedAggregationMeasure) {
         auto aiiajj               = ATS::magnitude(diag(rlid)) * ATS::magnitude(diag(clid));  // |a_ii|*|a_jj|
         const bool is_nonpositive = ATS::real(val) <= mATS::zero();
         magnitudeType aij2        = ATS::magnitude(val) * ATS::magnitude(val);  // |a_ij|^2
         // + |a_ij|^2, if a_ij < 0, - |a_ij|^2 if a_ij >=0
-        if (is_nonpositive)
+        if (!is_nonpositive)
           aij2 = -aij2;
         results(offset + k) = Kokkos::max((aij2 <= eps * eps * aiiajj) ? DROP : KEEP,
                                           results(offset + k));
