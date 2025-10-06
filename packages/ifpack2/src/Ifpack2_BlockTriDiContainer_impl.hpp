@@ -1569,6 +1569,7 @@ namespace Ifpack2 {
       using size_type_2d_view = typename impl_type::size_type_2d_view;
       using vector_type_3d_view = typename impl_type::vector_type_3d_view;
       using vector_type_4d_view = typename impl_type::vector_type_4d_view;
+      using internal_vector_type_3d_view = typename impl_type::internal_vector_type_3d_view;
 
       // flat_td_ptr(i) is the index into flat-array values of the start of the
       // i'th tridiag. pack_td_ptr is the same, but for packs. If vector_length ==
@@ -1586,6 +1587,10 @@ namespace Ifpack2 {
       vector_type_3d_view values_schur;
       // inv(A_00)*A_01 block values.
       vector_type_4d_view e_values;
+      // If doing Schur line splitting: space for permuted version of X,
+      // to be used during the Schur complement block solves (SolveTridiags, SingleVectorSchurTag).
+      // Otherwise, this is not allocated.
+      internal_vector_type_3d_view X_internal_vector_values_schur;
 
       bool is_diagonal_only;
 
@@ -1879,10 +1884,12 @@ namespace Ifpack2 {
       using size_type_1d_view = typename impl_type::size_type_1d_view;
       using vector_type_3d_view = typename impl_type::vector_type_3d_view;
       using vector_type_4d_view = typename impl_type::vector_type_4d_view;
+      using internal_vector_type_3d_view = typename impl_type::internal_vector_type_3d_view;
       using crs_matrix_type = typename impl_type::tpetra_crs_matrix_type;
       using block_crs_matrix_type = typename impl_type::tpetra_block_crs_matrix_type;
 
       constexpr int vector_length = impl_type::vector_length;
+      constexpr int internal_vector_length = impl_type::internal_vector_length;
 
       const auto comm = A->getRowMap()->getComm();
 
@@ -2170,10 +2177,16 @@ namespace Ifpack2 {
           }
         }
 
-        // Allocate view for E and initialize the values with B:
-        
-        if (interf.n_subparts_per_part > 1)
+        // If doing Schur complement line splitting, allocate E and space for permuted X
+        if (interf.n_subparts_per_part > 1) {
           btdm.e_values = vector_type_4d_view("btdm.e_values", 2, interf.part2packrowidx0_back, blocksize, blocksize);
+          btdm.X_internal_vector_values_schur = internal_vector_type_3d_view(
+              do_not_initialize_tag("X_internal_vector_values_schur"),
+              2*(interf.n_subparts_per_part-1) * interf.part2packrowidx0_sub.extent(0),
+              blocksize,
+              vector_length/internal_vector_length);
+
+        }
       }
       IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
     }
@@ -3888,6 +3901,7 @@ namespace Ifpack2 {
       using size_type_2d_view = typename impl_type::size_type_2d_view;
       /// vectorization
       using vector_type_3d_view = typename impl_type::vector_type_3d_view;
+      using internal_vector_type_3d_view = typename impl_type::internal_vector_type_3d_view;
       using internal_vector_type_4d_view = typename impl_type::internal_vector_type_4d_view;
       using internal_vector_type_5d_view = typename impl_type::internal_vector_type_5d_view;
       using btdm_scalar_type_4d_view = typename impl_type::btdm_scalar_type_4d_view;
@@ -3929,7 +3943,7 @@ namespace Ifpack2 {
       const Unmanaged<internal_vector_type_4d_view> X_internal_vector_values;
       const Unmanaged<btdm_scalar_type_4d_view> X_internal_scalar_values;
 
-      internal_vector_type_4d_view X_internal_vector_values_schur;
+      const Unmanaged<internal_vector_type_3d_view> X_internal_vector_values_schur;
 
       const ConstUnmanaged<internal_vector_type_4d_view> D_internal_vector_values_schur;
       const ConstUnmanaged<internal_vector_type_5d_view> e_internal_vector_values;
@@ -3983,11 +3997,7 @@ namespace Ifpack2 {
                                  pmv.extent(1),
                                  pmv.extent(2),
                                  vector_length),
-        X_internal_vector_values_schur(do_not_initialize_tag("X_internal_vector_values_schur"),
-                                       2*(n_subparts_per_part-1) * part2packrowidx0_sub.extent(0),
-                                       pmv.extent(1),
-                                       pmv.extent(2),
-                                       vector_length/internal_vector_length),
+        X_internal_vector_values_schur(btdm.X_internal_vector_values_schur),
         D_internal_vector_values_schur((internal_vector_type*)btdm.values_schur.data(),
                                btdm.values_schur.extent(0),
                                btdm.values_schur.extent(1),
@@ -4533,8 +4543,8 @@ namespace Ifpack2 {
           const local_ordinal_type r0 = part2packrowidx0_sub(partidx,2*schur_sub_part+1);
           for (local_ordinal_type i = 0; i < 2; ++i) {
             copy3DView<local_ordinal_type>(member, 
-              Kokkos::subview(X_internal_vector_values_schur, r0_schur+2*schur_sub_part+i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), 
-              Kokkos::subview(X_internal_vector_values, r0+i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()));
+              Kokkos::subview(X_internal_vector_values_schur, r0_schur+2*schur_sub_part+i, Kokkos::ALL(), Kokkos::ALL()),
+              Kokkos::subview(X_internal_vector_values, r0+i, Kokkos::ALL(), 0, Kokkos::ALL()));
           }
         }
 
@@ -4547,8 +4557,8 @@ namespace Ifpack2 {
           const local_ordinal_type r0 = part2packrowidx0_sub(partidx,2*schur_sub_part+1);
           for (local_ordinal_type i = 0; i < 2; ++i) {
             copy3DView<local_ordinal_type>(member, 
-              Kokkos::subview(X_internal_vector_values, r0+i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()), 
-              Kokkos::subview(X_internal_vector_values_schur, r0_schur+2*schur_sub_part+i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL()));
+              Kokkos::subview(X_internal_vector_values, r0+i, Kokkos::ALL(), 0, Kokkos::ALL()),
+              Kokkos::subview(X_internal_vector_values_schur, r0_schur+2*schur_sub_part+i, Kokkos::ALL(), Kokkos::ALL()));
           }
         }
       }
@@ -4892,6 +4902,9 @@ namespace Ifpack2 {
       const local_ordinal_type blocksize = btdm.values.extent(1);
       const local_ordinal_type num_vectors = Y.getNumVectors();
       const local_ordinal_type num_blockrows = interf.part2packrowidx0_back;
+
+      bool schurBTD = interf.packindices_schur.extent(1) > 0;
+      TEUCHOS_TEST_FOR_EXCEPT_MSG(schurBTD && num_vectors > 1, "Schur-complement Block Tridi solver does not support multiple vectors.");
 
       const impl_scalar_type zero(0.0);
 
