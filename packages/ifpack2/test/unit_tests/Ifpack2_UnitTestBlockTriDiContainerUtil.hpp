@@ -41,12 +41,12 @@ struct BTDC_MatrixCache {
   using BlockCrsMatrix      = Tpetra::BlockCrsMatrix<Scalar, LO, GO>;
   using Int                 = LO;
 
-  // tridiag_only, different_maps
-  using GraphKey = std::tuple<bool, bool>;
+  // tridiag_only, different_maps, is_contiguous
+  using GraphKey = std::tuple<bool, bool, bool>;
 
-  // tridiag_only, different_maps, bs, tridiag_is_identity, block_diag, nonuniform_lines
-  // The first two parameters match those for the corresponding graph.
-  using MatrixKey = std::tuple<bool, bool, int, bool, bool, bool>;
+  // tridiag_only, different_maps, is_contiguous bs, tridiag_is_identity, block_diag, nonuniform_lines
+  // The first three parameters match those for the corresponding graph.
+  using MatrixKey = std::tuple<bool, bool, bool, int, bool, bool, bool>;
 
   BTDC_MatrixCache() {}
 
@@ -55,7 +55,7 @@ struct BTDC_MatrixCache {
   std::map<MatrixKey, Teuchos::RCP<CrsMatrix>> pointwiseMatrixCache;
 
   Teuchos::RCP<CrsGraph> getGraph(const Teuchos::RCP<const Teuchos::Comm<int>>& comm, const StructuredBlock& sb, const StructuredBlockPart& sbp, bool tridiag_only, bool different_maps) {
-    GraphKey key = std::make_tuple(tridiag_only, different_maps);
+    GraphKey key = std::make_tuple(tridiag_only, different_maps, sb.is_contiguous());
     if (graphCache.find(key) == graphCache.end()) {
       graphCache[key] = bcmm::make_crs_graph(comm, sb, sbp, tridiag_only, different_maps);
     }
@@ -63,7 +63,7 @@ struct BTDC_MatrixCache {
   }
 
   Teuchos::RCP<BlockCrsMatrix> getMatrix(const Teuchos::RCP<const Teuchos::Comm<int>>& comm, const StructuredBlock& sb, const StructuredBlockPart& sbp, bool tridiag_only, bool different_maps, int bs, bool tridiag_is_identity, bool block_diag, bool nonuniform_lines) {
-    MatrixKey key = std::make_tuple(tridiag_only, different_maps, bs, tridiag_is_identity, block_diag, nonuniform_lines);
+    MatrixKey key = std::make_tuple(tridiag_only, different_maps, sb.is_contiguous(), bs, tridiag_is_identity, block_diag, nonuniform_lines);
     if (matrixCache.find(key) == matrixCache.end()) {
       auto g                         = this->getGraph(comm, sb, sbp, tridiag_only, different_maps);
       Teuchos::RCP<BlockCrsMatrix> A = bcmm::make_bcrs_matrix(sb, g, bs, tridiag_is_identity, block_diag);
@@ -76,7 +76,7 @@ struct BTDC_MatrixCache {
   }
 
   Teuchos::RCP<CrsMatrix> getPointwiseMatrix(const Teuchos::RCP<const Teuchos::Comm<int>>& comm, const StructuredBlock& sb, const StructuredBlockPart& sbp, bool tridiag_only, bool different_maps, int bs, bool tridiag_is_identity, bool block_diag, bool nonuniform_lines) {
-    MatrixKey key = std::make_tuple(tridiag_only, different_maps, bs, tridiag_is_identity, block_diag, nonuniform_lines);
+    MatrixKey key = std::make_tuple(tridiag_only, different_maps, sb.is_contiguous(), bs, tridiag_is_identity, block_diag, nonuniform_lines);
     if (pointwiseMatrixCache.find(key) == pointwiseMatrixCache.end()) {
       auto A_bcrs               = getMatrix(comm, sb, sbp, tridiag_only, different_maps, bs, tridiag_is_identity, block_diag, nonuniform_lines);
       auto A                    = Tpetra::convertToCrsMatrix(*A_bcrs);

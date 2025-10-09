@@ -1126,9 +1126,10 @@ createPartInterface(const Teuchos::RCP<const typename BlockHelperDetails::ImplTy
   const local_ordinal_type nparts      = jacobi ? A_n_lclrows : partitions.size();
 
   typedef std::pair<local_ordinal_type, local_ordinal_type> size_idx_pair_type;
-  std::vector<size_idx_pair_type> partsz(nparts);
+  std::vector<size_idx_pair_type> partsz;
 
   if (!jacobi) {
+    partsz = std::vector<size_idx_pair_type>(nparts);
     for (local_ordinal_type i = 0; i < nparts; ++i)
       partsz[i] = size_idx_pair_type(partitions[i].size(), i);
     std::sort(partsz.begin(), partsz.end(),

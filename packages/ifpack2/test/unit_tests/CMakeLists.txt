@@ -58,6 +58,7 @@ Ifpack2_UnitTestRelaxation.cpp
 Ifpack2_UnitTestRILUK.cpp
 Ifpack2_UnitTestTemplate.cpp
 Ifpack2_UnitTestTriDiSolver.cpp
+Ifpack2_UnitTest14529.cpp
 )
 
 IF(${PACKAGE_NAME}_ENABLE_HYPRE AND ${PACKAGE_NAME}_ENABLE_MPI)
