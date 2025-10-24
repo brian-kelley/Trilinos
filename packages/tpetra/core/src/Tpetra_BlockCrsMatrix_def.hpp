@@ -831,7 +831,7 @@ typename BlockCrsMatrix<Scalar, LO, GO, Node>::
         getValuesHost(const LO& lclRow) const {
   const size_t perBlockSize = static_cast<LO>(offsetPerBlock());
   auto val                  = val_.getHostView(Access::ReadOnly);
-  auto r_val                = Kokkos::subview(val, Kokkos::pair<LO, LO>(ptrHost_(lclRow) * perBlockSize, ptrHost_(lclRow + 1) * perBlockSize));
+  auto r_val                = Kokkos::subview(val, Kokkos::pair<size_t, size_t>(ptrHost_(lclRow) * perBlockSize, ptrHost_(lclRow + 1) * perBlockSize));
   return r_val;
 }
 
@@ -842,7 +842,7 @@ typename BlockCrsMatrix<Scalar, LO, GO, Node>::
         getValuesDevice(const LO& lclRow) const {
   const size_t perBlockSize = static_cast<LO>(offsetPerBlock());
   auto val                  = val_.getDeviceView(Access::ReadOnly);
-  auto r_val                = Kokkos::subview(val, Kokkos::pair<LO, LO>(ptrHost_(lclRow) * perBlockSize, ptrHost_(lclRow + 1) * perBlockSize));
+  auto r_val                = Kokkos::subview(val, Kokkos::pair<size_t, size_t>(ptrHost_(lclRow) * perBlockSize, ptrHost_(lclRow + 1) * perBlockSize));
   return r_val;
 }
 
@@ -852,7 +852,7 @@ BlockCrsMatrix<Scalar, LO, GO, Node>::
     getValuesHostNonConst(const LO& lclRow) {
   const size_t perBlockSize = static_cast<LO>(offsetPerBlock());
   auto val                  = val_.getHostView(Access::ReadWrite);
-  auto r_val                = Kokkos::subview(val, Kokkos::pair<LO, LO>(ptrHost_(lclRow) * perBlockSize, ptrHost_(lclRow + 1) * perBlockSize));
+  auto r_val                = Kokkos::subview(val, Kokkos::pair<size_t, size_t>(ptrHost_(lclRow) * perBlockSize, ptrHost_(lclRow + 1) * perBlockSize));
   return r_val;
 }
 
@@ -862,7 +862,7 @@ BlockCrsMatrix<Scalar, LO, GO, Node>::
     getValuesDeviceNonConst(const LO& lclRow) {
   const size_t perBlockSize = static_cast<LO>(offsetPerBlock());
   auto val                  = val_.getDeviceView(Access::ReadWrite);
-  auto r_val                = Kokkos::subview(val, Kokkos::pair<LO, LO>(ptrHost_(lclRow) * perBlockSize, ptrHost_(lclRow + 1) * perBlockSize));
+  auto r_val                = Kokkos::subview(val, Kokkos::pair<size_t, size_t>(ptrHost_(lclRow) * perBlockSize, ptrHost_(lclRow + 1) * perBlockSize));
   return r_val;
 }
 
@@ -872,9 +872,9 @@ BlockCrsMatrix<Scalar, LO, GO, Node>::
     getNumEntriesInLocalRow(const LO localRowInd) const {
   const size_t numEntInGraph = graph_.getNumEntriesInLocalRow(localRowInd);
   if (numEntInGraph == Teuchos::OrdinalTraits<size_t>::invalid()) {
-    return static_cast<LO>(0);  // the calling process doesn't have that row
+    return 0;  // the calling process doesn't have that row
   } else {
-    return static_cast<LO>(numEntInGraph);
+    return numEntInGraph;
   }
 }
 

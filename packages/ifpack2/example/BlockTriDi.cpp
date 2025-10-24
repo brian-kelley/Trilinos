@@ -102,7 +102,7 @@ bool getCmdLineArgs(CmdLineArgs& args, int argc, char* argv[]) {
                  "Whether to run with a point matrix");
   cmdp.setOption("withOverlapCommAndComp", "withoutOverlapCommAndComp", &args.overlapCommAndComp,
                  "Whether to run with overlapCommAndComp");
-  cmdp.setOption("useSingeFile", "useOneFilePerRank", &args.useSingleFile,
+  cmdp.setOption("useSingleFile", "useOneFilePerRank", &args.useSingleFile,
                  "Whether to read the matrix from one file or one file per rank");
   cmdp.setOption("skipLineFile", "readLineFile", &args.skipLineFile,
                  "Whether to skip the lineFile and use a block Jacobi");
@@ -495,8 +495,9 @@ int main(int argc, char* argv[]) {
     // Read matrix
     if (rank0) std::cout << "Reading matrix (as point)..." << std::endl;
     RCP<const map_type> dummy_col_map;
-    if (args.useSingleFile || comm->getSize() == 1)
+    if (args.useSingleFile || comm->getSize() == 1) {
       A = reader_type::readSparseFile(args.matrixFilename, point_map, dummy_col_map, point_map, point_map);
+    }
     else {
       if (rank0) std::cout << "Using per-rank reader..." << std::endl;
       A = reader_type::readSparsePerRank(args.matrixFilename, ".mm", point_map, dummy_col_map, point_map, point_map, true, false, 8, true);

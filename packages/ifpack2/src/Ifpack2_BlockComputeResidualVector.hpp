@@ -167,6 +167,7 @@ void precompute_A_x_offsets(
           }
         },
         Kokkos::Max<local_ordinal_type>(maxOwnedEntriesPerRow), Kokkos::Max<local_ordinal_type>(maxNonownedEntriesPerRow));
+    std::cout << "ownedRemoteSeparate: Locally computed maxOwnedEntriesPerRow = " << maxOwnedEntriesPerRow << " and maxNonownedEntriesPerRow = " << maxNonownedEntriesPerRow << std::endl;
     // Allocate the two offsets views now that we know the dimensions
     // For each one, the middle dimension is 0 for A offsets and 1 for x offsets.
     // Packing them together in one view improves cache line utilization
@@ -241,6 +242,7 @@ void precompute_A_x_offsets(
             lmax = rowNum;
         },
         Kokkos::Max<local_ordinal_type>(maxEntriesPerRow));
+    std::cout << "!ownedRemoteSeparate: Locally computed maxEntriesPerRow = " << maxEntriesPerRow << std::endl;
     amd.A_x_offsets  = i64_3d_view("amd.A_x_offsets", numLocalRows, 2, maxEntriesPerRow);
     auto A_x_offsets = amd.A_x_offsets;
     // Populate A,x offsets. Use ArithTraits<int64_t>::min to mark absent entries.
@@ -596,13 +598,12 @@ struct ComputeResidualVector {
     // subview pattern
     auto bb          = Kokkos::subview(b, block_range, 0);
     auto xx          = bb;
-    auto yy          = Kokkos::subview(y_packed_scalar, 0, block_range, 0, 0);
     auto A_block_cst = ConstUnmanaged<tpetra_block_access_view_type>(tpetra_values.data(), blocksize, blocksize);
 
     const local_ordinal_type row = lr * blocksize;
     for (local_ordinal_type col = 0; col < num_vectors; ++col) {
       // y := b
-      yy.assign_data(&y(row, col));
+      auto yy = Kokkos::subview(y, Kokkos::make_pair(row, row + blocksize), col);
       bb.assign_data(&b(row, col));
       if (member.team_rank() == 0)
         VectorCopy(member, blocksize, bb, yy);
@@ -902,6 +903,7 @@ struct ComputeResidualVector {
       const local_ordinal_type vector_size = ComputeResidualVectorRecommendedVectorSize<execution_space>(blocksize, team_size);
       const Kokkos::TeamPolicy<execution_space, SeqTag> policy(rowptr.extent(0) - 1, team_size, vector_size);
       Kokkos::parallel_for("ComputeResidual::TeamPolicy::run<SeqTag>", policy, *this);
+      // BMK: crash on LINE ABOVE
     } else {
       const Kokkos::RangePolicy<execution_space, SeqTag> policy(0, rowptr.extent(0) - 1);
       Kokkos::parallel_for("ComputeResidual::RangePolicy::run<SeqTag>", policy, *this);

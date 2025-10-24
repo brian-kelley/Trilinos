@@ -4214,6 +4214,7 @@ class Reader {
       bannerDimsReadResult[0] = dims[0];  // numRows
       bannerDimsReadResult[1] = dims[1];  // numCols
       bannerDimsReadResult[2] = dims[2];  // encoded data type
+      std::cout << "Hello from readDenseIMpl: rank 0 read matrix dims to be " << dims[0] << "x" << dims[1] << " with data type " << dims[2] << std::endl;
       bannerDimsReadResult[3] = localBannerReadSuccess;
       bannerDimsReadResult[4] = localDimsReadSuccess;
     }
@@ -4245,11 +4246,15 @@ class Reader {
       // The user didn't supply a Map.  Make a contiguous
       // distributed Map for them, using the read-in multivector
       // dimensions.
+      std::cout << "Creating overall uniform map for dense MV with " << numRows << " rows, for comm with " << comm->getSize() << " ranks." << std::endl;
       map                       = createUniformContigMapWithNode<LO, GO, NT>(numRows, comm);
+      std::cout << "Done\n";
       const size_t localNumRows = (myRank == 0) ? numRows : 0;
       // At this point, map exists and has a nonnull node.
+      std::cout << "Creating proc0 map for dense MV with " << numRows << " rows, all belonging to proc 0\n";
       proc0Map = createContigMapWithNode<LO, GO, NT>(numRows, localNumRows,
                                                      comm);
+      std::cout << "Done\n";
     } else {  // The user supplied a Map.
       proc0Map = Details::computeGatherMap<map_type>(map, err, debug);
     }
@@ -5351,6 +5356,11 @@ class Reader {
       indexBase     = static_cast<GO>(readResults[0]);
       globalNumGIDs = static_cast<int_type>(readResults[1]);
       readSuccess   = static_cast<int>(readResults[2]);
+      for(int i = 0; i < comm->getSize(); i++) {
+        if(comm->getRank() == i)
+          std::cout << "Hello from readMap, rank " << comm->getRank() << ": indexBase = " << indexBase << ", globalNumGIDs = " << globalNumGIDs << ", sucess = " << readSuccess << std::endl;
+        comm->barrier();
+      }
     }
 
     // Unwinding the stack will invoke sizeReq's destructor, which
@@ -5447,6 +5457,19 @@ class Reader {
     int gblSuccess = 0;  // output argument
     std::ostringstream errStrm;
     try {
+      GO minGID = myGids.size() ? 0 : myGids[0];
+      GO maxGID = myGids.size() ? 0 : myGids[0];
+      for(size_t i = 0; i < myGids.size(); i++) {
+        if(myGids[i] < minGID)
+          minGID = myGids[i];
+        if(myGids[i] > maxGID)
+          maxGID = myGids[i];
+      }
+      for(int i = 0; i < comm->getSize(); i++) {
+        if(comm->getRank() == i)
+          std::cout << "Hello from rank " << comm->getRank() << ": have " << myGids.size() << " owned GIDs ranging from " << minGID << " to " << maxGID << std::endl;
+        comm->barrier();
+      }
       newMap = rcp(new map_type(INVALID, myGids(), indexBase, comm));
     } catch (std::exception& e) {
       lclSuccess = 0;

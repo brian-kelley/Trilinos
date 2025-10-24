@@ -7,6 +7,8 @@
 // *****************************************************************************
 // @HEADER
 
+#define BLOCKTRIDICONTAINER_DEBUG
+
 #ifndef IFPACK2_BLOCKTRIDICONTAINER_IMPL_HPP
 #define IFPACK2_BLOCKTRIDICONTAINER_IMPL_HPP
 
@@ -2023,6 +2025,12 @@ void performSymbolicPhase(const Teuchos::RCP<const typename BlockHelperDetails::
   {
     const auto local_graph        = g->getLocalGraphDevice();
     const auto local_graph_rowptr = local_graph.row_map;
+    for(int i = 0; i < comm->getSize(); i++) {
+      if(comm->getRank() == i) {
+        std::cout << "Hello from performSymbolicPhase, rank " << comm->getRank() << ": local graph rows = " << g->getLocalNumRows() << " and max entries per row is " << KokkosSparse::Impl::graph_max_degree<execution_space, size_type>(local_graph_rowptr) << std::endl;
+      }
+      comm->barrier();
+    }
     TEUCHOS_ASSERT(local_graph_rowptr.size() == static_cast<size_t>(nrows + 1));
     const auto local_graph_colidx = local_graph.entries;
 
@@ -5169,6 +5177,7 @@ int applyInverseJacobi(  // importer
           // y := x - R y
           Z.doImport(Y, *tpetra_importer, Tpetra::REPLACE);
           compute_residual_vector.run(YY, XX, ZZ);
+          // CRASH ON LINE ABOVE
 
           // pmv := y(lclrow).
           multivector_converter.run(YY);
