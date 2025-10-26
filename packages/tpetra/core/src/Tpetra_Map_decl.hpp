@@ -1092,130 +1092,123 @@ class Map : public Teuchos::Describable {
       const global_ordinal_type indexBase,
       const Teuchos::RCP<const Teuchos::Comm<int>>& comm);
 
- public:
-  /// \brief Push the device data to host, if needed
-  ///
-  /// \warning lazyPushToHost is SUBJECT TO CHANGE and is for EXPERT USERS ONLY.
-  /// We STRONGLY advise against its use.
-  void lazyPushToHost() const;
+    //! Copy the local map from device to host, if it's not on host already
+    void lazyPushToHost() const;
 
- private:
-  //! The communicator over which this Map is distributed.
-  Teuchos::RCP<const Teuchos::Comm<int>> comm_;
+    //! The communicator over which this Map is distributed.
+    Teuchos::RCP<const Teuchos::Comm<int> > comm_;
 
-  //! The index base for global indices in this Map.
-  global_ordinal_type indexBase_;
+    //! The index base for global indices in this Map.
+    global_ordinal_type indexBase_;
 
-  /// \brief The total number of global indices in this Map over all
-  ///   processes in its communicator \c comm (see above).
-  global_size_t numGlobalElements_;
+    /// \brief The total number of global indices in this Map over all
+    ///   processes in its communicator \c comm (see above).
+    global_size_t numGlobalElements_;
 
-  //! The number of global indices owned by this process.
-  size_t numLocalElements_;
+    //! The number of global indices owned by this process.
+    size_t numLocalElements_;
 
-  //! The min global index owned by this process.
-  global_ordinal_type minMyGID_;
+    //! The min global index owned by this process.
+    global_ordinal_type minMyGID_;
 
-  //! The max global index owned by this process.
-  global_ordinal_type maxMyGID_;
+    //! The max global index owned by this process.
+    global_ordinal_type maxMyGID_;
 
-  /// \brief The min global index in this Map over all processes in
-  ///   its communicator \c comm (see above).
-  global_ordinal_type minAllGID_;
+    /// \brief The min global index in this Map over all processes in
+    ///   its communicator \c comm (see above).
+    global_ordinal_type minAllGID_;
 
-  /// \brief The max global index in this Map over all processes in
-  ///   its communicator \c comm (see above).
-  global_ordinal_type maxAllGID_;
+    /// \brief The max global index in this Map over all processes in
+    ///   its communicator \c comm (see above).
+    global_ordinal_type maxAllGID_;
 
-  /// \brief First contiguous GID.
-  ///
-  /// This is only set if the Map was created using the
-  /// noncontiguous constructor.  In that case, if the calling
-  /// process owns at least one GID, this will always equal that
-  /// first GID in the list of GIDs given to the constructor.
-  global_ordinal_type firstContiguousGID_;
+    /// \brief First contiguous GID.
+    ///
+    /// This is only set if the Map was created using the
+    /// noncontiguous constructor.  In that case, if the calling
+    /// process owns at least one GID, this will always equal that
+    /// first GID in the list of GIDs given to the constructor.
+    global_ordinal_type firstContiguousGID_;
 
-  /// \brief Last contiguous GID.
-  ///
-  /// This is only set if the Map was created using the
-  /// noncontiguous constructor.  In that case, if the calling
-  /// process owns at least one GID, this will always equal the last
-  /// GID (inclusive) that forms an initial sequence of contiguous
-  /// GIDs, in the list of GIDs given to the constructor.
-  ///
-  /// For example, if the list is [42, 43, 44, 45, 100, 1001],
-  /// firstContiguousGID_ will be 42 and lastContiguousGID_ will be
-  /// 45.  If the list is [42, 100, 1001, 1002, 1003],
-  /// firstContiguousGID_ will be 42 and lastContiguousGID_ will
-  /// also be 42.
-  global_ordinal_type lastContiguousGID_;
+    /// \brief Last contiguous GID.
+    ///
+    /// This is only set if the Map was created using the
+    /// noncontiguous constructor.  In that case, if the calling
+    /// process owns at least one GID, this will always equal the last
+    /// GID (inclusive) that forms an initial sequence of contiguous
+    /// GIDs, in the list of GIDs given to the constructor.
+    ///
+    /// For example, if the list is [42, 43, 44, 45, 100, 1001],
+    /// firstContiguousGID_ will be 42 and lastContiguousGID_ will be
+    /// 45.  If the list is [42, 100, 1001, 1002, 1003],
+    /// firstContiguousGID_ will be 42 and lastContiguousGID_ will
+    /// also be 42.
+    global_ordinal_type lastContiguousGID_;
 
-  /// \brief Whether the range of global indices is uniform.
-  ///
-  /// This is only true if the Map was constructed using the first
-  /// (uniform contiguous) constructor or a nonmember constructor
-  /// that calls it.
-  bool uniform_;
+    /// \brief Whether the range of global indices is uniform.
+    ///
+    /// This is only true if the Map was constructed using the first
+    /// (uniform contiguous) constructor or a nonmember constructor
+    /// that calls it.
+    bool uniform_;
 
-  //! Whether the range of global indices are contiguous and ordered.
-  bool contiguous_;
+    //! Whether the range of global indices are contiguous and ordered.
+    bool contiguous_;
 
-  /// \brief Whether this map's global indices are distributed
-  ///   (true), or locally replicated (false), over its communicator
-  ///   \c comm (see above).
-  ///
-  /// This is true if the Map is globally distributed, and false
-  /// otherwise (if the Map is locally replicated).  See the
-  /// documentation of isDistributed() for a definition of these two
-  /// mutually exclusive terms.
-  bool distributed_;
+    /// \brief Whether this map's global indices are distributed
+    ///   (true), or locally replicated (false), over its communicator
+    ///   \c comm (see above).
+    ///
+    /// This is true if the Map is globally distributed, and false
+    /// otherwise (if the Map is locally replicated).  See the
+    /// documentation of isDistributed() for a definition of these two
+    /// mutually exclusive terms.
+    bool distributed_;
 
-  /// \brief A mapping from local IDs to global IDs.
-  ///
-  /// By definition, this mapping is local; it only contains global
-  /// IDs owned by this process.  This mapping is created in two
-  /// cases:
-  ///
-  /// <ol>
-  /// <li> It is always created for a noncontiguous Map, in the
-  ///    noncontiguous version of the Map constructor.</li>
-  /// <li> In getLocalElementList(), on demand (if it wasn't created
-  ///    before).</li>
-  /// </ol>
-  ///
-  /// The potential for on-demand creation is why this member datum
-  /// is declared "mutable".  Note that other methods, such as
-  /// describe(), may invoke getLocalElementList().
-  ///
-  /// To clarify: If this is empty, then it could be either that the
-  /// Map is contiguous (meaning that we don't need to store all the
-  /// global indices explicitly), or that the Map really does
-  /// contain zero indices on the calling process.
-  ///
-  /// This has LayoutLeft so that we can call Kokkos::deep_copy to
-  /// copy this between any two Kokkos Devices.  Otherwise, the
-  /// Devices might have different default layouts, thus forbidding
-  /// a deep_copy.  We use LayoutLeft instead of LayoutRight because
-  /// LayoutRight is the default on non-CUDA Devices, and we want to
-  /// make sure we catch assignment or copying from the default to
-  /// the nondefault layout.
-  mutable Kokkos::View<const global_ordinal_type*,
-                       Kokkos::LayoutLeft,
-                       device_type>
-      lgMap_;
+    /// \brief A mapping from local IDs to global IDs.
+    ///
+    /// By definition, this mapping is local; it only contains global
+    /// IDs owned by this process.  This mapping is created in two
+    /// cases:
+    ///
+    /// <ol>
+    /// <li> It is always created for a noncontiguous Map, in the
+    ///    noncontiguous version of the Map constructor.</li>
+    /// <li> In getLocalElementList(), on demand (if it wasn't created
+    ///    before).</li>
+    /// </ol>
+    ///
+    /// The potential for on-demand creation is why this member datum
+    /// is declared "mutable".  Note that other methods, such as
+    /// describe(), may invoke getLocalElementList().
+    ///
+    /// To clarify: If this is empty, then it could be either that the
+    /// Map is contiguous (meaning that we don't need to store all the
+    /// global indices explicitly), or that the Map really does
+    /// contain zero indices on the calling process.
+    ///
+    /// This has LayoutLeft so that we can call Kokkos::deep_copy to
+    /// copy this between any two Kokkos Devices.  Otherwise, the
+    /// Devices might have different default layouts, thus forbidding
+    /// a deep_copy.  We use LayoutLeft instead of LayoutRight because
+    /// LayoutRight is the default on non-CUDA Devices, and we want to
+    /// make sure we catch assignment or copying from the default to
+    /// the nondefault layout.
+    mutable Kokkos::View<const global_ordinal_type*,
+                         Kokkos::LayoutLeft,
+                         device_type> lgMap_;
 
-  /// \brief Host View of lgMap_.
-  ///
-  /// This is allocated along with lgMap_, on demand (lazily), by
-  /// getLocalElementList() (which see).  It is also used by
-  /// getGlobalElement() (which is a host method, and therefore
-  /// requires a host View) if necessary (only noncontiguous Maps
-  /// need this).
+    /// \brief Host View of lgMap_.
+    ///
+    /// This is allocated along with lgMap_, on demand (lazily), by
+    /// getLocalElementList() (which see).  It is also used by
+    /// getGlobalElement() (which is a host method, and therefore
+    /// requires a host View) if necessary (only noncontiguous Maps
+    /// need this).
 #ifndef SWIG
-  mutable Kokkos::View<const global_ordinal_type*,
-                       Kokkos::LayoutLeft,
-                       Kokkos::HostSpace>
-      lgMapHost_;
+    mutable Kokkos::View<const global_ordinal_type*,
+                         Kokkos::LayoutLeft,
+                         Kokkos::HostSpace> lgMapHost_;
 #endif
 
   //! Type of a mapping from global IDs to local IDs.
