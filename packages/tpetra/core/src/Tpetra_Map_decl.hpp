@@ -1093,6 +1093,7 @@ class Map : public Teuchos::Describable {
       const Teuchos::RCP<const Teuchos::Comm<int>>& comm);
 
   //! Copy the local map from device to host, if it's not on host already
+  public:
   void lazyPushToHost() const;
 
   //! The communicator over which this Map is distributed.

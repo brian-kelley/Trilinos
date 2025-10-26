@@ -147,7 +147,8 @@ void level_sched_tp(IlukHandle& thandle, const RowMapType row_map, const Entries
   if (std::is_same<memory_space, Kokkos::CudaSpace>::value) {
     size_t free_byte, total_byte;
     KokkosKernels::Impl::kk_get_free_total_memory<memory_space>(free_byte, total_byte);
-    avail_byte = static_cast<size_t>(0.85 * static_cast<double>(free_byte) / static_cast<double>(nstreams));
+    double orig_matrix_bytes = entries.extent(0) * 16;
+    avail_byte = static_cast<size_t>(std::min(0.85 * static_cast<double>(free_byte), orig_matrix_bytes) / static_cast<double>(nstreams));
   }
 #endif
 

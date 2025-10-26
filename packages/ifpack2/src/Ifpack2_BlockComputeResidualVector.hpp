@@ -167,6 +167,7 @@ void precompute_A_x_offsets(
           }
         },
         Kokkos::Max<local_ordinal_type>(maxOwnedEntriesPerRow), Kokkos::Max<local_ordinal_type>(maxNonownedEntriesPerRow));
+    std::cout << "Hello from split path: max owned/nonowned entries per row: " << maxOwnedEntriesPerRow << ", " << maxNonownedEntriesPerRow << '\n';
     // Allocate the two offsets views now that we know the dimensions
     // For each one, the middle dimension is 0 for A offsets and 1 for x offsets.
     // Packing them together in one view improves cache line utilization
@@ -241,6 +242,7 @@ void precompute_A_x_offsets(
             lmax = rowNum;
         },
         Kokkos::Max<local_ordinal_type>(maxEntriesPerRow));
+    std::cout << "Hello from nonsplit path: max entries per row: " << maxEntriesPerRow << "\n";
     amd.A_x_offsets  = i64_3d_view("amd.A_x_offsets", numLocalRows, 2, maxEntriesPerRow);
     auto A_x_offsets = amd.A_x_offsets;
     // Populate A,x offsets. Use ArithTraits<int64_t>::min to mark absent entries.
