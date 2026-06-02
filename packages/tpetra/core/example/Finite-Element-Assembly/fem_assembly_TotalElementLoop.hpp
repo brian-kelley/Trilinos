@@ -312,20 +312,6 @@ int executeTotalElementLoopSP_(const Teuchos::RCP<const Teuchos::Comm<int> >& co
   return 0;
 }
 
-struct PrefixSumCountsFunctor {
-  PrefixSumCountsFunctor(const rowptrs_t& localRowptrs_)
-    : localRowptrs(localRowptrs_) {}
-
-  KOKKOS_INLINE_FUNCTION void operator()(local_ordinal_type i, size_type& lsum, bool finalPass) const {
-    size_type count = localRowptrs(i);
-    if (finalPass)
-      localRowptrs(i) = lsum;
-    lsum += count;
-  }
-
-  rowptrs_t localRowptrs;
-};
-
 template <typename ElementToNode>
 struct CountEntriesFunctor {
   CountEntriesFunctor(
@@ -680,6 +666,7 @@ int executeTotalElementLoopSPKokkos_(const Teuchos::RCP<const Teuchos::Comm<int>
         });
     // Prefix-sum to go from counts to offsts
     typename rowptrs_t::value_type nodeToElementNNZ;
+    Kokkos::Experimental::exclusive_scan(execution_space(), nodeToElementRowptrs, nodeToElementRowptrs, size_type(0));
     Kokkos::parallel_scan(range_policy(0, numLocalNodes + 1),
                           PrefixSumCountsFunctor(nodeToElementRowptrs), nodeToElementNNZ);
     entries_t nodeToElementEntries(Kokkos::ViewAllocateWithoutInitializing("nodeToElementEntries"), nodeToElementNNZ);
