@@ -390,6 +390,37 @@ void residual(const Operator<SC, LO, GO, NO>& A,
 /// object, that keeps the same source and target Map objects but
 /// has a different communication plan.  We have not yet implemented
 /// this optimization.
+
+template <class DestViewType, class SrcViewType,
+          class DestOffsetViewType, class SrcOffsetViewType>
+struct pack_functor_crs_matrix {
+  typedef typename DestViewType::execution_space execution_space;
+  SrcViewType src_;
+  DestViewType dst_;
+  SrcOffsetViewType src_offset_;
+  DestOffsetViewType dst_offset_;
+  typedef typename DestOffsetViewType::non_const_value_type scalar_index_type;
+
+  pack_functor(DestViewType dst,
+               const SrcViewType src,
+               DestOffsetViewType dst_offset,
+               const SrcOffsetViewType src_offset)
+    : src_(src)
+    , dst_(dst)
+    , src_offset_(src_offset)
+    , dst_offset_(dst_offset) {}
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const int row) const {
+    scalar_index_type srcPos       = src_offset_(row);
+    const scalar_index_type dstEnd = dst_offset_(row + 1);
+    scalar_index_type dstPos       = dst_offset_(row);
+    for (; dstPos < dstEnd; ++dstPos, ++srcPos) {
+      dst_(dstPos) = src_(srcPos);
+    }
+  }
+};
+
 template <class Scalar,
           class LocalOrdinal,
           class GlobalOrdinal,
@@ -4041,40 +4072,11 @@ class CrsMatrix : public RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>,
   /// - Stores the int-typed rowptrs (if they can all be represented by int)
   mutable std::shared_ptr<ApplyHelper> applyHelper;
 
- public:
+  public:
   // FIXME (mfh 24 Feb 2014) Is it _really_ necessary to make this a
   // public inner class of CrsMatrix?  It looks like it doesn't
   // depend on any implementation details of CrsMatrix at all.  It
   // should really be declared and defined outside of CrsMatrix.
-  template <class DestViewType, class SrcViewType,
-            class DestOffsetViewType, class SrcOffsetViewType>
-  struct pack_functor {
-    typedef typename DestViewType::execution_space execution_space;
-    SrcViewType src_;
-    DestViewType dst_;
-    SrcOffsetViewType src_offset_;
-    DestOffsetViewType dst_offset_;
-    typedef typename DestOffsetViewType::non_const_value_type scalar_index_type;
-
-    pack_functor(DestViewType dst,
-                 const SrcViewType src,
-                 DestOffsetViewType dst_offset,
-                 const SrcOffsetViewType src_offset)
-      : src_(src)
-      , dst_(dst)
-      , src_offset_(src_offset)
-      , dst_offset_(dst_offset) {}
-
-    KOKKOS_INLINE_FUNCTION
-    void operator()(const LocalOrdinal row) const {
-      scalar_index_type srcPos       = src_offset_(row);
-      const scalar_index_type dstEnd = dst_offset_(row + 1);
-      scalar_index_type dstPos       = dst_offset_(row);
-      for (; dstPos < dstEnd; ++dstPos, ++srcPos) {
-        dst_(dstPos) = src_(srcPos);
-      }
-    }
-  };
 };  // class CrsMatrix
 
 /// \brief Create an empty CrsMatrix given a row map and a single

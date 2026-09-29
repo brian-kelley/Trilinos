@@ -1302,7 +1302,7 @@ void CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 
     // Pack the column indices from unpacked lclIndsUnpacked_wdv into
     // packed k_inds.  We will replace lclIndsUnpacked_wdv below.
-    using inds_packer_type = pack_functor<
+    using inds_packer_type = pack_functor_crs_matrix<
         typename Graph::local_graph_device_type::entries_type::non_const_type,
         typename Graph::local_inds_dualv_type::t_dev::const_type,
         typename Graph::local_graph_device_type::row_map_type::non_const_type,
@@ -1318,7 +1318,7 @@ void CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
 
     // Pack the values from unpacked valuesUnpacked_wdv into packed
     // k_vals.  We will replace valuesPacked_wdv below.
-    using vals_packer_type = pack_functor<
+    using vals_packer_type = pack_functor_crs_matrix<
         typename values_type::non_const_type,
         typename values_type::const_type,
         typename row_map_type::non_const_type,
@@ -1581,7 +1581,7 @@ void CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
     k_vals = values_type("Tpetra::CrsMatrix::val", lclTotalNumEntries);
 
     // Pack values_wdv into k_vals.  We will replace values_wdv below.
-    pack_functor<
+    pack_functor_crs_matrix<
         typename values_type::non_const_type,
         typename values_type::const_type,
         typename row_map_type::non_const_type,

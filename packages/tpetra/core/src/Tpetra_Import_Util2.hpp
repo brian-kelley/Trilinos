@@ -942,7 +942,7 @@ void lowCommunicationMakeColMapAndReindex(
           size_t rowptr_start = rowptr_view[i];
           size_t rowptr_end   = rowptr_view[i + 1];
           Kokkos::parallel_reduce(
-              Kokkos::TeamThreadRange(member, rowptr_start, rowptr_end), [&](const size_t j, LocalRemoteCount& innerUpdate) {
+              Kokkos::TeamThreadRange(member, rowptr_start, rowptr_end), [=](const size_t j, LocalRemoteCount& innerUpdate) {
                 const GO GID = colind_GID_view[j];
                 // Check if GID matches a row GID in local domain map
                 const LO LID = domainMap_local.getLocalElement(GID);

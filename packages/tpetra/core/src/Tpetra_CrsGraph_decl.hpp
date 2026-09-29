@@ -68,6 +68,36 @@ struct UnmanagedView {
 }  // namespace
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
 
+template <class DestViewType, class SrcViewType,
+          class DestOffsetViewType, class SrcOffsetViewType>
+struct pack_functor {
+  typedef typename DestViewType::execution_space execution_space;
+  SrcViewType src;
+  DestViewType dest;
+  SrcOffsetViewType src_offset;
+  DestOffsetViewType dest_offset;
+  typedef typename DestOffsetViewType::non_const_value_type ScalarIndx;
+
+  pack_functor(DestViewType dest_,
+               const SrcViewType src_,
+               DestOffsetViewType dest_offset_,
+               const SrcOffsetViewType src_offset_)
+    : src(src_)
+    , dest(dest_)
+    , src_offset(src_offset_)
+    , dest_offset(dest_offset_){};
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(size_t row) const {
+    ScalarIndx i       = src_offset(row);
+    ScalarIndx j       = dest_offset(row);
+    const ScalarIndx k = dest_offset(row + 1);
+    for (; j < k; j++, i++) {
+      dest(j) = src(i);
+    }
+  }
+};
+
 /// \struct RowInfo
 /// \brief Allocation information for a locally owned row in a
 ///   CrsGraph or CrsMatrix
@@ -1542,36 +1572,6 @@ class CrsGraph : public RowGraph<LocalOrdinal, GlobalOrdinal, Node>,
   virtual void
   removeEmptyProcessesInPlace(const Teuchos::RCP<const map_type>& newMap) override;
   //@}
-
-  template <class DestViewType, class SrcViewType,
-            class DestOffsetViewType, class SrcOffsetViewType>
-  struct pack_functor {
-    typedef typename DestViewType::execution_space execution_space;
-    SrcViewType src;
-    DestViewType dest;
-    SrcOffsetViewType src_offset;
-    DestOffsetViewType dest_offset;
-    typedef typename DestOffsetViewType::non_const_value_type ScalarIndx;
-
-    pack_functor(DestViewType dest_,
-                 const SrcViewType src_,
-                 DestOffsetViewType dest_offset_,
-                 const SrcOffsetViewType src_offset_)
-      : src(src_)
-      , dest(dest_)
-      , src_offset(src_offset_)
-      , dest_offset(dest_offset_){};
-
-    KOKKOS_INLINE_FUNCTION
-    void operator()(size_t row) const {
-      ScalarIndx i       = src_offset(row);
-      ScalarIndx j       = dest_offset(row);
-      const ScalarIndx k = dest_offset(row + 1);
-      for (; j < k; j++, i++) {
-        dest(j) = src(i);
-      }
-    }
-  };
 
  private:
   // Friend declaration for nonmember function.
