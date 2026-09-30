@@ -879,7 +879,12 @@ inline std::enable_if_t<
 contiguous_fill_or_memset(
     const ExecutionSpace& exec_space, const View<DT, DP...>& dst,
     typename ViewTraits<DT, DP...>::const_value_type& value) {
-  if (has_all_zero_bits(value))
+  // With OpenMP, using memset has significant performance issues.
+  if (has_all_zero_bits(value)
+#ifdef KOKKOS_ENABLE_OPENMP
+      && !std::is_same_v<ExecutionSpace, Kokkos::OpenMP>
+#endif
+  )
     ZeroMemset(exec_space, dst.data(),
                dst.size() * sizeof(typename ViewTraits<DT, DP...>::value_type));
   else

@@ -1,5 +1,18 @@
+//@HEADER
+// ************************************************************************
+//
+//                        Kokkos v. 4.0
+//       Copyright (2022) National Technology & Engineering
+//               Solutions of Sandia, LLC (NTESS).
+//
+// Under the terms of Contract DE-NA0003525 with NTESS,
+// the U.S. Government retains certain rights in this software.
+//
+// Part of Kokkos, under the Apache License v2.0 with LLVM Exceptions.
+// See https://kokkos.org/LICENSE for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright Contributors to the Kokkos project
+//
+//@HEADER
 
 #ifndef KOKKOS_IMPL_HOSTSPACE_DEEPCOPY_HPP
 #define KOKKOS_IMPL_HOSTSPACE_DEEPCOPY_HPP
@@ -18,9 +31,6 @@ void hostspace_parallel_deepcopy_async(void* dst, const void* src, ptrdiff_t n);
 template <typename ExecutionSpace>
 void hostspace_parallel_deepcopy_async(const ExecutionSpace& exec, void* dst,
                                        const void* src, ptrdiff_t n);
-template <typename ExecutionSpace>
-void hostspace_parallel_zeromemset(const ExecutionSpace& exec, void* dst,
-                                   size_t n);
 }  // namespace Impl
 
 }  // namespace Kokkos
