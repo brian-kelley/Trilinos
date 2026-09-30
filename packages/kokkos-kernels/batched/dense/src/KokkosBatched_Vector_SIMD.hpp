@@ -1,5 +1,18 @@
+//@HEADER
+// ************************************************************************
+//
+//                        Kokkos v. 4.0
+//       Copyright (2022) National Technology & Engineering
+//               Solutions of Sandia, LLC (NTESS).
+//
+// Under the terms of Contract DE-NA0003525 with NTESS,
+// the U.S. Government retains certain rights in this software.
+//
+// Part of Kokkos, under the Apache License v2.0 with LLVM Exceptions.
+// See https://kokkos.org/LICENSE for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright Contributors to the Kokkos project
+//
+//@HEADER
 #ifndef KOKKOSBATCHED_VECTOR_SIMD_HPP
 #define KOKKOSBATCHED_VECTOR_SIMD_HPP
 
@@ -379,11 +392,7 @@ class Vector<SIMD<double>, 4> {
   using mag_type   = double;
 
   enum : int { vector_length = 4 };
-#if CUDA_VERSION >= 13000
-  typedef double4_16a data_type;
-#else
   typedef double4 data_type;
-#endif
 
   KOKKOS_INLINE_FUNCTION
   static const char *label() { return "GpuDouble4"; }
@@ -413,7 +422,7 @@ class Vector<SIMD<double>, 4> {
     _data.z = b._data.z;
     _data.w = b._data.w;
   }
-  KOKKOS_INLINE_FUNCTION Vector(const data_type &val) {
+  KOKKOS_INLINE_FUNCTION Vector(const double4 &val) {
     _data.x = val.x;
     _data.y = val.y;
     _data.z = val.z;
@@ -437,7 +446,7 @@ class Vector<SIMD<double>, 4> {
   }
 
   KOKKOS_INLINE_FUNCTION
-  type &operator=(const data_type &val) {
+  type &operator=(const double4 &val) {
     _data.x = val.x;
     _data.y = val.y;
     _data.z = val.z;
@@ -446,7 +455,7 @@ class Vector<SIMD<double>, 4> {
   }
 
   KOKKOS_INLINE_FUNCTION
-  data_type double4() const { return _data; }
+  double4 double4() const { return _data; }
 
   KOKKOS_INLINE_FUNCTION
   type &loadAligned(const value_type *p) {
