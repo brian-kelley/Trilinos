@@ -1,5 +1,18 @@
+//@HEADER
+// ************************************************************************
+//
+//                        Kokkos v. 4.0
+//       Copyright (2022) National Technology & Engineering
+//               Solutions of Sandia, LLC (NTESS).
+//
+// Under the terms of Contract DE-NA0003525 with NTESS,
+// the U.S. Government retains certain rights in this software.
+//
+// Part of Kokkos, under the Apache License v2.0 with LLVM Exceptions.
+// See https://kokkos.org/LICENSE for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright Contributors to the Kokkos project
+//
+//@HEADER
 #ifndef KOKKOSBATCHED_INNER_TRSM_SERIAL_IMPL_HPP
 #define KOKKOSBATCHED_INNER_TRSM_SERIAL_IMPL_HPP
 
@@ -26,14 +39,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerUnitDiag<5>::serial_invoke(const Va
                   a_40 = A[4 * _as0 + 0 * _as1], a_41 = A[4 * _as0 + 1 * _as1], a_42 = A[4 * _as0 + 2 * _as1],
                   a_43 = A[4 * _as0 + 3 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[5];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-    auto &b_3p = b_p[3];
-    auto &b_4p = b_p[4];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p, ValueType &b_3p, ValueType &b_4p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -70,7 +76,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerUnitDiag<5>::serial_invoke(const Va
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[5];
+    trsv(p, b_p[0], b_p[1], b_p[2], b_p[3], b_p[4]);
   }
   return 0;
 }
@@ -84,13 +91,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerUnitDiag<4>::serial_invoke(const Va
   const ValueType a_10 = A[1 * _as0 + 0 * _as1], a_20 = A[2 * _as0 + 0 * _as1], a_21 = A[2 * _as0 + 1 * _as1],
                   a_30 = A[3 * _as0 + 0 * _as1], a_31 = A[3 * _as0 + 1 * _as1], a_32 = A[3 * _as0 + 2 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[4];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-    auto &b_3p = b_p[3];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p, ValueType &b_3p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -119,7 +120,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerUnitDiag<4>::serial_invoke(const Va
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[4];
+    trsv(p, b_p[0], b_p[1], b_p[2], b_p[3]);
   }
   return 0;
 }
@@ -132,12 +134,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerUnitDiag<3>::serial_invoke(const Va
 
   const ValueType a_10 = A[1 * _as0 + 0 * _as1], a_20 = A[2 * _as0 + 0 * _as1], a_21 = A[2 * _as0 + 1 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[3];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -159,7 +156,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerUnitDiag<3>::serial_invoke(const Va
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[3];
+    trsv(p, b_p[0], b_p[1], b_p[2]);
   }
   return 0;
 }
@@ -172,11 +170,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerUnitDiag<2>::serial_invoke(const Va
 
   const ValueType a_10 = A[1 * _as0 + 0 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[2];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -192,7 +186,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerUnitDiag<2>::serial_invoke(const Va
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[2];
+    trsv(p, b_p[0], b_p[1]);
   }
 
   return 0;
@@ -372,14 +367,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<5>::serial_invoke(const
                   inv_a_33 = static_cast<ValueType>(1.0) / A[3 * _as0 + 3 * _as1],
                   inv_a_44 = static_cast<ValueType>(1.0) / A[4 * _as0 + 4 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[5];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-    auto &b_3p = b_p[3];
-    auto &b_4p = b_p[4];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p, ValueType &b_3p, ValueType &b_4p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -424,7 +412,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<5>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[5];
+    trsv(p, b_p[0], b_p[1], b_p[2], b_p[3], b_p[4]);
   }
 
   return 0;
@@ -451,13 +440,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<4>::serial_invoke(const
                   inv_a_22 = static_cast<ValueType>(1.0) / A[2 * _as0 + 2 * _as1],
                   inv_a_33 = static_cast<ValueType>(1.0) / A[3 * _as0 + 3 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[4];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-    auto &b_3p = b_p[3];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p, ValueType &b_3p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -493,7 +476,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<4>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[4];
+    trsv(p, b_p[0], b_p[1], b_p[2], b_p[3]);
   }
 
   return 0;
@@ -517,12 +501,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<3>::serial_invoke(const
                   inv_a_11 = static_cast<ValueType>(1.0) / A[1 * _as0 + 1 * _as1],
                   inv_a_22 = static_cast<ValueType>(1.0) / A[2 * _as0 + 2 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[3];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -550,7 +529,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<3>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[3];
+    trsv(p, b_p[0], b_p[1], b_p[2]);
   }
 
   return 0;
@@ -572,11 +552,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<2>::serial_invoke(const
   const ValueType inv_a_00 = static_cast<ValueType>(1.0) / A[0 * _as0 + 0 * _as1],
                   inv_a_11 = static_cast<ValueType>(1.0) / A[1 * _as0 + 1 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[2];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -597,7 +573,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<2>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[2];
+    trsv(p, b_p[0], b_p[1]);
   }
 
   return 0;
@@ -615,7 +592,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<1>::serial_invoke(const
 
   const ValueType inv_a_00 = static_cast<ValueType>(1.0) / A[0 * _as0 + 0 * _as1];
 
-  auto trsv = [&](const int p) {
+  auto trsv = [&](const int p, ValueType & /* b_0p */) {
     B[0 * _bs0 + p * _bs1] *= inv_a_00; /* b_0p /= a_00;*/
   };
 
@@ -623,7 +600,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftLowerNonUnitDiag<1>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p;
+    trsv(p, b_p);
   }
 
   return 0;
@@ -797,14 +775,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperUnitDiag<5>::serial_invoke(const Va
                   /**/ a_23 = A[2 * _as0 + 3 * _as1], a_24 = A[2 * _as0 + 4 * _as1],
                   /**/ a_34 = A[3 * _as0 + 4 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[5];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-    auto &b_3p = b_p[3];
-    auto &b_4p = b_p[4];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p, ValueType &b_3p, ValueType &b_4p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -841,7 +812,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperUnitDiag<5>::serial_invoke(const Va
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[5];
+    trsv(p, b_p[0], b_p[1], b_p[2], b_p[3], b_p[4]);
   }
 
   return 0;
@@ -857,13 +829,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperUnitDiag<4>::serial_invoke(const Va
                   /**/ a_12 = A[1 * _as0 + 2 * _as1], a_13 = A[1 * _as0 + 3 * _as1],
                   /**/ a_23 = A[2 * _as0 + 3 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[4];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-    auto &b_3p = b_p[3];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p, ValueType &b_3p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -892,7 +858,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperUnitDiag<4>::serial_invoke(const Va
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[4];
+    trsv(p, b_p[0], b_p[1], b_p[2], b_p[3]);
   }
 
   return 0;
@@ -907,12 +874,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperUnitDiag<3>::serial_invoke(const Va
   const ValueType a_01 = A[0 * _as0 + 1 * _as1], a_02 = A[0 * _as0 + 2 * _as1],
                   /**/ a_12 = A[1 * _as0 + 2 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[3];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -934,7 +896,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperUnitDiag<3>::serial_invoke(const Va
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[3];
+    trsv(p, b_p[0], b_p[1], b_p[2]);
   }
 
   return 0;
@@ -948,11 +911,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperUnitDiag<2>::serial_invoke(const Va
 
   const ValueType a_01 = A[0 * _as0 + 1 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[2];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -968,7 +927,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperUnitDiag<2>::serial_invoke(const Va
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[2];
+    trsv(p, b_p[0], b_p[1]);
   }
 
   return 0;
@@ -1149,14 +1109,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<5>::serial_invoke(const
                   inv_a_33 = static_cast<ValueType>(1.0) / A[3 * _as0 + 3 * _as1],
                   inv_a_44 = static_cast<ValueType>(1.0) / A[4 * _as0 + 4 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[5];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-    auto &b_3p = b_p[3];
-    auto &b_4p = b_p[4];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p, ValueType &b_3p, ValueType &b_4p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -1201,7 +1154,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<5>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[5];
+    trsv(p, b_p[0], b_p[1], b_p[2], b_p[3], b_p[4]);
   }
 
   return 0;
@@ -1229,13 +1183,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<4>::serial_invoke(const
                   inv_a_22 = static_cast<ValueType>(1.0) / A[2 * _as0 + 2 * _as1],
                   inv_a_33 = static_cast<ValueType>(1.0) / A[3 * _as0 + 3 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[4];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-    auto &b_3p = b_p[3];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p, ValueType &b_3p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -1271,7 +1219,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<4>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[4];
+    trsv(p, b_p[0], b_p[1], b_p[2], b_p[3]);
   }
 
   return 0;
@@ -1296,12 +1245,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<3>::serial_invoke(const
                   inv_a_11 = static_cast<ValueType>(1.0) / A[1 * _as0 + 1 * _as1],
                   inv_a_22 = static_cast<ValueType>(1.0) / A[2 * _as0 + 2 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[3];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-    auto &b_2p = b_p[2];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p, ValueType &b_2p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -1329,7 +1273,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<3>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[3];
+    trsv(p, b_p[0], b_p[1], b_p[2]);
   }
 
   return 0;
@@ -1351,11 +1296,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<2>::serial_invoke(const
   const ValueType inv_a_00 = static_cast<ValueType>(1.0) / A[0 * _as0 + 0 * _as1],
                   inv_a_11 = static_cast<ValueType>(1.0) / A[1 * _as0 + 1 * _as1];
 
-  auto trsv = [&](const int p) {
-    ValueType b_p[2];
-    auto &b_0p = b_p[0];
-    auto &b_1p = b_p[1];
-
+  auto trsv = [&](const int p, ValueType &b_0p, ValueType &b_1p) {
     // load
     b_0p = B[0 * _bs0 + p * _bs1];
     b_1p = B[1 * _bs0 + p * _bs1];
@@ -1376,7 +1317,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<2>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p[2];
+    trsv(p, b_p[0], b_p[1]);
   }
 
   return 0;
@@ -1394,7 +1336,7 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<1>::serial_invoke(const
 
   const ValueType inv_a_00 = static_cast<ValueType>(1.0) / A[0 * _as0 + 0 * _as1];
 
-  auto trsv = [&](const int p) {
+  auto trsv = [&](const int p, ValueType & /* b_0p */) {
     // 0 iteration
     B[0 * _bs0 + p * _bs1] *= inv_a_00; /* b_0p /= a_00; */
   };
@@ -1403,7 +1345,8 @@ KOKKOS_INLINE_FUNCTION int InnerTrsmLeftUpperNonUnitDiag<1>::serial_invoke(const
 #pragma unroll
 #endif
   for (int p = 0; p < n; ++p) {
-    trsv(p);
+    ValueType b_p;
+    trsv(p, b_p);
   }
 
   return 0;
