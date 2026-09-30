@@ -24,11 +24,6 @@ extern "C" void kokkos_impl_cuda_set_serial_execution(bool);
 extern "C" bool kokkos_impl_cuda_use_serial_execution();
 #endif
 
-#if defined(KOKKOS_COMPILER_NVCC) && !defined(KOKKOS_ARCH_MAXWELL) && \
-    !defined(KOKKOS_ARCH_PASCAL)
-#define KOKKOS_IMPL_CUDA_USE_GRID_CONSTANT
-#endif
-
 namespace Kokkos {
 namespace Impl {
 
@@ -44,11 +39,7 @@ struct CudaTraits {
   static constexpr CudaSpace::size_type ConstantMemoryCache =
       0x002000; /*  8k bytes */
   static constexpr CudaSpace::size_type KernelArgumentLimit =
-#ifdef KOKKOS_IMPL_CUDA_USE_GRID_CONSTANT
-      0x008000; /* 32k bytes */
-#else
       0x001000; /*  4k bytes */
-#endif
   static constexpr CudaSpace::size_type MaxHierarchicalParallelism =
       1024; /* team_size * vector_length */
   using ConstantGlobalBufferType =
