@@ -72,10 +72,6 @@ struct ComputeResidualVector<MatrixType, BlockTriDiContainerDetails::ImplSimdTag
   const ConstUnmanaged<local_ordinal_type_1d_view> lclrow;
   const ConstUnmanaged<local_ordinal_type_1d_view> dm2cm;
 
-  // block offsets
-  const ConstUnmanaged<i64_3d_view> A_x_offsets;
-  const ConstUnmanaged<i64_3d_view> A_x_offsets_remote;
-
   const bool is_dm2cm_active;
   const bool hasBlockCrsMatrix;
 
@@ -102,43 +98,14 @@ struct ComputeResidualVector<MatrixType, BlockTriDiContainerDetails::ImplSimdTag
     , partptr(interf.partptr)
     , lclrow(interf.lclrow)
     , dm2cm(dm2cm_)
-    , A_x_offsets(amd.A_x_offsets)
-    , A_x_offsets_remote(amd.A_x_offsets_remote)
     , is_dm2cm_active(dm2cm_.span() > 0)
     , hasBlockCrsMatrix(hasBlockCrsMatrix_) {}
-
-  // Precompute offsets of each A and x entry to speed up residual.
-  // (Applies for hasBlockCrsMatrix == true and OverlapTag/AsyncTag)
-  // Reading A, x take up to 4, 6 levels of indirection respectively,
-  // but precomputing the offsets reduces it to 2 for both.
-  //
-  // This function allocates and populates these members of AmD:
-  // A_x_offsets, A_x_offsets_remote
-  static void precompute_A_x_offsets(
-      AmD<MatrixType> &amd,
-      const PartInterface<MatrixType> &interf,
-      const Teuchos::RCP<const typename ImplType<MatrixType>::tpetra_crs_graph_type> &g,
-      const typename ImplType<MatrixType>::local_ordinal_type_1d_view &dm2cm,
-      int blocksize,
-      bool ownedRemoteSeparate);
 
   // y = b - Rx; seq method
   void run(const impl_scalar_type_2d_view_tpetra &y_,
            const Const<impl_scalar_type_2d_view_tpetra> &b_,
            const impl_scalar_type_2d_view_tpetra &x_);
 
-  // y = b - R (x , x_remote)
-  void run(const vector_type_3d_view &y_packed_,
-           const Const<impl_scalar_type_2d_view_tpetra> &b_,
-           const impl_scalar_type_2d_view_tpetra &x_,
-           const impl_scalar_type_2d_view_tpetra &x_remote_);
-
-  // y = b - R (y , y_remote)
-  void run(const vector_type_3d_view &y_packed_,
-           const Const<impl_scalar_type_2d_view_tpetra> &b_,
-           const impl_scalar_type_2d_view_tpetra &x_,
-           const impl_scalar_type_2d_view_tpetra &x_remote_,
-           const bool compute_owned);
 };
 
 template <typename MatrixType>
@@ -190,10 +157,6 @@ struct ComputeResidualVector<MatrixType, BlockTriDiContainerDetails::ImplNotAvai
   const ConstUnmanaged<local_ordinal_type_1d_view> lclrow;
   const ConstUnmanaged<local_ordinal_type_1d_view> dm2cm;
 
-  // block offsets
-  const ConstUnmanaged<i64_3d_view> A_x_offsets;
-  const ConstUnmanaged<i64_3d_view> A_x_offsets_remote;
-
   const bool is_dm2cm_active;
   const bool hasBlockCrsMatrix;
 
@@ -220,45 +183,16 @@ struct ComputeResidualVector<MatrixType, BlockTriDiContainerDetails::ImplNotAvai
     , partptr(interf.partptr)
     , lclrow(interf.lclrow)
     , dm2cm(dm2cm_)
-    , A_x_offsets(amd.A_x_offsets)
-    , A_x_offsets_remote(amd.A_x_offsets_remote)
     , is_dm2cm_active(dm2cm_.span() > 0)
     , hasBlockCrsMatrix(hasBlockCrsMatrix_) {
     TEUCHOS_TEST_FOR_EXCEPT_MSG(true, "Error: BlockTriDiContainer and related classes are not available for this scalar_type");
   }
-
-  // Precompute offsets of each A and x entry to speed up residual.
-  // (Applies for hasBlockCrsMatrix == true and OverlapTag/AsyncTag)
-  // Reading A, x take up to 4, 6 levels of indirection respectively,
-  // but precomputing the offsets reduces it to 2 for both.
-  //
-  // This function allocates and populates these members of AmD:
-  // A_x_offsets, A_x_offsets_remote
-  static void precompute_A_x_offsets(
-      AmD<MatrixType> &amd,
-      const PartInterface<MatrixType> &interf,
-      const Teuchos::RCP<const typename ImplType<MatrixType>::tpetra_crs_graph_type> &g,
-      const typename ImplType<MatrixType>::local_ordinal_type_1d_view &dm2cm,
-      int blocksize,
-      bool ownedRemoteSeparate) {}
 
   // y = b - Rx; seq method
   void run(const impl_scalar_type_2d_view_tpetra &y_,
            const Const<impl_scalar_type_2d_view_tpetra> &b_,
            const impl_scalar_type_2d_view_tpetra &x_) {}
 
-  // y = b - R (x , x_remote)
-  void run(const vector_type_3d_view &y_packed_,
-           const Const<impl_scalar_type_2d_view_tpetra> &b_,
-           const impl_scalar_type_2d_view_tpetra &x_,
-           const impl_scalar_type_2d_view_tpetra &x_remote_) {}
-
-  // y = b - R (y , y_remote)
-  void run(const vector_type_3d_view &y_packed_,
-           const Const<impl_scalar_type_2d_view_tpetra> &b_,
-           const impl_scalar_type_2d_view_tpetra &x_,
-           const impl_scalar_type_2d_view_tpetra &x_remote_,
-           const bool compute_owned) {}
 };
 
 }  // namespace Ifpack2::BlockHelperDetails

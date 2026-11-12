@@ -433,10 +433,6 @@ struct AmD {
   // seq_method_, then A_colindsub contains owned LIDs and A_colindsub_remote
   // contains the remote ones.
   local_ordinal_type_1d_view A_colindsub, A_colindsub_remote;
-  // Precomputed direct offsets to A,x blocks, for owned entries (OverlapTag case) or all entries (AsyncTag case)
-  i64_3d_view A_x_offsets;
-  // Precomputed direct offsets to A,x blocks, for non-owned entries (OverlapTag case). For AsyncTag case this is left empty.
-  i64_3d_view A_x_offsets_remote;
 
   // Currently always true.
   bool is_tpetra_block_crs;

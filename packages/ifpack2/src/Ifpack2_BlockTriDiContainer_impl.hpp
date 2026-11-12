@@ -51,7 +51,7 @@
 
 #include "Ifpack2_BlockHelper.hpp"
 #include "Ifpack2_BlockComputeResidualVector.hpp"
-#include "Ifpack2_BlockComputeResidualAndSolve.hpp"
+#include "Ifpack2_BlockComputeResidualPacked.hpp"
 
 // need to interface this into cmake variable (or only use this flag when it is necessary)
 // #define IFPACK2_BLOCKTRIDICONTAINER_ENABLE_PROFILE
@@ -313,6 +313,53 @@ struct AsyncableImport {
   exec_instance_1d_std_vector exec_instances;
 #endif
 
+  // Source of the owned values to send, in the packed (SIMD lane interleaved) layout
+  // used by the solver: packed(p / vector_length, :, col, p % vector_length)
+  // holds the block row with LID lr, where p = lid2packed(lr).
+  struct PackedSource {
+    Kokkos::View<const impl_scalar_type ****, Kokkos::LayoutRight, typename impl_type::device_type> packed;
+    local_ordinal_type_1d_view lid2packed;
+  };
+
+  static local_ordinal_type numVectors(const impl_scalar_type_2d_view_tpetra &mv) { return mv.extent(1); }
+  static local_ordinal_type numVectors(const PackedSource &src) { return src.packed.extent(2); }
+
+  // Pack the send buffer from the packed (solver) layout.
+  // blocksize_ is the importer's block size: it is either the block size of
+  // the packed multivector, or 1 if the importer works with point rows (if the
+  // matrix is a point CrsMatrix), in which case the lids are point LIDs.
+  static void copyFromPacked(const local_ordinal_type_1d_view &lids_,
+                             const impl_scalar_type_1d_view &buffer_,
+                             const local_ordinal_type ibeg_,
+                             const local_ordinal_type iend_,
+                             const PackedSource &src,
+                             const local_ordinal_type blocksize_,
+                             const execution_space &exec_instance_) {
+    constexpr int vl                      = impl_type::vector_length;
+    const local_ordinal_type num_vectors  = src.packed.extent(2);
+    const local_ordinal_type packed_bs    = src.packed.extent(1);
+    const local_ordinal_type mv_blocksize = blocksize_ * num_vectors;
+    const local_ordinal_type idiff        = iend_ - ibeg_;
+    const auto abase                      = buffer_.data() + mv_blocksize * ibeg_;
+    const auto packed                     = src.packed;
+    const auto lid2packed                 = src.lid2packed;
+    Kokkos::parallel_for(
+        "AsyncableImport::copyFromPacked",
+        Kokkos::RangePolicy<execution_space>(exec_instance_, 0, idiff * mv_blocksize),
+        KOKKOS_LAMBDA(const local_ordinal_type t) {
+          const local_ordinal_type kk = t % blocksize_;
+          const local_ordinal_type i  = (t / blocksize_) % idiff;
+          const local_ordinal_type j  = t / (blocksize_ * idiff);
+          // point index -> (block row, entry in block)
+          const local_ordinal_type q  = lids_(i + ibeg_) * blocksize_ + kk;
+          const local_ordinal_type lr = q / packed_bs;
+          const local_ordinal_type k  = q % packed_bs;
+          const local_ordinal_type p  = lid2packed(lr);
+          abase[blocksize_ * (i + idiff * j) + kk] = packed(p / vl, k, j, p % vl);
+        });
+  }
+
+
   // for cuda
  public:
   void setOffsetValues(const Teuchos::ArrayView<const size_t> &lens,
@@ -528,12 +575,25 @@ struct AsyncableImport {
         });
   }
 
-  void asyncSendRecvVar1(const impl_scalar_type_2d_view_tpetra &mv) {
+  template <typename PackTag>
+  static void copy(const local_ordinal_type_1d_view &lids_,
+                   const impl_scalar_type_1d_view &buffer_,
+                   const local_ordinal_type ibeg_,
+                   const local_ordinal_type iend_,
+                   const PackedSource &src,
+                   const local_ordinal_type blocksize_,
+                   const execution_space &exec_instance_) {
+    static_assert(std::is_same<PackTag, ToBuffer>::value, "AsyncableImport: can only pack from a packed source");
+    copyFromPacked(lids_, buffer_, ibeg_, iend_, src, blocksize_, exec_instance_);
+  }
+
+  template <typename SourceType>
+  void asyncSendRecvVar1(const SourceType &mv) {
     IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::AsyncableImport::AsyncSendRecv", AsyncSendRecv);
 
 #ifdef HAVE_IFPACK2_MPI
     // constants and reallocate data buffers if necessary
-    const local_ordinal_type num_vectors  = mv.extent(1);
+    const local_ordinal_type num_vectors  = numVectors(mv);
     const local_ordinal_type mv_blocksize = blocksize * num_vectors;
 
     // 0. post receive async
@@ -569,7 +629,7 @@ struct AsyncableImport {
                      exec_instances[i % 8]);
       if (!Tpetra::Details::Behavior::assumeMpiIsGPUAware()) {
         // if (i<8)  exec_instances[i%8].fence();
-        const local_ordinal_type num_vectors  = mv.extent(1);
+        const local_ordinal_type num_vectors  = numVectors(mv);
         const local_ordinal_type mv_blocksize = blocksize * num_vectors;
 
         Kokkos::deep_copy(exec_instances[i % 8],
@@ -721,12 +781,24 @@ struct AsyncableImport {
   ///
   /// standard comm
   ///
-  void asyncSendRecvVar0(const impl_scalar_type_2d_view_tpetra &mv) {
+  template <typename PackTag>
+  static void copy(const local_ordinal_type_1d_view &lids_,
+                   const impl_scalar_type_1d_view &buffer_,
+                   const local_ordinal_type &ibeg_,
+                   const local_ordinal_type &iend_,
+                   const PackedSource &src,
+                   const local_ordinal_type blocksize_) {
+    static_assert(std::is_same<PackTag, ToBuffer>::value, "AsyncableImport: can only pack from a packed source");
+    copyFromPacked(lids_, buffer_, ibeg_, iend_, src, blocksize_, execution_space());
+  }
+
+  template <typename SourceType>
+  void asyncSendRecvVar0(const SourceType &mv) {
     IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::AsyncableImport::AsyncSendRecv", AsyncSendRecv);
 
 #ifdef HAVE_IFPACK2_MPI
     // constants and reallocate data buffers if necessary
-    const local_ordinal_type num_vectors  = mv.extent(1);
+    const local_ordinal_type num_vectors  = numVectors(mv);
     const local_ordinal_type mv_blocksize = blocksize * num_vectors;
 
     // receive async
@@ -822,7 +894,9 @@ struct AsyncableImport {
   ///
   /// front interface
   ///
-  void asyncSendRecv(const impl_scalar_type_2d_view_tpetra &mv) {
+  // mv is either a Tpetra local multivector view, or a PackedSource
+  template <typename SourceType>
+  void asyncSendRecv(const SourceType &mv) {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP) || defined(KOKKOS_ENABLE_SYCL)
 #if defined(IFPACK2_BLOCKTRIDICONTAINER_USE_EXEC_SPACE_INSTANCES)
     asyncSendRecvVar1(mv);
@@ -845,7 +919,8 @@ struct AsyncableImport {
 #endif
   }
 
-  void syncExchange(const impl_scalar_type_2d_view_tpetra &mv) {
+  template <typename SourceType>
+  void syncExchange(const SourceType &mv) {
     IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::AsyncableImport::SyncExchange", SyncExchange);
     asyncSendRecv(mv);
     syncRecv();
@@ -1633,14 +1708,10 @@ struct BlockTridiags {
   // Otherwise, this is not allocated.
   internal_vector_type_3d_view X_internal_vector_values_schur;
 
-  // The following are for fused block Jacobi only.
+  // The following is for the fused block Jacobi factorization only.
   // For block row i, diag_offset(i)...diag_offset(i + bs^2)
   // is the range of scalars for the diagonal block.
   size_type_1d_view diag_offsets;
-  // For fused residual+solve block Jacobi case,
-  // this contains the diagonal block inverses in flat, local row indexing:
-  // d_inv(row, :, :) gives the row-major block for row.
-  btdm_scalar_type_3d_view d_inv;
 
   bool is_diagonal_only;
 
@@ -1932,6 +2003,7 @@ void performSymbolicPhase(const Teuchos::RCP<const typename BlockHelperDetails::
                           const BlockHelperDetails::PartInterface<MatrixType> &interf,
                           BlockTridiags<MatrixType> &btdm,
                           BlockHelperDetails::AmD<MatrixType> &amd,
+                          BlockHelperDetails::PackedAmD<MatrixType> &packed_amd,
                           const bool overlap_communication_and_computation,
                           const Teuchos::RCP<AsyncableImport<MatrixType>> &async_importer,
                           bool useSeqMethod,
@@ -2251,6 +2323,41 @@ void performSymbolicPhase(const Teuchos::RCP<const typename BlockHelperDetails::
       }
     }
 
+    // Construct the packed version of R (A - D), used in the residual computation.
+    // Its values are gathered from A in the numeric phase.
+    {
+      IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::SymbolicPhase::PackedAmD", PackedAmD);
+      const local_ordinal_type num_pack_rows = interf.part2packrowidx0_back;
+      packed_amd.blocksize                   = blocksize;
+      packed_amd.num_pack_rows               = num_pack_rows;
+      packed_amd.is_block_crs                = hasBlockCrsMatrix;
+      packed_amd.overlap                     = overlap_communication_and_computation;
+      BlockHelperDetails::buildPackedAmDGraph<MatrixType>(packed_amd.owned, interf, amd.rowptr, amd.A_colindsub,
+                                                          local_graph_rowptr, local_graph_colidx, col2row, lclrow2idx,
+                                                          num_pack_rows, blocksize, hasBlockCrsMatrix);
+      if (overlap_communication_and_computation)
+        BlockHelperDetails::buildPackedAmDGraph<MatrixType>(packed_amd.remote, interf, amd.rowptr_remote, amd.A_colindsub_remote,
+                                                            local_graph_rowptr, local_graph_colidx, col2row, lclrow2idx,
+                                                            num_pack_rows, blocksize, hasBlockCrsMatrix);
+      else
+        packed_amd.remote = typename BlockHelperDetails::PackedAmD<MatrixType>::Graph();
+
+      // Map from row LID to packed row index.
+      packed_amd.lid2packed     = Kokkos::View<local_ordinal_type *, typename impl_type::device_type>(do_not_initialize_tag("packed_amd.lid2packed"), nrows);
+      const auto lid2packed     = packed_amd.lid2packed;
+      const auto partptr_       = interf.partptr;
+      const auto rowidx2part_   = interf.rowidx2part;
+      const auto lclrow_        = interf.lclrow;
+      const auto part2packrowi0 = interf.part2packrowidx0;
+      Kokkos::parallel_for(
+          "performSymbolicPhase::lid2packed", Kokkos::RangePolicy<execution_space>(0, nrows),
+          KOKKOS_LAMBDA(const local_ordinal_type ri) {
+            const local_ordinal_type partidx = rowidx2part_(ri);
+            const local_ordinal_type pri     = part2packrowi0(partidx) + (ri - partptr_(partidx));
+            lid2packed(lclrow_(ri))          = pri * vector_length + partidx % vector_length;
+          });
+    }
+
     if (interf.n_subparts_per_part > 1) {
       // If doing Schur complement line splitting, allocate E and space for permuted X
       btdm.e_values                       = vector_type_4d_view("btdm.e_values", 2, interf.part2packrowidx0_back, blocksize, blocksize);
@@ -2261,24 +2368,8 @@ void performSymbolicPhase(const Teuchos::RCP<const typename BlockHelperDetails::
           vector_length / internal_vector_length);
     }
   }
-  // Precompute offsets of each A and x entry to speed up residual.
-  // Applies if all of these are true:
-  // - hasBlockCrsMatrix
-  // - execution_space is a GPU
-  // - !useSeqMethod (since this uses a different scheme for indexing A,x)
-  //
-  // Reading A, x take up to 4 and 6 levels of indirection respectively,
-  // but precomputing the offsets reduces it to 2 for both (get index, then value)
-  if (BlockHelperDetails::is_device<execution_space>::value && !useSeqMethod && hasBlockCrsMatrix) {
-    bool is_async_importer_active    = !async_importer.is_null();
-    local_ordinal_type_1d_view dm2cm = is_async_importer_active ? async_importer->dm2cm : local_ordinal_type_1d_view();
-    bool ownedRemoteSeparate         = overlap_communication_and_computation || !is_async_importer_active;
-    BlockHelperDetails::ComputeResidualVector<MatrixType>::precompute_A_x_offsets(amd, interf, g, dm2cm, blocksize, ownedRemoteSeparate);
-  }
-
-  // If using fused block Jacobi path, allocate diagonal inverses here (d_inv) and find diagonal offsets.
+  // If using the fused block Jacobi factorization, find diagonal offsets.
   if (use_fused_jacobi) {
-    btdm.d_inv        = btdm_scalar_type_3d_view(do_not_initialize_tag("btdm.d_inv"), interf.nparts, blocksize, blocksize);
     auto rowptrs      = A_bcrs->getCrsGraph().getLocalRowPtrsDevice();
     auto entries      = A_bcrs->getCrsGraph().getLocalIndicesDevice();
     btdm.diag_offsets = BlockHelperDetails::findDiagOffsets<execution_space, size_type_1d_view>(rowptrs, entries, interf.nparts, blocksize);
@@ -2915,7 +3006,6 @@ struct ExtractAndFactorizeTridiags {
   const Unmanaged<internal_vector_type_5d_view> e_internal_vector_values;
   const Unmanaged<btdm_scalar_type_4d_view> scalar_values, scalar_values_schur;
   const Unmanaged<btdm_scalar_type_5d_view> e_scalar_values;
-  const Unmanaged<btdm_scalar_type_3d_view> d_inv;
   const Unmanaged<size_type_1d_view> diag_offsets;
   // shared information
   const local_ordinal_type blocksize, blocksize_square;
@@ -2979,7 +3069,6 @@ struct ExtractAndFactorizeTridiags {
                       btdm_.e_values.extent(2),
                       btdm_.e_values.extent(3),
                       vector_length)
-    , d_inv(btdm_.d_inv)
     , diag_offsets(btdm_.diag_offsets)
     , blocksize(btdm_.values.extent(1))
     , blocksize_square(blocksize * blocksize)
@@ -3316,7 +3405,8 @@ struct ExtractAndFactorizeTridiags {
     using default_mode_type          = typename default_mode_and_algo_type::mode_type;
     using default_algo_type          = typename default_mode_and_algo_type::algo_type;
     // When fused block Jacobi can be used, the mapping between local rows and parts is trivial (i <-> i)
-    // We can simply pull the diagonal entry from A into d_inv
+    // We can simply pull the diagonal entry from A, invert it and store it in the packed tridiag values
+    // (in which each part is a single block).
     btdm_scalar_scratch_type_3d_view WW1(member.team_scratch(ScratchLevel), half_vector_length, blocksize, blocksize);
     btdm_scalar_scratch_type_3d_view WW2(member.team_scratch(ScratchLevel), half_vector_length, blocksize, blocksize);
     const auto one                 = KokkosKernels::ArithTraits<btdm_magnitude_type>::one();
@@ -3356,10 +3446,11 @@ struct ExtractAndFactorizeTridiags {
                                     default_mode_type, default_algo_type>::invoke(member, one, W1, W2);
                            member.team_barrier();
                            if (row < nrows) {
+                             const size_type block            = pack_td_ptr(row, 0);
+                             const local_ordinal_type lane = row % vector_length;
                              Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize * blocksize),
                                                   [&](int i) {
-                                                    auto d_inv_block = &d_inv(row, 0, 0);
-                                                    d_inv_block[i]   = W2.data()[i];
+                                                    scalar_values(block, i / blocksize, i % blocksize, lane) = W2.data()[i];
                                                   });
                            }
                          });
@@ -3723,6 +3814,7 @@ void performNumericPhase(const Teuchos::RCP<const typename BlockHelperDetails::I
                          const Teuchos::RCP<const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_crs_graph_type> &G,
                          const BlockHelperDetails::PartInterface<MatrixType> &interf,
                          BlockTridiags<MatrixType> &btdm,
+                         const BlockHelperDetails::PackedAmD<MatrixType> &packed_amd,
                          const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tiny,
                          bool use_fused_jacobi) {
   using impl_type                            = BlockHelperDetails::ImplType<MatrixType>;
@@ -3747,6 +3839,30 @@ void performNumericPhase(const Teuchos::RCP<const typename BlockHelperDetails::I
 
   int max_scratch = team_policy_type::scratch_size_max(0);
 
+  // Gather the values of R = A - D into its packed representation.
+  // (Running this concurrently with the factorization in another execution
+  // space instance was tried: no gain on H100.)
+  const execution_space fill_exec;
+  {
+    IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::NumericPhase::FillPackedAmD", FillPackedAmD);
+    using crs_matrix_type       = typename impl_type::tpetra_crs_matrix_type;
+    using block_crs_matrix_type = typename impl_type::tpetra_block_crs_matrix_type;
+    if (packed_amd.is_block_crs) {
+      auto A_bcrs         = Teuchos::rcp_dynamic_cast<const block_crs_matrix_type>(A, true);
+      const auto A_values = A_bcrs->getValuesDevice();
+      const Kokkos::View<size_t *, typename impl_type::node_device_type> no_rowptr;
+      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.owned, A_values, no_rowptr, packed_amd.blocksize, true, fill_exec);
+      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.remote, A_values, no_rowptr, packed_amd.blocksize, true, fill_exec);
+    } else {
+      auto A_crs                = Teuchos::rcp_dynamic_cast<const crs_matrix_type>(A, true);
+      const auto A_values       = A_crs->getLocalValuesDevice(Tpetra::Access::ReadOnly);
+      const auto A_point_rowptr = A_crs->getCrsGraph()->getLocalGraphDevice().row_map;
+      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.owned, A_values, A_point_rowptr, packed_amd.blocksize, false, fill_exec);
+      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.remote, A_values, A_point_rowptr, packed_amd.blocksize, false, fill_exec);
+    }
+    IFPACK2_BLOCKHELPER_TIMER_FENCE(execution_space)
+  }
+
   if (scratch_required < max_scratch) {
     // Can use level 0 scratch
     ExtractAndFactorizeTridiags<MatrixType, 0> function(btdm, interf, A, G, tiny);
@@ -3762,6 +3878,7 @@ void performNumericPhase(const Teuchos::RCP<const typename BlockHelperDetails::I
     else
       function.run_fused_jacobi();
   }
+
   IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
 }
 
@@ -4053,6 +4170,46 @@ struct SolveTridiagsDefaultModeAndAlgo<Kokkos::SYCLDeviceUSMSpace> {
 };
 #endif
 
+///
+/// Update the packed iterate after the solve of one pack:
+///   Y := Y + df * (X - Y)
+/// for the pack rows pri0 ... pri0 + nrows - 1, and the lanes handled by
+/// internal vector index v. Returns this thread's contribution to the squared
+/// norm of (X - Y).
+///
+template <typename impl_type, typename MemberType, typename XViewType, typename YViewType>
+KOKKOS_INLINE_FUNCTION typename impl_type::impl_scalar_type
+updatePackedY(const MemberType &member,
+              const XViewType &X_internal_vector_values,
+              const YViewType &Y_packed,
+              const typename impl_type::impl_scalar_type df,
+              const typename impl_type::local_ordinal_type pri0,
+              const typename impl_type::local_ordinal_type nrows,
+              const typename impl_type::local_ordinal_type v,
+              const typename impl_type::local_ordinal_type blocksize,
+              const typename impl_type::local_ordinal_type num_vectors) {
+  using local_ordinal_type = typename impl_type::local_ordinal_type;
+  using impl_scalar_type   = typename impl_type::impl_scalar_type;
+  constexpr int ivl        = impl_type::internal_vector_length;
+  impl_scalar_type z_partial_sum(0);
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(member, nrows * blocksize),
+                       [&](const local_ordinal_type &ji) {
+                         const local_ordinal_type pri = pri0 + ji / blocksize;
+                         const local_ordinal_type i   = ji % blocksize;
+                         for (local_ordinal_type col = 0; col < num_vectors; ++col) {
+                           const auto &x = X_internal_vector_values(pri, i, col, v);
+                           for (local_ordinal_type vi = 0; vi < ivl; ++vi) {
+                             impl_scalar_type &y       = Y_packed(pri, i, col, v * ivl + vi);
+                             const impl_scalar_type yd = impl_scalar_type(x[vi]) - y;
+                             y += df * yd;
+                             const auto yd_abs = KokkosKernels::ArithTraits<impl_scalar_type>::abs(yd);
+                             z_partial_sum += yd_abs * yd_abs;
+                           }
+                         }
+                       });
+  return z_partial_sum;
+}
+
 template <typename MatrixType>
 struct SolveTridiags {
  public:
@@ -4083,8 +4240,9 @@ struct SolveTridiags {
   static constexpr int internal_vector_length = impl_type::internal_vector_length;
 
   /// multivector view
-  using impl_scalar_type_1d_view        = typename impl_type::impl_scalar_type_1d_view;
-  using impl_scalar_type_2d_view_tpetra = typename impl_type::impl_scalar_type_2d_view_tpetra;
+  using impl_scalar_type_1d_view = typename impl_type::impl_scalar_type_1d_view;
+  // packed iterate (npackrows, blocksize, num_vectors, vector_length)
+  using packed_mv_view = typename BlockHelperDetails::PackedMultiVector<MatrixType>::view_type;
 
   /// team policy types
   using team_policy_type = Kokkos::TeamPolicy<execution_space>;
@@ -4120,8 +4278,8 @@ struct SolveTridiags {
 
   const local_ordinal_type vector_loop_size;
 
-  // copy to multivectors : damping factor and Y_scalar_multivector
-  Unmanaged<impl_scalar_type_2d_view_tpetra> Y_scalar_multivector;
+  // update of the packed iterate : damping factor and Y_packed
+  Unmanaged<packed_mv_view> Y_packed;
 #if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__) || defined(__SYCL_DEVICE_ONLY__)
   AtomicUnmanaged<impl_scalar_type_1d_view> Z_scalar_vector;
 #else
@@ -4183,86 +4341,25 @@ struct SolveTridiags {
                                btdm.e_values.extent(3),
                                vector_length / internal_vector_length)
     , vector_loop_size(vector_length / internal_vector_length)
-    , Y_scalar_multivector()
+    , Y_packed()
     , Z_scalar_vector()
     , df(damping_factor)
     , compute_diff(is_norm_manager_active)
     , active_schur_solve_vec(0) {}
 
  public:
-  /// move packed multi vector into flat multi vector for computing residuals
+  /// update the packed iterate with the packed solution of one pack
   KOKKOS_INLINE_FUNCTION
   void
-  copyToFlatMultiVector(const member_type &member,
-                        const local_ordinal_type partidxbeg,  // partidx for v = 0
-                        const local_ordinal_type npacks,
-                        const local_ordinal_type pri0,
-                        const local_ordinal_type v,  // index with a loop of vector_loop_size
-                        const local_ordinal_type blocksize,
-                        const local_ordinal_type num_vectors) const {
-    const local_ordinal_type vbeg = v * internal_vector_length;
-    if (vbeg < npacks) {
-      local_ordinal_type ri0_vals[internal_vector_length]   = {};
-      local_ordinal_type nrows_vals[internal_vector_length] = {};
-      for (local_ordinal_type vv = vbeg, vi = 0; vv < npacks && vi < internal_vector_length; ++vv, ++vi) {
-        const local_ordinal_type partidx = partidxbeg + vv;
-        ri0_vals[vi]                     = partptr(partidx);
-        nrows_vals[vi]                   = partptr(partidx + 1) - ri0_vals[vi];
-      }
-
-      impl_scalar_type z_partial_sum(0);
-      if (nrows_vals[0] == 1) {
-        const local_ordinal_type j = 0, pri = pri0;
-        {
-          for (local_ordinal_type vv = vbeg, vi = 0; vv < npacks && vi < internal_vector_length; ++vv, ++vi) {
-            const local_ordinal_type ri0   = ri0_vals[vi];
-            const local_ordinal_type nrows = nrows_vals[vi];
-            if (j < nrows) {
-              Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize),
-                                   [&](const local_ordinal_type &i) {
-                                     const local_ordinal_type row = blocksize * lclrow(ri0 + j) + i;
-                                     for (local_ordinal_type col = 0; col < num_vectors; ++col) {
-                                       impl_scalar_type &y       = Y_scalar_multivector(row, col);
-                                       const impl_scalar_type yd = X_internal_vector_values(pri, i, col, v)[vi] - y;
-                                       y += df * yd;
-
-                                       {  // if (compute_diff) {
-                                         const auto yd_abs = KokkosKernels::ArithTraits<impl_scalar_type>::abs(yd);
-                                         z_partial_sum += yd_abs * yd_abs;
-                                       }
-                                     }
-                                   });
-            }
-          }
-        }
-      } else {
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(member, nrows_vals[0]),
-                             [&](const local_ordinal_type &j) {
-                               const local_ordinal_type pri = pri0 + j;
-                               for (local_ordinal_type vv = vbeg, vi = 0; vv < npacks && vi < internal_vector_length; ++vv, ++vi) {
-                                 const local_ordinal_type ri0   = ri0_vals[vi];
-                                 const local_ordinal_type nrows = nrows_vals[vi];
-                                 if (j < nrows) {
-                                   for (local_ordinal_type col = 0; col < num_vectors; ++col) {
-                                     for (local_ordinal_type i = 0; i < blocksize; ++i) {
-                                       const local_ordinal_type row = blocksize * lclrow(ri0 + j) + i;
-                                       impl_scalar_type &y          = Y_scalar_multivector(row, col);
-                                       const impl_scalar_type yd    = X_internal_vector_values(pri, i, col, v)[vi] - y;
-                                       y += df * yd;
-
-                                       {  // if (compute_diff) {
-                                         const auto yd_abs = KokkosKernels::ArithTraits<impl_scalar_type>::abs(yd);
-                                         z_partial_sum += yd_abs * yd_abs;
-                                       }
-                                     }
-                                   }
-                                 }
-                               }
-                             });
-      }
-      // if (compute_diff)
-      Z_scalar_vector(member.league_rank()) += z_partial_sum;
-    }
+  updatePackedIterate(const member_type &member,
+                      const local_ordinal_type pri0,
+                      const local_ordinal_type nrows,
+                      const local_ordinal_type v,  // index with a loop of vector_loop_size
+                      const local_ordinal_type blocksize,
+                      const local_ordinal_type num_vectors) const {
+    const impl_scalar_type z_partial_sum =
+        updatePackedY<impl_type>(member, X_internal_vector_values, Y_packed, df, pri0, nrows, v, blocksize, num_vectors);
+    Z_scalar_vector(member.league_rank()) += z_partial_sum;
   }
 
   ///
@@ -4478,9 +4575,8 @@ struct SolveTridiags {
       , pack_td_ptr(solve.pack_td_ptr)
       , partptr(solve.partptr)
       , D_internal_vector_values(solve.D_internal_vector_values)
-      , lclrow(solve.lclrow)
       , X_internal_vector_values(solve.X_internal_vector_values)
-      , Y_scalar_multivector(solve.Y_scalar_multivector)
+      , Y_packed(solve.Y_packed)
       , Z_scalar_vector(solve.Z_scalar_vector)
       , df(solve.df)
       , vector_loop_size(solve.vector_loop_size) {}
@@ -4493,9 +4589,8 @@ struct SolveTridiags {
     BlockHelperDetails::Uint32IndexedConstView<size_type_2d_view> pack_td_ptr;
     BlockHelperDetails::Uint32IndexedConstView<local_ordinal_type_1d_view> partptr;
     BlockHelperDetails::Uint32IndexedConstView<internal_vector_type_4d_view> D_internal_vector_values;
-    BlockHelperDetails::Uint32IndexedConstView<local_ordinal_type_1d_view> lclrow;
     BlockHelperDetails::Uint32IndexedView<internal_vector_type_4d_view> X_internal_vector_values;
-    BlockHelperDetails::Uint32IndexedView<impl_scalar_type_2d_view_tpetra> Y_scalar_multivector;
+    BlockHelperDetails::Uint32IndexedView<packed_mv_view> Y_packed;
     BlockHelperDetails::Uint32IndexedView<impl_scalar_type_1d_view> Z_scalar_vector;
     const impl_scalar_type df;
     const local_ordinal_type vector_loop_size;
@@ -4614,80 +4709,10 @@ struct SolveTridiags {
       }
     }
 
-    KOKKOS_INLINE_FUNCTION
-    void
-    copyToFlatMultiVector(const member_type &member,
-                          const local_ordinal_type partidxbeg,  // partidx for v = 0
-                          const local_ordinal_type npacks,
-                          const local_ordinal_type pri0,
-                          const local_ordinal_type v,  // index with a loop of vector_loop_size
-                          const local_ordinal_type blocksize) const {
-      const local_ordinal_type vbeg = v * internal_vector_length;
-      if (vbeg < npacks) {
-        local_ordinal_type ri0_vals[internal_vector_length]   = {};
-        local_ordinal_type nrows_vals[internal_vector_length] = {};
-        for (local_ordinal_type vv = vbeg, vi = 0; vv < npacks && vi < internal_vector_length; ++vv, ++vi) {
-          const local_ordinal_type partidx = partidxbeg + vv;
-          ri0_vals[vi]                     = partptr(partidx);
-          nrows_vals[vi]                   = partptr(partidx + 1) - ri0_vals[vi];
-        }
-
-        impl_scalar_type z_partial_sum(0);
-        if (nrows_vals[0] == 1) {
-          const local_ordinal_type j = 0, pri = pri0;
-          {
-            for (local_ordinal_type vv = vbeg, vi = 0; vv < npacks && vi < internal_vector_length; ++vv, ++vi) {
-              const local_ordinal_type ri0   = ri0_vals[vi];
-              const local_ordinal_type nrows = nrows_vals[vi];
-              if (j < nrows) {
-                Kokkos::parallel_for(Kokkos::TeamThreadRange(member, blocksize),
-                                     [&](const local_ordinal_type &i) {
-                                       const local_ordinal_type row = blocksize * lclrow(ri0 + j) + i;
-                                       impl_scalar_type &y          = Y_scalar_multivector(row, 0);
-                                       const impl_scalar_type yd    = X_internal_vector_values(pri, i, 0, v)[vi] - y;
-                                       y += df * yd;
-
-                                       {  // if (compute_diff) {
-                                         const auto yd_abs = KokkosKernels::ArithTraits<impl_scalar_type>::abs(yd);
-                                         z_partial_sum += yd_abs * yd_abs;
-                                       }
-                                     });
-              }
-            }
-          }
-        } else {
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(member, nrows_vals[0]),
-                               [&](const local_ordinal_type &j) {
-                                 const local_ordinal_type pri = pri0 + j;
-                                 for (local_ordinal_type vv = vbeg, vi = 0; vv < npacks && vi < internal_vector_length; ++vv, ++vi) {
-                                   const local_ordinal_type ri0   = ri0_vals[vi];
-                                   const local_ordinal_type nrows = nrows_vals[vi];
-                                   if (j < nrows) {
-                                     for (local_ordinal_type i = 0; i < blocksize; ++i) {
-                                       const local_ordinal_type row = blocksize * lclrow(ri0 + j) + i;
-                                       impl_scalar_type &y          = Y_scalar_multivector(row, 0);
-                                       const impl_scalar_type yd    = X_internal_vector_values(pri, i, 0, v)[vi] - y;
-                                       y += df * yd;
-
-                                       {  // if (compute_diff) {
-                                         const auto yd_abs = KokkosKernels::ArithTraits<impl_scalar_type>::abs(yd);
-                                         z_partial_sum += yd_abs * yd_abs;
-                                       }
-                                     }
-                                   }
-                                 }
-                               });
-        }
-        // if (compute_diff)
-        Kokkos::atomic_add(&Z_scalar_vector(member.league_rank()), z_partial_sum);
-      }
-    }
-
     KOKKOS_INLINE_FUNCTION void
     operator()(const member_type &member) const {
       const local_ordinal_type packidx   = member.league_rank();
       const local_ordinal_type partidx   = packptr(packidx);
-      const local_ordinal_type npacks    = packptr(packidx + 1) - partidx;
       const local_ordinal_type pri0      = part2packrowidx0(partidx);
       const local_ordinal_type i0        = pack_td_ptr(partidx, 0);
       const local_ordinal_type r0        = pri0;
@@ -4730,7 +4755,9 @@ struct SolveTridiags {
       });
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, vector_loop_size), [&](const int &v) {
         solveSingleVector(member, blocksize, i0, r0, nrows, v, WW);
-        copyToFlatMultiVector(member, partidx, npacks, pri0, v, blocksize);
+        const impl_scalar_type z_partial_sum =
+            updatePackedY<impl_type>(member, X_internal_vector_values, Y_packed, df, pri0, nrows, v, blocksize, 1);
+        Kokkos::atomic_add(&Z_scalar_vector(member.league_rank()), z_partial_sum);
       });
     }
   };
@@ -4740,7 +4767,6 @@ struct SolveTridiags {
   operator()(const MultiVectorTag<B, ScratchLevel> &, const member_type &member) const {
     const local_ordinal_type packidx     = member.league_rank();
     const local_ordinal_type partidx     = packptr(packidx);
-    const local_ordinal_type npacks      = packptr(packidx + 1) - partidx;
     const local_ordinal_type pri0        = part2packrowidx0(partidx);
     const local_ordinal_type i0          = pack_td_ptr(partidx, 0);
     const local_ordinal_type r0          = part2packrowidx0(partidx);
@@ -4755,7 +4781,7 @@ struct SolveTridiags {
     });
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, vector_loop_size), [&](const int &v) {
       solveMultiVector(member, blocksize, i0, r0, nrows, v, WW);
-      copyToFlatMultiVector(member, partidx, npacks, pri0, v, blocksize, num_vectors);
+      updatePackedIterate(member, pri0, nrows, v, blocksize, num_vectors);
     });
   }
 
@@ -5034,23 +5060,25 @@ struct SolveTridiags {
   operator()(const CopyVectorToFlatTag<B> &, const member_type &member) const {
     const local_ordinal_type packidx     = member.league_rank();
     const local_ordinal_type partidx     = packptr(packidx);
-    const local_ordinal_type npacks      = packptr(packidx + 1) - partidx;
     const local_ordinal_type pri0        = part2packrowidx0(partidx);
+    const local_ordinal_type nrows       = partptr(partidx + 1) - partptr(partidx);
     const local_ordinal_type blocksize   = (B == 0 ? D_internal_vector_values.extent(1) : B);
     const local_ordinal_type num_vectors = X_internal_vector_values.extent(2);
 
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, vector_loop_size), [&](const int &v) {
-      copyToFlatMultiVector(member, partidx, npacks, pri0, v, blocksize, num_vectors);
+      updatePackedIterate(member, pri0, nrows, v, blocksize, num_vectors);
     });
   }
 
-  void run(const impl_scalar_type_2d_view_tpetra &Y,
+  // Solve the packed tridiags in place, then update the packed iterate Y with
+  // the solution, and put the squared norms of the updates (per pack) in Z.
+  void run(const packed_mv_view &Y,
            const impl_scalar_type_1d_view &Z) {
     IFPACK2_BLOCKTRIDICONTAINER_PROFILER_REGION_BEGIN;
     IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::SolveTridiags", SolveTridiags);
 
     /// set vectors
-    this->Y_scalar_multivector = Y;
+    this->Y_packed = Y;
     this->Z_scalar_vector      = Z;
 
     const local_ordinal_type num_vectors = X_internal_vector_values.extent(2);
@@ -5189,7 +5217,13 @@ struct SolveTridiags {
 };
 
 ///
-/// top level apply interface (general case)
+/// top level apply interface
+///
+/// The right hand side and the iterate are kept in the packed (SIMD lane
+/// interleaved) layout during the sweeps, and the residual is computed with
+/// the packed copy of R = A - D. Y is updated from the packed iterate at the
+/// end only. If all the parts have a single row (block Jacobi), the residual,
+/// the application of D^-1 and the update are fused in a single kernel.
 ///
 template <typename MatrixType>
 int applyInverseJacobi(  // importer
@@ -5204,10 +5238,14 @@ int applyInverseJacobi(  // importer
     /* */ typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &Z,   // temporary tpetra interface (seq_method)
     /* */ typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type_1d_view &W,  // temporary tpetra interface (diff)
     // local object interface
-    const BlockHelperDetails::PartInterface<MatrixType> &interf,                         // mesh interface
-    const BlockTridiags<MatrixType> &btdm,                                               // packed block tridiagonal matrices
-    const BlockHelperDetails::AmD<MatrixType> &amd,                                      // R = A - D
-    /* */ typename BlockHelperDetails::ImplType<MatrixType>::vector_type_1d_view &work,  // workspace for packed multivector of right hand side
+    const BlockHelperDetails::PartInterface<MatrixType> &interf,  // mesh interface
+    const BlockTridiags<MatrixType> &btdm,                        // packed block tridiagonal matrices
+    const BlockHelperDetails::AmD<MatrixType> &amd,               // R = A - D
+    const BlockHelperDetails::PackedAmD<MatrixType> &packed_amd,  // packed R
+    /* */ typename BlockHelperDetails::ImplType<MatrixType>::vector_type_1d_view &work,  // workspace for packed residual / solution
+    /* */ typename BlockHelperDetails::PackedMultiVector<MatrixType>::view_type &packed_b,       // workspace for packed right hand side
+    /* */ typename BlockHelperDetails::PackedMultiVector<MatrixType>::view_type &packed_y,       // workspace for packed iterate
+    /* */ typename BlockHelperDetails::PackedMultiVector<MatrixType>::view_type &packed_y_next,  // workspace for packed iterate (fused Jacobi)
     /* */ BlockHelperDetails::NormManager<MatrixType> &norm_manager,
     // preconditioner parameters
     const typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type &damping_factor,
@@ -5217,18 +5255,27 @@ int applyInverseJacobi(  // importer
     const int check_tol_every) {
   IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::ApplyInverseJacobi", ApplyInverseJacobi);
 
-  using impl_type                  = BlockHelperDetails::ImplType<MatrixType>;
-  using node_memory_space          = typename impl_type::node_memory_space;
-  using local_ordinal_type         = typename impl_type::local_ordinal_type;
-  using size_type                  = typename impl_type::size_type;
-  using impl_scalar_type           = typename impl_type::impl_scalar_type;
-  using magnitude_type             = typename impl_type::magnitude_type;
-  using local_ordinal_type_1d_view = typename impl_type::local_ordinal_type_1d_view;
-  using vector_type_1d_view        = typename impl_type::vector_type_1d_view;
-  using vector_type_3d_view        = typename impl_type::vector_type_3d_view;
-  using tpetra_multivector_type    = typename impl_type::tpetra_multivector_type;
-
-  using impl_scalar_type_1d_view = typename impl_type::impl_scalar_type_1d_view;
+  using impl_type                       = BlockHelperDetails::ImplType<MatrixType>;
+  using execution_space                 = typename impl_type::execution_space;
+  using node_memory_space               = typename impl_type::node_memory_space;
+  using local_ordinal_type              = typename impl_type::local_ordinal_type;
+  using size_type                       = typename impl_type::size_type;
+  using impl_scalar_type                = typename impl_type::impl_scalar_type;
+  using btdm_scalar_type                = typename impl_type::btdm_scalar_type;
+  using magnitude_type                  = typename impl_type::magnitude_type;
+  using local_ordinal_type_1d_view      = typename impl_type::local_ordinal_type_1d_view;
+  using vector_type_1d_view             = typename impl_type::vector_type_1d_view;
+  using vector_type_3d_view             = typename impl_type::vector_type_3d_view;
+  using tpetra_multivector_type         = typename impl_type::tpetra_multivector_type;
+  using impl_scalar_type_1d_view        = typename impl_type::impl_scalar_type_1d_view;
+  using impl_scalar_type_2d_view_tpetra = typename impl_type::impl_scalar_type_2d_view_tpetra;
+  using packed_mv_type                  = BlockHelperDetails::PackedMultiVector<MatrixType>;
+  using packed_mv_view                  = typename packed_mv_type::view_type;
+  using packed_residual_type            = BlockHelperDetails::PackedResidual<MatrixType>;
+  using btdm_mv_view                    = typename packed_residual_type::btdm_mv_type;
+  using packed_source_type              = typename AsyncableImport<MatrixType>::PackedSource;
+  using BlockHelperDetails::PackedJacobiMode;
+  constexpr int vector_length = impl_type::vector_length;
 
   // either tpetra importer or async importer must be active
   TEUCHOS_TEST_FOR_EXCEPT_MSG(!tpetra_importer.is_null() && !async_importer.is_null(),
@@ -5244,9 +5291,7 @@ int applyInverseJacobi(  // importer
   const magnitude_type tolerance         = tol * tol;
   const local_ordinal_type blocksize     = btdm.values.extent(1);
   const local_ordinal_type num_vectors   = Y.getNumVectors();
-  const local_ordinal_type num_blockrows = interf.part2packrowidx0_back;
-
-  const impl_scalar_type zero(0.0);
+  const local_ordinal_type num_pack_rows = interf.part2packrowidx0_back;
 
   TEUCHOS_TEST_FOR_EXCEPT_MSG(is_norm_manager_active && is_seq_method_requested,
                               "The seq method for applyInverseJacobi, "
@@ -5260,17 +5305,37 @@ int applyInverseJacobi(  // importer
                                  << "which in any case is for developer use only, "
                                  << "only supports memory spaces accessible from host.");
 
+  // Block Jacobi (all parts have one row): fuse residual, solve and update.
+  // Then D^-1 for pack row i is the packed block i.
+  const bool use_fused_jacobi_kernel = (interf.max_partsz == 1 &&
+                                        !is_seq_method_requested &&
+                                        btdm.values.extent(0) == size_t(num_pack_rows));
+
   // if workspace is needed more, resize it
-  const size_type work_span_required = num_blockrows * num_vectors * blocksize;
+  const size_type work_span_required = size_type(num_pack_rows) * num_vectors * blocksize;
   if (work.span() < work_span_required)
     work = vector_type_1d_view("vector workspace 1d view", work_span_required);
 
+  // The packed multivectors must have zeros in the lanes and rows that don't
+  // correspond to a row of a part (padding). That is the case after their
+  // allocation, and all the kernels below preserve it.
+  auto reallocPacked = [&](packed_mv_view &v, const char *label) {
+    if (local_ordinal_type(v.extent(0)) != num_pack_rows ||
+        local_ordinal_type(v.extent(1)) != blocksize ||
+        local_ordinal_type(v.extent(2)) != num_vectors)
+      v = packed_mv_view(label, num_pack_rows, blocksize, num_vectors, vector_length);
+  };
+  reallocPacked(packed_b, "packed b");
+  reallocPacked(packed_y, "packed y");
+  if (use_fused_jacobi_kernel) reallocPacked(packed_y_next, "packed y next");
+
   // construct W
-  const local_ordinal_type W_size = interf.packptr.extent(0) - 1;
-  if (local_ordinal_type(W.extent(0)) < W_size)
+  const local_ordinal_type W_size = use_fused_jacobi_kernel ? packed_residual_type::jacobiNumTeams(num_pack_rows, blocksize)
+                                                             : local_ordinal_type(interf.packptr.extent(0) - 1);
+  if (local_ordinal_type(W.extent(0)) != W_size)
     W = impl_scalar_type_1d_view("W", W_size);
 
-  typename impl_type::impl_scalar_type_2d_view_tpetra remote_multivector;
+  impl_scalar_type_2d_view_tpetra remote_multivector;
   {
     if (is_seq_method_requested) {
       if (Z.getNumVectors() != Y.getNumVectors())
@@ -5285,86 +5350,108 @@ int applyInverseJacobi(  // importer
   }
 
   // wrap the workspace with 3d view
-  vector_type_3d_view pmv(work.data(), num_blockrows, blocksize, num_vectors);
+  vector_type_3d_view pmv(work.data(), num_pack_rows, blocksize, num_vectors);
+  btdm_mv_view pmv_scalar((btdm_scalar_type *)work.data(), num_pack_rows, blocksize, num_vectors, vector_length);
+  btdm_mv_view Dinv;
+  if (use_fused_jacobi_kernel)
+    Dinv = btdm_mv_view((btdm_scalar_type *)btdm.values.data(), btdm.values.extent(0), blocksize, blocksize, vector_length);
+
   const auto XX = X.getLocalViewDevice(Tpetra::Access::ReadOnly);
   const auto YY = Y.getLocalViewDevice(Tpetra::Access::ReadWrite);
-  const auto ZZ = Z.getLocalViewDevice(Tpetra::Access::ReadWrite);
-  if (is_y_zero) Kokkos::deep_copy(YY, zero);
 
-  MultiVectorConverter<MatrixType> multivector_converter(interf, pmv);
+  const auto &lid2packed = packed_amd.lid2packed;
+
+  // pack the right hand side and the initial iterate
+  packed_mv_type::pack(packed_b, XX, lid2packed);
+  if (is_y_zero) {
+    if (!use_fused_jacobi_kernel) Kokkos::deep_copy(packed_y, impl_scalar_type(0));
+  } else {
+    packed_mv_type::pack(packed_y, YY, lid2packed);
+  }
+
   SolveTridiags<MatrixType> solve_tridiags(interf, btdm, pmv,
                                            damping_factor, is_norm_manager_active);
-
-  const local_ordinal_type_1d_view dummy_local_ordinal_type_1d_view;
-
-  auto A_crs  = Teuchos::rcp_dynamic_cast<const typename impl_type::tpetra_crs_matrix_type>(A);
-  auto A_bcrs = Teuchos::rcp_dynamic_cast<const typename impl_type::tpetra_block_crs_matrix_type>(A);
-
-  bool hasBlockCrsMatrix = !A_bcrs.is_null();
-
-  // This is OK here to use the graph of the A_crs matrix and a block size of 1
-  const auto g = hasBlockCrsMatrix ? A_bcrs->getCrsGraph() : *(A_crs->getCrsGraph());  // tpetra crs graph object
-
-  BlockHelperDetails::ComputeResidualVector<MatrixType>
-      compute_residual_vector(amd, G->getLocalGraphDevice(), g.getLocalGraphDevice(), blocksize, interf,
-                              is_async_importer_active ? async_importer->dm2cm : dummy_local_ordinal_type_1d_view,
-                              hasBlockCrsMatrix);
 
   // norm manager workspace resize
   if (is_norm_manager_active)
     norm_manager.setCheckFrequency(check_tol_every);
 
+  // The residual is computed in two passes (owned columns, then remote columns
+  // after the communication) if communication and computation are overlapped.
+  // Otherwise, all of R is in packed_amd.owned.
+  const bool two_pass = is_async_importer_active && overlap_communication_and_computation;
+
   // iterate
   int sweep = 0;
   for (; sweep < max_num_sweeps; ++sweep) {
-    {
-      if (is_y_zero) {
-        // pmv := x(lclrow)
-        multivector_converter.run(XX);
+    if (is_y_zero) {
+      if (use_fused_jacobi_kernel) {
+        // y_next := df D^-1 b
+        packed_residual_type::jacobi(PackedJacobiMode::YZero, packed_amd.owned, packed_b, packed_y, remote_multivector,
+                                     pmv_scalar, Dinv, packed_y_next, W, damping_factor, blocksize);
       } else {
-        if (is_seq_method_requested) {
-          // SEQ METHOD IS TESTING ONLY
-
-          // y := x - R y
-          Z.doImport(Y, *tpetra_importer, Tpetra::REPLACE);
-          compute_residual_vector.run(YY, XX, ZZ);
-
-          // pmv := y(lclrow).
-          multivector_converter.run(YY);
-        } else {
-          // fused y := x - R y and pmv := y(lclrow);
-          // real use case does not use overlap comp and comm
-          if (overlap_communication_and_computation || !is_async_importer_active) {
-            if (is_async_importer_active) async_importer->asyncSendRecv(YY);
-            // OverlapTag, compute_owned = true
-            compute_residual_vector.run(pmv, XX, YY, remote_multivector, true);
-            if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
-              if (is_async_importer_active) async_importer->cancel();
-              break;
-            }
-            if (is_async_importer_active) {
-              async_importer->syncRecv();
-              // OverlapTag, compute_owned = false
-              compute_residual_vector.run(pmv, XX, YY, remote_multivector, false);
-            }
-          } else {
-            if (is_async_importer_active)
-              async_importer->syncExchange(YY);
-            if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
-            // AsyncTag
-            compute_residual_vector.run(pmv, XX, YY, remote_multivector);
-          }
-        }
+        // pmv := b
+        const auto b_data   = packed_b.data();
+        const auto pmv_data = pmv_scalar.data();
+        Kokkos::parallel_for(
+            "BlockTriDi::ApplyInverseJacobi::CopyPackedB", Kokkos::RangePolicy<execution_space>(0, packed_b.span()),
+            KOKKOS_LAMBDA(const size_type i) { pmv_data[i] = btdm_scalar_type(b_data[i]); });
+      }
+    } else if (is_seq_method_requested) {
+      // SEQ METHOD IS TESTING ONLY
+      // y := x - R y, with the unpacked residual, then pmv := y(lclrow)
+      packed_mv_type::unpack(YY, packed_y, lid2packed);
+      Z.doImport(Y, *tpetra_importer, Tpetra::REPLACE);
+      auto A_crs  = Teuchos::rcp_dynamic_cast<const typename impl_type::tpetra_crs_matrix_type>(A);
+      auto A_bcrs = Teuchos::rcp_dynamic_cast<const typename impl_type::tpetra_block_crs_matrix_type>(A);
+      const bool hasBlockCrsMatrix = !A_bcrs.is_null();
+      const auto g                 = hasBlockCrsMatrix ? A_bcrs->getCrsGraph() : *(A_crs->getCrsGraph());
+      BlockHelperDetails::ComputeResidualVector<MatrixType>
+          compute_residual_vector(amd, G->getLocalGraphDevice(), g.getLocalGraphDevice(), blocksize, interf,
+                                  local_ordinal_type_1d_view(), hasBlockCrsMatrix);
+      const auto ZZ = Z.getLocalViewDevice(Tpetra::Access::ReadWrite);
+      compute_residual_vector.run(YY, XX, ZZ);
+      MultiVectorConverter<MatrixType> multivector_converter(interf, pmv);
+      multivector_converter.run(YY);
+    } else if (!two_pass) {
+      if (is_async_importer_active)
+        async_importer->syncExchange(packed_source_type{packed_y, lid2packed});
+      if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
+      if (use_fused_jacobi_kernel) {
+        // y_next := y + df (D^-1 (b - R y) - y)
+        packed_residual_type::jacobi(PackedJacobiMode::Init, packed_amd.owned, packed_b, packed_y, remote_multivector,
+                                     pmv_scalar, Dinv, packed_y_next, W, damping_factor, blocksize);
+      } else {
+        // pmv := b - R y
+        packed_residual_type::residual(packed_amd.owned, packed_b, packed_y, remote_multivector, pmv_scalar, blocksize, true);
+      }
+    } else {
+      async_importer->asyncSendRecv(packed_source_type{packed_y, lid2packed});
+      // pmv := b - R_owned y
+      packed_residual_type::residual(packed_amd.owned, packed_b, packed_y, remote_multivector, pmv_scalar, blocksize, true);
+      if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
+        async_importer->cancel();
+        break;
+      }
+      async_importer->syncRecv();
+      if (use_fused_jacobi_kernel) {
+        // y_next := y + df (D^-1 (pmv - R_remote y_remote) - y)
+        packed_residual_type::jacobi(PackedJacobiMode::Accum, packed_amd.remote, packed_b, packed_y, remote_multivector,
+                                     pmv_scalar, Dinv, packed_y_next, W, damping_factor, blocksize);
+      } else {
+        // pmv -= R_remote y_remote
+        packed_residual_type::residual(packed_amd.remote, packed_b, packed_y, remote_multivector, pmv_scalar, blocksize, false);
       }
     }
 
-    // pmv := inv(D) pmv.
-    {
-      solve_tridiags.run(YY, W);
+    if (use_fused_jacobi_kernel) {
+      std::swap(packed_y, packed_y_next);
+    } else {
+      // pmv := inv(D) pmv; y := y + df (pmv - y)
+      solve_tridiags.run(packed_y, W);
     }
     {
       if (is_norm_manager_active) {
-        // y(lclrow) = (b - a) y(lclrow) + a pmv, with b = 1 always.
         BlockHelperDetails::reduceVector<MatrixType>(W, norm_manager.getBuffer());
         if (sweep + 1 == max_num_sweeps) {
           norm_manager.ireduce(sweep, true);
@@ -5377,160 +5464,8 @@ int applyInverseJacobi(  // importer
     is_y_zero = false;
   }
 
-  // sqrt the norms for the caller's use.
-  if (is_norm_manager_active) norm_manager.finalize();
-
-  return sweep;
-}
-
-///
-/// top level apply interface (fused block Jacobi)
-///
-template <typename MatrixType>
-int applyFusedBlockJacobi(
-    const Teuchos::RCP<const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_import_type> &tpetra_importer,
-    const Teuchos::RCP<AsyncableImport<MatrixType>> &async_importer,
-    const bool overlap_communication_and_computation,
-    // tpetra interface
-    const typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &X,   // tpetra interface
-    /* */ typename BlockHelperDetails::ImplType<MatrixType>::tpetra_multivector_type &Y,   // tpetra interface
-    /* */ typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type_1d_view &W,  // temporary tpetra interface (diff)
-    // local object interface
-    const BlockHelperDetails::PartInterface<MatrixType> &interf,                              // mesh interface
-    const BlockTridiags<MatrixType> &btdm,                                                    // packed block tridiagonal matrices
-    const BlockHelperDetails::AmD<MatrixType> &amd,                                           // R = A - D
-    /* */ typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type_1d_view &work,  // workspace
-    /* */ BlockHelperDetails::NormManager<MatrixType> &norm_manager,
-    // preconditioner parameters
-    const typename BlockHelperDetails::ImplType<MatrixType>::impl_scalar_type &damping_factor,
-    /* */ bool is_y_zero,
-    const int max_num_sweeps,
-    const typename BlockHelperDetails::ImplType<MatrixType>::magnitude_type tol,
-    const int check_tol_every) {
-  using impl_type                       = BlockHelperDetails::ImplType<MatrixType>;
-  using local_ordinal_type              = typename impl_type::local_ordinal_type;
-  using size_type                       = typename impl_type::size_type;
-  using magnitude_type                  = typename impl_type::magnitude_type;
-  using impl_scalar_type_1d_view        = typename impl_type::impl_scalar_type_1d_view;
-  using impl_scalar_type_2d_view_tpetra = typename impl_type::impl_scalar_type_2d_view_tpetra;
-
-  IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::ApplyFusedBlockJacobi", ApplyFusedBlockJacobi);
-
-  // the tpetra importer and async importer can't both be active
-  TEUCHOS_TEST_FOR_EXCEPT_MSG(!tpetra_importer.is_null() && !async_importer.is_null(),
-                              "Neither Tpetra importer nor Async importer is null.");
-  // max number of sweeps should be positive number
-  TEUCHOS_TEST_FOR_EXCEPT_MSG(max_num_sweeps <= 0,
-                              "Maximum number of sweeps must be >= 1.");
-
-  // const parameters
-  const bool is_async_importer_active    = !async_importer.is_null();
-  const bool is_norm_manager_active      = tol > KokkosKernels::ArithTraits<magnitude_type>::zero();
-  const magnitude_type tolerance         = tol * tol;
-  const local_ordinal_type blocksize     = btdm.d_inv.extent(1);
-  const local_ordinal_type num_vectors   = Y.getNumVectors();
-  const local_ordinal_type num_blockrows = interf.nparts;
-
-  typename impl_type::impl_scalar_type_2d_view_tpetra remote_multivector;
-  {
-    if (is_async_importer_active) {
-      // create comm data buffer and keep it here
-      async_importer->createDataBuffer(num_vectors);
-      remote_multivector = async_importer->getRemoteMultiVectorLocalView();
-    }
-  }
-
-  const auto XX = X.getLocalViewDevice(Tpetra::Access::ReadOnly);
-  const auto YY = Y.getLocalViewDevice(Tpetra::Access::ReadWrite);
-
-  const bool two_pass_residual =
-      overlap_communication_and_computation && is_async_importer_active;
-
-  // Calculate the required work size and reallocate it if not already big enough.
-  // Check that our assumptions about YY dimension are correct.
-  TEUCHOS_TEST_FOR_EXCEPT_MSG(
-      size_t(num_blockrows) * blocksize * num_vectors != YY.extent(0) * YY.extent(1),
-      "Local LHS vector (YY) has total size " << YY.extent(0) << "x" << YY.extent(1) << " = " << YY.extent(0) * YY.extent(1) << ",\n"
-                                              << "but expected " << num_blockrows << "x" << blocksize << "x" << num_vectors << " = " << size_t(num_blockrows) * blocksize * num_vectors << '\n');
-  size_type work_required = size_type(num_blockrows) * blocksize * num_vectors;
-  if (work.extent(0) < work_required) {
-    work = impl_scalar_type_1d_view(do_not_initialize_tag("flat workspace 1d view"), work_required);
-  }
-
-  Unmanaged<impl_scalar_type_2d_view_tpetra> y_doublebuf(work.data(), num_blockrows * blocksize, num_vectors);
-
-  // construct W
-  if (W.extent(0) != size_t(num_blockrows))
-    W = impl_scalar_type_1d_view(do_not_initialize_tag("W"), num_blockrows);
-
-  BlockHelperDetails::ComputeResidualAndSolve<MatrixType>
-      residualAndSolve(amd, btdm.d_inv, W, blocksize, damping_factor);
-
-  // norm manager workspace resize
-  if (is_norm_manager_active)
-    norm_manager.setCheckFrequency(check_tol_every);
-
-  // For double-buffering.
-  //   yy_buffers[current_y] has the current iterate of y.
-  //   yy_buffers[1-current_y] has the next iterate of y.
-  Unmanaged<impl_scalar_type_2d_view_tpetra> y_buffers[2] = {YY, y_doublebuf};
-  int current_y                                           = 0;
-
-  // iterate
-  int sweep = 0;
-  for (; sweep < max_num_sweeps; ++sweep) {
-    if (is_y_zero) {
-      // If y is initially zero, then we are just computing y := damping_factor * Dinv * x
-      residualAndSolve.run_y_zero(XX, y_buffers[1 - current_y]);
-    } else {
-      // real use case does not use overlap comp and comm
-      if (overlap_communication_and_computation || !is_async_importer_active) {
-        if (is_async_importer_active) async_importer->asyncSendRecv(y_buffers[current_y]);
-        if (two_pass_residual) {
-          // Pass 1 computes owned residual and stores into new y buffer,
-          // but doesn't apply Dinv or produce a norm yet
-          residualAndSolve.run_pass1_of_2(XX, y_buffers[current_y], y_buffers[1 - current_y]);
-        } else {
-          // This case happens if running with single rank.
-          // There are no remote columns, so residual and solve can happen in one step.
-          residualAndSolve.run_single_pass(XX, y_buffers[current_y], remote_multivector, y_buffers[1 - current_y]);
-        }
-        if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) {
-          if (is_async_importer_active) async_importer->cancel();
-          break;
-        }
-        if (is_async_importer_active) {
-          async_importer->syncRecv();
-          // Stage 2 finishes computing the residual, then applies Dinv and computes norm.
-          residualAndSolve.run_pass2_of_2(y_buffers[current_y], remote_multivector, y_buffers[1 - current_y]);
-        }
-      } else {
-        if (is_async_importer_active)
-          async_importer->syncExchange(y_buffers[current_y]);
-        if (is_norm_manager_active && norm_manager.checkDone(sweep, tolerance)) break;
-        // Full residual, Dinv apply, and norm in one kernel
-        residualAndSolve.run_single_pass(XX, y_buffers[current_y], remote_multivector, y_buffers[1 - current_y]);
-      }
-    }
-
-    // Compute global norm.
-    if (is_norm_manager_active) {
-      BlockHelperDetails::reduceVector<MatrixType>(W, norm_manager.getBuffer());
-      if (sweep + 1 == max_num_sweeps) {
-        norm_manager.ireduce(sweep, true);
-        norm_manager.checkDone(sweep + 1, tolerance, true);
-      } else {
-        norm_manager.ireduce(sweep);
-      }
-    }
-    is_y_zero = false;
-    // flip y buffers for next iteration, or termination if we reached max_num_sweeps.
-    current_y = 1 - current_y;
-  }
-  if (current_y == 1) {
-    // We finished iterating with y in the double buffer, so copy it to the user's vector.
-    Kokkos::deep_copy(YY, y_doublebuf);
-  }
+  // y(lclrow) := packed y
+  packed_mv_type::unpack(YY, packed_y, lid2packed);
 
   // sqrt the norms for the caller's use.
   if (is_norm_manager_active) norm_manager.finalize();
@@ -5544,6 +5479,8 @@ struct ImplObject {
   using part_interface_type = BlockHelperDetails::PartInterface<MatrixType>;
   using block_tridiags_type = BlockTridiags<MatrixType>;
   using amd_type            = BlockHelperDetails::AmD<MatrixType>;
+  using packed_amd_type     = BlockHelperDetails::PackedAmD<MatrixType>;
+  using packed_mv_view      = typename BlockHelperDetails::PackedMultiVector<MatrixType>::view_type;
   using norm_manager_type   = BlockHelperDetails::NormManager<MatrixType>;
   using async_import_type   = AsyncableImport<MatrixType>;
 
@@ -5563,13 +5500,16 @@ struct ImplObject {
   block_tridiags_type block_tridiags;  // D
   amd_type a_minus_d;                  // R = A - D
 
-  // whether to use fused block Jacobi path
+  packed_amd_type packed_amd;          // R in packed form
+
+  // whether to use the fused block Jacobi factorization
+  // (independently, the apply uses a fused residual+solve kernel in any block Jacobi case)
   bool use_fused_jacobi;
 
-  // vector workspace is used for general block tridi case
-  mutable typename impl_type::vector_type_1d_view work;  // right hand side workspace (1D view of vector)
-  // scalar workspace is used for fused block jacobi case
-  mutable typename impl_type::impl_scalar_type_1d_view work_flat;  // right hand side workspace (1D view of scalar)
+  // packed residual / solution workspace (1D view of vector)
+  mutable typename impl_type::vector_type_1d_view work;
+  // packed right hand side and iterates
+  mutable packed_mv_view packed_b, packed_y, packed_y_next;
   mutable norm_manager_type norm_manager;
 };
 

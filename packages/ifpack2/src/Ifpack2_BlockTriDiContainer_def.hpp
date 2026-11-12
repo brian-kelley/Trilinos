@@ -126,6 +126,8 @@ void BlockTriDiContainer<MatrixType, BlockTriDiContainerDetails::ImplSimdTag>::c
   using part_interface_type = BlockHelperDetails::PartInterface<MatrixType>;
   using block_tridiags_type = BlockTriDiContainerDetails::BlockTridiags<MatrixType>;
   using amd_type            = BlockHelperDetails::AmD<MatrixType>;
+  using packed_amd_type     = BlockHelperDetails::PackedAmD<MatrixType>;
+  using packed_mv_view      = typename BlockHelperDetails::PackedMultiVector<MatrixType>::view_type;
   using norm_manager_type   = BlockHelperDetails::NormManager<MatrixType>;
 
   impl_->A               = Teuchos::null;
@@ -138,7 +140,11 @@ void BlockTriDiContainer<MatrixType, BlockTriDiContainerDetails::ImplSimdTag>::c
   impl_->part_interface = part_interface_type();
   impl_->block_tridiags = block_tridiags_type();
   impl_->a_minus_d      = amd_type();
+  impl_->packed_amd     = packed_amd_type();
   impl_->work           = typename impl_type::vector_type_1d_view();
+  impl_->packed_b       = packed_mv_view();
+  impl_->packed_y       = packed_mv_view();
+  impl_->packed_y_next  = packed_mv_view();
   impl_->norm_manager   = norm_manager_type();
 
   impl_ = Teuchos::null;
@@ -252,6 +258,7 @@ void BlockTriDiContainer<MatrixType, BlockTriDiContainerDetails::ImplSimdTag>::i
                                                                  impl_->part_interface,
                                                                  impl_->block_tridiags,
                                                                  impl_->a_minus_d,
+                                                                 impl_->packed_amd,
                                                                  impl_->overlap_communication_and_computation,
                                                                  impl_->async_importer, useSeqMethod, impl_->use_fused_jacobi);
   }
@@ -267,7 +274,7 @@ void BlockTriDiContainer<MatrixType, BlockTriDiContainerDetails::ImplSimdTag>::c
   {
     BlockTriDiContainerDetails::performNumericPhase<MatrixType>(impl_->A,
                                                                 impl_->blockGraph,
-                                                                impl_->part_interface, impl_->block_tridiags,
+                                                                impl_->part_interface, impl_->block_tridiags, impl_->packed_amd,
                                                                 KokkosKernels::ArithTraits<magnitude_type>::zero(),
                                                                 impl_->use_fused_jacobi);
   }
@@ -292,35 +299,21 @@ void BlockTriDiContainer<MatrixType, BlockTriDiContainerDetails::ImplSimdTag>::a
   const magnitude_type tol  = KokkosKernels::ArithTraits<magnitude_type>::zero();
   const int check_tol_every = 1;
 
-  if (!impl_->use_fused_jacobi) {
-    BlockTriDiContainerDetails::applyInverseJacobi<MatrixType>(impl_->A,
-                                                               impl_->blockGraph,
-                                                               impl_->tpetra_importer,
-                                                               impl_->async_importer,
-                                                               impl_->overlap_communication_and_computation,
-                                                               X, Y, impl_->Z, impl_->W,
-                                                               impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
-                                                               impl_->work,
-                                                               impl_->norm_manager,
-                                                               dampingFactor,
-                                                               zeroStartingSolution,
-                                                               numSweeps,
-                                                               tol,
-                                                               check_tol_every);
-  } else {
-    BlockTriDiContainerDetails::applyFusedBlockJacobi<MatrixType>(impl_->tpetra_importer,
-                                                                  impl_->async_importer,
-                                                                  impl_->overlap_communication_and_computation,
-                                                                  X, Y, impl_->W,
-                                                                  impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
-                                                                  impl_->work_flat,
-                                                                  impl_->norm_manager,
-                                                                  dampingFactor,
-                                                                  zeroStartingSolution,
-                                                                  numSweeps,
-                                                                  tol,
-                                                                  check_tol_every);
-  }
+  BlockTriDiContainerDetails::applyInverseJacobi<MatrixType>(impl_->A,
+                                                             impl_->blockGraph,
+                                                             impl_->tpetra_importer,
+                                                             impl_->async_importer,
+                                                             impl_->overlap_communication_and_computation,
+                                                             X, Y, impl_->Z, impl_->W,
+                                                             impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
+                                                             impl_->packed_amd,
+                                                             impl_->work, impl_->packed_b, impl_->packed_y, impl_->packed_y_next,
+                                                             impl_->norm_manager,
+                                                             dampingFactor,
+                                                             zeroStartingSolution,
+                                                             numSweeps,
+                                                             tol,
+                                                             check_tol_every);
   IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
 }
 
@@ -339,7 +332,7 @@ void BlockTriDiContainer<MatrixType, BlockTriDiContainerDetails::ImplSimdTag>::c
   {
     BlockTriDiContainerDetails::performNumericPhase<MatrixType>(impl_->A,
                                                                 impl_->blockGraph,
-                                                                impl_->part_interface, impl_->block_tridiags,
+                                                                impl_->part_interface, impl_->block_tridiags, impl_->packed_amd,
                                                                 in.addRadiallyToDiagonal,
                                                                 impl_->use_fused_jacobi);
   }
@@ -361,35 +354,21 @@ int BlockTriDiContainer<MatrixType, BlockTriDiContainerDetails::ImplSimdTag>::ap
   IFPACK2_BLOCKHELPER_TIMER("BlockTriDiContainer::applyInverseJacobi", applyInverseJacobi);
   int r_val = 0;
   {
-    if (!impl_->use_fused_jacobi) {
-      r_val = BlockTriDiContainerDetails::applyInverseJacobi<MatrixType>(impl_->A,
-                                                                         impl_->blockGraph,
-                                                                         impl_->tpetra_importer,
-                                                                         impl_->async_importer,
-                                                                         impl_->overlap_communication_and_computation,
-                                                                         X, Y, impl_->Z, impl_->W,
-                                                                         impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
-                                                                         impl_->work,
-                                                                         impl_->norm_manager,
-                                                                         in.dampingFactor,
-                                                                         in.zeroStartingSolution,
-                                                                         in.maxNumSweeps,
-                                                                         in.tolerance,
-                                                                         in.checkToleranceEvery);
-    } else {
-      r_val = BlockTriDiContainerDetails::applyFusedBlockJacobi<MatrixType>(impl_->tpetra_importer,
-                                                                            impl_->async_importer,
-                                                                            impl_->overlap_communication_and_computation,
-                                                                            X, Y, impl_->W,
-                                                                            impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
-                                                                            impl_->work_flat,
-                                                                            impl_->norm_manager,
-                                                                            in.dampingFactor,
-                                                                            in.zeroStartingSolution,
-                                                                            in.maxNumSweeps,
-                                                                            in.tolerance,
-                                                                            in.checkToleranceEvery);
-    }
+    r_val = BlockTriDiContainerDetails::applyInverseJacobi<MatrixType>(impl_->A,
+                                                                       impl_->blockGraph,
+                                                                       impl_->tpetra_importer,
+                                                                       impl_->async_importer,
+                                                                       impl_->overlap_communication_and_computation,
+                                                                       X, Y, impl_->Z, impl_->W,
+                                                                       impl_->part_interface, impl_->block_tridiags, impl_->a_minus_d,
+                                                                       impl_->packed_amd,
+                                                                       impl_->work, impl_->packed_b, impl_->packed_y, impl_->packed_y_next,
+                                                                       impl_->norm_manager,
+                                                                       in.dampingFactor,
+                                                                       in.zeroStartingSolution,
+                                                                       in.maxNumSweeps,
+                                                                       in.tolerance,
+                                                                       in.checkToleranceEvery);
   }
   IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
   return r_val;
