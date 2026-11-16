@@ -251,8 +251,11 @@ struct FillPackedAmDFunctor {
   int scratch_level;
   bool is_block_crs;
 
+  // Shared memory holds each slot as bs "columns" (fixed k1) of bs*vl scalars, each column padded
+  // to an odd number of scalars (col_stride) so the transposing writes are free of bank conflicts.
+  KOKKOS_INLINE_FUNCTION static int colStride(const int blocksize) { return blocksize * vl + 1; }
   KOKKOS_INLINE_FUNCTION static size_t scratchSize(const int blocksize, const int slots_per_team) {
-    return sizeof(impl_scalar_type) * size_t(blocksize) * blocksize * vl * slots_per_team;
+    return sizeof(impl_scalar_type) * size_t(blocksize) * colStride(blocksize) * slots_per_team;
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -260,6 +263,7 @@ struct FillPackedAmDFunctor {
     const int bs         = (B == 0 ? blocksize_requested : B);
     const int bs2        = bs * bs;
     const int slot_size  = bs2 * vl;
+    const int cs         = colStride(bs);
     const int64_t slot0  = int64_t(member.league_rank()) * slots_per_team;
     const int nitems     = int(Kokkos::min(int64_t(slots_per_team), nslots - slot0)) * slot_size;
     impl_scalar_type *sm = reinterpret_cast<impl_scalar_type *>(member.team_scratch(scratch_level).get_shmem(scratchSize(bs, slots_per_team)));
@@ -280,13 +284,15 @@ struct FillPackedAmDFunctor {
         else
           a = A_values(A_point_rowptr(int64_t(src_row(slot, v)) * bs + k0) + sv + k1);
       }
-      sm[ls * slot_size + (k1 * bs + k0) * vl + v] = a;
+      sm[(ls * bs + k1) * cs + k0 * vl + v] = a;
     });
     member.team_barrier();
-    // write: contiguous
+    // write: contiguous. t -> (slot, k1, k0*vl + v); (slot, k1) is one padded column.
     impl_scalar_type *out = values.data() + slot0 * slot_size;
+    const int col_size    = bs * vl;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(member, nitems), [&](const int t) {
-      out[t] = sm[t];
+      const int c = t / col_size;
+      out[t]      = sm[c * cs + (t - c * col_size)];
     });
   }
 };
