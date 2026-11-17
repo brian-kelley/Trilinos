@@ -2381,6 +2381,86 @@ void performSymbolicPhase(const Teuchos::RCP<const typename BlockHelperDetails::
 }
 
 ///
+/// Register caps for the BTD factorization and solve kernels.
+///
+/// Both kernels are limited by register-constrained occupancy, so capping the
+/// registers per thread (with Kokkos::LaunchBounds) can be a large win, at the
+/// cost of some spilling. The best cap depends strongly on the block size, so
+/// these tables were tuned empirically, per block size, on H100 (Laplace3D,
+/// 128x96x96 cells, one line per part). A cap of 0 means "no LaunchBounds"
+/// (Kokkos default). Other architectures/backends are untuned and use 0.
+///
+/// Note: nvcc derives the cap from LaunchBounds<maxT, minB> per SM
+/// sub-partition, so only a few discrete caps are reachable;
+/// RegCapLaunchBounds maps each of those to (maxT, minB). maxT is always
+/// >= the largest team (320 threads) these kernels are launched with.
+///
+template <int RegCap>
+struct RegCapLaunchBounds {
+  static_assert(RegCap == 0, "RegCapLaunchBounds: unsupported register cap");
+  using type = Kokkos::LaunchBounds<0, 0>;
+};
+template <>
+struct RegCapLaunchBounds<128> { using type = Kokkos::LaunchBounds<512, 1>; };
+template <>
+struct RegCapLaunchBounds<96> { using type = Kokkos::LaunchBounds<640, 1>; };
+template <>
+struct RegCapLaunchBounds<72> { using type = Kokkos::LaunchBounds<800, 1>; };
+template <>
+struct RegCapLaunchBounds<64> { using type = Kokkos::LaunchBounds<1024, 1>; };
+template <>
+struct RegCapLaunchBounds<56> { using type = Kokkos::LaunchBounds<576, 2>; };
+template <>
+struct RegCapLaunchBounds<48> { using type = Kokkos::LaunchBounds<640, 2>; };
+template <>
+struct RegCapLaunchBounds<32> { using type = Kokkos::LaunchBounds<800, 2>; };
+
+template <typename ExecSpace>
+constexpr bool useTunedRegCaps() {
+#if defined(KOKKOS_ENABLE_CUDA) && defined(KOKKOS_ARCH_HOPPER)
+  return std::is_same_v<ExecSpace, Kokkos::Cuda>;
+#else
+  return false;
+#endif
+}
+
+/// Register cap for the ExtractAndFactorizeSubLineTag kernel.
+template <typename ExecSpace>
+constexpr int factorizeRegCap(const int blocksize) {
+  if (!useTunedRegCaps<ExecSpace>()) return 0;
+  if (blocksize == 10 || blocksize == 11) return 64;
+  if (blocksize >= 13 && blocksize <= 16) return 72;
+  if (blocksize >= 17 && blocksize <= 19) return 64;
+  return 0;
+}
+
+/// Register cap for the SolveTridiags single vector kernel.
+template <typename ExecSpace>
+constexpr int solveRegCap(const int blocksize) {
+  if (!useTunedRegCaps<ExecSpace>()) return 0;
+  if (blocksize >= 3 && blocksize <= 7) return 128;
+  if (blocksize >= 8 && blocksize <= 9) return 96;
+  if (blocksize >= 10 && blocksize <= 12) return 72;
+  if (blocksize >= 13 && blocksize <= 16) return 56;
+  if (blocksize >= 17 && blocksize <= 19) return 32;
+  return 0;
+}
+
+/// Call f(LaunchBounds) with the LaunchBounds type for a runtime register cap.
+/// Only the listed Caps (and 0) are instantiated, so each call site must list
+/// every nonzero cap its table can return.
+template <int... Caps, typename F>
+void withRegCapLaunchBounds(const int reg_cap, const F &f) {
+  if (reg_cap == 0) {
+    f(typename RegCapLaunchBounds<0>::type());
+    return;
+  }
+  const bool found = ((reg_cap == Caps && (f(typename RegCapLaunchBounds<Caps>::type()), true)) || ...);
+  TEUCHOS_TEST_FOR_EXCEPTION(!found, std::logic_error,
+                             "Ifpack2::BlockTriDiContainer: register cap " << reg_cap << " is not instantiated");
+}
+
+///
 /// numeric phase, initialize the preconditioner
 ///
 template <typename ArgActiveExecutionMemorySpace>
@@ -3717,15 +3797,16 @@ struct ExtractAndFactorizeTridiags {
       printf("Start ExtractAndFactorizeSubLineTag\n");
 #endif
       IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::NumericPhase::ExtractAndFactorizeSubLineTag", ExtractAndFactorizeSubLineTag0);
-      Kokkos::TeamPolicy<execution_space, ExtractAndFactorizeSubLineTag>
-          policy(packindices_sub.extent(0), team_size, vector_loop_size);
-
       const local_ordinal_type n_parts = part2packrowidx0_sub.extent(0);
       writeBTDValuesToFile(n_parts, scalar_values, "before.mm");
 
-      policy.set_scratch_size(ScratchLevel, Kokkos::PerTeam(per_team_scratch));
-      Kokkos::parallel_for("ExtractAndFactorize::TeamPolicy::run<ExtractAndFactorizeSubLineTag>",
-                           policy, *this);
+      withRegCapLaunchBounds<64, 72>(factorizeRegCap<execution_space>(blocksize), [&](auto launch_bounds) {
+        Kokkos::TeamPolicy<execution_space, ExtractAndFactorizeSubLineTag, decltype(launch_bounds)>
+            policy(packindices_sub.extent(0), team_size, vector_loop_size);
+        policy.set_scratch_size(ScratchLevel, Kokkos::PerTeam(per_team_scratch));
+        Kokkos::parallel_for("ExtractAndFactorize::TeamPolicy::run<ExtractAndFactorizeSubLineTag>",
+                             policy, *this);
+      });
       after_launch();
       execution_space().fence();
 
@@ -5121,6 +5202,25 @@ struct SolveTridiags {
     });
   }
 
+  // Launch SingleVectorFunctor<B, 0> (level 0 scratch), with the tuned
+  // register cap. For a fixed block size B the cap is a compile time
+  // constant; for the generic kernel (B == 0) it's chosen at runtime.
+  template <int B>
+  void launchSingleVector(const local_ordinal_type team_size, const int per_team_scratch,
+                          const local_ordinal_type blocksize) const {
+    const auto launch = [&](auto launch_bounds) {
+      Kokkos::TeamPolicy<execution_space, decltype(launch_bounds)>
+          policy(packptr.extent(0) - 1, team_size, vector_loop_size);
+      policy.set_scratch_size(0, Kokkos::PerTeam(per_team_scratch));
+      Kokkos::parallel_for("SolveTridiags::TeamPolicy::run<SingleVector,0>",
+                           policy, SingleVectorFunctor<B, 0>(*this));
+    };
+    if constexpr (B != 0)
+      launch(typename RegCapLaunchBounds<solveRegCap<execution_space>(B)>::type());
+    else  // the generic kernel is used for block sizes 4, 8, 9, 14, 15 (and untuned ones)
+      withRegCapLaunchBounds<128, 96, 56>(solveRegCap<execution_space>(blocksize), launch);
+  }
+
   // Solve the packed tridiags in place, then update the packed iterate Y with
   // the solution, and put the squared norms of the updates (per pack) in Z.
   void run(const packed_mv_view &Y,
@@ -5145,12 +5245,7 @@ struct SolveTridiags {
   if (packindices_schur.extent(1) <= 0) {                                                                                                             \
     if (num_vectors == 1) {                                                                                                                           \
       if (per_team_scratch < max_scratch) {                                                                                                           \
-        Kokkos::TeamPolicy<execution_space>                                                                                                           \
-            policy(packptr.extent(0) - 1, team_size, vector_loop_size);                                                                               \
-        policy.set_scratch_size(0, Kokkos::PerTeam(per_team_scratch));                                                                                \
-        Kokkos::parallel_for("SolveTridiags::TeamPolicy::run<SingleVector,0>",                                                                        \
-                             policy,                                                                                                                  \
-                             SingleVectorFunctor<B, 0>(*this));                                                                                       \
+        launchSingleVector<B>(team_size, per_team_scratch, blocksize);                                                                               \
       } else {                                                                                                                                        \
         Kokkos::TeamPolicy<execution_space>                                                                                                           \
             policy(packptr.extent(0) - 1, team_size, vector_loop_size);                                                                               \
