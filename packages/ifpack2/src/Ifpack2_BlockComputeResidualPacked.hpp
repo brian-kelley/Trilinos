@@ -106,6 +106,9 @@ struct PackedAmD {
   // (number of local rows): row LID -> packed row index (pri * vector_length + v)
   Kokkos::View<local_ordinal_type *, device_type> lid2packed;
 
+  // Execution space instance in which R is filled when that runs concurrently with the factorization
+  typename impl_type::execution_space fill_exec;
+
   local_ordinal_type blocksize      = 0;
   local_ordinal_type num_pack_rows  = 0;
   bool is_block_crs                 = true;
@@ -221,6 +224,83 @@ void buildPackedAmDGraph(typename PackedAmD<MatrixType>::Graph &graph,
         }
       });
 }
+
+///
+/// Numeric phase, fused variant: device-side copier of slots of R from A, used
+/// inside the fused block Jacobi factorization kernel (which is latency bound
+/// and has many teams, so the copy traffic is hidden behind the factorization).
+///
+/// Unlike FillPackedAmDFunctor, there is no transpose through scratch: the
+/// writes are coalesced and the reads go through L1 (the blocks of a slot are
+/// a few kB, so the cache lines are reused within the slot). This leaves the
+/// scratch use, register use and occupancy of the factorization kernel unchanged.
+///
+template <typename MatrixType>
+struct PackedAmDCopier {
+  using impl_type          = ImplType<MatrixType>;
+  using impl_scalar_type   = typename impl_type::impl_scalar_type;
+  using local_ordinal_type = typename impl_type::local_ordinal_type;
+  using size_type          = typename impl_type::size_type;
+  static constexpr int vl  = impl_type::vector_length;
+
+  impl_scalar_type *values           = nullptr;
+  const int64_t *src                 = nullptr;
+  const local_ordinal_type *src_row  = nullptr;
+  const size_type *rowptr            = nullptr;
+  const impl_scalar_type *A_values   = nullptr;
+  const size_t *A_point_rowptr       = nullptr;
+  local_ordinal_type num_pack_rows   = 0;
+  int blocksize                      = 0;
+  bool is_block_crs                  = true;
+  // If false, the copier does nothing (R is filled by fillPackedAmDValues instead).
+  bool active = false;
+
+  PackedAmDCopier() = default;
+
+  template <typename AValues, typename APointRowptr>
+  PackedAmDCopier(const typename PackedAmD<MatrixType>::Graph &graph, const AValues &A_values_,
+                  const APointRowptr &A_point_rowptr_, const local_ordinal_type num_pack_rows_,
+                  const int blocksize_, const bool is_block_crs_)
+    : values(graph.values.data())
+    , src(graph.src.data())
+    , src_row(graph.src_row.data())
+    , rowptr(graph.rowptr.data())
+    , A_values(A_values_.data())
+    , A_point_rowptr(A_point_rowptr_.data())
+    , num_pack_rows(num_pack_rows_)
+    , blocksize(blocksize_)
+    , is_block_crs(is_block_crs_)
+    , active(graph.nslots > 0) {}
+
+  KOKKOS_INLINE_FUNCTION int slotSize() const { return blocksize * blocksize * vl; }
+
+  // Slot range [s0, s1) of pack row pri
+  KOKKOS_INLINE_FUNCTION size_type slotBegin(const local_ordinal_type pri) const { return rowptr[pri]; }
+  KOKKOS_INLINE_FUNCTION size_type slotEnd(const local_ordinal_type pri) const { return rowptr[pri + 1]; }
+
+  // Copy scalar t (in values' storage order: (slot, k1, k0, lane)) of the
+  // slots starting at slot0.
+  KOKKOS_INLINE_FUNCTION void copyItem(const size_type slot0, const int t) const {
+    const int bs        = blocksize;
+    const int slot_size = bs * bs * vl;
+    const int ls        = t / slot_size;
+    int r               = t - ls * slot_size;
+    const int k1        = r / (bs * vl);
+    r -= k1 * bs * vl;
+    const int k0          = r / vl;
+    const int v           = r - k0 * vl;
+    const size_type slot  = slot0 + ls;
+    const int64_t sv      = src[slot * vl + v];
+    impl_scalar_type a(0);
+    if (sv >= 0) {
+      if (is_block_crs)
+        a = A_values[sv + k0 * bs + k1];
+      else
+        a = A_values[A_point_rowptr[int64_t(src_row[slot * vl + v]) * bs + k0] + sv + k1];
+    }
+    values[int64_t(slot0) * slot_size + t] = a;
+  }
+};
 
 ///
 /// Numeric phase: gather the values of R from A into the packed graph.

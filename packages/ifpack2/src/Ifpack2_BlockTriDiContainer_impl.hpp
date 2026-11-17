@@ -2332,6 +2332,9 @@ void performSymbolicPhase(const Teuchos::RCP<const typename BlockHelperDetails::
       packed_amd.num_pack_rows               = num_pack_rows;
       packed_amd.is_block_crs                = hasBlockCrsMatrix;
       packed_amd.overlap                     = overlap_communication_and_computation;
+      // Execution space instance for filling R concurrently with the factorization (see performNumericPhase).
+      if (BlockHelperDetails::is_device<execution_space>::value)
+        packed_amd.fill_exec = Kokkos::Experimental::partition_space(execution_space(), 1)[0];
       BlockHelperDetails::buildPackedAmDGraph<MatrixType>(packed_amd.owned, interf, amd.rowptr, amd.A_colindsub,
                                                           local_graph_rowptr, local_graph_colidx, col2row, lclrow2idx,
                                                           num_pack_rows, blocksize, hasBlockCrsMatrix);
@@ -3015,7 +3018,14 @@ struct ExtractAndFactorizeTridiags {
 
   bool hasBlockCrsMatrix;
 
+  // If active, the factorization kernels also copy the (owned) values of
+  // R = A - tridiag(A) into the packed representation (see PackedAmDCopier).
+  BlockHelperDetails::PackedAmDCopier<MatrixType> copier;
+
  public:
+  // Make the factorization kernels also fill the owned part of packed R.
+  void setPackedAmDCopier(const BlockHelperDetails::PackedAmDCopier<MatrixType> &copier_) { copier = copier_; }
+
   ExtractAndFactorizeTridiags(const BlockTridiags<MatrixType> &btdm_,
                               const BlockHelperDetails::PartInterface<MatrixType> &interf_,
                               const Teuchos::RCP<const row_matrix_type> &A_,
@@ -3411,6 +3421,21 @@ struct ExtractAndFactorizeTridiags {
     btdm_scalar_scratch_type_3d_view WW2(member.team_scratch(ScratchLevel), half_vector_length, blocksize, blocksize);
     const auto one                 = KokkosKernels::ArithTraits<btdm_magnitude_type>::one();
     const local_ordinal_type nrows = lclrow.extent(0);
+    if (copier.active) {
+      // Copy half of the slots of packed R in pack row p = league_rank / 2 (all lanes).
+      // There are many teams, so these copies overlap with the factorizations of other teams.
+      const local_ordinal_type p = member.league_rank() / 2;
+      if (p < copier.num_pack_rows) {
+        const size_type s0  = copier.slotBegin(p);
+        const size_type s1  = copier.slotEnd(p);
+        const size_type mid = s0 + (s1 - s0 + 1) / 2;
+        const size_type sa  = (member.league_rank() % 2 == 0) ? s0 : mid;
+        const size_type sb  = (member.league_rank() % 2 == 0) ? mid : s1;
+        const int n         = int(sb - sa) * copier.slotSize();
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(member, n),
+                             [&](const int t) { copier.copyItem(sa, t); });
+      }
+    }
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, half_vector_length),
                          [&](const local_ordinal_type &v) {
                            local_ordinal_type row = member.league_rank() * half_vector_length + v;
@@ -3672,6 +3697,14 @@ struct ExtractAndFactorizeTridiags {
   }
 
   void run() {
+    run([]() {});
+  }
+
+  // after_launch() is called right after the main factorization kernel is
+  // launched (before it is fenced): it can launch independent work in other
+  // execution space instances, to run concurrently with the factorization.
+  template <typename AfterLaunch>
+  void run(const AfterLaunch &after_launch) {
     IFPACK2_BLOCKTRIDICONTAINER_PROFILER_REGION_BEGIN;
     const local_ordinal_type team_size =
         ExtractAndFactorizeTridiagsDefaultModeAndAlgo<typename execution_space::memory_space>::
@@ -3693,6 +3726,7 @@ struct ExtractAndFactorizeTridiags {
       policy.set_scratch_size(ScratchLevel, Kokkos::PerTeam(per_team_scratch));
       Kokkos::parallel_for("ExtractAndFactorize::TeamPolicy::run<ExtractAndFactorizeSubLineTag>",
                            policy, *this);
+      after_launch();
       execution_space().fence();
 
       writeBTDValuesToFile(n_parts, scalar_values, "after.mm");
@@ -3796,7 +3830,9 @@ struct ExtractAndFactorizeTridiags {
     {
       IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::NumericPhase::ExtractAndFactorizeFusedJacobi", ExtractAndFactorizeFusedJacobiTag);
       Kokkos::TeamPolicy<execution_space, ExtractAndFactorizeFusedJacobiTag>
-          policy((lclrow.extent(0) + half_vector_length - 1) / half_vector_length, team_size, half_vector_length);
+          policy(std::max<local_ordinal_type>((lclrow.extent(0) + half_vector_length - 1) / half_vector_length,
+                                              copier.active ? 2 * copier.num_pack_rows : 0),
+                 team_size, half_vector_length);
 
       policy.set_scratch_size(ScratchLevel, Kokkos::PerTeam(per_team_scratch));
       Kokkos::parallel_for("ExtractAndFactorize::TeamPolicy::run<ExtractAndFactorizeFusedJacobiTag>",
@@ -3839,44 +3875,59 @@ void performNumericPhase(const Teuchos::RCP<const typename BlockHelperDetails::I
 
   int max_scratch = team_policy_type::scratch_size_max(0);
 
-  // Gather the values of R = A - D into its packed representation.
-  // (Running this concurrently with the factorization in another execution
-  // space instance was tried: no gain on H100.)
-  const execution_space fill_exec;
-  {
-    IFPACK2_BLOCKHELPER_TIMER("BlockTriDi::NumericPhase::FillPackedAmD", FillPackedAmD);
-    using crs_matrix_type       = typename impl_type::tpetra_crs_matrix_type;
-    using block_crs_matrix_type = typename impl_type::tpetra_block_crs_matrix_type;
-    if (packed_amd.is_block_crs) {
-      auto A_bcrs         = Teuchos::rcp_dynamic_cast<const block_crs_matrix_type>(A, true);
-      const auto A_values = A_bcrs->getValuesDevice();
-      const Kokkos::View<size_t *, typename impl_type::node_device_type> no_rowptr;
-      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.owned, A_values, no_rowptr, packed_amd.blocksize, true, fill_exec);
-      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.remote, A_values, no_rowptr, packed_amd.blocksize, true, fill_exec);
-    } else {
-      auto A_crs                = Teuchos::rcp_dynamic_cast<const crs_matrix_type>(A, true);
-      const auto A_values       = A_crs->getLocalValuesDevice(Tpetra::Access::ReadOnly);
-      const auto A_point_rowptr = A_crs->getCrsGraph()->getLocalGraphDevice().row_map;
-      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.owned, A_values, A_point_rowptr, packed_amd.blocksize, false, fill_exec);
-      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.remote, A_values, A_point_rowptr, packed_amd.blocksize, false, fill_exec);
+  // Gather the values of R = A - D into its packed representation, and
+  // extract and factorize the tridiagonal blocks.
+  //  - Fused block Jacobi: the factorization kernel copies the owned part of R
+  //    itself (it is latency bound and has many teams, so this hides the copy).
+  //  - Otherwise: R is filled by a separate kernel, launched in another
+  //    execution space instance right after the factorization kernel, so that
+  //    it runs in the resources the factorization leaves unused (its occupancy
+  //    is register limited). Copying R inside the factorization kernel instead
+  //    was tried: it raises the kernel's register use, which lowers its
+  //    occupancy and makes it much slower. Launching the fill before the
+  //    factorization (in another instance) gave no gain.
+  // The remote part of R (only with overlapped communication) is always
+  // filled by a separate kernel.
+  const auto numeric = [&](const auto &A_values, const auto &A_point_rowptr) {
+    const bool is_block_crs = packed_amd.is_block_crs;
+    BlockHelperDetails::PackedAmDCopier<MatrixType> copier;
+    if (use_fused_jacobi) {
+      copier = BlockHelperDetails::PackedAmDCopier<MatrixType>(packed_amd.owned, A_values, A_point_rowptr,
+                                                               packed_amd.num_pack_rows, packed_amd.blocksize, is_block_crs);
+      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.remote, A_values, A_point_rowptr, packed_amd.blocksize, is_block_crs, execution_space());
     }
-    IFPACK2_BLOCKHELPER_TIMER_FENCE(execution_space)
-  }
-
-  if (scratch_required < max_scratch) {
-    // Can use level 0 scratch
-    ExtractAndFactorizeTridiags<MatrixType, 0> function(btdm, interf, A, G, tiny);
-    if (!use_fused_jacobi)
-      function.run();
-    else
-      function.run_fused_jacobi();
+    const auto launch_fill = [&]() {
+      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.owned, A_values, A_point_rowptr, packed_amd.blocksize, is_block_crs, packed_amd.fill_exec);
+      BlockHelperDetails::fillPackedAmDValues<MatrixType>(packed_amd.remote, A_values, A_point_rowptr, packed_amd.blocksize, is_block_crs, packed_amd.fill_exec);
+    };
+    if (scratch_required < max_scratch) {
+      // Can use level 0 scratch
+      ExtractAndFactorizeTridiags<MatrixType, 0> function(btdm, interf, A, G, tiny);
+      function.setPackedAmDCopier(copier);
+      if (!use_fused_jacobi)
+        function.run(launch_fill);
+      else
+        function.run_fused_jacobi();
+    } else {
+      // Not enough level 0 scratch, so fall back to level 1
+      ExtractAndFactorizeTridiags<MatrixType, 1> function(btdm, interf, A, G, tiny);
+      function.setPackedAmDCopier(copier);
+      if (!use_fused_jacobi)
+        function.run(launch_fill);
+      else
+        function.run_fused_jacobi();
+    }
+    packed_amd.fill_exec.fence();
+  };
+  if (packed_amd.is_block_crs) {
+    using block_crs_matrix_type = typename impl_type::tpetra_block_crs_matrix_type;
+    auto A_bcrs                 = Teuchos::rcp_dynamic_cast<const block_crs_matrix_type>(A, true);
+    const Kokkos::View<size_t *, typename impl_type::node_device_type> no_rowptr;
+    numeric(A_bcrs->getValuesDevice(), no_rowptr);
   } else {
-    // Not enough level 0 scratch, so fall back to level 1
-    ExtractAndFactorizeTridiags<MatrixType, 1> function(btdm, interf, A, G, tiny);
-    if (!use_fused_jacobi)
-      function.run();
-    else
-      function.run_fused_jacobi();
+    using crs_matrix_type = typename impl_type::tpetra_crs_matrix_type;
+    auto A_crs            = Teuchos::rcp_dynamic_cast<const crs_matrix_type>(A, true);
+    numeric(A_crs->getLocalValuesDevice(Tpetra::Access::ReadOnly), A_crs->getCrsGraph()->getLocalGraphDevice().row_map);
   }
 
   IFPACK2_BLOCKHELPER_TIMER_FENCE(typename BlockHelperDetails::ImplType<MatrixType>::execution_space)
