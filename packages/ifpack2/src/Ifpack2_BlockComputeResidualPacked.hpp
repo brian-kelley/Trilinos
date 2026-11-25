@@ -507,6 +507,10 @@ struct PackedResidualFunctor {
     const local_ordinal_type pri       = i / (vl * blocksize);
     const size_type s_beg              = rowptr(pri);
     const size_type s_end              = rowptr(pri + 1);
+    // out -= R x leaves rows without entries unchanged (most rows, for the
+    // remote part of R), so skip their read-modify-write of out.
+    if constexpr (!Init)
+      if (s_beg == s_end) return;
     for (local_ordinal_type col = 0; col < num_vectors; ++col) {
       impl_scalar_type acc = Init ? b(pri, k0, col, v) : impl_scalar_type(out(pri, k0, col, v));
       for (size_type s = s_beg; s < s_end; ++s) {

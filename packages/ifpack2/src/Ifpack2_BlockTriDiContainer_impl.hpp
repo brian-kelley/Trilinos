@@ -48,6 +48,9 @@
 
 #include <memory>
 #include <cstdint>
+#include <algorithm>
+#include <tuple>
+#include <utility>
 
 #include "Ifpack2_BlockHelper.hpp"
 #include "Ifpack2_BlockComputeResidualVector.hpp"
@@ -2381,83 +2384,139 @@ void performSymbolicPhase(const Teuchos::RCP<const typename BlockHelperDetails::
 }
 
 ///
-/// Register caps for the BTD factorization and solve kernels.
+/// Kokkos::LaunchBounds for the BTD factorization (ExtractAndFactorizeSubLineTag)
+/// and single vector solve (SolveTridiags::SingleVectorFunctor) kernels, tuned
+/// empirically per block size and per architecture (Laplace3D, one line per part).
 ///
-/// Both kernels are limited by register-constrained occupancy, so capping the
-/// registers per thread (with Kokkos::LaunchBounds) can be a large win, at the
-/// cost of some spilling. The best cap depends strongly on the block size, so
-/// these tables were tuned empirically, per block size, on H100 (Laplace3D,
-/// 128x96x96 cells, one line per part). A cap of 0 means "no LaunchBounds"
-/// (Kokkos default). Other architectures/backends are untuned and use 0.
+/// BTDLaunchBoundsTuning<ExecSpace> provides:
+///  - FactorizeVariants, SolveVariants, GenericSolveVariants: std::tuple of the
+///    LaunchBounds types in use. Index 0 is always LaunchBounds<0, 0> (Kokkos
+///    default). Every variant listed is instantiated, so list only used ones.
+///  - factorize(bs), solve(bs), genericSolve(bs): the index of the variant to use
+///    for a block size. solve() is for the solve kernels specialized on the
+///    block size (selected at compile time); genericSolve() is for the generic
+///    (B == 0) solve kernel and the runtime block sizes it handles.
+///  - solveLarge(bs) and useLargeSolve(exec, bs, team_threads, num_teams): the
+///    specialized solve kernels may have a second variant for large problems.
+///    solve(bs) is then tuned for small, latency bound problems (all teams are
+///    resident at once), and solveLarge(bs) for large problems that need several
+///    waves of teams, where occupancy matters most; useLargeSolve() picks one at
+///    runtime. When solveLarge(bs) == solve(bs), only one variant is instantiated.
+/// The primary template (all backends/architectures that are not tuned) always
+/// uses the Kokkos default.
 ///
-/// Note: nvcc derives the cap from LaunchBounds<maxT, minB> per SM
-/// sub-partition, so only a few discrete caps are reachable;
-/// RegCapLaunchBounds maps each of those to (maxT, minB). maxT is always
-/// >= the largest team (320 threads) these kernels are launched with.
-///
-template <int RegCap>
-struct RegCapLaunchBounds {
-  static_assert(RegCap == 0, "RegCapLaunchBounds: unsupported register cap");
-  using type = Kokkos::LaunchBounds<0, 0>;
+template <typename ExecSpace>
+struct BTDLaunchBoundsTuning {
+  using FactorizeVariants    = std::tuple<Kokkos::LaunchBounds<0, 0>>;
+  using SolveVariants        = std::tuple<Kokkos::LaunchBounds<0, 0>>;
+  using GenericSolveVariants = std::tuple<Kokkos::LaunchBounds<0, 0>>;
+  static constexpr int factorize(const int) { return 0; }
+  static constexpr int solve(const int) { return 0; }
+  static constexpr int solveLarge(const int) { return 0; }
+  static constexpr int genericSolve(const int) { return 0; }
+  static bool useLargeSolve(const ExecSpace &, const int, const int, const int) { return false; }
 };
-template <>
-struct RegCapLaunchBounds<128> { using type = Kokkos::LaunchBounds<512, 1>; };
-template <>
-struct RegCapLaunchBounds<96> { using type = Kokkos::LaunchBounds<640, 1>; };
-template <>
-struct RegCapLaunchBounds<72> { using type = Kokkos::LaunchBounds<800, 1>; };
-template <>
-struct RegCapLaunchBounds<64> { using type = Kokkos::LaunchBounds<1024, 1>; };
-template <>
-struct RegCapLaunchBounds<56> { using type = Kokkos::LaunchBounds<576, 2>; };
-template <>
-struct RegCapLaunchBounds<48> { using type = Kokkos::LaunchBounds<640, 2>; };
-template <>
-struct RegCapLaunchBounds<32> { using type = Kokkos::LaunchBounds<800, 2>; };
 
-template <typename ExecSpace>
-constexpr bool useTunedRegCaps() {
 #if defined(KOKKOS_ENABLE_CUDA) && defined(KOKKOS_ARCH_HOPPER)
-  return std::is_same_v<ExecSpace, Kokkos::Cuda>;
-#else
-  return false;
-#endif
-}
+/// H100. Both kernels are limited by register-constrained occupancy, so capping
+/// the registers per thread can be a large win when the problem is large enough
+/// to need several waves of teams, at the cost of some spilling (which makes
+/// small, latency bound problems slower). These caps favor large problems.
+///
+/// nvcc derives the register cap from LaunchBounds<maxT, minB> per SM
+/// sub-partition, so only a few discrete caps are reachable (named below by the
+/// cap). maxT is always >= the largest team (320 threads) these kernels use.
+template <>
+struct BTDLaunchBoundsTuning<Kokkos::Cuda> {
+  using Default = Kokkos::LaunchBounds<0, 0>;
+  using Regs128 = Kokkos::LaunchBounds<512, 1>;
+  using Regs96  = Kokkos::LaunchBounds<640, 1>;
+  using Regs72  = Kokkos::LaunchBounds<800, 1>;
+  using Regs64  = Kokkos::LaunchBounds<1024, 1>;
+  using Regs56  = Kokkos::LaunchBounds<576, 2>;
+  using Regs48  = Kokkos::LaunchBounds<640, 2>;
+  using Regs32  = Kokkos::LaunchBounds<800, 2>;
 
-/// Register cap for the ExtractAndFactorizeSubLineTag kernel.
-template <typename ExecSpace>
-constexpr int factorizeRegCap(const int blocksize) {
-  if (!useTunedRegCaps<ExecSpace>()) return 0;
-  if (blocksize == 10 || blocksize == 11) return 64;
-  if (blocksize >= 13 && blocksize <= 16) return 72;
-  if (blocksize >= 17 && blocksize <= 19) return 64;
-  return 0;
-}
-
-/// Register cap for the SolveTridiags single vector kernel.
-template <typename ExecSpace>
-constexpr int solveRegCap(const int blocksize) {
-  if (!useTunedRegCaps<ExecSpace>()) return 0;
-  if (blocksize >= 3 && blocksize <= 7) return 128;
-  if (blocksize >= 8 && blocksize <= 9) return 96;
-  if (blocksize >= 10 && blocksize <= 12) return 72;
-  if (blocksize >= 13 && blocksize <= 16) return 56;
-  if (blocksize >= 17 && blocksize <= 19) return 32;
-  return 0;
-}
-
-/// Call f(LaunchBounds) with the LaunchBounds type for a runtime register cap.
-/// Only the listed Caps (and 0) are instantiated, so each call site must list
-/// every nonzero cap its table can return.
-template <int... Caps, typename F>
-void withRegCapLaunchBounds(const int reg_cap, const F &f) {
-  if (reg_cap == 0) {
-    f(typename RegCapLaunchBounds<0>::type());
-    return;
+  using FactorizeVariants = std::tuple<Default, Regs72, Regs64>;
+  static constexpr int factorize(const int bs) {
+    if (bs == 10 || bs == 11) return 2;
+    if (bs >= 13 && bs <= 16) return 1;
+    if (bs >= 17 && bs <= 19) return 2;
+    return 0;
   }
-  const bool found = ((reg_cap == Caps && (f(typename RegCapLaunchBounds<Caps>::type()), true)) || ...);
-  TEUCHOS_TEST_FOR_EXCEPTION(!found, std::logic_error,
-                             "Ifpack2::BlockTriDiContainer: register cap " << reg_cap << " is not instantiated");
+  // Small (latency bound) problems: register caps only add spills, except that
+  // a loose cap of 128 helps the small block sizes. Large problems: tight caps
+  // for occupancy, which more than pays for the spills. The small variants all
+  // have explicit caps, so their occupancy is known (see useLargeSolve).
+  using SolveVariants = std::tuple<Default, Regs128, Regs96, Regs72, Regs56, Regs32>;
+  static constexpr int solve(const int bs) {
+    if (bs >= 13 && bs <= 16) return 2;
+    if (bs >= 3 && bs <= 19) return 1;
+    return 0;
+  }
+  static constexpr int solveLarge(const int bs) {
+    if (bs >= 10 && bs <= 12) return 3;
+    if (bs >= 13 && bs <= 16) return 4;
+    if (bs >= 17 && bs <= 19) return 5;
+    return solve(bs);
+  }
+  // Use the large variant when the small one can't have all teams resident.
+  static bool useLargeSolve(const Kokkos::Cuda &exec, const int bs, const int team_threads, const int num_teams) {
+    if (solve(bs) == solveLarge(bs)) return false;
+    const int regs = solve(bs) == 2 ? 96 : 128;  // cap of the small variant
+    // Registers are allocated per warp, from each of the 4 SM sub-partitions
+    // (16K 32-bit registers each).
+    const int warps_per_sm   = 4 * (16384 / (32 * regs));
+    const int warps_per_team = (team_threads + 31) / 32;
+    const int teams_per_sm   = std::min(32, warps_per_sm / warps_per_team);
+    return num_teams > teams_per_sm * exec.cuda_device_prop().multiProcessorCount;
+  }
+  // The generic kernel uses fewer registers (nothing is unrolled).
+  using GenericSolveVariants = std::tuple<Default, Regs128, Regs96, Regs48>;
+  static constexpr int genericSolve(const int bs) {
+    if (bs >= 3 && bs <= 7) return 1;
+    if (bs >= 8 && bs <= 9) return 2;
+    if (bs >= 14 && bs <= 15) return 3;
+    return 0;
+  }
+};
+#endif
+
+#if defined(KOKKOS_ENABLE_HIP) && defined(KOKKOS_ARCH_AMD_GFX942_APU)
+/// MI300A. LaunchBounds made no significant difference to the factorization,
+/// and none to the solve for most block sizes, at either problem size tested
+/// (128x48x48 and 128x96x96; both are latency bound on MI300A). For the block
+/// sizes below, a larger register budget than the default (1024 threads/block)
+/// speeds up the solve by about 10-18%.
+template <>
+struct BTDLaunchBoundsTuning<Kokkos::HIP> {
+  using Default  = Kokkos::LaunchBounds<0, 0>;
+  using MoreRegs = Kokkos::LaunchBounds<512, 1>;
+
+  using FactorizeVariants = std::tuple<Default>;
+  static constexpr int factorize(const int) { return 0; }
+  using SolveVariants = std::tuple<Default, MoreRegs>;
+  static constexpr int solve(const int bs) {
+    return (bs == 5 || bs == 6 || bs == 7 || bs == 16 || bs == 18) ? 1 : 0;
+  }
+  static constexpr int solveLarge(const int bs) { return solve(bs); }
+  static bool useLargeSolve(const Kokkos::HIP &, const int, const int, const int) { return false; }
+  using GenericSolveVariants = std::tuple<Default>;
+  static constexpr int genericSolve(const int) { return 0; }
+};
+#endif
+
+/// Call f(LaunchBounds()) with the i-th LaunchBounds type of the tuple Variants.
+template <typename Variants, typename F, std::size_t... I>
+void withLaunchBoundsVariantImpl(const int i, const F &f, std::index_sequence<I...>) {
+  ((i == int(I) ? (f(std::tuple_element_t<I, Variants>()), 0) : 0), ...);
+}
+template <typename Variants, typename F>
+void withLaunchBoundsVariant(const int i, const F &f) {
+  constexpr int n = std::tuple_size_v<Variants>;
+  TEUCHOS_TEST_FOR_EXCEPTION(i < 0 || i >= n, std::logic_error,
+                             "Ifpack2::BlockTriDiContainer: invalid LaunchBounds variant " << i);
+  withLaunchBoundsVariantImpl<Variants>(i, f, std::make_index_sequence<n>());
 }
 
 ///
@@ -3800,7 +3859,8 @@ struct ExtractAndFactorizeTridiags {
       const local_ordinal_type n_parts = part2packrowidx0_sub.extent(0);
       writeBTDValuesToFile(n_parts, scalar_values, "before.mm");
 
-      withRegCapLaunchBounds<64, 72>(factorizeRegCap<execution_space>(blocksize), [&](auto launch_bounds) {
+      using tuning = BTDLaunchBoundsTuning<execution_space>;
+      withLaunchBoundsVariant<typename tuning::FactorizeVariants>(tuning::factorize(blocksize), [&](auto launch_bounds) {
         Kokkos::TeamPolicy<execution_space, ExtractAndFactorizeSubLineTag, decltype(launch_bounds)>
             policy(packindices_sub.extent(0), team_size, vector_loop_size);
         policy.set_scratch_size(ScratchLevel, Kokkos::PerTeam(per_team_scratch));
@@ -5203,8 +5263,9 @@ struct SolveTridiags {
   }
 
   // Launch SingleVectorFunctor<B, 0> (level 0 scratch), with the tuned
-  // register cap. For a fixed block size B the cap is a compile time
-  // constant; for the generic kernel (B == 0) it's chosen at runtime.
+  // LaunchBounds (see BTDLaunchBoundsTuning). For a fixed block size B they're
+  // chosen at compile time (between a small and large problem variant at
+  // runtime, if there are two); for the generic kernel (B == 0), at runtime.
   template <int B>
   void launchSingleVector(const local_ordinal_type team_size, const int per_team_scratch,
                           const local_ordinal_type blocksize) const {
@@ -5215,10 +5276,21 @@ struct SolveTridiags {
       Kokkos::parallel_for("SolveTridiags::TeamPolicy::run<SingleVector,0>",
                            policy, SingleVectorFunctor<B, 0>(*this));
     };
-    if constexpr (B != 0)
-      launch(typename RegCapLaunchBounds<solveRegCap<execution_space>(B)>::type());
-    else  // the generic kernel is used for block sizes 4, 8, 9, 14, 15 (and untuned ones)
-      withRegCapLaunchBounds<128, 96, 56>(solveRegCap<execution_space>(blocksize), launch);
+    using tuning = BTDLaunchBoundsTuning<execution_space>;
+    if constexpr (B != 0) {
+      using variants        = typename tuning::SolveVariants;
+      constexpr int i_small = tuning::solve(B);
+      constexpr int i_large = tuning::solveLarge(B);
+      if constexpr (i_large != i_small) {
+        const int num_teams = packptr.extent(0) - 1;
+        if (tuning::useLargeSolve(execution_space(), B, team_size * vector_loop_size, num_teams)) {
+          launch(std::tuple_element_t<i_large, variants>());
+          return;
+        }
+      }
+      launch(std::tuple_element_t<i_small, variants>());
+    } else
+      withLaunchBoundsVariant<typename tuning::GenericSolveVariants>(tuning::genericSolve(blocksize), launch);
   }
 
   // Solve the packed tridiags in place, then update the packed iterate Y with
